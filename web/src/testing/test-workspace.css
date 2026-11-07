@@ -1847,3 +1847,8 @@ html[data-theme="dark"]
 .test-dialog h2 {
   overflow-wrap: anywhere;
 }
+
+/* Existing legacy danger labels use !important; preserve readable dark contrast. */
+html[data-theme="dark"] .danger-text {
+  color: #ffb7c6 !important;
+}
