@@ -28,7 +28,7 @@ test('direct calendar CRUD, repeat/copy, title editing, stable menu shell and ed
 
 test('parent B joins while signed in and group conversation has shared history, search and safe edits',async({page,browser,request})=>{
  test.setTimeout(90000);await login(page,request,'direct-parent-a@example.test','부모 A');const code=await issue(page);
- const ctx=await browser.newContext({viewport:{width:390,height:844}}),b=await ctx.newPage();try{
+ const ctx=await browser.newContext({baseURL:origin,viewport:{width:390,height:844}}),b=await ctx.newPage();try{
  await login(b,request,'direct-parent-b@example.test','부모 B');await issue(b);await b.getByLabel('부모 호스트 승인번호',{exact:true}).fill(code);await b.getByRole('checkbox',{name:/연결을 종료하고 새 가족/}).check();await b.getByRole('button',{name:'승인번호로 가족 합류'}).click();await expect(b.locator('.personal-member')).toHaveCount(2);
  await b.goto(origin+'/chat');await expect(b.getByLabel('조회 월')).toHaveCount(0);await expect(b.getByLabel('자료 범위')).toHaveCount(0);await b.getByLabel('가족에게 전할 말').fill('오늘 같이 저녁 먹어요');await b.getByRole('button',{name:'메시지 보내기'}).click();await expect(b.getByRole('button',{name:'메시지 수정: 오늘 같이 저녁 먹어요'})).toBeVisible();
  await page.goto('/chat');await expect(page.getByRole('button',{name:'메시지 상세: 오늘 같이 저녁 먹어요'})).toBeVisible();await page.getByRole('button',{name:'대화 참여자'}).click();await expect(page.getByLabel('참여자 목록')).toContainText('부모 B');await page.getByRole('button',{name:'메시지 상세: 오늘 같이 저녁 먹어요'}).click();await expect(page.getByLabel('메시지',{exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'삭제',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'편집 닫기'}).click();
@@ -40,6 +40,7 @@ test('parent B joins while signed in and group conversation has shared history, 
 });
 for(const width of [320,768,1440])test(`all functional canvases and calendar editor fit ${width}px`,async({page,request})=>{
  test.setTimeout(60000);await page.setViewportSize({width,height:900});await login(page,request,`direct-layout-${width}@example.test`);
+ await page.screenshot({path:`test-results/ui78-today-${width}.png`});
  for(const path of ['/today','/today/calendar','/tuition','/records','/family','/chat','/account']){await page.goto(path);await expect(page.locator('.auth-panel')).toBeVisible();await expect(page.locator('.auth-panel')).toHaveCSS('padding','0px');await expect(page.locator('.workspace-tabs,.personal-context')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  await expect(page.getByText('오늘 화면으로',{exact:true})).toHaveCount(0);await page.goto('/today/calendar');await page.getByRole('button',{name:koreaToday()+' 일정 등록',exact:true}).click();await page.getByLabel('제목',{exact:true}).fill('좁은 화면 일정');await page.getByLabel('반복',{exact:true}).selectOption('REPEAT');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/ui78-calendar-${width}.png`});
 });
