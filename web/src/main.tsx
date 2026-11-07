@@ -8,5 +8,6 @@ import '@fontsource-variable/manrope';
 import './styles.css';
 import './experience.css';
 import './workspace.css';
+import './testing/test-workspace.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><ExperienceProvider><App/></ExperienceProvider></StrictMode>);
 
