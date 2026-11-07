@@ -50,6 +50,7 @@ function LoginForm({reauthenticate=false}:{reauthenticate?:boolean}) {
   async function social(id:string) { setBusy(true);setError('');try {await startSocial(id,false,reauthenticate);}catch(e){setError((e as Error).message);setBusy(false);} }
   if(canonicalLogin)return <AuthLayout><Loading label="안전한 로그인 화면으로 이동하고 있어요"/><a className="button primary full" href={new URL(`${pathname}${reauthenticate?'?reauth=1':''}`,loginOrigin).href}>운영 로그인 화면 열기</a></AuthLayout>;
   return <AuthLayout><div className="auth-title"><span className="eyebrow">보호자 계정</span><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>
+    {mode==='login'&&<section className="connection-shortcut"><div><strong>아이 기기인가요?</strong><p>이메일·회원가입 없이 연결 번호로 시작해요.</p></div><Link className="button primary" to="/device/connect">아이 연결 번호 받기</Link></section>}
     {mode==='login'&&<nav className="auth-tabs" aria-label="계정 시작"><Link to="/login" aria-current="page">로그인</Link><Link to="/signup">회원가입</Link></nav>}
     {providers.loading?<Loading label="로그인 방법을 확인하고 있어요"/>:providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:<>
       {waiting&&<div className="auth-notice setup-notice"><Icon name="clock"/><div><strong>로그인 연결을 준비하고 있어요</strong><p>준비가 끝나면 여기서 가족의 하루를 시작할 수 있어요.</p></div></div>}
