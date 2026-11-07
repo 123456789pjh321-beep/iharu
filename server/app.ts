@@ -1,4 +1,5 @@
 import {workspaceRoutes} from './workspace/routes.js';
+import {adminRoutes} from './admin/routes.js';
 import {childAccountRoutes} from './child-accounts/routes.js';
 import {guardianRoutes} from './guardian/routes.js';
 import { familyRoutes } from './family/routes.js';
@@ -25,10 +26,19 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   const app = new Hono<{ Variables: { requestId: string } }>();
   app.use('*', secureHeaders());
   app.use('*', async (c, next) => {
+    const started=Date.now();
     c.set('requestId', crypto.randomUUID());
     c.header('Cache-Control', 'private, no-store');
     c.header('X-Request-Id', c.get('requestId'));
     await next();
+    const path=c.req.path;
+    const mutation=c.req.method==='POST'&&((path.startsWith('/api/auth/')&&!path.endsWith('/get-session'))||/^\/api\/v1\/(workspace|admin)\/(?:child\.|invite\.|family\.|items\.(?:create|update|delete)|chat\.send|member\.|role\.)/.test(path));
+    if(path.startsWith('/api/')&&(mutation||c.res.status>=400)){
+      // Store operation/status only. Password reset tokens, query strings, cookies and bodies never enter logs.
+      const operation=path.startsWith('/api/auth/')?path.split('/').slice(0,4).join('/'):
+        path.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi,'item').slice(0,100);
+      if(/^\/api\/[a-zA-Z0-9_./-]+$/.test(operation))try{const svc=await familyRuntime();await svc?.command({requestId:c.get('requestId')},'system.log',{operation,method:c.req.method,status:c.res.status,durationMs:Date.now()-started});}catch{/* Logging failure must not change the user's operation. */}
+    }
   });
   const meta = (requestId: string, source: 'system' | 'demo') => ({ requestId, source, serverNow: new Date().toISOString() });
   app.get('/api/health', c => c.json(envelope(healthSchema).parse({
@@ -44,6 +54,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
     return c.json(envelope(dashboardSchema).parse({ data:getDemoDashboard(parsed.data.child, parsed.data.month), meta:meta(c.get('requestId'), 'demo') }));
   });
   app.route('/', accountRoutes(authRuntime));
+  app.route('/', adminRoutes(authRuntime,familyRuntime));
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
   app.route('/', workspaceRoutes(authRuntime,familyRuntime));
   app.route('/', childAccountRoutes(authRuntime,familyRuntime));

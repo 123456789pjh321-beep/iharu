@@ -116,3 +116,8 @@
 .workspace-page .fee-month-navigation label{flex:1;min-width:0;width:auto;max-width:260px}
 .fee-month-navigation .icon-button{flex-shrink:0;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:10px}
 @media(max-width:760px){.workspace-page .fee-month-navigation label{max-width:none}}
+
+/* Dense tuition rows keep the amount visible to the right at every width. */
+.workspace-page .personal-tuition-item{display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:center;gap:12px;padding-block:12px}
+.personal-tuition-item .personal-item-main{min-width:0}.personal-tuition-item h3{margin:3px 0;font-size:.94rem;line-height:1.4}.personal-tuition-item .direct-item p{margin:3px 0 0;font-size:.75rem;line-height:1.5}.personal-tuition-item .personal-item-category{font-size:.68rem}.personal-tuition-item .personal-fee-value{justify-items:end;align-self:center;font-variant-numeric:tabular-nums}.personal-tuition-item .personal-fee-value strong{font-size:1rem}.personal-tuition-item .personal-note-text{overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical}
+@media(max-width:360px){.workspace-page .personal-tuition-item{gap:8px}.personal-tuition-item .personal-fee-value strong{font-size:.9rem}.personal-tuition-item h3{font-size:.87rem}}

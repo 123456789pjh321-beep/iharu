@@ -27,9 +27,11 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
   await expect(daily.locator('.timetable-title')).toHaveText(['가족 기념일','자녀 수업','부모 회의']);
   await expect(daily.locator('.timetable-person')).toHaveText(['전체','가상 서하','일간 부모']);
   await expect(page.locator('.timetable-toolbar,.timetable-filters,.calendar-weekdays')).toHaveCount(0);
-  await page.getByLabel('구성원 일정 필터').selectOption(childId);await expect(daily.locator('.timetable-title')).toHaveText(['가족 기념일','자녀 수업']);
-  await page.getByLabel('이 날의 일정 검색').fill('자녀');await expect(daily.locator('.timetable-title')).toHaveText(['자녀 수업']);
-  await page.getByLabel('이 날의 일정 검색').fill('');await page.getByLabel('구성원 일정 필터').selectOption('all');
+  const memberFilter=page.getByRole('group',{name:'달력 구성원 필터'});
+  await expect(page.getByRole('textbox',{name:/일정 검색/})).toHaveCount(0);
+  await memberFilter.getByRole('button',{name:'가상 서하',exact:true}).click();await expect(daily.locator('.timetable-title')).toHaveText(['가족 기념일','자녀 수업']);
+  await memberFilter.getByRole('button',{name:'일간 부모',exact:true}).click();await expect(daily.locator('.timetable-title')).toHaveText(['가족 기념일','부모 회의']);
+  await memberFilter.getByRole('button',{name:'전체 보기',exact:true}).click();
   for(const width of [320,390,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(daily.locator('.timetable-person').filter({hasText:'가상 서하'})).toBeVisible();await page.screenshot({path:`test-results/ui82-calendar-daily-${width}.png`});}
   await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'어둡게',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
@@ -57,5 +59,15 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
   await page.getByRole('button',{name:'편집 닫기'}).click();
   for(let i=1;i<=4;i++)await api('items.create',{kind:'FEE',data:{title:'합계 검증 학원 '+i,date:today,assigneeId:me.id,feePayerId:me.id,feeFrequency:'ONCE',amount:10000*i}});
   await page.goto('/today');const homeFees=page.locator('[data-home-section="fees"]');await expect(homeFees.locator('summary')).toContainText('100,000원');await expect(homeFees.locator('.personal-tuition-item').first()).toBeHidden();await homeFees.locator('summary').click();await expect(homeFees.locator('.personal-tuition-item')).toHaveCount(4);await expect(homeFees.getByRole('button',{name:'합계 검증 학원 4 수정',exact:true})).toBeVisible();await expect(homeFees).not.toContainText('미납');await homeFees.locator('summary').click();await expect(homeFees.locator('.personal-tuition-item').first()).toBeHidden();
+  await api('items.create',{kind:'FEE',data:{title:'서하 피아노',date:today,assigneeId:childId,feePayerId:me.id,feeFrequency:'MONTHLY',amount:200000,note:'상세에서 확인할 긴 메모 '.repeat(12)}});
+  await api('items.create',{kind:'FEE',data:{title:'서하 교재',date:today,assigneeId:childId,feePayerId:me.id,feeFrequency:'ONCE',amount:30000}});
+  await page.goto('/tuition');const feeFilter=page.getByRole('group',{name:'학원비 구성원 필터'});
+  await expect(page.locator('.personal-fee-summary')).toContainText('330,000원');await expect(page.locator('.personal-tuition-item')).toHaveCount(6);
+  await feeFilter.getByRole('button',{name:'가상 서하',exact:true}).click();await expect(page.locator('.personal-fee-summary')).toContainText('가상 서하 합계');await expect(page.locator('.personal-fee-summary')).toContainText('230,000원');await expect(page.locator('.personal-tuition-item')).toHaveCount(2);
+  for(const width of [320,390,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);const row=page.locator('.personal-tuition-item').filter({hasText:'서하 피아노'}),main=(await row.locator('.personal-item-main').boundingBox())!,amount=(await row.locator('.personal-fee-value').boundingBox())!;expect(amount.x).toBeGreaterThan(main.x+main.width-1);expect((await row.boundingBox())!.height).toBeLessThan(150);await page.screenshot({path:`test-results/ui83-tuition-filter-${width}.png`,animations:'disabled'});}
+  await page.getByRole('button',{name:'다음 달 학원비',exact:true}).click();await expect(feeFilter.getByRole('button',{name:'가상 서하',exact:true})).toHaveAttribute('aria-pressed','true');await expect(page.locator('.personal-tuition-item')).toHaveCount(1);await expect(page.locator('.personal-fee-summary')).toContainText('200,000원');
+  await feeFilter.getByRole('button',{name:'일간 부모',exact:true}).click();await expect(page.locator('.personal-tuition-item')).toHaveCount(0);await expect(page.locator('.personal-fee-summary')).toContainText('0원');
+  await page.getByRole('button',{name:'이전 달 학원비',exact:true}).click();await expect(page.locator('.personal-tuition-item')).toHaveCount(4);await expect(page.locator('.personal-fee-summary')).toContainText('100,000원');await feeFilter.getByRole('button',{name:'전체 보기',exact:true}).click();await expect(page.locator('.personal-tuition-item')).toHaveCount(6);
+  await page.goto('/today/calendar');await expect(page.getByRole('textbox',{name:/일정 검색/})).toHaveCount(0);await memberFilter.getByRole('button',{name:'가상 서하',exact:true}).click();await expect(page.locator('.calendar-cell[data-date="'+today+'"] .calendar-event')).toHaveCount(2);await page.getByLabel('달력 보기',{exact:true}).selectOption('week');await expect(page.locator('.calendar-cell[data-date="'+today+'"] .calendar-event')).toHaveCount(2);await page.screenshot({path:'test-results/ui83-calendar-member-buttons.png',animations:'disabled'});
  } finally {await childRequest.dispose();}
 });

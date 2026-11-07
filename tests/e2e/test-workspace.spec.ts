@@ -1,8 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
-test.use({ baseURL: "http://127.0.0.1:4174" });
+test.use({ baseURL: "http://127.0.0.1:4173" });
 async function isolate(page: Page) {
   const calls: string[] = [];
   await page.route("**/api/**", (route) => {
+    // The demo gate is checked against the isolated demo server; no account/data API is allowed.
+    if(new URL(route.request().url()).pathname==="/api/health")return route.continue();
     calls.push(route.request().url());
     return route.abort();
   });

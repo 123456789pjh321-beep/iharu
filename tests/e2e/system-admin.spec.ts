@@ -1,0 +1,43 @@
+import {test,expect,type APIRequestContext} from '@playwright/test';
+const origin='http://127.0.0.1:4174',password='console-fixture-password-2026';
+test.use({baseURL:origin});
+test('system administrator manages family-grouped members, sessions, roles and audit logs',async({page,request,playwright})=>{
+ test.setTimeout(150000);await page.setViewportSize({width:1440,height:1000});
+ const signup=async(client:APIRequestContext,email:string,name:string)=>{expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mails=await(await request.get('/__test__/mail')).json();await client.get(mails.find((m:{to:string})=>m.to===email).url);expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);await client.post('/api/v1/workspace/me',{headers:{Origin:origin},data:{}});};
+ const api=async(client:APIRequestContext,op:string,data:object={})=>{const r=await client.post('/api/v1/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();};
+ const email='console-root@example.test';await signup(page.request,email,'운영관리자');await request.post('/__test__/system-admin',{data:{email}});
+ const other=await playwright.request.newContext({baseURL:origin}),child=await playwright.request.newContext({baseURL:origin});
+ try{
+  await signup(other,'console-parent@example.test','운영 보호자');expect((await api(other,'admin/access')).allowed).toBe(false);
+  const invite=await api(page.request,'workspace/invite.issue',{consent:true});await api(other,'workspace/family.join',{code:invite.code});const next=await api(page.request,'workspace/invite.issue',{consent:true});await api(child,'workspace/child.signup',{loginId:'console_child',name:'가상 서준',password,code:next.code});
+  await page.goto('/admin');await expect(page.getByRole('heading',{name:'시스템 관리 최고관리자'})).toBeVisible();await expect(page.getByRole('navigation',{name:'주 메뉴'}).getByRole('link',{name:'관리',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'회원관리',exact:true}).click();await page.getByLabel('회원 검색').fill('운영관리자');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-family')).toHaveCount(1);await expect(page.locator('.admin-member-row')).toHaveCount(3);await expect(page.locator('.admin-member-row').first()).toContainText('가족 호스트');
+  await page.screenshot({path:'test-results/ui83-admin-members-desktop.png',animations:'disabled'});
+  let releaseMember!:()=>void;const memberHold=new Promise<void>(resolve=>{releaseMember=resolve;});await page.route('**/api/v1/admin/member',async route=>{await memberHold;await route.continue();},{times:1});
+  await page.getByRole('button',{name:'가상 서준 회원 상세'}).click();const dialog=page.getByRole('dialog',{name:'가상 서준',exact:true});await expect(dialog).toBeVisible();await expect(page.getByLabel('회원 이름')).toBeDisabled();releaseMember();await page.getByLabel('회원 이름').fill('가상 서준 수정');await page.getByLabel('관리 변경 사유').fill('운영 검증 이름 변경');const recheck=page.waitForResponse(r=>r.url().endsWith('/api/v1/admin/access'));await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await recheck;await expect(page.getByLabel('관리 변경 사유')).toHaveValue('운영 검증 이름 변경');await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('heading',{name:'가상 서준 수정',exact:true})).toBeVisible();
+  await page.getByLabel('관리 작업').selectOption('suspend');await page.getByLabel('관리 변경 사유').fill('운영 검증 이용 정지');await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('dialog').locator('.admin-member-badges')).toContainText('이용 정지');expect((await child.post('/api/v1/workspace/me',{headers:{Origin:origin},data:{}})).status()).toBe(401);
+  await page.getByLabel('관리 작업').selectOption('resume');await page.getByLabel('관리 변경 사유').fill('운영 검증 이용 재개');await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('dialog').locator('.admin-member-badges')).not.toContainText('이용 정지');await page.getByRole('button',{name:'회원 상세 닫기'}).click();
+  await page.getByRole('button',{name:'운영 보호자 회원 상세'}).click();await page.getByLabel('관리 작업').selectOption('role');await page.getByLabel('관리 변경 사유').fill('운영 검증 최고관리자 부여');await page.request.post('/api/account/reauthenticate',{headers:{Origin:origin},data:{password}});await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('dialog').locator('.admin-member-badges')).toContainText('최고관리자');expect((await api(other,'admin/access')).allowed).toBe(true);
+  await page.getByLabel('관리 작업').selectOption('role');await page.getByLabel('관리 변경 사유').fill('운영 검증 최고관리자 해제');await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('dialog').locator('.admin-member-badges')).not.toContainText('최고관리자');expect((await api(other,'admin/access')).allowed).toBe(false);
+  await page.getByLabel('관리 작업').selectOption('sessions');await page.getByLabel('관리 변경 사유').fill('운영 검증 세션 종료');await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('dialog').locator('.admin-member-facts')).toContainText('0개');await page.getByRole('button',{name:'회원 상세 닫기'}).click();
+  await page.setViewportSize({width:390,height:844});for(const label of ['회원 유형','회원 상태'])expect((await page.getByLabel(label).boundingBox())!.width).toBeGreaterThanOrEqual(120);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/ui83-admin-members-mobile.png',animations:'disabled'});
+  await page.getByRole('button',{name:'어둡게',exact:true}).click();
+  // Theme colors transition briefly; verify the settled text contrast before capturing.
+  await expect.poll(()=>page.locator('.admin-member-identity strong').first().evaluate(title=>{
+   const card=title.closest('.admin-panel')!;
+   const ctx=document.createElement('canvas').getContext('2d')!;
+   const luminance=(color:string)=>{ctx.fillStyle=color;ctx.fillRect(0,0,1,1);const rgb=ctx.getImageData(0,0,1,1).data;return [0.2126,0.7152,0.0722].reduce((sum,weight,i)=>{const value=rgb[i]/255;return sum+weight*(value<=0.04045?value/12.92:((value+0.055)/1.055)**2.4);},0);};
+   const foreground=luminance(getComputedStyle(title).color),background=luminance(getComputedStyle(card).backgroundColor);
+   return (Math.max(foreground,background)+0.05)/(Math.min(foreground,background)+0.05);
+  })).toBeGreaterThanOrEqual(4.5);
+  await page.screenshot({path:'test-results/ui83-admin-members-dark.png',animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();
+  await page.getByRole('button',{name:'이력관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('운영 검증');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-events')).toContainText('최고관리자 권한 변경');await expect(page.locator('.admin-events')).toContainText('전체 세션 종료');
+  await page.getByRole('button',{name:'로그관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/member.update');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-log').first()).toContainText('200');
+  const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'현재 목록 CSV'}).click();expect((await downloadPromise).suggestedFilename()).toMatch(/^iharu-logs-/);
+ }finally{await other.dispose();await child.dispose();}
+});
+test('ordinary parents cannot open the management screen or find its menu',async({page,request})=>{
+ const email='console-ordinary@example.test';await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'일반 보호자',password,callbackURL:'/login?verified=1'}});const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
+ await page.goto('/admin');await expect(page.getByRole('heading',{name:'관리 권한이 필요합니다'})).toBeVisible();expect((await page.request.post('/api/v1/admin/members',{headers:{Origin:origin},data:{}})).status()).toBe(403);
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'더보기',exact:true}).click();const menu=page.getByRole('dialog',{name:'전체 메뉴'});await expect(menu.getByRole('link',{name:'관리',exact:true})).toHaveCount(0);await expect(menu.getByRole('link',{name:'가족 관리',exact:true})).toBeVisible();
+});
