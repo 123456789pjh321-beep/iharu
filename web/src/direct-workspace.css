@@ -56,3 +56,6 @@
 
 .personal-home-feed{grid-template-columns:minmax(0,1fr)}.personal-home-feed>*{min-width:0}
 .personal-home-location .kakao-map-panel:has(.kakao-map-fallback) .kakao-map-host{display:none}.personal-home-location .kakao-map-fallback{position:static;min-height:140px;padding:14px;gap:8px}
+
+.workspace-page .minimal-filters{display:flex}.workspace-page .minimal-filters label{width:190px;max-width:100%}
+@media(max-width:760px){.workspace-page .minimal-filters label{width:100%}}

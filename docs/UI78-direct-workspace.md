@@ -53,5 +53,6 @@ TimeTree의 날짜/일정 선택 후 편집·복사·삭제 흐름, 구성원별
 | 수정 | `tests/e2e/login-landing.spec.ts` | 새 오늘 화면과 기존 로그인 분기 검사 |
 | 수정 | `tests/e2e/workspace-shell.spec.ts` | 전체 메뉴 프레임과 넘침 검사 |
 | 수정 | `.github/workflows/check.yml` | 성공한 화면도 검증 자료로 보관 |
+| 수정 | `tests/helpers/auth-server.ts` | 같은 IP를 공유하는 가상 계정의 인증 요청 간격 조절·운영 제한 유지 |
 
 삭제 파일: 없음.
