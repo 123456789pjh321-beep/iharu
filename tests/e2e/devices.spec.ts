@@ -13,7 +13,7 @@ async function setup(page:Page){
 async function sendPicture(page:Page,label:string){await page.getByRole('button',{name:label,exact:true}).click();await page.getByRole('button',{name:'보낼 말 확인하기'}).click();await page.getByRole('dialog').getByRole('button',{name:'보내기',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);}
 test('F05 two browsers complete renewed pairing, reload, lost exchange reply, pictures in both directions and revocation',async({page,browser})=>{
  test.setTimeout(90000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const {first,second}=await setup(page);
- await page.goto('/family');await page.getByRole('button',{name:'F05 첫째 동의·공유·기기 관리'}).click();
+ await page.goto('/family/legacy');await page.getByRole('button',{name:'F05 첫째 동의·공유·기기 관리'}).click();
  const ctx=await browser.newContext({viewport:{width:390,height:844}}),child=await ctx.newPage();child.on('pageerror',e=>errors.push(e.message));
  try{
   await child.goto(origin+'/device/connect');await child.getByRole('button',{name:'연결 번호 받기'}).click();const oldCode=(await child.locator('.pairing-code').innerText()).replace(/\s/g,'');

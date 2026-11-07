@@ -292,6 +292,34 @@ try{
   await family1.command(b,'consent.revoke',{childId:child,purpose:'general',expectedVersion:1});
   await assert.rejects(schedules2.command(b,'template.import',payload),{message:'NOT_FOUND'});
  });
+ await check('UI73 self-managed child erasure removes schedule, message and device data under app_runtime',async()=>{
+  const f=await family1.command<{id:string}>(b,'household.create',{name:'isolated managed household',authorityConsent:true});
+  const child=await family1.command<{id:string}>(b,'household.child.create',{familyId:f.id,nickname:'isolated managed child',birthDate:'2018-04-12',guardianConsent:true,policyVersion:'household-1'});
+  const series=await schedules1.command<{id:string}>(b,'create',{...schedulePayload,childId:child.id,key:randomUUID()});
+  const originalFK=(await admin.query("SELECT confdeltype FROM pg_constraint WHERE conrelid='app.child_consents'::regclass AND conname='child_consents_family_id_child_id_fkey'")).rows[0];assert.equal(originalFK.confdeltype,'a');
+  assert.equal((await admin.query("SELECT is_nullable FROM information_schema.columns WHERE table_schema='app' AND table_name='children' AND column_name='birth_date'")).rows[0].is_nullable,'NO');
+  const task=await daily1.command<{data:{id:string}}>(b,'task.create',{childId:child.id,title:'isolated erase task',dueAt:new Date(Date.now()+3600000).toISOString(),key:randomUUID()});
+  await daily1.command(b,'pickup.create',{childId:child.id,scheduledAt:new Date().toISOString(),assigneeMemberId:b.memberId,key:randomUUID()});
+  await admin.query("INSERT INTO app.learning_entries(family_id,child_id,learning_date,content,task_id,created_by,updated_by) VALUES($1,$2,current_date,'isolated erase learning',$3,$4,$4)",[f.id,child.id,task.data.id,b.memberId]);
+  const deviceHash=family1.digest('isolated-household-device-'+child.id);
+  await admin.query("INSERT INTO app.child_devices(family_id,child_id,label,token_hash) VALUES($1,$2,'isolated erase device',$3)",[f.id,child.id,deviceHash]);
+
+  await chat1.command(b,'send',{childId:child.id,kind:'TEXT',body:'isolated erase fixture',clientMessageId:randomUUID(),key:randomUUID()});
+  const room=(await admin.query('SELECT id FROM app.rooms WHERE child_id=$1',[child.id])).rows[0].id;
+  const otherCount=(await admin.query('SELECT count(*)::int n FROM app.children WHERE id<>$1',[child.id])).rows[0].n;
+  await assert.rejects(family2.command(a,'household.child.delete',{childId:child.id,expectedVersion:1}),{message:'NOT_FOUND'});
+  await family1.command(b,'household.child.delete',{childId:child.id,expectedVersion:1});
+  for(const table of ['app.children','app.rooms','app.schedule_series','app.occurrences','app.tasks','app.learning_entries','app.pickups','app.child_devices','app_private.household_profiles']){
+   const col=table==='app.children'?'id':'child_id';assert.equal((await admin.query(`SELECT 1 FROM ${table} WHERE ${col}=$1`,[child.id])).rowCount,0);
+  }
+  assert.equal((await admin.query('SELECT 1 FROM app.messages WHERE room_id=$1',[room])).rowCount,0);
+  assert.equal((await admin.query("SELECT 1 FROM app_private.schedule_idempotency WHERE payload::text LIKE '%'||$1||'%' OR response::text LIKE '%'||$2||'%'",[child.id,series.id])).rowCount,0);
+  assert.equal((await admin.query('SELECT 1 FROM app_private.message_jobs WHERE room_id=$1',[room])).rowCount,0);
+  await assert.rejects(family1.command({requestId:randomUUID(),deviceHash},'child.session'),{message:'DEVICE_REQUIRED'});
+  assert.equal((await admin.query("SELECT 1 FROM app_private.daily_idempotency WHERE response::text LIKE '%'||$1||'%'",[task.data.id])).rowCount,0);
+  assert.equal((await admin.query('SELECT count(*)::int n FROM app.children')).rows[0].n,otherCount);
+  await assert.rejects(query(db1,'SELECT * FROM app_private.household_profiles'),{code:'42501'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

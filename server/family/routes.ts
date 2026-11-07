@@ -2,13 +2,13 @@ import {query} from '../auth/database.js';
 import { Hono,type Context } from 'hono';
 import { getCookie,setCookie,deleteCookie } from 'hono/cookie';
 import { bodyLimit } from 'hono/body-limit';
-import { randomInt } from 'node:crypto';
+import { randomInt,randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { currentSession } from '../auth/routes.js';
 import type { AuthService } from '../auth/service.js';
 import { id,version,familyName,grantsInput,childInput } from '../../shared/family.js';
 import { FamilyService,type FamilyActor } from './service.js';
-const message:Record<string,string>={PAIRING_TARGET_CHANGED:'확인한 아이와 연결 대상이 달라요. 새 번호로 다시 확인해 주세요.',DEVICE_ALREADY_CONNECTED:'이미 연결된 기기예요. 내 하루로 이동하거나 기존 연결을 끝내 주세요.',REGISTRATION_NOT_READY:'아이 정보 삭제 기능을 준비하고 있어요. 준비가 끝나면 등록을 이어갈 수 있어요.',VERIFICATION_REUSED:'이미 다른 등록에 연결된 승인 결과예요. 기존 등록을 확인해 주세요.',PAIRING_SEPARATE_DEVICE:'보호자가 로그인하지 않은 아이 기기에서 연결을 시작해 주세요.',AUTH_REQUIRED:'먼저 로그인해 주세요.',ACCESS_NOT_READY:'보호자 계정 확인을 마친 뒤 이용할 수 있어요.',FAMILY_UNAVAILABLE:'가족 연결을 준비하고 있어요. 잠시 후 다시 확인해 주세요.',VERIFICATION_NOT_CONNECTED:'보호자 관계 확인을 준비하고 있어요. 아직 실제 아이 정보를 입력하지 마세요.',NOT_FOUND:'접근할 수 없는 정보예요.',FORBIDDEN:'이 작업을 할 수 있는 권한이 없어요.',REAUTH_REQUIRED:'계정에서 본인 인증을 다시 해 주세요.',VERSION_CONFLICT:'다른 가족이 먼저 변경했어요. 새로고침 후 다시 확인해 주세요.',INVITE_INVALID:'사용할 수 없는 초대예요. 새 초대를 요청해 주세요.',CODE_INVALID:'연결 번호를 다시 확인해 주세요.',PAIRING_INVALID:'연결 시간이 지났거나 사용할 수 없는 번호예요.',PAIRING_RESTART:'연결 시간이 지났어요. 보호자에게 연결된 기기를 확인하고 다시 시작해 달라고 해 주세요.',DEVICE_REQUIRED:'아이 기기를 다시 연결해 주세요.',DEVICE_LIMIT:'아이 한 명당 기기는 2대까지 연결할 수 있어요.',ADULT_LIMIT:'가족은 보호자 5명까지 함께할 수 있어요.',CHILD_LIMIT:'가족당 아이는 5명까지 등록할 수 있어요.',FAMILY_LIMIT:'참여할 수 있는 가족 수를 초과했어요.',DRAFT_LIMIT:'진행 중인 등록을 먼저 확인해 주세요.',VERIFICATION_REQUIRED:'보호자 관계 확인을 먼저 마쳐 주세요.',PROOF_INVALID:'등록 확인이 만료되었어요. 동의를 다시 확인해 주세요.',CONSENT_REQUIRED:'필수 동의를 확인해 주세요.',LOCATION_CONSENT_REQUIRED:'아이 위치 공유 동의가 필요해요.',CONSENTER_REQUIRED:'아이의 동의권자는 여기서 제외할 수 없어요.',OWNER_REQUIRED:'운영권을 먼저 다른 보호자에게 이전해 주세요.',INVALID_TARGET:'함께하는 가족을 다시 선택해 주세요.',ALREADY_MEMBER:'이미 함께하는 가족이에요.',INVALID_STATE:'진행 상태를 다시 확인해 주세요.',RATE_LIMITED:'잠시 후 다시 시도해 주세요.',INVALID_INPUT:'입력한 내용을 다시 확인해 주세요.'};
+const message:Record<string,string>={LEGACY_LINKED_PROFILE:'기존 검증 기록과 연결된 프로필이에요. 상세 관리에서 연결 상태를 확인해 주세요.',PAIRING_TARGET_CHANGED:'확인한 아이와 연결 대상이 달라요. 새 번호로 다시 확인해 주세요.',DEVICE_ALREADY_CONNECTED:'이미 연결된 기기예요. 내 하루로 이동하거나 기존 연결을 끝내 주세요.',REGISTRATION_NOT_READY:'아이 정보 삭제 기능을 준비하고 있어요. 준비가 끝나면 등록을 이어갈 수 있어요.',VERIFICATION_REUSED:'이미 다른 등록에 연결된 승인 결과예요. 기존 등록을 확인해 주세요.',PAIRING_SEPARATE_DEVICE:'보호자가 로그인하지 않은 아이 기기에서 연결을 시작해 주세요.',AUTH_REQUIRED:'먼저 로그인해 주세요.',ACCESS_NOT_READY:'보호자 계정 확인을 마친 뒤 이용할 수 있어요.',FAMILY_UNAVAILABLE:'가족 연결을 준비하고 있어요. 잠시 후 다시 확인해 주세요.',VERIFICATION_NOT_CONNECTED:'보호자 관계 확인을 준비하고 있어요. 아직 실제 아이 정보를 입력하지 마세요.',NOT_FOUND:'접근할 수 없는 정보예요.',FORBIDDEN:'이 작업을 할 수 있는 권한이 없어요.',REAUTH_REQUIRED:'계정에서 본인 인증을 다시 해 주세요.',VERSION_CONFLICT:'다른 가족이 먼저 변경했어요. 새로고침 후 다시 확인해 주세요.',INVITE_INVALID:'사용할 수 없는 초대예요. 새 초대를 요청해 주세요.',CODE_INVALID:'연결 번호를 다시 확인해 주세요.',PAIRING_INVALID:'연결 시간이 지났거나 사용할 수 없는 번호예요.',PAIRING_RESTART:'연결 시간이 지났어요. 보호자에게 연결된 기기를 확인하고 다시 시작해 달라고 해 주세요.',DEVICE_REQUIRED:'아이 기기를 다시 연결해 주세요.',DEVICE_LIMIT:'아이 한 명당 기기는 2대까지 연결할 수 있어요.',ADULT_LIMIT:'가족은 보호자 5명까지 함께할 수 있어요.',CHILD_LIMIT:'가족당 아이는 5명까지 등록할 수 있어요.',FAMILY_LIMIT:'참여할 수 있는 가족 수를 초과했어요.',DRAFT_LIMIT:'진행 중인 등록을 먼저 확인해 주세요.',VERIFICATION_REQUIRED:'보호자 관계 확인을 먼저 마쳐 주세요.',PROOF_INVALID:'등록 확인이 만료되었어요. 동의를 다시 확인해 주세요.',CONSENT_REQUIRED:'필수 동의를 확인해 주세요.',LOCATION_CONSENT_REQUIRED:'아이 위치 공유 동의가 필요해요.',CONSENTER_REQUIRED:'아이의 동의권자는 여기서 제외할 수 없어요.',OWNER_REQUIRED:'운영권을 먼저 다른 보호자에게 이전해 주세요.',INVALID_TARGET:'함께하는 가족을 다시 선택해 주세요.',ALREADY_MEMBER:'이미 함께하는 가족이에요.',INVALID_STATE:'진행 상태를 다시 확인해 주세요.',RATE_LIMITED:'잠시 후 다시 시도해 주세요.',INVALID_INPUT:'입력한 내용을 다시 확인해 주세요.'};
 const anonymous=new Set(['pair.start','pair.status','pair.exchange','pair.cancel','child.session','child.logout']);
 type FamilyEnv={Variables:{requestId:string;actor:FamilyActor}};
 export function familyRoutes(auth:()=>AuthService|null,runtime:()=>Promise<FamilyService|null>){
@@ -20,7 +20,7 @@ export function familyRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Famil
   if(!anonymous.has(op)){
    if(!svc)return fail('AUTH_REQUIRED',401);
    const s=await currentSession(svc,c.req.raw);if(!s)return fail('AUTH_REQUIRED',401);
-   if(s.guard.assurance!=='HIGH'||!s.user.emailVerified||(!s.guard.access_ready&&!['family.create','invite.accept'].includes(op))||s.user.email.endsWith('@identity.iharu.invalid'))return fail('ACCESS_NOT_READY',403);
+   if(s.guard.assurance!=='HIGH'||!s.user.emailVerified||(!s.guard.access_ready&&!['family.create','invite.accept','household.status','household.create','household.join'].includes(op))||s.user.email.endsWith('@identity.iharu.invalid'))return fail('ACCESS_NOT_READY',403);
    c.set('actor',{memberId:s.guard.member_id,sessionId:s.session.id,requestId:c.get('requestId')});
    if(recent){try{await svc.policy.requireRecent(s.session.id);}catch{return fail('REAUTH_REQUIRED',403);}}
   }else c.set('actor',{requestId:c.get('requestId')});
@@ -59,6 +59,15 @@ export function familyRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Famil
     const raw=db.token();const r=await db.command<{sealed:string}>(actor,op,{...input,deviceHash:db.digest(`device:${raw}`),sealed:db.seal(raw)});
     setCookie(c,deviceName,db.unseal(r.sealed),{...cookieOptions,maxAge:30*86400});return c.json({status:'CONNECTED'});
    }
+   if(op==='household.invite'){
+    const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const code='IH-'+Array.from(randomBytes(12),b=>alphabet[b&31]).join('').match(/.{4}/g)!.join('-');
+    const result=await db.command(actor,'invite.create',{...input,tokenHash:db.digest(`invite:${code}`)});
+    return c.json({...result,code,expiresAt:new Date(Date.now()+86400000).toISOString()});
+   }
+   if(op==='household.join'){
+    await svc.policy.takeLimits([{key:`household:join:${actor.memberId}`,windowMs:600000,limit:5},{key:`household:join-ip:${ip}`,windowMs:600000,limit:30}]);
+    const result=await db.command(actor,'invite.accept',{tokenHash:db.digest(`invite:${input.code}`)});return c.json(result);
+   }
    if(op==='invite.create'){
     const token=db.token();const r=await db.command(actor,op,{...input,tokenHash:db.digest(`invite:${token}`)});
     return c.json({...r,inviteUrl:`${svc!.settings.origin}/family/invite#${token}`});
@@ -93,6 +102,12 @@ export function familyRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Famil
   catch{console.error(JSON.stringify({code:'SETUP_DATABASE_UNAVAILABLE',requestId:c.get('requestId')}));}
   return c.json({accountReady:s.guard.access_ready&&emailVerified,emailVerified,emailDeliveryAvailable:!!svc?.settings.mail,databaseReady,...onboarding});
  });
+ app.get('/api/v1/household/status',endpoint('household.status',empty));
+ app.post('/api/v1/household/create',endpoint('household.create',z.object({name:familyName,authorityConsent:z.literal(true)}).strict(),()=>({}),true));
+ app.post('/api/v1/household/children',endpoint('household.child.create',z.object({familyId:id,nickname:z.string().trim().min(1).max(24),birthDate:z.iso.date(),guardianConsent:z.literal(true),policyVersion:z.literal('household-1')}).strict(),()=>({}),true));
+ app.post('/api/v1/household/invite',endpoint('household.invite',z.object({familyId:id}).strict(),()=>({}),true));
+ app.post('/api/v1/household/join',endpoint('household.join',z.object({code:z.string().trim().toUpperCase().regex(/^IH-(?:[A-HJ-NP-Z2-9]{4}-){2}[A-HJ-NP-Z2-9]{4}$/)}).strict(),()=>({}),true));
+ app.delete('/api/v1/household/children/:childId',endpoint('household.child.delete',expected,child,true));
  app.get('/api/v1/me',endpoint('me',empty));
  app.post('/api/v1/families',endpoint('family.create',z.object({name:familyName}).strict(),()=>({}),true));
  app.get('/api/v1/families/:familyId/members',endpoint('family.members',empty,family));

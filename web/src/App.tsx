@@ -1,3 +1,4 @@
+import {HouseholdPage} from './pages/Household';
 import {GuardianVerificationPage} from './pages/GuardianVerification';
 import {NotificationsPage} from './pages/Notifications';
 import { lazy, Suspense, useEffect, useState } from 'react';
@@ -72,8 +73,8 @@ export default function App(){return <BrowserRouter><Routes>
   <Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="/calendar" element={<ScheduleAlias/>}/><Route path="/repeats" element={<ScheduleAlias repeats/>}/>
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
-  <Route path="/family/verification" element={<GuardianVerificationPage/>}/><Route path="/family/verification/review" element={<GuardianVerificationPage review/>}/>
-  <Route path="/family" element={<FamilyPage/>}/><Route path="/family/invite" element={<FamilyInvitePage/>}/>
+  <Route path="/family/verification" element={<Navigate to="/start" replace/>}/><Route path="/family/verification/review" element={<Navigate to="/start" replace/>}/><Route path="/family/legacy/verification" element={<GuardianVerificationPage/>}/><Route path="/family/legacy/verification/review" element={<GuardianVerificationPage review/>}/>
+  <Route path="/family" element={<HouseholdPage/>}/><Route path="/start" element={<HouseholdPage/>}/><Route path="/family/legacy" element={<FamilyPage/>}/><Route path="/family/invite" element={<FamilyInvitePage/>}/>
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/>
   <Route path="/phone" element={<PhonePage/>}/><Route path="/account" element={<AccountPage/>}/>
   <Route path="/account/reauth" element={<ReauthPage/>}/><Route path="/account/email" element={<EmailLinkPage/>}/>

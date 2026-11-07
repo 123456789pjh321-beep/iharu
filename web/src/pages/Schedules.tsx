@@ -21,7 +21,7 @@ export function SchedulePage({mode='calendar'}:{mode?:'calendar'|'repeats'}){
  if(session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;
  if(!session.data?.authenticated)return <Navigate to="/login" replace/>;
  if(session.data.assurance==='LOW')return <Navigate to="/account" replace/>;
- return <ScheduleLayout mode={mode}><>{session.data.accessReady?<ScheduleWorkspace mode={mode}/>:<section className="card schedule-empty"><Icon name="calendar"/><h1>우리 가족 달력</h1><h2>계정 확인 후 일정을 연결해요</h2><p>로그인은 완료됐어요. 이메일과 보호자 확인 상태를 가족 관리에서 확인해 주세요.</p><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</></ScheduleLayout>;
+ return <ScheduleLayout mode={mode}><>{session.data.accessReady?<ScheduleWorkspace mode={mode}/>:<section className="card schedule-empty"><Icon name="calendar"/><h1>우리 가족 달력</h1><h2>가족 연결부터 시작해요</h2><p>로그인은 완료됐어요. 가족을 만들고 자녀 별명을 추가하면 일정을 사용할 수 있어요.</p><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</></ScheduleLayout>;
 }
 function ScheduleWorkspace({mode}:{mode:'calendar'|'repeats'}){
  const families=useApi('/api/v1/me',familiesSchema);const [search,setSearch]=useSearchParams();

@@ -41,7 +41,7 @@ function VerificationWorkspace({review}:{review:boolean}){
  {item.reason&&<p className="auth-notice"><strong>반려 사유</strong><br/>{item.reason}</p>}<p>유효 기간: {date(item.expiresAt)}</p>
  {review&&item.canReview&&(item.state==='APPROVED'?<BirthDateReview item={item} enabled={list.data!.registrationEnabled} refresh={list.retry}/>:<ReviewForm item={item} refresh={list.retry}/>)} {!review&&item.state==='APPROVED'&&<Link className="button primary" to="/family">가족 연결 계속하기</Link>} {review&&!item.canReview&&<p>다른 담당자가 심사 중이거나 본인의 신청이라 처리할 수 없어요.</p>}
  </article>)}</div>
- {!review&&list.data!.reviewer&&<Link className="button" to="/family/verification/review">담당 신청 심사</Link>}
+ {!review&&list.data!.reviewer&&<Link className="button" to="/family/legacy/verification/review">담당 신청 심사</Link>}
  </section><Link to="/account/reauth">신청·심사 전 본인 인증 다시 하기</Link>
  </>;
 }

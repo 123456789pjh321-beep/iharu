@@ -346,3 +346,28 @@ describe('P07-F05 proof-bound device and chat flow',()=>{
  });
 });
 
+
+describe('self-managed household onboarding without fabricated relationship proof',()=>{
+ it('creates a private household and parent-entered child profile without a reviewer, and grants nobody else access',async()=>{
+  const owner=await parent('managed-owner@example.test',false),other=await parent('managed-other@example.test',false);
+  expect((await owner.req('/api/v1/household/create',{name:'가상 가족',authorityConsent:false})).status).toBe(400);
+  const f=await owner.ok('/api/v1/household/create',{name:'가상 가족',authorityConsent:true});
+  await expect(family.command(owner.actor(),'household.child.create',{familyId:f.id,nickname:'invalid',policyVersion:'household-1'})).rejects.toThrow('CONSENT_REQUIRED');
+  const c=await owner.ok('/api/v1/household/children',{familyId:f.id,nickname:'가상 별명',birthDate:'2018-04-12',guardianConsent:true,policyVersion:'household-1'});
+  const state=await owner.ok('/api/v1/household/status');expect(state.families[0].children[0]).toMatchObject({id:c.id,nickname:'가상 별명',managed:true,locationConsent:false,deviceCount:0});
+  const [row]=await query<{birth_date:string}>(database.db,'SELECT birth_date::text FROM app.children WHERE id=$1',[c.id]);expect(row.birth_date).toBe('2018-04-12');
+  const [proof]=await query<{authority_basis:string}>(database.db,'SELECT authority_basis FROM app_private.household_profiles WHERE child_id=$1',[c.id]);expect(proof.authority_basis).toBe('SELF_DECLARED');
+  expect((await other.req('/api/v1/household/children',{familyId:f.id,nickname:'침입',guardianConsent:true,policyVersion:'household-1'})).status).toBeGreaterThanOrEqual(400);
+  expect((await other.ok('/api/v1/household/status')).families).toHaveLength(0);
+  const inv=await owner.ok('/api/v1/household/invite',{familyId:f.id});expect(inv.code).toMatch(/^IH-(?:[A-HJ-NP-Z2-9]{4}-){2}[A-HJ-NP-Z2-9]{4}$/);
+  const joined=await other.ok('/api/v1/household/join',{code:inv.code});
+  expect((await other.ok('/api/v1/household/status')).families).toHaveLength(0);
+  expect((await other.ok('/api/v1/household/status')).pending).toHaveLength(1);
+  await owner.ok(`/api/v1/memberships/${joined.membershipId}/approve`,{expectedVersion:1});
+  expect((await other.ok('/api/v1/household/status')).families[0].children).toHaveLength(0);
+  expect((await other.req(`/api/v1/household/children/${c.id}`,{expectedVersion:1},'DELETE')).status).toBe(404);
+  await owner.ok(`/api/v1/household/children/${c.id}`,{expectedVersion:1},'DELETE');
+  expect((await owner.ok('/api/v1/household/status')).families[0].children).toHaveLength(0);
+  const [rooms]=await query<{n:string}>(database.db,'SELECT count(*) n FROM app.rooms WHERE child_id=$1',[c.id]);expect(Number(rooms.n)).toBe(0);
+ });
+});

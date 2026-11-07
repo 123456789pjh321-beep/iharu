@@ -36,7 +36,7 @@ test('browser signup → mail proof → login → home → account → logout pe
   await page.screenshot({path:'test-results/home-390-large.png',fullPage:true});
   await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
   await page.getByRole('link',{name:'가족 달력 열기',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'계정 확인 후 일정을 연결해요'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'가족 연결부터 시작해요'})).toBeVisible();
   await page.getByRole('link',{name:'한눈에',exact:true}).click();
   await expect(page).toHaveURL(/\/today$/);
   await page.locator('main').getByRole('link',{name:'내 계정',exact:true}).click();
