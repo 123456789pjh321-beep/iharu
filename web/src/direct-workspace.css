@@ -53,3 +53,6 @@
 
 .workspace-page .workspace-page-heading>.button{font-size:.78rem;padding:8px 10px;gap:6px}.workspace-page .workspace-page-heading>.button>.icon{display:block}
 @media(min-width:761px) and (max-width:1100px){.workspace-page .workspace-rail{top:70px}}
+
+.personal-home-feed{grid-template-columns:minmax(0,1fr)}.personal-home-feed>*{min-width:0}
+.personal-home-location .kakao-map-panel:has(.kakao-map-fallback) .kakao-map-host{display:none}.personal-home-location .kakao-map-fallback{position:static;min-height:140px;padding:14px;gap:8px}
