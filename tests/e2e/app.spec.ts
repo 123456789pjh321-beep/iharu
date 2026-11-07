@@ -60,7 +60,7 @@ test('mobile navigation and content order remain usable without horizontal overf
   expect(ys.length).toBe(4); expect(ys).toEqual([...ys].sort((a,b)=>a-b));
   const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
   await nav.getByRole('button',{name:'더 보기',exact:true}).click();
-  await page.getByRole('dialog',{name:'전체 메뉴',exact:true}).getByRole('link',{name:'아이 위치',exact:true}).click();
+  await page.getByRole('dialog',{name:'전체 메뉴',exact:true}).getByRole('link',{name:'위치',exact:true}).click();
   await expect(page.getByRole('heading',{name:'공유한 위치를 한눈에'})).toBeVisible();
 });
 

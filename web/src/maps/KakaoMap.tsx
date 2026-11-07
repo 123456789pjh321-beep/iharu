@@ -79,7 +79,7 @@ export function loadKakaoMaps(key: string): Promise<Maps> {
   return pending;
 }
 /** Example coordinates only. No geolocation permission or child data is sent to Kakao. */
-export function KakaoMap({ point = "home" }: { point?: Point }) {
+export function KakaoMap({ point = "home", showExamples = true }: { point?: Point; showExamples?:boolean }) {
   const host = useRef<HTMLDivElement>(null),
     map = useRef<MapInstance | null>(null),
     sdk = useRef<Maps | null>(null);
@@ -102,7 +102,7 @@ export function KakaoMap({ point = "home" }: { point?: Point }) {
           level: 4,
         });
         map.current = instance;
-        markers = Object.values(examplePoints).map(
+        markers = (showExamples?Object.values(examplePoints):[]).map(
           (p) =>
             new maps.Marker({
               position: new maps.LatLng(p.lat, p.lng),
@@ -133,7 +133,7 @@ export function KakaoMap({ point = "home" }: { point?: Point }) {
       sdk.current = null;
       host.current?.replaceChildren();
     };
-  }, [attempt]);
+  }, [attempt,showExamples]);
   useEffect(() => {
     if (ready && map.current && sdk.current) {
       const p = examplePoints[point];
@@ -141,11 +141,11 @@ export function KakaoMap({ point = "home" }: { point?: Point }) {
     }
   }, [point, ready]);
   return (
-    <section className="kakao-map-panel" aria-label="카카오 예시 지도">
+    <section className="kakao-map-panel" aria-label={showExamples?"카카오 예시 지도":"카카오 지도"}>
       <div
         className="kakao-map-host"
         ref={host}
-        aria-label="제주 예시 지역 지도"
+        aria-label={showExamples?"제주 예시 지역 지도":"위치 지도"}
       />
       {!ready && (
         <div className="kakao-map-fallback">
@@ -157,8 +157,8 @@ export function KakaoMap({ point = "home" }: { point?: Point }) {
         </div>
       )}
       <div className="kakao-map-caption">
-        <strong>{ready ? examplePoints[point].label : "지도 연결 확인"}</strong>
-        <span>제주 예시 좌표 · 실제 아이 위치가 아니에요</span>
+        <strong>{showExamples?(ready ? examplePoints[point].label : "지도 연결 확인"):"공유된 위치 없음"}</strong>
+        <span>{showExamples?"제주 예시 좌표 · 실제 아이 위치가 아니에요":"현재 실제 위치는 수집·표시하지 않아요"}</span>
       </div>
     </section>
   );

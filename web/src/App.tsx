@@ -70,7 +70,7 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/test/*" element={<Suspense fallback={<Loading label="테스트 작업실을 준비하고 있어요"/>}><TestWorkspace/></Suspense>}/>
   <Route path="/notifications" element={<NotificationsPage/>}/>
   <Route path="/chat" element={<ChatRoute/>}/><Route path="/child/chat" element={<ChatRoute childMode/>}/>
-  <Route path="/today" element={<WorkspaceEntry mode="home"/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
+  <Route path="/location" element={<WorkspaceEntry mode="location"/>}/><Route path="/today" element={<WorkspaceEntry mode="home"/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
   <Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="/calendar" element={<ScheduleAlias/>}/><Route path="/repeats" element={<ScheduleAlias repeats/>}/>
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
