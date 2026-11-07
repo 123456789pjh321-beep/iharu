@@ -59,3 +59,39 @@
 
 .workspace-page .minimal-filters{display:flex}.workspace-page .minimal-filters label{width:190px;max-width:100%}
 @media(max-width:760px){.workspace-page .minimal-filters label{width:100%}}
+
+/* UI79: related controls stay together; separate tasks get vertical breathing room.
+   The outer canvas remains edge-to-edge. Spacing follows an 8px scale. */
+.workspace-page{--task-gap:24px;--task-inset:24px;--control-gap:16px}
+.workspace-page .personal-home-feed{gap:var(--task-gap);background:var(--surface-sub)}
+.workspace-page .personal-home-feed>.account-card,
+.workspace-page .auth-panel>.account-card,
+.workspace-page .personal-family-layout>.account-card,
+.workspace-page .account-grid>.account-card{padding-block:var(--task-inset);background:var(--surface)}
+.workspace-page .personal-family-layout,.workspace-page .account-grid{row-gap:var(--task-gap);background:var(--surface-sub)}
+.workspace-page .personal-family-layout+.personal-roster{margin-top:var(--task-gap)}
+.workspace-page .auth-panel>.workspace-page-heading,
+.workspace-page .auth-panel>.account-heading,
+.workspace-page .auth-panel>.family-heading{padding-block:16px}
+.workspace-page .auth-panel>.minimal-filters{padding-block:16px}
+.workspace-page .account-overview{padding-block:20px;margin-bottom:var(--task-gap)}
+.workspace-page .account-card>.card-title{margin-bottom:var(--control-gap)}
+.workspace-page .account-card>.card-title h2{margin-block:0}
+.workspace-page .personal-home-location>.kakao-map-panel{margin-top:0}
+.workspace-page .personal-item{padding-block:20px}
+.workspace-page .personal-fee-summary{padding-bottom:16px;margin-bottom:16px}
+.workspace-page .personal-empty{padding-block:24px;gap:12px;min-height:96px}
+.workspace-page .direct-editor .auth-form fieldset{gap:16px}
+.workspace-page .direct-calendar .calendar-toolbar{padding-block:16px}
+.workspace-page .calendar-tools{padding-top:4px;padding-bottom:16px}
+.workspace-page .calendar-weekdays{padding-top:8px;padding-bottom:12px}
+.workspace-page .group-chat .chat-room-header{padding-block:16px}
+.workspace-page .group-chat-composer{padding-block:12px}
+.workspace-page .group-chat .chat-message{margin-block:14px}
+@media(max-width:1180px){.workspace-page .personal-family-layout>.account-card+.account-card{border-left:0}}
+@media(max-width:760px){.workspace-page{--task-gap:16px;--task-inset:20px}}
+
+/* Only the date grid moves. Its header and controls stay still while turning. */
+.calendar-viewport{position:relative;display:flex;flex:1;min-height:min-content;overflow:hidden;isolation:isolate}
+.calendar-viewport>.calendar-grid{width:100%;min-width:0;flex:1}
+.calendar-motion-snapshot{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border-block:1px solid var(--line);pointer-events:none;user-select:none}
