@@ -13,7 +13,7 @@ import {ScheduleTemplateDialog} from '../components/ScheduleTemplateDialog';
 import {scheduleRequest,useScheduleAction} from '../schedules';
 
 function ScheduleLayout({children,mode}:{children:ReactNode;mode:'calendar'|'repeats'}){
- return <AuthLayout wide><WorkspaceTabs group="day"/><div aria-label={mode==='calendar'?'가족 달력 작업실':'반복 일정 작업실'}>{children}</div></AuthLayout>;
+ return <AuthLayout wide><WorkspaceTabs group="day"/><nav className="personal-schedule-tabs" aria-label="일정 종류"><Link className="button" to="/today/calendar?legacy=1">월간 일정</Link><Link className="button" to="/today/repeats?legacy=1">반복 일정</Link></nav><div aria-label={mode==='calendar'?'가족 달력 작업실':'반복 일정 작업실'}>{children}</div></AuthLayout>;
 }
 export function SchedulePage({mode='calendar'}:{mode?:'calendar'|'repeats'}){
  const session=useApi('/api/account/session',sessionSchema);

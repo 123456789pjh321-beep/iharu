@@ -47,17 +47,17 @@ const pages: Record<
 > = {
   today: {
     title: "가족의 하루를 자유롭게 테스트해요",
-    description: "일정부터 등하원, 가족 대화까지 직접 추가하고 확인하세요.",
+    description: "일정부터 등하원, 대화까지 직접 추가하고 확인하세요.",
     icon: "home",
   },
   calendar: {
-    title: "우리 가족 달력",
+    title: "우리 달력",
     description: "날짜를 선택하고 일정을 추가·수정·삭제해 보세요.",
     icon: "calendar",
   },
   daily: {
     title: "오늘의 등하원",
-    description: "도착과 출발을 기록하면 하루 기록과 알림에 함께 남아요.",
+    description: "도착과 출발을 기록하면 메모과 알림에 함께 남아요.",
     icon: "bag",
   },
   repeats: {
@@ -66,7 +66,7 @@ const pages: Record<
     icon: "repeat",
   },
   chat: {
-    title: "가족 대화",
+    title: "대화",
     description: "보호자와 아이 역할을 바꿔 글과 그림 메시지를 보내 보세요.",
     icon: "chat",
   },
@@ -81,7 +81,7 @@ const pages: Record<
     icon: "device",
   },
   location: {
-    title: "아이 위치",
+    title: "위치",
     description: "카카오 지도에서 예시 위치를 보내는 흐름을 확인해요.",
     icon: "pin",
   },
@@ -92,7 +92,7 @@ const pages: Record<
     icon: "wallet",
   },
   records: {
-    title: "하루 기록",
+    title: "메모",
     description: "테스트 작업실에서 남긴 활동을 날짜와 유형별로 확인해요.",
     icon: "book",
   },
@@ -897,7 +897,7 @@ export default function TestWorkspace() {
                   },
                   {
                     to: "chat",
-                    label: "가족 대화",
+                    label: "대화",
                     value: `${state.messages.length}개`,
                     note: "글과 그림으로 이어지는 소식",
                     icon: "chat" as const,
@@ -1389,7 +1389,7 @@ export default function TestWorkspace() {
                             {k === "daily"
                               ? "일정·등하원"
                               : k === "chat"
-                                ? "가족 대화"
+                                ? "대화"
                                 : "위치 공유"}
                           </label>
                         ))}

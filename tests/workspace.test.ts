@@ -46,3 +46,14 @@ it('rejects missing, expired or reused parent codes and preserves strict role/se
  expect((await b.req(api+'items.create',payload('외부'),{Origin:'https://attacker.example'})).status).toBe(403);
  for(const name of ['workspace_profiles','workspace_links','workspace_items','workspace_sessions','workspace_invites'])await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,`SELECT * FROM app_private.${name}`);})).rejects.toMatchObject({code:'42501'});
 });
+
+it('assignee must be self or an active family member and never becomes the author',async()=>{
+ const a=await parent('assignee-a'),b=await parent('assignee-b'),outsider=await parent('assignee-x');const am=await a.ok('me'),bm=await b.ok('me'),xm=await outsider.ok('me');
+ const input=payload('대상 지정');await a.ok('items.create',{...input,data:{...input.data,assigneeId:am.id}});
+ expect((await a.req(api+'items.create',{...input,data:{...input.data,assigneeId:bm.id}})).status).toBe(400);
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ for(const kind of ['EVENT','REPEAT','FEE','NOTE']){const value=payload('가족 대상 '+kind,kind);const item=await a.ok('items.create',{...value,data:{...value.data,assigneeId:bm.id}});const read=await b.ok('items.get',{id:item.id});expect(read.data.assigneeId).toBe(bm.id);expect(read.ownerId).toBe(am.id);expect(read.mine).toBe(false);expect((await b.req(api+'items.delete',{id:item.id,version:1})).status).toBe(403);}
+ expect((await a.req(api+'items.create',{...input,data:{...input.data,assigneeId:xm.id}})).status).toBe(400);
+ const me=await a.ok('me');await a.ok('family.remove',{familyId:me.family.id,profileId:bm.id,version:me.family.members.find((m:{id:string})=>m.id===bm.id).version});expect((await a.req(api+'items.create',{...input,data:{...input.data,assigneeId:bm.id}})).status).toBe(400);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v76('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
+});

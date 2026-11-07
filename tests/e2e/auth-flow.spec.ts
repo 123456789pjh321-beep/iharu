@@ -35,9 +35,9 @@ test('browser signup → mail proof → login → home → account → logout pe
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/home-390-large.png',fullPage:true});
   await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
-  await page.locator('.personal-module').filter({hasText:'월간 일정'}).click();
+  await page.getByRole('navigation',{name:'오늘 화면 보기'}).getByRole('link',{name:'달력',exact:true}).click();
   await expect(page.locator('.personal-calendar')).toBeVisible();
-  await page.getByRole('link',{name:'한눈에',exact:true}).click();
+  await page.getByRole('navigation',{name:'오늘 화면 보기'}).getByRole('link',{name:'오늘',exact:true}).click();
   await expect(page).toHaveURL(/\/today$/);
   await page.goto('/account');
   await expect(page.getByRole('heading',{name:'로그인 방법과 기기'})).toBeVisible();
