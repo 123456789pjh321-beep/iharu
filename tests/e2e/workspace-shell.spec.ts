@@ -23,8 +23,9 @@ async function login(page: Page, request: APIRequestContext, email: string) {
 }
 for(const width of [320,390,768,1024,1440])test(`workspace shell remains visible on all menus at ${width}px`,async({page,request})=>{
  await page.setViewportSize({width,height:900});await login(page,request,`shell-hotfix-${width}@example.test`);
- for(const path of ['/today','/today/calendar','/today/repeats','/calendar','/tuition','/location','/chat','/records','/notifications','/family','/account','/account/reauth','/account/email','/phone?link=1','/family/invite','/device/connect']){
+ for(const path of ['/today','/today/calendar','/today/repeats','/calendar','/tuition','/location','/chat','/records','/notifications','/family','/account','/account/reauth','/account/email','/phone?link=1','/family/invite','/device/connect?legacy=1']){
   await page.goto(path);await expect(page.locator('.workspace-brand')).toBeVisible();await expect(page.locator(width>760?'.workspace-rail':'.workspace-mobile-nav')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight)).toBe(true);
  }
 });
+
