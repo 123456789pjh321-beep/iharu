@@ -1,0 +1,13 @@
+import {z} from 'zod';
+export const workspaceKind=z.enum(['EVENT','REPEAT','FEE','NOTE','CHAT']);
+export const workspaceData=z.object({title:z.string().trim().min(1).max(80),date:z.iso.date(),untilDate:z.iso.date().optional(),weekdays:z.array(z.number().int().min(0).max(6)).max(7).default([]),startTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),endTime:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),place:z.string().trim().max(120).default(''),note:z.string().trim().max(5000).default(''),amount:z.number().int().min(0).max(1000000000).optional(),paid:z.boolean().default(false)}).strict();
+export const workspaceItemInput=z.object({kind:workspaceKind,data:workspaceData}).strict().superRefine((v,c)=>{
+ if(['EVENT','REPEAT'].includes(v.kind)&&(!v.data.startTime||!v.data.endTime||v.data.endTime<=v.data.startTime))c.addIssue({code:'custom',message:'종료 시간을 확인해 주세요.'});
+ if(v.kind==='REPEAT'&&(!v.data.untilDate||v.data.untilDate<v.data.date||Date.parse(v.data.untilDate)-Date.parse(v.data.date)>366*86400000||!v.data.weekdays.length||new Set(v.data.weekdays).size!==v.data.weekdays.length))c.addIssue({code:'custom',message:'반복 기간과 요일을 확인해 주세요.'});
+ if(v.kind==='FEE'&&v.data.amount===undefined)c.addIssue({code:'custom',message:'금액을 입력해 주세요.'});
+});
+export type WorkspaceData=z.infer<typeof workspaceData>;
+export type WorkspaceKind=z.infer<typeof workspaceKind>;
+export type WorkspaceItem={id:string;kind:WorkspaceKind;data:WorkspaceData;ownerId:string;ownerName:string;mine:boolean;version:number};
+export type WorkspaceMember={id:string;name:string;kind:'PARENT'|'CHILD';host:boolean;version:number};
+export type WorkspaceMe={id:string;name:string;role:'PARENT'|'CHILD';loginId:string|null;family:null|{id:string;name:string;hostId:string;isHost:boolean;members:WorkspaceMember[]}};

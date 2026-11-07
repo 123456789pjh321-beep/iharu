@@ -15,8 +15,8 @@ async function sampleFamily(page:Page){
 }
 test('P06 picture conversation saves once after a lost response, preserves delete and child scope',async({page,browser})=>{
  test.setTimeout(90000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const {post,seojun,seoha}=await sampleFamily(page);
- await page.setViewportSize({width:1440,height:1000});await page.goto('/today');await expect(page.getByRole('button',{name:'서준',exact:true})).toBeVisible();await page.getByRole('button',{name:'서하',exact:true}).click();await expect(page.getByText('오늘은 등록된 일정이 없어요.')).toBeVisible();
- await page.goto('/chat');await expect(page.getByRole('heading',{name:'서준 가족방',exact:true})).toBeVisible();await expect(page.getByLabel('가족에게 쓸 말')).toHaveCount(0);
+ await page.setViewportSize({width:1440,height:1000});await page.goto('/today?legacy=1');await expect(page.getByRole('button',{name:'서준',exact:true})).toBeVisible();await page.getByRole('button',{name:'서하',exact:true}).click();await expect(page.getByText('오늘은 등록된 일정이 없어요.')).toBeVisible();
+ await page.goto('/chat?legacy=1');await expect(page.getByRole('heading',{name:'서준 가족방',exact:true})).toBeVisible();await expect(page.getByLabel('가족에게 쓸 말')).toHaveCount(0);
  for(const group of ['일상','이동','기분','부탁','마음','답장']){await page.getByRole('button',{name:group,exact:true}).click();await expect.poll(()=>page.locator('.chat-sticker-grid img').evaluateAll(imgs=>imgs.every(i=>(i as HTMLImageElement).complete&&(i as HTMLImageElement).naturalWidth>0))).toBe(true);}await page.getByRole('button',{name:'일상',exact:true}).click();
  await page.getByRole('button',{name:'도착했어요',exact:true}).click();expect((await(await page.request.get(`/api/v1/children/${seojun}/messages`)).json()).data.items).toHaveLength(0);
  await page.getByRole('button',{name:'보낼 말 확인하기'}).click();let lost=true;
@@ -24,7 +24,7 @@ test('P06 picture conversation saves once after a lost response, preserves delet
  await page.getByRole('dialog').getByRole('button',{name:'보내기',exact:true}).click();await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();await page.getByRole('dialog').getByRole('button',{name:'다시 보내기',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.chat-bubble')).toHaveCount(1);
  expect((await(await page.request.get(`/api/v1/children/${seojun}/messages`)).json()).data.items).toHaveLength(1);await page.screenshot({path:'test-results/p06-parent-1440.png',fullPage:true});
  const ctx=await browser.newContext({viewport:{width:390,height:844}}),child=await ctx.newPage();const pair=await(await ctx.request.post(origin+'/api/v1/device-pairings',{headers:{Origin:origin},data:{label:'서준 테스트 기기'}})).json();await post(`/api/v1/device-pairings/${pair.id}/approve`,{childId:seojun,expectedVersion:1});await ctx.request.post(origin+`/api/v1/device-pairings/${pair.id}/exchange`,{headers:{Origin:origin},data:{exchangeKey:crypto.randomUUID()}});
- await child.goto(origin+'/child/chat');await expect(child.locator('.chat-bubble')).toHaveCount(1);await expect.poll(async()=>{await page.getByRole('button',{name:'대화 새로고침'}).click();return page.getByText('가족이 읽었어요',{exact:true}).count();}).toBe(1);
+ await child.goto(origin+'/child/chat?legacy=1&legacy=1');await expect(child.locator('.chat-bubble')).toHaveCount(1);await expect.poll(async()=>{await page.getByRole('button',{name:'대화 새로고침'}).click();return page.getByText('가족이 읽었어요',{exact:true}).count();}).toBe(1);
  await child.getByRole('button',{name:'부탁',exact:true}).click();await child.getByRole('button',{name:'도와주세요',exact:true}).click();await child.getByRole('button',{name:'보낼 말 확인하기'}).click();await expect(child.getByText('답이 바로 오지 않을 수 있어요. 급하면 가까운 어른에게도 말해요.')).toBeVisible();await child.getByRole('dialog').getByRole('button',{name:'보내기',exact:true}).click();await expect(child.getByRole('dialog')).toHaveCount(0);
  await child.screenshot({path:'test-results/p06-child-390.png',fullPage:true});for(const width of [320,390,768]){await child.setViewportSize({width,height:900});await expect.poll(()=>child.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}await child.getByRole('button',{name:'큰 글씨'}).click();await expect.poll(()=>child.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.getByRole('button',{name:'대화 새로고침'}).click();await page.getByRole('button',{name:'메시지 삭제: 도착했어요'}).click();await page.getByRole('dialog').getByRole('button',{name:'삭제하기'}).click();await child.getByRole('button',{name:'대화 새로고침'}).click();await expect(child.getByText('삭제된 메시지예요',{exact:true})).toBeVisible();
@@ -33,7 +33,7 @@ test('P06 picture conversation saves once after a lost response, preserves delet
 });
 test('P06 Enter only adds a newline; schedule fixture repeats without filling Seoha or unknown tuition',async({page})=>{
  test.setTimeout(90000);const {seojun,seoha,familyId}=await sampleFamily(page);const day=koreaToday();const response=await page.request.get(`/api/v1/families/${familyId}/calendar?from=${day}&to=${addDays(day,13)}&limit=50`);const data=await response.json();if(data.nextCursor){const more=await(await page.request.get(`/api/v1/families/${familyId}/calendar?from=${day}&to=${addDays(day,13)}&limit=50&cursor=${data.nextCursor}`)).json();data.occurrences.push(...more.occurrences);}expect(data.occurrences.filter((o:{childId:string})=>o.childId===seoha)).toHaveLength(0);expect(data.occurrences.filter((o:{childId:string;title:string})=>o.childId===seojun&&o.title==='로고스 영어')).toHaveLength(6);
- await page.goto('/chat');await page.getByRole('button',{name:'직접 글 쓰기'}).click();const input=page.getByLabel('가족에게 쓸 말');await input.fill('첫째 줄');await input.press('Enter');await input.pressSequentially('둘째 줄');await expect(input).toHaveValue('첫째 줄\n둘째 줄');expect((await(await page.request.get(`/api/v1/children/${seojun}/messages`)).json()).data.items).toHaveLength(0);
+ await page.goto('/chat?legacy=1');await page.getByRole('button',{name:'직접 글 쓰기'}).click();const input=page.getByLabel('가족에게 쓸 말');await input.fill('첫째 줄');await input.press('Enter');await input.pressSequentially('둘째 줄');await expect(input).toHaveValue('첫째 줄\n둘째 줄');expect((await(await page.request.get(`/api/v1/children/${seojun}/messages`)).json()).data.items).toHaveLength(0);
 });
 
 test('P07 another device sees new messages, read state and deletions without refresh',async({page,browser})=>{
@@ -46,7 +46,7 @@ test('P07 another device sees new messages, read state and deletions without ref
   const resolved=await post('/api/v1/device-pairings/resolve',{code:pair.code});
   await post(`/api/v1/device-pairings/${resolved.id}/approve`,{childId:seojun,expectedVersion:1});
   const exchange=await childContext.request.post(origin+`/api/v1/device-pairings/${pair.id}/exchange`,{headers:{Origin:origin},data:{exchangeKey:crypto.randomUUID()}});expect(exchange.ok()).toBe(true);
-  await page.goto('/chat');await childPage.goto(origin+'/child/chat');
+  await page.goto('/chat?legacy=1');await childPage.goto(origin+'/child/chat?legacy=1&legacy=1');
   await expect(childPage.getByRole('heading',{name:'서준 가족방'})).toBeVisible();
   await childPage.getByRole('button',{name:'도착했어요',exact:true}).click();await childPage.getByRole('button',{name:'보낼 말 확인하기',exact:true}).click();await childPage.getByRole('dialog').getByRole('button',{name:'보내기',exact:true}).click();
   await expect(page.locator('.chat-bubble').getByText('도착했어요',{exact:true})).toBeVisible({timeout:22000});
@@ -76,12 +76,12 @@ test('P07-F08 private socket signals update immediately, recover an offline dele
   });
  });
  function signal(){const s=sockets.at(-1)!;const payload={type:'broadcast',event:'change',payload:{message_event_id:crypto.randomUUID(),version:1}};s.send(JSON.stringify(s.array?[s.joinRef,null,topic,'broadcast',payload]:{join_ref:s.joinRef,ref:null,topic,event:'broadcast',payload}));}
- await page.goto(`/chat?child=${seojun}`);await expect(page.getByText('새 소식이 바로 반영되고 있어요.',{exact:true})).toBeVisible();
+ await page.goto(`/chat?legacy=1&child=${seojun}`);await expect(page.getByText('새 소식이 바로 반영되고 있어요.',{exact:true})).toBeVisible();
  const sent=(await post(`/api/v1/children/${seojun}/messages`,{kind:'TEXT',body:'F08 즉시 동기화',clientMessageId:crypto.randomUUID()})).data;
  signal();await expect(page.locator('.chat-bubble').getByText('F08 즉시 동기화',{exact:true})).toBeVisible({timeout:5000});
- await page.goto('/today');
+ await page.goto('/today?legacy=1');
  const removed=await page.request.delete(`/api/v1/messages/${sent.id}`,{headers:{Origin:origin,'Idempotency-Key':crypto.randomUUID()},data:{expectedVersion:1}});expect(removed.ok()).toBe(true);
- await page.goto(`/chat?child=${seojun}`);await expect(page.getByText('삭제된 메시지예요',{exact:true})).toBeVisible();await expect(page.getByText('F08 즉시 동기화',{exact:true})).toHaveCount(0);
+ await page.goto(`/chat?legacy=1&child=${seojun}`);await expect(page.getByText('삭제된 메시지예요',{exact:true})).toBeVisible();await expect(page.getByText('F08 즉시 동기화',{exact:true})).toHaveCount(0);
  await page.route(`**/api/v1/children/${seojun}/message-changes*`,route=>route.fulfill({status:404,json:{error:{code:'NOT_FOUND',message:'공유 범위를 확인해 주세요.'}}}));
  await expect.poll(()=>sockets.at(-1)?.joined).toBe(true);signal();await expect(page.getByRole('link',{name:'가족 연결 확인',exact:true})).toBeVisible({timeout:5000});await expect(page.locator('.chat-bubble')).toHaveCount(0);
 });

@@ -16,7 +16,7 @@ async function fixture(page:Page){
 test('P04 weekly calendar → manual decision → single edit → future preview → closure, accessible layouts',async({page})=>{
  test.setTimeout(90000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const {familyId}=await fixture(page),date=addDays(koreaToday(),1),dow=new Date(date+'T00:00:00Z').getUTCDay(),dayLabel=['일','월','화','수','목','금','토'][dow];
- await page.setViewportSize({width:1440,height:1000});await page.goto(`/today/calendar?family=${familyId}&day=${date}`);
+ await page.setViewportSize({width:1440,height:1000});await page.goto(`/today/calendar?legacy=1&family=${familyId}&day=${date}`);
  await expect(page.getByRole('heading',{name:'우리 가족 달력',exact:true})).toBeVisible();await expect(page.getByText('정보 미수집',{exact:false}).first()).toBeVisible();
  await page.getByRole('button',{name:'이날 일정 추가',exact:true}).click();const dialog=page.getByRole('dialog');
  await dialog.getByLabel('일정 이름',{exact:true}).fill('해봄 영어 학원');await dialog.getByLabel('장소',{exact:true}).fill('우리 동네 교실');
@@ -45,7 +45,7 @@ test('F06 selected timetable preview → import → closure/makeup → sign-in �
  const draft=await post(`/api/v1/families/${familyId}/child-registration-drafts`,{});await post('/__test__/verify-draft',{draftId:draft.id});
  const proof=await post(`/api/v1/child-registration-drafts/${draft.id}/consent-proofs`,{general:true,location:false,policyVersion:'6.1'});
  const other=await post(`/api/v1/families/${familyId}/children`,{draftId:draft.id,proofId:proof.proofId,nickname:'가상 서하',birthDate:'2018-03-02'});
- await page.goto(`/today/repeats?family=${familyId}&child=${childId}`);const dialog=page.getByRole('dialog');
+ await page.goto(`/today/repeats?legacy=1&family=${familyId}&child=${childId}`);const dialog=page.getByRole('dialog');
  async function preview(){
   await page.getByRole('button',{name:'서준 시간표 가져오기',exact:true}).click();
   await dialog.getByLabel('적용 시작일').fill(from);await dialog.getByLabel('적용 종료일').fill(to);
@@ -59,9 +59,9 @@ test('F06 selected timetable preview → import → closure/makeup → sign-in �
  await expect(page.locator('.repeat-plan')).toHaveCount(2);
  const plan=page.locator('.repeat-plan').filter({has:page.getByRole('heading',{name:'로고스 영어',exact:true})});
  await plan.getByRole('button',{name:'휴강·방학 등록'}).click();await dialog.getByLabel('휴무 시작').fill(from);await dialog.getByLabel('휴무 종료').fill(from);await dialog.getByLabel('안내 내용').fill('가상 휴강');await dialog.getByRole('button',{name:'휴무 기간 저장'}).click();await expect(dialog).not.toBeVisible();
- await page.goto(`/today/calendar?family=${familyId}&child=${childId}&day=${from}`);await page.getByRole('button',{name:'보강 등록',exact:true}).click();await dialog.getByLabel('시작 날짜').fill(addDays(from,1));await dialog.getByRole('button',{name:'일정 등록',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.locator('.schedule-occurrence .badge')).toHaveText('휴강');
+ await page.goto(`/today/calendar?legacy=1&family=${familyId}&child=${childId}&day=${from}`);await page.getByRole('button',{name:'보강 등록',exact:true}).click();await dialog.getByLabel('시작 날짜').fill(addDays(from,1));await dialog.getByRole('button',{name:'일정 등록',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.locator('.schedule-occurrence .badge')).toHaveText('휴강');
  await post('/api/auth/sign-out',{});await post('/api/auth/sign-in/email',{email,password});
- await page.goto(`/today/repeats?family=${familyId}&child=${childId}`);await expect(page.locator('.repeat-plan')).toHaveCount(3);await expect(page.getByRole('heading',{name:'로고스 영어 보강',exact:true})).toBeVisible();await expect(page.getByText('휴강 · 가상 휴강',{exact:true})).toBeVisible();
+ await page.goto(`/today/repeats?legacy=1&family=${familyId}&child=${childId}`);await expect(page.locator('.repeat-plan')).toHaveCount(3);await expect(page.getByRole('heading',{name:'로고스 영어 보강',exact:true})).toBeVisible();await expect(page.getByText('휴강 · 가상 휴강',{exact:true})).toBeVisible();
  await preview();await expect(dialog.getByText('이미 등록됨 · 기존 변경 유지',{exact:true})).toHaveCount(2);
  await dialog.getByRole('checkbox',{name:/실제 적용 기간/}).check();await dialog.getByRole('button',{name:'확인한 시간표 등록'}).click();await expect(dialog).not.toBeVisible();await expect(page.locator('.repeat-plan')).toHaveCount(3);await expect(page.getByText('새 일정 0개를 등록했어요. 이미 등록된 2개는 그대로 유지했어요.')).toBeVisible();
  await page.getByLabel('아이',{exact:true}).selectOption(other.id);await expect(page.locator('.repeat-plan')).toHaveCount(0);await expect(page.getByText('등록된 일정이 없어요',{exact:true})).toBeVisible();expect(errors).toEqual([]);
