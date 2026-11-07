@@ -1,0 +1,64 @@
+/* UI 7.4 — one adaptive family workspace. Loaded after the legacy feature styles. */
+:root{--canvas:#f4f7fb;--surface-sub:#f7f9fc;--line:#dfe7f0;--muted:#5d7189;--shadow:0 2px 8px #19395705;--shadow-raised:0 10px 32px #1939570d}
+html[data-theme=dark]{--canvas:#0c1828;--surface-sub:#192d44;--line:#2a4059;--muted:#b1c0d3;--shadow:0 2px 8px #0002;--shadow-raised:0 10px 32px #0003}
+body{font-size:.9375rem;line-height:1.65;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit}button,a,summary{-webkit-tap-highlight-color:transparent}
+:where(button,a,input,select,textarea,summary):focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.topbar,.auth-header{height:auto;min-height:76px;padding-block:12px;gap:18px}
+.top-actions,.auth-display-actions{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+.workspace-header-context,.auth-header-caption{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions .font-toggle,.auth-display-actions .font-toggle,.display-settings>summary,.icon-button,.profile-button{min-width:44px;min-height:44px}
+.workspace-brand{min-height:44px}.workspace-brand small{letter-spacing:.14em;font-size:9px}
+.main,.auth-main,.test-main{scroll-padding-top:20px}
+.workspace-rail{top:var(--workspace-top,94px);max-height:calc(100dvh - var(--workspace-top,94px) - 16px);border-radius:18px;padding:8px;box-shadow:var(--shadow-raised)}
+.workspace-rail nav{gap:4px}.workspace-rail nav a{min-height:68px;gap:6px;font-size:.75rem;border-radius:12px}
+.workspace-rail nav a.active{border-color:color-mix(in srgb,var(--primary) 22%,var(--line));box-shadow:0 2px 5px #076dce08}
+.rail-label{letter-spacing:.12em}.rail-footer{font-size:.625rem}.rail-active-dot{top:calc(50% - 10px)}
+.workspace-page-heading{padding-block:8px;margin-bottom:22px}.workspace-page-heading h1,.page-heading h1{font-size:clamp(1.55rem,2.2vw,2rem);line-height:1.35;letter-spacing:-.04em}
+.workspace-page-heading p,.page-subtitle{font-size:.9rem;line-height:1.7}
+.workspace-module{letter-spacing:.12em;font-size:.68rem}
+.card,.workspace-metric,.auth-panel,.test-panel{border-radius:16px;border-color:var(--line);box-shadow:var(--shadow)}
+.card h2,.section-heading h2{font-weight:720}.section-description,.empty-state p{line-height:1.8}
+.button{min-height:44px;border-radius:11px;font-weight:650;transition:background-color .18s,border-color .18s,box-shadow .18s}
+.button.primary:hover{box-shadow:0 5px 16px #0674d320}
+.subnav,.test-subnav{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;max-width:100%;min-width:0;scrollbar-width:none;scroll-padding-inline:8px;gap:6px;padding:6px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.subnav::-webkit-scrollbar,.test-subnav::-webkit-scrollbar{display:none}
+.subnav a,.test-subnav a{flex:0 0 auto;min-height:44px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;border-radius:10px;padding:10px 16px;font-weight:650;font-size:.875rem}
+.subnav a[aria-current=page],.test-subnav a[aria-current=page],.test-subnav a.active{background:var(--primary);color:var(--canvas);box-shadow:0 3px 8px #0674d31c}
+html[data-theme=light] .subnav a[aria-current=page],html[data-theme=light] .test-subnav a.active{color:#fff}
+.chat-sticker-grid,.test-sticker-picker{gap:10px}
+.chat-sticker-grid button,.test-sticker-picker button{min-height:108px;border:1px solid var(--line);border-radius:16px;background:var(--surface-sub);color:var(--ink);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;padding:12px 8px;transition:background-color .2s,border-color .2s,box-shadow .2s}
+.chat-sticker-grid button img,.test-sticker-picker button img{width:46px;height:46px;transition:transform .22s cubic-bezier(.22,1,.36,1)}
+.chat-sticker-grid strong,.test-sticker-picker button span{font-size:.875rem;line-height:1.4;font-weight:650;text-align:center;word-break:keep-all}
+.chat-sticker-grid button[aria-pressed=true],.test-sticker-picker button[aria-pressed=true]{border-color:var(--primary);background:var(--mint);box-shadow:inset 0 0 0 1px var(--primary)}
+.chat-sticker-grid button[aria-pressed=true] img,.test-sticker-picker button[aria-pressed=true] img{transform:scale(1.1) rotate(-4deg)}
+.chat-groups{max-width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}.chat-groups button{flex-shrink:0;min-height:44px}
+.chat-messages{border-radius:14px}.chat-bubble{border-radius:16px}.chat-sticker img{width:72px;height:72px}
+.workspace-menu-dialog{width:min(560px,calc(100% - 24px));max-width:none;max-height:calc(100dvh - 32px);margin:auto;padding:24px;border:1px solid var(--line);border-radius:24px;color:var(--ink);background:var(--surface);box-shadow:0 24px 90px #102c4b33;overflow-y:auto;overscroll-behavior:contain}
+.workspace-menu-dialog::backdrop{background:#102c4b66;backdrop-filter:blur(5px)}
+.workspace-menu-dialog[open]{animation:menu-arrive .24s cubic-bezier(.22,1,.36,1)}
+.workspace-menu-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:22px}.workspace-menu-heading h2{font-size:1.4rem;margin:4px 0}.workspace-menu-heading p{color:var(--muted);font-size:.85rem}.workspace-menu-heading .eyebrow{font-size:.625rem;letter-spacing:.12em;color:var(--primary)}
+.workspace-menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.workspace-menu-grid a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:100px;padding:14px 6px;border:1px solid var(--line);border-radius:16px;background:var(--surface-sub);font-size:.875rem;font-weight:650;text-align:center;color:var(--ink)}
+.workspace-menu-grid a .rail-icon{color:var(--primary)}.workspace-menu-grid a.active{border-color:var(--primary);background:var(--mint);color:var(--primary)}
+@keyframes menu-arrive{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@media(hover:hover){.chat-sticker-grid button:not(:disabled):hover img,.test-sticker-picker button:hover img{transform:translateY(-3px) rotate(-5deg)}.workspace-menu-grid a:hover{background:var(--mint);border-color:var(--primary)}}
+@media(min-width:761px) and (max-width:1100px){.workspace-header-context,.auth-header-caption{display:none}.workspace-rail{width:88px;right:14px}.workspace-rail nav a{min-height:62px}.main,.auth-app.workspace-page .auth-main,.test-workspace .test-main{padding-right:124px}}
+@media(max-width:760px){
+ .topbar,.auth-header{padding:10px 16px;min-height:68px;gap:12px;flex-wrap:wrap;align-content:center}
+ .workspace-header-context,.auth-header-caption{display:none}.workspace-brand{font-size:1.2rem;gap:8px}.workspace-brand .brandmark{width:32px;height:32px}.workspace-brand small{font-size:8px}
+ .top-actions,.auth-display-actions{gap:4px}.top-actions .test-entry-link,.top-actions .test-return-link{font-size:.75rem}
+ .workspace-mobile-nav{display:flex;gap:2px;grid-auto-flow:unset;overflow:visible;align-items:stretch;justify-content:space-around;padding:6px 6px max(6px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface);box-shadow:0 -4px 16px #19395704}
+ .workspace-mobile-nav a,.workspace-mobile-nav>button{flex:1;min-width:0;max-width:120px;min-height:58px;padding:6px 2px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:.6875rem;line-height:1.3;font-weight:650;white-space:normal;position:relative}
+ .workspace-mobile-nav a.active,.workspace-mobile-nav>button.active{background:var(--mint);color:var(--primary)}.workspace-mobile-nav .rail-icon .icon{width:22px;height:22px}.workspace-mobile-nav .rail-active-dot{display:none}
+ .workspace-page-heading{gap:12px;align-items:flex-start;flex-wrap:wrap}.workspace-page-heading>div{display:block}.workspace-page-heading h1{margin-top:6px}.workspace-page-heading p{font-size:.85rem}
+ .main,.auth-app.workspace-page .auth-main,.test-workspace .test-main{padding-inline:16px}.auth-app .auth-panel{min-width:0}.card,.test-panel{padding:18px}
+ .subnav a,.test-subnav a{font-size:.8125rem;padding-inline:13px}.chat-sticker-grid,.test-sticker-picker{grid-template-columns:repeat(3,minmax(0,1fr))}.chat-sticker-grid button,.test-sticker-picker button{min-height:100px}
+ .test-environment-banner{gap:8px;align-items:center}.test-environment-banner p{line-height:1.5}.test-environment-banner p strong{font-size:inherit}
+ .display-popover{position:fixed;top:80px;right:12px;left:auto;width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 100px);z-index:80}
+}
+@media(max-width:420px){.topbar .top-actions{width:100%;justify-content:flex-end;margin-top:-4px}.topbar .top-actions .test-return-link,.topbar .top-actions .test-entry-link{margin-right:auto}.auth-header{gap:8px;padding-inline:12px}.auth-display-actions{gap:0}.auth-header .font-toggle span{display:none}.auth-header .font-toggle{width:44px}.auth-header .workspace-brand small{display:none}.workspace-menu-dialog{padding:20px 16px}.workspace-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-menu-grid a{min-height:88px}.test-environment-banner .test-environment-label{display:none}.test-environment-banner>a{flex-shrink:0}.chat-sticker-grid strong,.test-sticker-picker button span{font-size:.8125rem}}
+@media(max-height:500px) and (max-width:760px){.topbar,.auth-header{padding-block:6px;min-height:56px}.topbar .top-actions{width:auto;margin-top:0}.test-environment-banner{padding-block:4px!important}.test-environment-banner p{font-size:.625rem}.workspace-mobile-nav a,.workspace-mobile-nav>button{min-height:44px;gap:2px}.workspace-mobile-nav .rail-icon .icon{width:18px;height:18px}.workspace-menu-dialog{max-height:calc(100dvh - 16px)}}
+@media(prefers-reduced-motion:reduce){.workspace-menu-dialog[open]{animation:none}.chat-sticker-grid button img,.test-sticker-picker button img,.button{transition:none!important;transform:none!important}}
+html[data-motion=reduced] .workspace-menu-dialog[open]{animation:none}
+html[data-motion=reduced] .chat-sticker-grid button img,html[data-motion=reduced] .test-sticker-picker button img{transition:none;transform:none}

@@ -12,7 +12,7 @@ export function AuthLayout({ children, wide:requestedWide = false }: { children:
   useEffect(() => { document.documentElement.classList.toggle('large-type',large); try { localStorage.setItem('iharu:large-type',String(large)); } catch { /* optional preference */ } }, [large]);
   useEffect(() => { document.title = `${pathname.startsWith('/family')?'우리 가족':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정'} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
   return <div className={`auth-app ${wide?'workspace-page':'entry-page'}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
-    <header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/><button className="font-toggle" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button></div></header>
+    <header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/><button className="font-toggle" aria-label="큰 글씨" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button></div></header>
     {!wide&&<div className="test-entry-banner"><span>기능을 먼저 살펴보세요</span><Link to="/test/today">인증 없이 기능 테스트<Icon name="arrow"/></Link></div>}
     {wide&&<WorkspaceNavigation childMode={pathname.startsWith('/child')||pathname.startsWith('/device')}/> }
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
@@ -28,4 +28,5 @@ export function PasswordField({ label='비밀번호', name='password', fresh=fal
 export function FormNotice({ error, message }: { error?:string; message?:string }) {
   return <>{error&&<div className="auth-notice error" role="alert">{error}</div>}{message&&<div className="auth-notice" role="status">{message}</div>}</>;
 }
+
 
