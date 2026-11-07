@@ -115,6 +115,6 @@ test('daily timetable shares calendar CRUD, all-family assignment, time order an
   await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:'test-results/ui81-timetable-dark.png'});await page.getByRole('button',{name:'밝게',exact:true}).click();
   const box=await page.locator('.timetable-day').boundingBox();await page.mouse.move(box!.x+box!.width-15,box!.y+40);await page.mouse.down();await page.mouse.move(box!.x+15,box!.y+42,{steps:8});await page.mouse.up();await expect(page.getByLabel('시간표 날짜 선택')).not.toHaveValue(today);await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
   await page.getByRole('button',{name:'오늘',exact:true}).click();await expect(page.getByLabel('시간표 날짜 선택')).toHaveValue(today);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'test-results/ui81-timetable-desktop.png'});
-  await page.goto('/today/calendar');await page.getByRole('button',{name:today+' 일정 등록',exact:true}).click();await expect(page.locator('.editor-day-events')).not.toContainText('함께 저녁');
+  await page.goto('/today/calendar');await page.getByRole('button',{name:today+' 일정 등록',exact:true}).click({position:{x:12,y:12}});await expect(page.locator('.editor-day-events')).not.toContainText('함께 저녁');
  }finally{await ctx.close();}
 });
