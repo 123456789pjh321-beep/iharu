@@ -26,7 +26,7 @@ async function login(page: Page, request: APIRequestContext, email: string) {
     page.getByRole("heading", { name: "오늘도 함께 챙겨요" }),
   ).toBeVisible();
 }
-test("first login guide → nickname child → family code request/accept → email-free child device", async ({
+test("first login guide → parent-added child → family code request/accept → email-free child device", async ({
   page,
   browser,
   request,
@@ -44,9 +44,10 @@ test("first login guide → nickname child → family code request/accept → em
     .getByRole("button", { name: "새 가족 만들기", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "자녀는 별명만 추가해요" }),
+    page.getByRole("heading", { name: "자녀 별명과 생일을 추가해요" }),
   ).toBeVisible();
   await page.getByLabel("자녀 별명", { exact: true }).fill("가상 새싹");
+  await page.getByLabel("자녀 생일", { exact: true }).fill("2018-04-12");
   await page.getByRole("checkbox", { name: /나는 이 아이의 부모/ }).check();
   await page
     .getByRole("button", { name: "자녀 추가하고 다음", exact: true })
@@ -151,9 +152,22 @@ for (const width of [320, 390, 768, 1024, 1440])
     }
   });
 
-test("public guide shows readable role buttons and leads children to code entry",async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/start');
- const parent=page.getByRole('link',{name:'보호자 로그인·가입',exact:true});await expect(parent).toBeVisible();expect((await parent.boundingBox())!.width).toBeGreaterThan(100);
- await page.getByRole('link',{name:'아이 연결 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'가족과 연결해 볼까요?'})).toBeVisible();
- await expect(page.getByRole('button',{name:'연결 번호 받기'})).toBeVisible();
+test("public guide shows readable role buttons and leads children to code entry", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/start");
+  const parent = page.getByRole("link", {
+    name: "보호자 로그인·가입",
+    exact: true,
+  });
+  await expect(parent).toBeVisible();
+  expect((await parent.boundingBox())!.width).toBeGreaterThan(100);
+  await page.getByRole("link", { name: "아이 연결 시작", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "가족과 연결해 볼까요?" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "연결 번호 받기" }),
+  ).toBeVisible();
 });

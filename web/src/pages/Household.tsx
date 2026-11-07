@@ -1,3 +1,4 @@
+import {koreaToday} from '../../../shared/schedules';
 import { useRef, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { useApi } from "../api";
@@ -12,7 +13,13 @@ import { ErrorState, Loading } from "../components/Common";
 import { Icon } from "../components/Icon";
 import { familyRequest } from "../family";
 import { ChildManagement } from "./Family";
-export function StartGuide({ compact = false, target="/start" }: { compact?: boolean; target?:string }) {
+export function StartGuide({
+  compact = false,
+  target = "/start",
+}: {
+  compact?: boolean;
+  target?: string;
+}) {
   return (
     <section
       className={"start-guide " + (compact ? "compact" : "")}
@@ -40,8 +47,8 @@ export function StartGuide({ compact = false, target="/start" }: { compact?: boo
         <li>
           <b>02</b>
           <div>
-            <strong>자녀 별명 추가</strong>
-            <span>생년월일·이메일 없이 별명만 등록해요.</span>
+            <strong>자녀 추가</strong>
+            <span>보호자가 별명·생일을 입력해요. 아이 이메일은 필요 없어요.</span>
           </div>
         </li>
         <li>
@@ -56,7 +63,7 @@ export function StartGuide({ compact = false, target="/start" }: { compact?: boo
   );
 }
 export function HouseholdPage() {
- const {pathname}=useLocation();
+  const { pathname } = useLocation();
   const session = useApi("/api/account/session", sessionSchema);
   if (session.loading)
     return (
@@ -70,7 +77,57 @@ export function HouseholdPage() {
         <ErrorState message={session.error} retry={session.retry} />
       </AuthLayout>
     );
-  if (!session.data?.authenticated) return pathname==='/start'?<AuthLayout wide><div className="family-heading"><div><span className="eyebrow">START TOGETHER</span><h1>가족 연결, 세 단계면 충분해요</h1><p>누가 사용할 기기인지 먼저 골라 주세요.</p></div></div><div className="guide-role-cards"><div><Icon name="shield"/><strong>나는 보호자예요</strong><p>내 계정으로 로그인하고 가족을 만들어요. 자녀 별명을 추가하고 아이의 연결 요청을 수락해요.</p><Link className="button primary" to="/login">보호자 로그인·가입</Link></div><div><Icon name="device"/><strong>나는 아이예요</strong><p>이메일·비밀번호 없이 시작해요. 6자리 번호를 보호자에게 알려 주고, 내 이름을 확인하면 연결돼요.</p><Link className="button primary" to="/device/connect">아이 연결 시작</Link></div></div><StartGuide target="/login"/><section className="account-card"><h2>승인은 가족이 직접 해요</h2><p>가족을 만든 관리자가 다른 보호자의 참여 요청을 수락해요. 자녀를 등록한 보호자가 그 아이의 기기와 공유할 정보를 승인해요. 앱 운영자의 심사를 기다리지 않아요.</p><p>기관에서 법정 가족관계를 확인하는 인증과는 다른, 우리 가족끼리의 연결이에요.</p></section></AuthLayout>:<Navigate to="/login" replace />;
+  if (!session.data?.authenticated)
+    return pathname === "/start" ? (
+      <AuthLayout wide>
+        <div className="family-heading">
+          <div>
+            <span className="eyebrow">START TOGETHER</span>
+            <h1>가족 연결, 세 단계면 충분해요</h1>
+            <p>누가 사용할 기기인지 먼저 골라 주세요.</p>
+          </div>
+        </div>
+        <div className="guide-role-cards">
+          <div>
+            <Icon name="shield" />
+            <strong>나는 보호자예요</strong>
+            <p>
+              내 계정으로 로그인하고 가족을 만들어요. 자녀를 추가하고
+              아이의 연결 요청을 수락해요.
+            </p>
+            <Link className="button primary" to="/login">
+              보호자 로그인·가입
+            </Link>
+          </div>
+          <div>
+            <Icon name="device" />
+            <strong>나는 아이예요</strong>
+            <p>
+              이메일·비밀번호 없이 시작해요. 6자리 번호를 보호자에게 알려 주고,
+              내 이름을 확인하면 연결돼요.
+            </p>
+            <Link className="button primary" to="/device/connect">
+              아이 연결 시작
+            </Link>
+          </div>
+        </div>
+        <StartGuide target="/login" />
+        <section className="account-card">
+          <h2>승인은 가족이 직접 해요</h2>
+          <p>
+            가족을 만든 관리자가 다른 보호자의 참여 요청을 수락해요. 자녀를
+            등록한 보호자가 그 아이의 기기와 공유할 정보를 승인해요. 앱 운영자의
+            심사를 기다리지 않아요.
+          </p>
+          <p>
+            기관에서 법정 가족관계를 확인하는 인증과는 다른, 우리 가족끼리의
+            연결이에요.
+          </p>
+        </section>
+      </AuthLayout>
+    ) : (
+      <Navigate to="/login" replace />
+    );
   return (
     <AuthLayout wide>
       <div className="family-heading">
@@ -166,6 +223,7 @@ function HouseholdWorkspace() {
         {
           familyId: family!.id,
           nickname: String(data.get("nickname")),
+          birthDate: String(data.get("birthDate")),
           guardianConsent: data.get("guardian") === "on",
           policyVersion: "household-1",
         },
@@ -178,26 +236,28 @@ function HouseholdWorkspace() {
   }
   return (
     <>
-      <details className="household-help"><summary>보호자와 아이는 어떻게 접속하나요?</summary>
-      <StartGuide />
-      <div className="guide-role-cards">
-        <div>
-          <Icon name="shield" />
-          <strong>보호자</strong>
-          <p>
-            자신의 계정으로 로그인해요. 가족을 만든 사람이 초대 요청을 승인하고,
-            자녀를 등록한 보호자가 아이 정보의 공유 범위를 정해요.
-          </p>
+      <details className="household-help">
+        <summary>보호자와 아이는 어떻게 접속하나요?</summary>
+        <StartGuide />
+        <div className="guide-role-cards">
+          <div>
+            <Icon name="shield" />
+            <strong>보호자</strong>
+            <p>
+              자신의 계정으로 로그인해요. 가족을 만든 사람이 초대 요청을
+              승인하고, 자녀를 등록한 보호자가 아이 정보의 공유 범위를 정해요.
+            </p>
+          </div>
+          <div>
+            <Icon name="device" />
+            <strong>아이</strong>
+            <p>
+              이메일·비밀번호를 만들지 않아요. 아이 기기의 연결 번호를 보호자가
+              수락하면 내 하루에 접속해요. 연결된 기기에서는 다음에도 바로
+              열려요.
+            </p>
+          </div>
         </div>
-        <div>
-          <Icon name="device" />
-          <strong>아이</strong>
-          <p>
-            이메일·비밀번호를 만들지 않아요. 아이 기기의 연결 번호를 보호자가
-            수락하면 내 하루에 접속해요. 연결된 기기에서는 다음에도 바로 열려요.
-          </p>
-        </div>
-      </div>
       </details>
       <FormNotice error={error} message={message} />
       {error && (
@@ -306,9 +366,9 @@ function HouseholdWorkspace() {
               {stage === 2 && (
                 <section className="account-card household-form">
                   <span className="workspace-module">STEP 02</span>
-                  <h2>자녀는 별명만 추가해요</h2>
+                  <h2>자녀 별명과 생일을 추가해요</h2>
                   <p>
-                    생년월일·아이 이메일·비밀번호는 받지 않아요. 직접 등록한
+                    아이 이메일·비밀번호는 받지 않아요. 생일은 보호자가 입력해 주세요. 직접 등록한
                     프로필이며 기관의 가족관계 인증을 의미하지 않아요.
                   </p>
                   {family.owner ? (
@@ -321,11 +381,12 @@ function HouseholdWorkspace() {
                         maxLength={24}
                         placeholder="예: 서준"
                       />
+                      <label htmlFor="household-birth">자녀 생일</label><input id="household-birth" name="birthDate" type="date" min="1900-01-01" max={koreaToday()} required/>
                       <label className="check-option">
                         <input type="checkbox" name="guardian" required />
                         <span>
                           나는 이 아이의 부모 또는 법정대리인이며,
-                          별명·일정·대화 기록을 우리 가족 안에서 처리하는 데
+                          별명·생일·일정·대화 기록을 우리 가족 안에서 처리하는 데
                           동의해요. 위치 수집에는 동의하지 않으며, 프로필과 연결
                           기록은 자녀 관리에서 삭제할 수 있어요.
                         </span>
@@ -377,7 +438,9 @@ function HouseholdWorkspace() {
                       child={child}
                       done={() => {
                         status.retry();
-                        setMessage("보호자가 수락했어요. 아이 기기에서 이름을 확인하고 연결을 마쳐 주세요.");
+                        setMessage(
+                          "보호자가 수락했어요. 아이 기기에서 이름을 확인하고 연결을 마쳐 주세요.",
+                        );
                         setStep(4);
                       }}
                     />
@@ -417,7 +480,10 @@ function HouseholdWorkspace() {
               )}
               <section className="account-card">
                 <div className="card-title">
-                  <h2>함께 챙기는 자녀</h2><button className="button compact" onClick={status.retry}>연결 상태 새로고침</button>
+                  <h2>함께 챙기는 자녀</h2>
+                  <button className="button compact" onClick={status.retry}>
+                    연결 상태 새로고침
+                  </button>
                   {family.owner && (
                     <button
                       className="button compact"
@@ -453,7 +519,18 @@ function HouseholdWorkspace() {
                           기기 연결
                         </button>
                       )}
-                      {c.canManage&&<button className="button compact" aria-label={`${c.nickname} 공유 설정`} onClick={()=>{setSelectedChild(c.id);setAdvanced(true);}}>공유 설정</button>}
+                      {c.canManage && (
+                        <button
+                          className="button compact"
+                          aria-label={`${c.nickname} 공유 설정`}
+                          onClick={() => {
+                            setSelectedChild(c.id);
+                            setAdvanced(true);
+                          }}
+                        >
+                          공유 설정
+                        </button>
+                      )}
                       {c.canManage && c.managed && (
                         <button
                           className="button compact danger-text"
@@ -635,10 +712,98 @@ function JoinFamily({
     </section>
   );
 }
-function MemberRequests({familyId,owner}:{familyId:string;owner:boolean}){
- const members=useApi(`/api/v1/families/${familyId}/members`,membersSchema),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
- async function change(m:{id:string;version:number},approve:boolean){if(busy)return;setBusy(true);setError('');setNotice('');try{await familyRequest(`/api/v1/memberships/${m.id}/${approve?'approve':'revoke'}`,{expectedVersion:m.version});members.retry();setNotice(approve?'참여를 수락했어요. 위의 자녀에서 공유 설정을 눌러 허용할 정보를 골라 주세요.':'가족 참여와 공유 접근을 해제했어요.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- return <div className="household-members"><div className="card-title"><h3>함께하는 보호자와 요청</h3><button className="button compact" onClick={members.retry}>요청 새로고침</button></div><FormNotice error={error} message={notice}/>{error&&<Link to="/account/reauth">본인 확인 다시 하기</Link>}{members.loading?<Loading/>:members.error?<ErrorState message={members.error} retry={members.retry}/>:members.data!.members.map(m=><div className="family-member" key={m.id}><div><strong>{m.name}</strong><small>{m.owner?'가족 관리자':m.status==='PENDING'?'참여 요청 도착':'함께하는 보호자'}</small></div>{owner&&m.status==='PENDING'&&<button className="button" disabled={busy} onClick={()=>void change(m,true)}>요청 수락</button>}{owner&&!m.owner&&<button className="button" disabled={busy} onClick={()=>{if(window.confirm(m.status==='PENDING'?'이 참여 요청을 거절할까요?':'이 보호자의 가족 참여와 공유 접근을 해제할까요?'))void change(m,false);}}>{m.status==='PENDING'?'요청 거절':'가족 연결 해제'}</button>}</div>)}</div>;
+function MemberRequests({
+  familyId,
+  owner,
+}: {
+  familyId: string;
+  owner: boolean;
+}) {
+  const members = useApi(`/api/v1/families/${familyId}/members`, membersSchema),
+    [error, setError] = useState(""),
+    [notice, setNotice] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function change(m: { id: string; version: number }, approve: boolean) {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await familyRequest(
+        `/api/v1/memberships/${m.id}/${approve ? "approve" : "revoke"}`,
+        { expectedVersion: m.version },
+      );
+      members.retry();
+      setNotice(
+        approve
+          ? "참여를 수락했어요. 위의 자녀에서 공유 설정을 눌러 허용할 정보를 골라 주세요."
+          : "가족 참여와 공유 접근을 해제했어요.",
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="household-members">
+      <div className="card-title">
+        <h3>함께하는 보호자와 요청</h3>
+        <button className="button compact" onClick={members.retry}>
+          요청 새로고침
+        </button>
+      </div>
+      <FormNotice error={error} message={notice} />
+      {error && <Link to="/account/reauth">본인 확인 다시 하기</Link>}
+      {members.loading ? (
+        <Loading />
+      ) : members.error ? (
+        <ErrorState message={members.error} retry={members.retry} />
+      ) : (
+        members.data!.members.map((m) => (
+          <div className="family-member" key={m.id}>
+            <div>
+              <strong>{m.name}</strong>
+              <small>
+                {m.owner
+                  ? "가족 관리자"
+                  : m.status === "PENDING"
+                    ? "참여 요청 도착"
+                    : "함께하는 보호자"}
+              </small>
+            </div>
+            {owner && m.status === "PENDING" && (
+              <button
+                className="button"
+                disabled={busy}
+                onClick={() => void change(m, true)}
+              >
+                요청 수락
+              </button>
+            )}
+            {owner && !m.owner && (
+              <button
+                className="button"
+                disabled={busy}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      m.status === "PENDING"
+                        ? "이 참여 요청을 거절할까요?"
+                        : "이 보호자의 가족 참여와 공유 접근을 해제할까요?",
+                    )
+                  )
+                    void change(m, false);
+                }}
+              >
+                {m.status === "PENDING" ? "요청 거절" : "가족 연결 해제"}
+              </button>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
 }
 function PairChild({
   child,

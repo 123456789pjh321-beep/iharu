@@ -1,6 +1,5 @@
 -- User-managed households are explicitly self-declared, never institutional relationship verification.
 -- Existing verified-registration commands and release gates are unchanged.
-ALTER TABLE app.children ALTER COLUMN birth_date DROP NOT NULL;
 CREATE TABLE app_private.household_profiles(
  child_id uuid PRIMARY KEY REFERENCES app.children(id) ON DELETE CASCADE,
  registered_by uuid NOT NULL REFERENCES iharu_auth.members(id),
@@ -13,22 +12,8 @@ ALTER TABLE app_private.household_profiles FORCE ROW LEVEL SECURITY;
 CREATE POLICY household_executor ON app_private.household_profiles TO iharu_policy USING(true) WITH CHECK(true);
 REVOKE ALL ON app_private.household_profiles FROM PUBLIC,app_runtime;
 GRANT SELECT,INSERT,DELETE ON app_private.household_profiles TO iharu_policy;
--- Child-owned data must be removed atomically. Only NO ACTION descendant FKs change;
--- existing SET NULL links (review history, correction references) retain their behavior.
-DO $$ DECLARE fk record; BEGIN
- FOR fk IN
- WITH RECURSIVE owned(oid) AS (
-  SELECT 'app.children'::regclass::oid UNION
-  SELECT c.conrelid FROM pg_constraint c JOIN owned o ON c.confrelid=o.oid
-  WHERE c.contype='f' AND c.confdeltype IN ('a','c') AND c.connamespace IN ('app'::regnamespace,'app_private'::regnamespace)
- ) SELECT c.conrelid::regclass AS tab,c.conname,pg_get_constraintdef(c.oid) AS definition
- FROM pg_constraint c WHERE c.contype='f' AND c.confdeltype='a' AND c.confrelid IN (SELECT oid FROM owned)
- AND c.connamespace IN ('app'::regnamespace,'app_private'::regnamespace)
- LOOP
- EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I',fk.tab,fk.conname);
- EXECUTE format('ALTER TABLE %s ADD CONSTRAINT %I %s ON DELETE CASCADE',fk.tab,fk.conname,fk.definition);
- END LOOP;
-END $$;
+-- Existing child columns, foreign keys and deletion policies remain untouched.
+-- Erasure below is limited to profiles registered through this new command.
 GRANT CREATE ON SCHEMA app_private TO iharu_policy;
 SET LOCAL ROLE iharu_policy;
 CREATE FUNCTION app_private.household_command(op text,p jsonb DEFAULT '{}') RETURNS jsonb
@@ -60,7 +45,8 @@ BEGIN
   IF p->>'guardianConsent' IS DISTINCT FROM 'true' OR p->>'policyVersion' IS DISTINCT FROM 'household-1' THEN RAISE EXCEPTION 'CONSENT_REQUIRED'; END IF;
   IF length(btrim(p->>'nickname')) NOT BETWEEN 1 AND 24 THEN RAISE EXCEPTION 'INVALID_INPUT'; END IF;
   IF (SELECT count(*) FROM app.children WHERE family_id=fid AND status='ACTIVE')>=5 THEN RAISE EXCEPTION 'CHILD_LIMIT'; END IF;
-  INSERT INTO app.children(family_id,nickname,consenter_id,birth_date) VALUES(fid,btrim(p->>'nickname'),actor,NULL) RETURNING * INTO ch;
+  IF (p->>'birthDate') IS NULL OR (p->>'birthDate')::date>(now() AT TIME ZONE 'Asia/Seoul')::date OR (p->>'birthDate')::date<date '1900-01-01' THEN RAISE EXCEPTION 'INVALID_INPUT'; END IF;
+  INSERT INTO app.children(family_id,nickname,consenter_id,birth_date) VALUES(fid,btrim(p->>'nickname'),actor,(p->>'birthDate')::date) RETURNING * INTO ch;
   INSERT INTO app_private.household_profiles(child_id,registered_by,consent_version) VALUES(ch.id,actor,'household-1');
   INSERT INTO app.child_consents(family_id,child_id,purpose,consenter_id,policy_version,evidence_ref) VALUES(fid,ch.id,'general',actor,'household-1','self-managed:'||ch.id::text);
   INSERT INTO app.child_grants(family_id,child_id,member_id,daily,chat,location,tuition_read,tuition_write,approved_by) VALUES(fid,ch.id,actor,true,true,false,true,true,actor);
@@ -70,12 +56,48 @@ BEGIN
  ELSIF op='household.child.delete' THEN
   cid:=(p->>'childId')::uuid;
   SELECT * INTO ch FROM app.children WHERE id=cid FOR UPDATE;
-  IF NOT FOUND OR ch.consenter_id<>actor OR NOT EXISTS(SELECT 1 FROM app_private.household_profiles WHERE child_id=cid) THEN RAISE EXCEPTION 'NOT_FOUND'; END IF;
+  IF NOT FOUND OR ch.consenter_id<>actor OR NOT EXISTS(SELECT 1 FROM app_private.household_profiles WHERE child_id=cid AND registered_by=actor) THEN RAISE EXCEPTION 'NOT_FOUND'; END IF;
   IF ch.version<>(p->>'expectedVersion')::integer THEN RAISE EXCEPTION 'VERSION_CONFLICT'; END IF;
+  IF EXISTS(SELECT 1 FROM app_private.child_registration_drafts WHERE child_id=cid) THEN RAISE EXCEPTION 'LEGACY_LINKED_PROFILE'; END IF;
   -- Idempotency payloads may hold copied titles. Remove this child's cached payloads too.
   DELETE FROM app_private.schedule_idempotency si WHERE si.payload::text LIKE '%'||cid::text||'%' OR si.response::text LIKE '%'||cid::text||'%'
    OR EXISTS(SELECT 1 FROM app.schedule_series s WHERE s.child_id=cid AND (si.payload::text LIKE '%'||s.id::text||'%' OR si.response::text LIKE '%'||s.id::text||'%'))
    OR EXISTS(SELECT 1 FROM app.occurrences o WHERE o.child_id=cid AND (si.payload::text LIKE '%'||o.id::text||'%' OR si.response::text LIKE '%'||o.id::text||'%'));
+  WITH owned_ids AS (
+   SELECT id::text id FROM app.checkins WHERE child_id=cid UNION SELECT id::text FROM app.tasks WHERE child_id=cid
+   UNION SELECT id::text FROM app.learning_entries WHERE child_id=cid UNION SELECT id::text FROM app.pickups WHERE child_id=cid
+  ) DELETE FROM app_private.daily_idempotency di WHERE di.payload::text LIKE '%'||cid::text||'%' OR di.response::text LIKE '%'||cid::text||'%'
+   OR EXISTS(SELECT 1 FROM owned_ids o WHERE di.payload::text LIKE '%'||o.id||'%' OR di.response::text LIKE '%'||o.id||'%');
+  DELETE FROM app_private.realtime_tickets WHERE room_id IN(SELECT id FROM app.rooms WHERE child_id=cid) OR device_id IN(SELECT id FROM app.child_devices WHERE child_id=cid);
+  DELETE FROM app_private.message_jobs WHERE room_id IN(SELECT id FROM app.rooms WHERE child_id=cid);
+  DELETE FROM app_private.message_receipts WHERE room_id IN(SELECT id FROM app.rooms WHERE child_id=cid);
+  DELETE FROM app_private.message_changes WHERE room_id IN(SELECT id FROM app.rooms WHERE child_id=cid);
+  DELETE FROM app.message_reads WHERE room_id IN(SELECT id FROM app.rooms WHERE child_id=cid);
+  DELETE FROM app.messages WHERE room_id IN(SELECT id FROM app.rooms WHERE child_id=cid);
+  DELETE FROM app.rooms WHERE child_id=cid;
+  DELETE FROM app.learning_entries WHERE child_id=cid;
+  DELETE FROM app.tasks WHERE child_id=cid;
+  DELETE FROM app.checkins WHERE child_id=cid;
+  DELETE FROM app.pickups WHERE child_id=cid;
+  DELETE FROM app_private.daily_jobs WHERE child_id=cid;
+  DELETE FROM app_private.daily_events WHERE child_id=cid;
+  DELETE FROM app_private.schedule_template_imports WHERE child_id=cid;
+  DELETE FROM app_private.schedule_template_previews WHERE child_id=cid;
+  DELETE FROM app_private.notifications WHERE child_id=cid;
+  DELETE FROM app_private.schedule_events WHERE child_id=cid;
+  DELETE FROM app_private.schedule_previews WHERE occurrence_id IN(SELECT id FROM app.occurrences WHERE child_id=cid);
+  UPDATE app.schedule_series SET makeup_for_occurrence_id=NULL WHERE child_id=cid AND makeup_for_occurrence_id IS NOT NULL;
+  DELETE FROM app.occurrence_exceptions WHERE occurrence_id IN(SELECT id FROM app.occurrences WHERE child_id=cid);
+  DELETE FROM app.occurrences WHERE child_id=cid;
+  DELETE FROM app.schedule_closures WHERE series_id IN(SELECT id FROM app.schedule_series WHERE child_id=cid);
+  DELETE FROM app.schedule_series_versions WHERE series_id IN(SELECT id FROM app.schedule_series WHERE child_id=cid);
+  DELETE FROM app.schedule_series WHERE child_id=cid;
+  DELETE FROM app_private.device_pairings WHERE child_id=cid;
+  DELETE FROM app.child_devices WHERE child_id=cid;
+  DELETE FROM app.child_grants WHERE child_id=cid;
+  DELETE FROM app.child_consents WHERE child_id=cid;
+  DELETE FROM app_private.deletion_requests WHERE child_id=cid;
+  DELETE FROM app_private.household_profiles WHERE child_id=cid;
   DELETE FROM app.children WHERE id=cid;
   PERFORM app_private.record_event('HOUSEHOLD_CHILD_DELETED',cid,true);
   RETURN jsonb_build_object('status','DELETED');
