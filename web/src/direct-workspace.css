@@ -103,3 +103,16 @@
 .theme-toggle .icon{width:16px;height:16px}.theme-toggle button:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
 .personal-tuition-item .direct-item p{margin:6px 0 0}.personal-tuition-item .personal-fee-value{flex-shrink:0}
 @media(max-width:360px){.theme-toggle button{min-width:54px;padding-inline:6px}.theme-toggle .icon{display:none}}
+
+.personal-fee-disclosure>summary{cursor:pointer;list-style:none;min-height:48px;border-radius:6px}
+.personal-fee-disclosure>summary::-webkit-details-marker{display:none}
+.personal-fee-disclosure>summary:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.personal-fee-summary .fee-disclosure-label{display:flex;align-items:center;gap:5px;margin-left:auto;color:var(--primary);font-size:.75rem;white-space:nowrap}
+.fee-disclosure-label .icon{width:16px;height:16px;transform:rotate(90deg);transition:transform .18s}
+.personal-fee-disclosure[open] .fee-disclosure-label .icon{transform:rotate(-90deg)}
+@media(prefers-reduced-motion:reduce){.fee-disclosure-label .icon{transition:none}}
+
+.workspace-page .fee-month-navigation{display:flex;align-items:flex-end;gap:8px;flex-wrap:nowrap}
+.workspace-page .fee-month-navigation label{flex:1;min-width:0;width:auto;max-width:260px}
+.fee-month-navigation .icon-button{flex-shrink:0;min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:10px}
+@media(max-width:760px){.workspace-page .fee-month-navigation label{max-width:none}}
