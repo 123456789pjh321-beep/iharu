@@ -1,3 +1,4 @@
+import {WorkspaceTabs} from '../components/WorkspaceTabs';
 import { Link } from 'react-router-dom';
 import type { SignedInSession } from '../auth';
 import { Card } from '../components/Common';
@@ -15,7 +16,7 @@ export function Home({session}:{session:SignedInSession}) {
         {to:'/family',icon:'shield' as const,label:'가족 연결',value:session.accessReady?'연결 완료':'연결 준비',note:session.accessReady?'공유 범위 안에서 안전하게':'계정 확인과 가족 연결이 필요해요',tag:'FAMILY'},
         {to:'/chat',icon:'chat' as const,label:'가족 대화',value:session.accessReady?'대화방 열기':'대화 준비',note:'짧은 소식도, 그림으로 쉽게',tag:'MESSAGE'}].map(item=><Link className="workspace-metric" to={item.to} key={item.tag}><div className="metric-top"><span>{item.label}</span><Icon name={item.icon}/></div><strong>{item.value}</strong><p>{item.note}</p><div className="metric-foot"><span>{item.tag}</span><Icon name="arrow"/></div></Link>)}
     </section>
-    <nav className="subnav" aria-label="오늘 화면 보기"><Link to="/today" aria-current="page">한눈에</Link><Link to="/today/calendar">월간 일정</Link><Link to="/today/repeats">반복 일정</Link><Link to="/tuition">학원비</Link></nav>
+    <WorkspaceTabs group="day"/>
     {!session.accessReady&&<section className="home-setup experience-setup" aria-label="가족 연결 안내"><div className="setup-symbol"><Icon name="shield"/></div><div className="setup-copy"><span className="workspace-module">GET STARTED</span><span className="setup-login-status"><Icon name="check"/>로그인 완료</span><h2>가족과 함께할 준비를 해요</h2><p>아이 정보를 열려면 계정 확인과 가족 연결이 필요해요. 가능한 다음 단계를 확인하세요.</p></div><div className="setup-checks"><span className={session.emailVerified?'complete':''}><Icon name={session.emailVerified?'check':'clock'}/>{session.emailVerified?'이메일 확인 완료':'이메일 확인'}</span><span><Icon name="shield"/>보호자 확인 · 가족 연결</span></div><Link className="button primary" to="/family">연결 상태 확인<Icon name="arrow"/></Link></section>}
     {session.accessReady?<DailyWorkspace/>:<div className="home-cards">
       <Card title="오늘의 등하원" icon="bag"><p className="section-description">학교와 학원에 가는 시간을 가족 달력에서 확인하세요. 가족 연결 후 도착·출발 기록을 남길 수 있어요.</p><div className="card-actions"><Link className="button primary" to="/today/calendar">오늘 일정 보기<Icon name="arrow"/></Link></div></Card>
