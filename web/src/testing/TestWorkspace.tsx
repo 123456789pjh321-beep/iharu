@@ -767,7 +767,7 @@ export default function TestWorkspace() {
           </Link>
           <DisplaySettings />
           <button
-            className="font-toggle"
+            className="font-toggle" aria-label="큰 글씨"
             aria-pressed={large}
             onClick={() => setLarge((v) => !v)}
           >

@@ -50,5 +50,5 @@
 ## 변경 파일
 
 추가: RouteEffects.tsx(비동기 화면 진입·레일 높이 계산), polish.css(공통 반응형 디자인), adaptive-design.spec.ts(다중 화면 회귀), 본 문서.
-수정: WorkspaceNavigation.tsx(하단 주요 메뉴·전체 메뉴), Icon.tsx(격자 아이콘), Experience.tsx(공통 설정 노출·중복 진입 효과 제거), App.tsx(화면 전환 연결), main.tsx(디자인 적용).
+수정: WorkspaceNavigation.tsx(하단 주요 메뉴·전체 메뉴), Icon.tsx(격자 아이콘), Experience.tsx(공통 설정 노출·중복 진입 효과 제거), App.tsx(화면 전환 연결), main.tsx(디자인 적용), AuthLayout.tsx·TestWorkspace.tsx(아이콘 버튼의 접근 가능한 이름), app.spec.ts(더 보기 메뉴를 통한 이동 회귀).
 삭제: 없음.
