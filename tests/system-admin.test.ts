@@ -63,8 +63,9 @@ it('suspends and restores a parent while preserving data and preventing administ
 it('suspends child sessions and password login, then restores access without deleting family records',async()=>{
  const {b:root}=await parent('root',true),child=new Browser();const code=await root.ws('invite.issue',{consent:true});await child.ws('child.signup',{loginId:'pause_child',name:'정지 검증 자녀',password,code:code.code});
  const list=await root.admin('members',{query:'pause_child'}),m=list.groups[0].members.find((x:{kind:string})=>x.kind==='CHILD');
- await root.admin('member.update',{id:m.id,version:0,status:'SUSPENDED',reason:'자녀 계정 보호 검증'});expect((await child.req('/api/v1/workspace/me')).status).toBe(401);expect((await new Browser().req('/api/v1/workspace/child.login',{loginId:'pause_child',password})).status).toBe(401);
- await root.admin('member.update',{id:m.id,version:1,status:'ACTIVE',reason:'자녀 계정 정상 이용 재개'});const fresh=new Browser();await fresh.ws('child.login',{loginId:'pause_child',password});expect((await fresh.ws('me')).family).not.toBeNull();
+ const renamed=await root.admin('member.update',{id:m.id,version:0,name:'정지 검증 자녀 수정',reason:'자녀 이름 변경 검증'});expect(renamed.name).toBe('정지 검증 자녀 수정');expect((await child.ws('me')).name).toBe('정지 검증 자녀 수정');
+ await root.admin('member.update',{id:m.id,version:1,status:'SUSPENDED',reason:'자녀 계정 보호 검증'});expect((await child.req('/api/v1/workspace/me')).status).toBe(401);expect((await new Browser().req('/api/v1/workspace/child.login',{loginId:'pause_child',password})).status).toBe(401);
+ await root.admin('member.update',{id:m.id,version:2,status:'ACTIVE',reason:'자녀 계정 정상 이용 재개'});const fresh=new Browser();await fresh.ws('child.login',{loginId:'pause_child',password});expect((await fresh.ws('me')).family).not.toBeNull();
 });
 it('records request outcomes without request bodies or credential data, and denies direct table/helper access',async()=>{
  const {b:root}=await parent('root',true);const marker='never-log-this-secret-637281';await new Browser().req('/api/auth/sign-in/email',{email:'missing@example.test',password:marker});
