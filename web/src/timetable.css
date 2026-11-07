@@ -58,3 +58,5 @@
 @media(max-width:360px){.timetable-day{padding:0}.timetable-scroll{max-height:calc(100dvh - 350px)}.timetable-all-day{grid-template-columns:44px minmax(0,1fr)}.timetable-event-area{left:52px}.timetable-time-axis{width:50px}.timetable-event{padding-inline:6px}}
 
 .timetable-time-axis>.minor-tick{font-size:.6rem;opacity:.7}
+.timetable-viewport>.timetable-day{width:100%;min-width:0;flex:1}
+.timetable-viewport>.calendar-motion-snapshot{display:block;border:0;background:var(--surface)}
