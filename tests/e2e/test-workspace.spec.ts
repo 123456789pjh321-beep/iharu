@@ -24,22 +24,18 @@ test("test workspace needs no auth, persists CRUD and never touches production A
   await dialog.getByRole("button", { name: "저장", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.goto("/test/daily");
-  const row = page
-    .locator(".test-event-row")
-    .filter({
-      has: page.getByRole("heading", { name: "기능 확인 수업", exact: true }),
-    });
+  const row = page.locator(".test-event-row").filter({
+    has: page.getByRole("heading", { name: "기능 확인 수업", exact: true }),
+  });
   await row.getByRole("button", { name: "도착", exact: true }).click();
   await expect(row).toContainText("도착 완료");
   await row.getByRole("button", { name: "출발", exact: true }).click();
   await expect(row).toContainText("출발 완료");
   await page.reload();
   await expect(
-    page
-      .locator(".test-event-row")
-      .filter({
-        has: page.getByRole("heading", { name: "기능 확인 수업", exact: true }),
-      }),
+    page.locator(".test-event-row").filter({
+      has: page.getByRole("heading", { name: "기능 확인 수업", exact: true }),
+    }),
   ).toContainText("출발 완료");
   await page.goto("/test/records");
   await page.getByRole("textbox", { name: "기록 검색" }).fill("기능 확인 수업");
@@ -114,39 +110,47 @@ test("family, repeat, chat, device, fees and simulated location work together", 
   ).toBeVisible();
   expect(calls).toEqual([]);
 });
-test("every test menu reflows on phones, tablets and desktops without API access", async ({
+const testPages = [
+  "today",
+  "calendar",
+  "daily",
+  "repeats",
+  "chat",
+  "family",
+  "devices",
+  "location",
+  "fees",
+  "records",
+  "notifications",
+  "account",
+  "child",
+];
+for (const width of [320, 390, 768, 1024, 1440]) {
+  test(`all test menus reflow at ${width}px without API access`, async ({
+    page,
+  }) => {
+    const calls = await isolate(page);
+    await page.setViewportSize({ width, height: 950 });
+    for (const path of testPages) {
+      await test.step(path, async () => {
+        await page.goto("/test/" + path);
+        await expect(page.locator("main h1")).toBeVisible();
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+          )
+          .toBe(true);
+      });
+    }
+    expect(calls).toEqual([]);
+  });
+}
+test("test workspace supports large text and 200 percent reflow", async ({
   page,
 }) => {
   const calls = await isolate(page);
-  const pages = [
-    "today",
-    "calendar",
-    "daily",
-    "repeats",
-    "chat",
-    "family",
-    "devices",
-    "location",
-    "fees",
-    "records",
-    "notifications",
-    "account",
-    "child",
-  ];
-  for (const width of [320, 390, 768, 1024, 1440]) {
-    await page.setViewportSize({ width, height: 950 });
-    for (const path of pages) {
-      await page.goto("/test/" + path);
-      await expect(page.locator("main h1")).toBeVisible();
-      await expect
-        .poll(() =>
-          page.evaluate(
-            () => document.documentElement.scrollWidth <= window.innerWidth,
-          ),
-        )
-        .toBe(true);
-    }
-  }
   await page.setViewportSize({ width: 720, height: 800 });
   await page.goto("/test/today");
   await page.getByRole("button", { name: "큰 글씨", exact: true }).click();

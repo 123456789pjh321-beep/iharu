@@ -1842,3 +1842,8 @@ html[data-theme="dark"]
     margin-left: 0;
   }
 }
+
+.test-workspace :is(h1, h2, h3, strong),
+.test-dialog h2 {
+  overflow-wrap: anywhere;
+}
