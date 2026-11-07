@@ -8,10 +8,12 @@ const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/today/calendar',label:'달력',icon:'calendar'},
  {to:'/chat',label:'대화',icon:'chat'},
  {to:'/tuition',label:'학원비',icon:'wallet'},
- {to:'/location',label:'위치',icon:'pin'},
+
  {to:'/records',label:'메모',icon:'book'},
  {to:'/family',label:'가족 관리',icon:'users'},
  {to:'/account',label:'내 계정',icon:'settings'},
+ {to:'/privacy',label:'개인정보 관리',icon:'shield'},
+ {to:'/legal/privacy',label:'개인정보처리방침',icon:'book'},
 ];
 export function WorkspaceBrand({testMode=false}:{testMode?:boolean}){return <Link to={testMode?'/test/today':'/today'} className="brand workspace-brand" aria-label="아이하루"><span className="brandmark"><Icon name="sun"/></span><span>아이하루<small>FAMILY WORKSPACE</small></span></Link>;}
 export function WorkspaceNavigation({childMode=false,testMode=false,personalChild=false}:{childMode?:boolean;testMode?:boolean;personalChild?:boolean}){

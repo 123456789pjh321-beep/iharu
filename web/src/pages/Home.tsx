@@ -21,7 +21,6 @@ export function Home({session}:{session:SignedInSession}) {
     {session.accessReady?<DailyWorkspace/>:<div className="home-cards">
       <Card title="오늘의 등하원" icon="bag"><p className="section-description">학교와 학원에 가는 시간을 가족 달력에서 확인하세요. 가족 연결 후 도착·출발 기록을 남길 수 있어요.</p><div className="card-actions"><Link className="button primary" to="/today/calendar">오늘 일정 보기<Icon name="arrow"/></Link></div></Card>
       <Card title="우리 가족 달력" icon="calendar"><p className="section-description">매주 반복되는 일정과 휴강·보강을 관리해요. 승인된 가족과 아이의 일정만 표시해요.</p><div className="card-actions"><Link className="button" to="/today/calendar">가족 달력 열기</Link><Link className="button" to="/today/repeats">반복 일정</Link></div></Card>
-      <Card title="아이 위치" icon="pin" action={<span className="badge soft">준비 중</span>}><p className="section-description">위치 공유 기능을 준비하고 있어요. 현재 아이의 위치를 수집하거나 표시하지 않아요.</p><div className="card-actions"><Link className="button" to="/location">위치 공유 안내</Link></div></Card>
     </div>}
     <section className="home-shortcuts" aria-label="다른 메뉴"><span className="shortcut-caption">자주 찾는 메뉴</span><Link className="button" to="/chat"><Icon name="chat"/>가족 대화</Link><Link className="button" to="/tuition"><Icon name="wallet"/>학원비 · 준비 중</Link><Link className="button" to="/account"><Icon name="settings"/>내 계정</Link></section>
   </Entrance>;

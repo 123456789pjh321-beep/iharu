@@ -1,3 +1,4 @@
+import {legalRoutes} from './legal/routes.js';
 import {workspaceRoutes} from './workspace/routes.js';
 import {adminRoutes} from './admin/routes.js';
 import {childAccountRoutes} from './child-accounts/routes.js';
@@ -54,6 +55,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
     return c.json(envelope(dashboardSchema).parse({ data:getDemoDashboard(parsed.data.child, parsed.data.month), meta:meta(c.get('requestId'), 'demo') }));
   });
   app.route('/', accountRoutes(authRuntime));
+  app.route('/', legalRoutes(authRuntime,familyRuntime));
   app.route('/', adminRoutes(authRuntime,familyRuntime));
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
   app.route('/', workspaceRoutes(authRuntime,familyRuntime));

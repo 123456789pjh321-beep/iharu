@@ -402,6 +402,20 @@ try{
   await family1.command(a,'admin.member.sessions.revoke',{id:b.memberId,version:1,reason:'분실 기기 세션 종료 검증'});await assert.rejects(family2.command(b,'workspace.me'),{message:'AUTH_REQUIRED'});
   const history=await family1.command<{total:number}>(a,'admin.history',{category:'ADMIN',targetId:b.memberId});assert.equal(history.total,4);
  });
+ await check('UI84 legal drafts have optimistic locks and private tables; publication snapshots cannot be overwritten',async()=>{
+  const draft={operatorName:'PG 테스트',privacyOfficer:'PG 담당자',contactEmail:'privacy@example.test',terms:'테스트 이용약관',privacy:'테스트 개인정보',children:'어린이 안내',processors:'검증용 위탁 없음',transfers:'검증용 국외 이전 없음',retention:'검증용 보유 기간',reviewNotes:'내부 전용'};
+  const results=await Promise.allSettled([family1,family2].map(f=>f.command(a,'legal.admin.save',{version:0,draft,reason:'동시 초안 저장 검증'})));
+  assert.equal(results.filter(x=>x.status==='fulfilled').length,1);assert.equal((results.find(x=>x.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
+  assert.equal((await family1.command<{publication:unknown}>(anonymous,'legal.public')).publication,null);
+  await family1.command(a,'legal.admin.publish',{version:1,reviewed:true,reason:'검토된 문서 게시 검증'});
+  const state=await family1.command<{publication:{id:string;document:Record<string,string>}}>(a,'legal.state');assert.equal(state.publication.document.reviewNotes,undefined);
+  await assert.rejects(family1.command(a,'workspace.items.create',{kind:'NOTE',data:{title:'동의 전 차단',date:'2026-11-08'}}),{message:'LEGAL_ACCEPTANCE_REQUIRED'});
+  await family1.command(a,'legal.accept',{publicationId:state.publication.id,terms:true,privacy:true,adult:true});
+  await family1.command(a,'workspace.items.create',{kind:'NOTE',data:{title:'동의 후 저장',date:'2026-11-08'}});
+  for(const table of ['legal_settings','legal_publications','legal_acceptances','privacy_requests'])await assert.rejects(query(db1,'SELECT * FROM app_private.'+table),{code:'42501'});
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_v83('workspace.me','{}')"),{code:'42501'});
+  await assert.rejects(family2.command({memberId:a.memberId,sessionId:b.sessionId,requestId:randomUUID()},'legal.admin.read'),{message:'ADMIN_REQUIRED'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

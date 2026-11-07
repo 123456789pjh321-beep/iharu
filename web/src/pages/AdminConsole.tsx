@@ -1,3 +1,4 @@
+import {LegalAdmin} from './LegalAdmin';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {Link,useSearchParams} from 'react-router-dom';
 import type {AdminEvent,AdminGroup,AdminLog,AdminMember,AdminMembers,AdminOverview,AdminPage} from '../../../shared/admin';
@@ -10,7 +11,7 @@ import {FormNotice,PasswordField} from '../components/AuthLayout';
 import {koreaToday,addDays} from '../../../shared/schedules';
 import '../admin.css';
 
-const tabs=[['overview','현황','menu'],['members','회원관리','users'],['history','이력관리','clock'],['roles','권한관리','shield'],['logs','로그관리','book']] as const;
+const tabs=[['overview','현황','menu'],['members','회원관리','users'],['history','이력관리','clock'],['roles','권한관리','shield'],['logs','로그관리','book'],['legal','운영·개인정보','shield']] as const;
 type Tab=typeof tabs[number][0];
 const number=(n:number)=>new Intl.NumberFormat('ko-KR').format(n);
 const date=(s:string|null)=>s?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(s)):'기록 없음';
@@ -39,7 +40,7 @@ export default function AdminConsole(){
  return <div className="admin-console"><header className="admin-heading"><div><span className="admin-eyebrow">아이하루 운영센터</span><h1>시스템 관리 <span className="admin-tag elevated">최고관리자</span></h1><p>회원과 가족의 연결 상태, 권한과 운영 이력을 한곳에서 확인합니다.</p></div><button className="button compact" onClick={refresh}><Icon name="repeat"/>새로고침</button></header>
  <nav className="admin-tabs" aria-label="시스템 관리 메뉴">{tabs.map(([id,label,icon])=><button key={id} type="button" aria-current={tab===id?'page':undefined} onClick={()=>{setSearch({section:id});setNotice('');}}><Icon name={icon}/>{label}</button>)}</nav>
  <FormNotice message={notice}/>
- {tab==='overview'?<Overview revision={revision} refresh={refresh} choose={s=>setSearch({section:s})}/>:tab==='members'?<Members revision={revision} refresh={refresh} select={setSelected}/>:tab==='roles'?<Roles revision={revision} refresh={refresh} select={setSelected} members={()=>setSearch({section:'members'})}/>:<Journal key={tab} kind={tab} revision={revision} refresh={refresh}/>}
+ {tab==='legal'?<LegalAdmin/>:tab==='overview'?<Overview revision={revision} refresh={refresh} choose={s=>setSearch({section:s})}/>:tab==='members'?<Members revision={revision} refresh={refresh} select={setSelected}/>:tab==='roles'?<Roles revision={revision} refresh={refresh} select={setSelected} members={()=>setSearch({section:'members'})}/>:<Journal key={tab} kind={tab} revision={revision} refresh={refresh}/>}
  {selected&&<MemberDialog initial={selected} close={()=>setSelected(null)} changed={m=>{setSelected(m);setNotice('관리 작업을 저장하고 이력에 기록했습니다.');refresh();}}/>}
  </div>;
 }

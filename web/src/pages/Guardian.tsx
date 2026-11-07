@@ -27,14 +27,6 @@ export function Guardian({ child, setChild, onPreview }: { child:ChildFilter; se
           {data.data.events.filter(e=>e.date==='2026-09-17').length===0&&<p>등록된 일정이 없어요. 서하 일정은 아직 전달받지 않았어요.</p>}<div className="card-actions"><button className="button primary" onClick={() => onPreview('도착·출발 기록')}><Icon name="check"/>도착·출발 기록</button><Link className="button" to="/chat"><Icon name="chat"/>가족에게 말하기</Link></div>
         </Card>
         <Card title={copy.calendar} icon="calendar" className="family-calendar" action={<Link to="/calendar" className="text-link">크게 보기<Icon name="chevron"/></Link>}><Calendar child={child} onPreview={onPreview}/></Card>
-        <div className="location-column">
-          <Card title={copy.location} icon="pin" className="location-card" action={<span className="badge soft">연결 준비</span>}>
-            <div className="location-illustration" aria-hidden="true"><span className="location-ring ring-2"/><span className="location-ring ring-1"/><span className="location-pin"><Icon name="pin"/></span><span className="location-house"><Icon name="home"/></span><span className="location-tree"><Icon name="sun"/></span></div>
-            <h3>{copy.emptyLocation}</h3><p className="section-description">아이가 직접 보낸 마지막 위치를<br className="desktop-br"/> 이곳에서 확인할 수 있어요.</p>
-            <Link className="button full" to="/location">위치 공유 알아보기<Icon name="arrow"/></Link><p className="location-note"><Icon name="shield"/>자동으로 위치를 추적하지 않아요.</p>
-          </Card>
-          <section className="gentle-note"><span><Icon name="chat"/></span><div><h3>짧은 한마디도, 함께</h3><p>글 대신 그림으로도<br/>가족에게 마음을 전해요.</p><Link to="/chat">가족 대화 보기<Icon name="arrow"/></Link></div></section>
-        </div>
       </div><Tuition data={data.data} onPreview={onPreview}/>
     </> : null}
   </>;

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('production account routes show truthful readiness and do not expose sample children',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/login');
-  await expect(page.getByRole('heading',{name:'다시 만나 반가워요'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
   await expect(page.getByText('로그인 연결을 준비하고 있어요')).toBeVisible();
   for(const label of ['Google로 계속하기','카카오로 계속하기','네이버로 계속하기'])await expect(page.getByRole('button',{name:new RegExp(label)})).toBeDisabled();
   await expect(page.locator('#email')).toBeDisabled();
