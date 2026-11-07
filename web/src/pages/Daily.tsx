@@ -22,7 +22,7 @@ export function DailyWorkspace({records=false}:{records?:boolean}){
  if(families.loading)return <Loading/>;
  if(families.error)return <ErrorState message={families.error} retry={families.retry}/>;
  if(!family)return <section className="card daily-empty"><h2>가족의 하루를 연결해요</h2><p>함께할 가족을 만들고 아이의 공유 범위를 확인해 주세요.</p><Link className="button primary" to="/family">우리 가족 연결</Link></section>;
- return <><div className="daily-family"><label>가족<select value={family.id} onChange={e=>setSearch({family:e.target.value})}>{families.data!.families.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label></div><FamilyDaily key={`${family.id}:${records}`} family={family} records={records}/></>;
+ return <><div className="daily-family"><label>가족<select value={family.id} onChange={e=>setSearch({legacy:'1',family:e.target.value})}>{families.data!.families.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label></div><FamilyDaily key={`${family.id}:${records}`} family={family} records={records}/></>;
 }
 function FamilyDaily({family,records}:{family:Family;records:boolean}){
  const children=useApi(`/api/v1/families/${family.id}/schedule-children`,scheduleChildrenResponse),[search,setSearch]=useSearchParams();
@@ -30,7 +30,7 @@ function FamilyDaily({family,records}:{family:Family;records:boolean}){
  if(children.loading)return <Loading label="함께 볼 아이를 확인하고 있어요"/>;
  if(children.error)return <ErrorState message={children.error} retry={children.retry}/>;
  if(!choices.length)return <section className="card daily-empty"><h2>아직 공유받은 아이가 없어요</h2><p>가족 관리에서 아이 등록과 공유 상태를 확인해 주세요.</p><Link className="button primary" to="/family">가족과 아이 관리</Link></section>;
- return <><div className="daily-child-filter" aria-label="아이 선택">{!records&&<button className={`button ${!selected?'primary':''}`} aria-pressed={!selected} onClick={()=>setSearch({family:family.id})}>모든 아이</button>}{choices.map((c,i)=><button key={c.id} className={`button child-filter-chip ${selected===c.id?'primary':''}`} aria-pressed={selected===c.id} onClick={()=>setSearch({family:family.id,child:c.id})}><span className={`avatar ${i%2?'peach':'mint'}`} aria-hidden="true">{c.nickname.slice(0,1)}</span>{c.nickname}</button>)}</div>
+ return <><div className="daily-child-filter" aria-label="아이 선택">{!records&&<button className={`button ${!selected?'primary':''}`} aria-pressed={!selected} onClick={()=>setSearch({legacy:'1',family:family.id})}>모든 아이</button>}{choices.map((c,i)=><button key={c.id} className={`button child-filter-chip ${selected===c.id?'primary':''}`} aria-pressed={selected===c.id} onClick={()=>setSearch({legacy:'1',family:family.id,child:c.id})}><span className={`avatar ${i%2?'peach':'mint'}`} aria-hidden="true">{c.nickname.slice(0,1)}</span>{c.nickname}</button>)}</div>
  {records?<Records key={selected} child={choices.find(c=>c.id===selected)!} serverToday={children.data!.serverToday}/>:<DayBoard key={selected} familyId={family.id} childId={selected} childrenOptions={choices} serverToday={children.data!.serverToday}/>}</>;
 }
 function DayBoard({familyId,childId,childrenOptions,serverToday,childMode=false}:{familyId?:string;childId:string;childrenOptions:ChildOption[];serverToday:string;childMode?:boolean}){
