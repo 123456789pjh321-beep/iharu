@@ -16,7 +16,7 @@ API: 본인·연결된 가족 선택, 외부인·제외된 구성원 거부, 대
 
 ## 변경 파일
 
-추가 2개, 수정 15개, 삭제 없음.
+추가 2개, 수정 16개, 삭제 없음.
 
 |파일|주요 내용|
 |---|---|
@@ -27,6 +27,7 @@ API: 본인·연결된 가족 선택, 외부인·제외된 구성원 거부, 대
 |tests/workspace.test.ts|가족 대상 지정·권한·제외 검사|
 |tests/integration/postgres.ts|실제 PG의 대상·작성자 분리와 내부 함수 권한 검사|
 |tests/e2e/child-account-onboarding.spec.ts|자녀 선택 반복 일정·홈 배치·메뉴·이모티콘 반응형 검사|
+|tests/e2e/adaptive-design.spec.ts|주요 메뉴와 더 보기 활성·포커스 회귀 검증|
 |tests/e2e/app.spec.ts|변경된 위치 메뉴명 반영|
 |tests/e2e/auth-flow.spec.ts|새 홈·하위 메뉴 이동 검증|
 |web/src/App.tsx|위치 공통 화면 연결|

@@ -23,7 +23,7 @@ test('mobile More exposes every destination, traps focus and closes on navigatio
  const menu=page.getByRole('dialog',{name:'전체 메뉴',exact:true});await expect(menu).toBeVisible();await expect(menu.getByRole('link')).toHaveCount(12);
  await menu.getByRole('link',{name:'내 계정',exact:true}).focus();await page.keyboard.press('Tab');await expect(menu.getByRole('button',{name:'전체 메뉴 닫기'})).toBeFocused();
  await page.keyboard.press('Escape');await expect(menu).not.toBeVisible();await expect(more).toBeFocused();
- await more.click();await menu.getByRole('link',{name:'학원비',exact:true}).click();await expect(page).toHaveURL(/\/test\/fees$/);await expect(menu).not.toBeVisible();await expect(more).toHaveClass('active');
+ await more.click();await menu.getByRole('link',{name:'메모',exact:true}).click();await expect(page).toHaveURL(/\/test\/records$/);await expect(menu).not.toBeVisible();await expect(more).toHaveClass('active');
 });
 test('large type, dark theme and reduced motion preserve mobile menu access',async({page})=>{
  await page.setViewportSize({width:320,height:740});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/test/chat');
