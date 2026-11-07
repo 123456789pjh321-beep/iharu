@@ -71,7 +71,7 @@ BEGIN
  IF op='childaccount.parent' THEN
   SELECT coalesce(jsonb_agg(jsonb_build_object('id',ff.id,'name',ff.name,'owner',ff.owner_id=actor,'children',coalesce((SELECT jsonb_agg(jsonb_build_object('id',c.id,'nickname',c.nickname,'loginId',ca.login_id) ORDER BY c.created_at) FROM app.children c LEFT JOIN app_private.child_accounts ca ON ca.child_id=c.id WHERE c.family_id=ff.id AND c.status='ACTIVE' AND (c.consenter_id=actor OR app_private.child_allowed(c.id))),'[]'::jsonb)) ORDER BY ff.created_at),'[]'::jsonb) INTO result
   FROM app.families ff JOIN app.memberships m ON m.family_id=ff.id AND m.member_id=actor AND m.status='ACTIVE' WHERE ff.status='ACTIVE';
-  RETURN jsonb_build_object('families',result);
+  RETURN jsonb_build_object('families',result,'pending',coalesce((SELECT jsonb_agg(jsonb_build_object('id',ff.id,'name',ff.name)) FROM app.memberships mm JOIN app.families ff ON ff.id=mm.family_id WHERE mm.member_id=actor AND mm.status='PENDING' AND ff.status='ACTIVE'),'[]'::jsonb));
  ELSIF op IN ('childaccount.resolve','childaccount.approve') THEN
   SELECT * INTO a FROM app_private.child_accounts WHERE code_hash=p->>'codeHash' FOR UPDATE;
   IF NOT FOUND OR a.child_id IS NOT NULL OR a.code_expires_at<=now() OR a.pending_expires_at<=now() THEN RAISE EXCEPTION 'CHILD_CODE_INVALID'; END IF;

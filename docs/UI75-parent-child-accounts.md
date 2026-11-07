@@ -63,6 +63,7 @@ API 단위: 승인 전 세션 차단, 익명 보호자 승인 차단, 정확한 
 - `web/src/pages/Family.tsx`, `web/src/pages/Device.tsx`: 새 기본 흐름과 기존 기능의 호환 진입.
 - `web/src/components/WorkspaceTabs.tsx`, `web/src/main.tsx`: 안내 링크·스타일 연결.
 - `tests/integration/postgres.ts`: 실제 동시 승인·재시도 검증.
+- `tests/e2e/app.spec.ts`: 새 자녀 로그인 진입 경로 회귀.
 - `tests/e2e/family.spec.ts`, `tests/e2e/devices.spec.ts`, `tests/e2e/workspace-shell.spec.ts`: 기존 기능 호환 경로 회귀.
 
 삭제 파일 없음.

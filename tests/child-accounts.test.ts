@@ -28,6 +28,7 @@ it('requires a real signed-in parent, confirms the exact child and creates a fam
  const approved=await p.ok(api+'approve',{code:registered.code,requestId:resolved.requestId,consent:true});expect(approved.status).toBe('APPROVED');
  expect((await other.req(api+'approve',{code:registered.code,requestId:resolved.requestId,consent:true})).status).toBe(400);
  const own=await p.ok(api+'parent'),others=await other.ok(api+'parent');expect(own.families[0].children[0].nickname).toBe('가상 자녀');expect(others.families).toEqual([]);
+ const invite=await p.ok(`/api/v1/families/${own.families[0].id}/invites`,{});await other.ok('/api/v1/invites/accept',{token:new URL(invite.inviteUrl).hash.slice(1)});const waiting=await other.ok(api+'parent');expect(waiting.families).toEqual([]);expect(waiting.pending).toHaveLength(1);
  expect((await child.ok(api+'status')).status).toBe('APPROVED');
  const signupProof=child.cookies.get('iharu-child-signup')!;
  const finished=await child.req(api+'finish');expect(finished.headers.getSetCookie().join(';')).toContain('HttpOnly');expect((await finished.json()).status).toBe('CONNECTED');
