@@ -19,6 +19,39 @@ TimeTree의 날짜/일정 선택 후 편집·복사·삭제 흐름, 구성원별
 
 ## 검증
 
-로컬 타입/빌드·단위/API 142개 통과. 브라우저 실행은 로컬 Unix socket 제한으로 시작하지 못하여 CI의 Chromium에서 전체 회귀를 실행한다. 실제 PostgreSQL의 동시 메시지 전송·가족 전환 롤백·권한 검사도 CI에서 확인한다. 진행 결과는 해당 PR 체크가 기준이다.
+타입 검사·운영 빌드, 단위/API 142개, 실제 PostgreSQL 28개 시나리오, Chromium 브라우저 69개 검사를 통과했다. 320·390·768·1024·1440px 화면 및 직접 등록·수정·복사·삭제·스와이프·가족 합류·대화·작성자 권한을 검증한다. 원격 검증: https://github.com/123456789pjh321-beep/iharu/actions/runs/42378520386
 
 운영 데이터에 가상 가족이나 테스트 메시지를 생성하지 않는다. 새 SQL은 기존 경로를 유지하는 확장 마이그레이션이다. 카카오 지도 공급자의 활성화 상태 및 실제 GPS 공유는 이번 변경 범위에 포함하지 않는다.
+
+## 변경 파일
+
+| 구분 | 파일 | 변경 |
+|---|---|---|
+| 추가 | `db/migrations/20261107132531_direct_family_chat.sql` | 가족 전환 트랜잭션, 대화 조회·전송과 중복 방지 |
+| 추가 | `web/src/components/WorkspaceGate.tsx` | 메뉴 간 상태 확인 공유 |
+| 추가 | `web/src/components/PersonalCalendar.tsx` | 직접 조작 달력·검색·기간 이동 |
+| 추가 | `web/src/components/PersonalChat.tsx` | 가족 단체 대화·이전 대화·검색 |
+| 추가 | `web/src/direct-workspace.css` | 전체 메뉴 공통 여백 제거·반응형 화면 |
+| 추가 | `tests/e2e/direct-workspace.spec.ts` | 직접 편집·가족 합류·대화·화면 폭 회귀 |
+| 추가 | `docs/UI78-direct-workspace.md` | 변경 내역과 검증 기록 |
+| 수정 | `web/src/App.tsx` | 공통 프레임과 인증 분기 |
+| 수정 | `web/src/api.ts` | 공유 세션 사용 시 중복 요청 생략 |
+| 수정 | `web/src/components/AuthLayout.tsx` | 프레임 유지·중복 안내와 탭 제거 |
+| 수정 | `web/src/components/RouteEffects.tsx` | 메뉴마다 화면이 깜박이는 전환 제거 |
+| 수정 | `web/src/components/WorkspaceNavigation.tsx` | 달력으로 직접 이동·전체 메뉴 설명 정리 |
+| 수정 | `web/src/components/Icon.tsx` | 검색·복사·전송 등 기능 아이콘 |
+| 수정 | `web/src/main.tsx` | 공통 화면 스타일 연결 |
+| 수정 | `web/src/pages/PersonalWorkspace.tsx` | 오늘·달력·학원비·메모·관리와 직접 편집기 |
+| 수정 | `web/src/pages/Account.tsx` | 계정 중복 설명·탭·오늘 이동 제거 |
+| 수정 | `shared/workspace.ts` | 종일·색상·대화 커서 계약 |
+| 수정 | `server/workspace/routes.ts` | 부모 전환·대화 API 입력 검증 |
+| 수정 | `tests/workspace.test.ts` | 권한·대화·부모 전환·일정 API 검사 |
+| 수정 | `tests/integration/postgres.ts` | 실제 DB 동시 전송·전환 실패 롤백 검사 |
+| 수정 | `tests/e2e/auth-flow.spec.ts` | 정리된 오늘 화면 검증 |
+| 수정 | `tests/e2e/child-account-onboarding.spec.ts` | 자녀 가입·직접 일정 등록·읽기 전용 검사 |
+| 수정 | `tests/e2e/family.spec.ts` | 새 오늘 화면 진입 기준 |
+| 수정 | `tests/e2e/login-landing.spec.ts` | 새 오늘 화면과 기존 로그인 분기 검사 |
+| 수정 | `tests/e2e/workspace-shell.spec.ts` | 전체 메뉴 프레임과 넘침 검사 |
+| 수정 | `.github/workflows/check.yml` | 성공한 화면도 검증 자료로 보관 |
+
+삭제 파일: 없음.

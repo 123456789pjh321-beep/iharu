@@ -14,7 +14,7 @@ test('parent number → chosen child ID signup → shared read-only data → rem
  await page.goto('/today/repeats');await page.getByRole('button',{name:'일정 추가',exact:true}).click();await page.getByLabel('가족 구성원',{exact:true}).selectOption({label:'가상 서준 · 자녀'});await page.getByLabel('제목',{exact:true}).fill('서준 대상 반복 일정');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.locator('.personal-assignee')).toHaveText('가상 서준');
  await page.goto('/family');await expect(page.locator('.personal-member').filter({hasText:'가상 서준'})).toBeVisible();page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'가족에서 제외: 가상 서준'}).click();await expect(page.locator('.personal-member').filter({hasText:'가상 서준'})).toHaveCount(0);
  await child.reload();await expect(child.getByText('부모 개인 일정',{exact:true})).toHaveCount(0);await expect(child.getByText('자녀 개인 일정',{exact:true})).toBeVisible();expect((await ctx.cookies()).find(c=>c.name==='iharu-space')).toMatchObject({httpOnly:true,sameSite:'Strict'});
- }finally{await ctx.close();}
+ }finally{await ctx.close().catch(()=>{});}
 });
 for(const width of [320,390,768,1440])test(`signup fields and personal workspace remain reachable at ${width}px`,async({page,request})=>{
  await page.setViewportSize({width,height:900});for(const path of ['/login','/login?role=child']){await page.goto(path);const login=await page.getByRole('button',{name:path.includes('child')?'자녀 로그인':'로그인',exact:true}).boundingBox(),signup=await page.getByRole('link',{name:'회원가입',exact:true}).boundingBox();expect(signup!.y).toBeGreaterThanOrEqual(login!.y+login!.height);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
