@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-test.use({baseURL:'http://127.0.0.1:4174'});
+test.use({baseURL:'http://127.0.0.1:4173'});
 const pages=['today','calendar','daily','repeats','chat','family','devices','location','fees','records','notifications','account'];
 for(const [width,height] of [[320,740],[390,844],[600,960],[768,1024],[820,1180],[1024,768],[1440,900],[1920,1080],[844,390]]){
  test(`all test menus keep navigation and content usable at ${width}x${height}`,async({page})=>{
