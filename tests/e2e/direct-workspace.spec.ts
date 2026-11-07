@@ -38,6 +38,32 @@ test('parent B joins while signed in and group conversation has shared history, 
  await b.screenshot({path:'test-results/ui78-chat-mobile.png'});
  }finally{await ctx.close().catch(()=>{});}
 });
+test('calendar slides in the chosen direction, survives fast navigation and respects reduced motion',async({page,request})=>{
+ await page.setViewportSize({width:390,height:844});await login(page,request,'calendar-motion@example.test');await page.goto('/today/calendar');await expect(page.locator('.calendar-grid')).toBeVisible();
+ const initial=await page.getByLabel('달력 월 선택').inputValue();
+ async function turn(label:string){return page.evaluate(label=>new Promise<{start:number;end:number;hidden:boolean;inert:boolean}>(resolve=>{
+  const viewport=document.querySelector('.calendar-viewport')!;
+  const observer=new MutationObserver(()=>{
+   const snapshot=viewport.querySelector<HTMLElement>('.calendar-motion-snapshot'),grid=viewport.querySelector('.calendar-grid');if(!snapshot||!grid)return;
+   const animation=grid.getAnimations()[0];if(!animation)return;
+   const frames=(animation.effect as KeyframeEffect).getKeyframes(),translation=(v:unknown)=>Number(String(v).match(/translateX\((-?[\d.]+)/)?.[1]);observer.disconnect();resolve({start:translation(frames[0].transform),end:translation(frames.at(-1)!.transform),hidden:snapshot.getAttribute('aria-hidden')==='true',inert:snapshot.inert});
+  });observer.observe(viewport,{childList:true});
+  (document.querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement).click();
+ }),label);}
+ expect(await turn('다음 기간')).toEqual({start:100,end:0,hidden:true,inert:true});
+ expect(await turn('이전 기간')).toEqual({start:-100,end:0,hidden:true,inert:true});
+ await expect(page.getByLabel('달력 월 선택')).toHaveValue(initial);
+ // Reversing during a transition must clean up the previous visual page.
+ await page.getByRole('button',{name:'다음 기간'}).click();await page.getByRole('button',{name:'이전 기간'}).click();
+ await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(page.getByLabel('달력 월 선택')).toHaveValue(initial);await expect(page.getByRole('dialog')).toHaveCount(0);
+ expect(await page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+ await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'다음 기간'}).click();await expect(page.getByLabel('달력 월 선택')).not.toHaveValue(initial);
+ await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
+ await page.getByLabel('달력 보기').selectOption('week');await page.getByRole('button',{name:'다음 기간'}).click();await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.getByLabel('화면 설정').click();await page.getByRole('button',{name:/움직임 줄이기/}).click();await page.getByLabel('화면 설정').click();await page.getByRole('button',{name:'다음 기간'}).click();
+ await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
+});
+
 for(const width of [320,768,1440])test(`all functional canvases and calendar editor fit ${width}px`,async({page,request})=>{
  test.setTimeout(60000);await page.setViewportSize({width,height:900});await login(page,request,`direct-layout-${width}@example.test`);
  await expect.poll(()=>page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);await page.screenshot({path:`test-results/ui78-today-${width}.png`});
