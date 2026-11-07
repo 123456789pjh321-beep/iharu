@@ -21,7 +21,7 @@ export function SchedulePage({mode='calendar'}:{mode?:'calendar'|'repeats'}){
  if(session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;
  if(!session.data?.authenticated)return <Navigate to="/login" replace/>;
  if(session.data.assurance==='LOW')return <Navigate to="/account" replace/>;
- return <ScheduleLayout mode={mode}><>{session.data.accessReady?<ScheduleWorkspace mode={mode}/>:<section className="card schedule-empty"><Icon name="calendar"/><h1>우리 가족 달력</h1><h2>계정 확인 후 일정을 연결해요</h2><p>로그인은 완료됐어요. 이메일과 보호자 확인 상태를 가족 관리에서 확인해 주세요.</p><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</></ScheduleLayout>;
+ return <ScheduleLayout mode={mode}><>{session.data.accessReady?<ScheduleWorkspace mode={mode}/>:<section className="card schedule-empty"><Icon name="calendar"/><h1>우리 가족 달력</h1><h2>계정 확인 후 일정을 연결해요</h2><p>보호자 로그인은 완료됐어요. 가족 관리에서 자녀의 가입 번호를 확인하고 승인하면 일정을 함께 이용할 수 있어요.</p><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</></ScheduleLayout>;
 }
 function ScheduleWorkspace({mode}:{mode:'calendar'|'repeats'}){
  const families=useApi('/api/v1/me',familiesSchema);const [search,setSearch]=useSearchParams();
@@ -98,4 +98,5 @@ function ChildScheduleList({childId}:{childId:string}){
  const [day,setDay]=useState(koreaToday());const data=useApi(`/api/v1/children/${childId}/schedules?from=${day}&to=${day}`,calendarResponse,'child');
  return <section className="child-schedule-list"><div className="calendar-toolbar"><button className="button" onClick={()=>setDay(addDays(day,-1))} disabled={day<=addDays(koreaToday(),-7)}>이전 날</button><strong>{Number(day.slice(5,7))}월 {Number(day.slice(8))}일</strong><button className="button" onClick={()=>setDay(addDays(day,1))} disabled={day>=addDays(koreaToday(),7)}>다음 날</button></div>{data.loading?<Loading/>:data.error?<ErrorState message={data.error} retry={data.retry}/>:data.data?.occurrences.length?data.data.occurrences.map(o=><OccurrenceCard key={o.id} item={o} busy={false}/>):<p className="auth-notice">등록된 일정이 없어요.</p>}<p className="account-caption">‘확인 필요’ 일정은 보호자에게 물어봐 주세요.</p></section>;
 }
+
 

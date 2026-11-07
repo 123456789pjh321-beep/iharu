@@ -58,6 +58,7 @@ API 단위: 승인 전 세션 차단, 익명 보호자 승인 차단, 정확한 
 수정
 - `server/app.ts`, `server/family/service.ts`: 새 API와 제한된 정책 함수 연결.
 - `web/src/pages/Login.tsx`: 대상별 탭·별도 회원가입 진입.
+- `web/src/pages/Home.tsx`, `web/src/pages/Account.tsx`, `web/src/pages/Schedules.tsx`: 기존 심사 대기 설명을 새 번호 승인 안내로 통일.
 - `web/src/components/AuthLayout.tsx`: 자녀 비밀번호 길이 및 로그인 안내.
 - `web/src/pages/Family.tsx`, `web/src/pages/Device.tsx`: 새 기본 흐름과 기존 기능의 호환 진입.
 - `web/src/components/WorkspaceTabs.tsx`, `web/src/main.tsx`: 안내 링크·스타일 연결.

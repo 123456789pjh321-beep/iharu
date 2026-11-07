@@ -16,7 +16,7 @@ export function AuthLayout({ children, wide:requestedWide = false }: { children:
     {!wide&&<div className="test-entry-banner"><span>기능을 먼저 살펴보세요</span><Link to="/test/today">인증 없이 기능 테스트<Icon name="arrow"/></Link></div>}
     {wide&&<WorkspaceNavigation childMode={pathname.startsWith('/child')||pathname.startsWith('/device')}/> }
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
-      {!wide && <aside className="auth-intro"><span className="eyebrow">가족의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>가족이 함께하는 하루를 시작하세요.</p><FamilyArtwork/><div className="auth-trust"><Icon name="shield"/><span>아이 정보는 보호자 확인과 동의 후 등록해요.</span></div></aside>}
+      {!wide && <aside className="auth-intro"><span className="eyebrow">가족의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>가족이 함께하는 하루를 시작하세요.</p><FamilyArtwork/><div className="auth-trust"><Icon name="shield"/><span>자녀 정보는 보호자의 번호 확인과 동의 후 연결해요.</span></div></aside>}
       <Entrance key={pathname} className="auth-panel">{wide&&["/account","/phone"].some(p=>pathname.startsWith(p))&&<WorkspaceTabs group="family"/>}{children}</Entrance>
     </main><footer className="auth-footer">아이하루 · 가족의 하루를 잇다 <Link to="/login?role=child">자녀 로그인</Link></footer>
   </div>;
