@@ -12,7 +12,6 @@ import { ErrorState, Loading } from "../components/Common";
 import { Icon } from "../components/Icon";
 import { familyRequest } from "../family";
 import { ChildManagement } from "./Family";
-import "./household.css";
 export function StartGuide({ compact = false, target="/start" }: { compact?: boolean; target?:string }) {
   return (
     <section
@@ -454,6 +453,7 @@ function HouseholdWorkspace() {
                           기기 연결
                         </button>
                       )}
+                      {c.canManage&&<button className="button compact" aria-label={`${c.nickname} 공유 설정`} onClick={()=>{setSelectedChild(c.id);setAdvanced(true);}}>공유 설정</button>}
                       {c.canManage && c.managed && (
                         <button
                           className="button compact danger-text"
@@ -635,69 +635,10 @@ function JoinFamily({
     </section>
   );
 }
-function MemberRequests({
-  familyId,
-  owner,
-}: {
-  familyId: string;
-  owner: boolean;
-}) {
-  const members = useApi(`/api/v1/families/${familyId}/members`, membersSchema),
-    [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
-  return (
-    <div className="household-members">
-      <div className="card-title">
-        <h3>함께하는 보호자와 요청</h3>
-        <button className="button compact" onClick={members.retry}>
-          요청 새로고침
-        </button>
-      </div>
-      <FormNotice error={error} />
-      {members.loading ? (
-        <Loading />
-      ) : members.error ? (
-        <ErrorState message={members.error} retry={members.retry} />
-      ) : (
-        members.data!.members.map((m) => (
-          <div className="family-member" key={m.id}>
-            <div>
-              <strong>{m.name}</strong>
-              <small>
-                {m.owner
-                  ? "가족 관리자"
-                  : m.status === "PENDING"
-                    ? "참여 요청 도착"
-                    : "함께하는 보호자"}
-              </small>
-            </div>
-            {owner && m.status === "PENDING" && (
-              <button
-                className="button"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  setError("");
-                  try {
-                    await familyRequest(`/api/v1/memberships/${m.id}/approve`, {
-                      expectedVersion: m.version,
-                    });
-                    members.retry();
-                  } catch (e) {
-                    setError((e as Error).message);
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                요청 수락
-              </button>
-            )}
-          </div>
-        ))
-      )}
-    </div>
-  );
+function MemberRequests({familyId,owner}:{familyId:string;owner:boolean}){
+ const members=useApi(`/api/v1/families/${familyId}/members`,membersSchema),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
+ async function change(m:{id:string;version:number},approve:boolean){if(busy)return;setBusy(true);setError('');setNotice('');try{await familyRequest(`/api/v1/memberships/${m.id}/${approve?'approve':'revoke'}`,{expectedVersion:m.version});members.retry();setNotice(approve?'참여를 수락했어요. 위의 자녀에서 공유 설정을 눌러 허용할 정보를 골라 주세요.':'가족 참여와 공유 접근을 해제했어요.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ return <div className="household-members"><div className="card-title"><h3>함께하는 보호자와 요청</h3><button className="button compact" onClick={members.retry}>요청 새로고침</button></div><FormNotice error={error} message={notice}/>{error&&<Link to="/account/reauth">본인 확인 다시 하기</Link>}{members.loading?<Loading/>:members.error?<ErrorState message={members.error} retry={members.retry}/>:members.data!.members.map(m=><div className="family-member" key={m.id}><div><strong>{m.name}</strong><small>{m.owner?'가족 관리자':m.status==='PENDING'?'참여 요청 도착':'함께하는 보호자'}</small></div>{owner&&m.status==='PENDING'&&<button className="button" disabled={busy} onClick={()=>void change(m,true)}>요청 수락</button>}{owner&&!m.owner&&<button className="button" disabled={busy} onClick={()=>{if(window.confirm(m.status==='PENDING'?'이 참여 요청을 거절할까요?':'이 보호자의 가족 참여와 공유 접근을 해제할까요?'))void change(m,false);}}>{m.status==='PENDING'?'요청 거절':'가족 연결 해제'}</button>}</div>)}</div>;
 }
 function PairChild({
   child,

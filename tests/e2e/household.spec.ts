@@ -150,3 +150,10 @@ for (const width of [320, 390, 768, 1024, 1440])
         .toBe(true);
     }
   });
+
+test("public guide shows readable role buttons and leads children to code entry",async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto('/start');
+ const parent=page.getByRole('link',{name:'보호자 로그인·가입',exact:true});await expect(parent).toBeVisible();expect((await parent.boundingBox())!.width).toBeGreaterThan(100);
+ await page.getByRole('link',{name:'아이 연결 시작',exact:true}).click();await expect(page.getByRole('heading',{name:'가족과 연결해 볼까요?'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'연결 번호 받기'})).toBeVisible();
+});

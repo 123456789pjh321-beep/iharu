@@ -315,3 +315,6 @@
     font-size: 0.8rem;
   }
 }
+
+.guide-role-cards>div>.button{grid-column:2;justify-self:start;max-width:100%;min-width:0;white-space:normal;padding-inline:16px}
+.auth-app .auth-panel .subnav a[aria-current=page],.app .main .subnav a[aria-current=page]{background:var(--primary);color:#fff}
