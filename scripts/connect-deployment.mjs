@@ -6,7 +6,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const repo = '987654321park123-jpg/iharu';
+const repo = '123456789pjh321-beep/iharu';
 const team = '987654321pjh123-1875';
 const projectId = 'prj_IcbkymE1hpnRZI7SaxyULQWMPMR7';
 const orgId = 'team_GOcI5H9YPJhB6j5FuJbpi9Of';
@@ -49,7 +49,7 @@ function main() {
   if (existing.ok && !allowed.includes(existing.text)) throw new Error('origin이 다른 프로젝트를 가리킵니다. 아이하루 전용 폴더에서 실행하세요.');
   if (!run('git', ['config', 'user.name'], {capture:true,optional:true}).ok) run('git', ['config', 'user.name', profile.login]);
   if (!run('git', ['config', 'user.email'], {capture:true,optional:true}).ok) run('git', ['config', 'user.email', `${profile.id}+${profile.login}@users.noreply.github.com`]);
-  run('git', ['add', '--', '.github', '.gitignore', '.nvmrc', '.env.example', '.vercelignore', 'README.md', 'api', 'db', 'package.json', 'package-lock.json', 'playwright.config.ts', 'scripts', 'server', 'shared', 'tests', 'tsconfig.json', 'vercel.json', 'vite.config.ts', 'vitest.config.ts', 'web']);
+  run('git', ['add', '--', '.github', '.gitignore', '.nvmrc', '.env.example', '.vercelignore', 'api', 'db', 'package.json', 'package-lock.json', 'playwright.config.ts', 'scripts', 'server', 'shared', 'tests', 'tsconfig.json', 'tsconfig.server.json', 'vercel.json', 'vite.config.ts', 'vitest.config.ts', 'web']);
   const staged = run('git', ['diff', '--cached', '--name-only'], {capture:true}).text.split('\n').filter(Boolean);
   if (staged.some(p => /(^|\/)\.env(?!\.example$)|\.(pem|p12|pfx|key)$|^\.vercel\//i.test(p))) {
     throw new Error('업로드 대상에 비공개 설정 파일이 있습니다. 해당 파일을 staging에서 제외하고 재실행하세요.');
