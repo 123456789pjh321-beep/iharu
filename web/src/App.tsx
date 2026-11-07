@@ -13,7 +13,7 @@ import { DailyWorkspace } from './pages/Daily';
 import { Home } from './pages/Home';
 import {copy} from './copy';
 import {WorkspaceBrand,WorkspaceNavigation} from './components/WorkspaceNavigation';
-import {DisplaySettings} from './components/Experience';
+import {DisplaySettings,Entrance} from './components/Experience';
 import { Icon } from './components/Icon';
 import { PreviewDialog, ErrorState, Loading } from './components/Common';
 import { Guardian } from './pages/Guardian';
@@ -50,7 +50,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
   const [dialog,setDialog]=useState<string|null>(null);
   const [large,setLarge]=useState(()=>{try{return localStorage.getItem('iharu:large-type')==='true';}catch{return false;}});
   useEffect(()=>{ document.documentElement.classList.toggle('large-type',large); try{localStorage.setItem('iharu:large-type',String(large));}catch{/* Preference can remain in memory. */} },[large]);
-  useEffect(()=> { document.title=`${isChild?'내 하루':'가족의 하루'} · 아이하루`; window.scrollTo(0,0); document.getElementById('main')?.focus({preventScroll:true}); },[pathname,isChild]);
+  useEffect(()=> { document.title=`${isChild?'내 하루':'가족의 하루'} · 아이하루`; document.getElementById('main')?.scrollTo(0,0); document.getElementById('main')?.focus({preventScroll:true}); },[pathname,isChild]);
   return <div className={`app ${isChild?'child-mode':''}`}>
     <a className="skip-link" href="#main">본문 바로가기</a>
     <WorkspaceNavigation childMode={isChild}/>
@@ -58,7 +58,8 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
       <div className="top-actions"><Link className="test-entry-link" to="/test/today">기능 테스트</Link><DisplaySettings/><button className="font-toggle" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button>{!isChild&&<><Link className="icon-button" to="/notifications" aria-label="알림함"><Icon name="bell"/></Link><Link className="profile-button" to="/settings" aria-label="가족 설정">가</Link></>}</div></header>
       {demo && <div className="demo-bar"><span><span className="demo-dot"/>{copy.demo}</span><div className="preview-toggle" aria-label="미리보기 화면 선택"><Link to="/today" aria-current={!isChild?'page':undefined}>보호자 화면</Link><Link to="/child" aria-current={isChild?'page':undefined}>아이 화면</Link></div></div>}
       <main id="main" tabIndex={-1} className="main">
-        {pathname==='/'?<Navigate to="/today" replace/>:!demo?(pathname==='/today'?<Home session={session}/>:pathname==='/records'?<><div className="page-heading"><div><p className="eyebrow">하루하루 쌓이는 가족의 기록</p><h1>우리 아이의 기록</h1><p className="page-subtitle">등하원부터 작은 배움까지, 지난 하루를 돌아보세요.</p></div></div>{session.accessReady?<DailyWorkspace records/>:<section className="card"><h2>가족 연결 후 기록을 볼 수 있어요</h2><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</>:<Upcoming/>):['/today','/calendar','/tuition'].includes(pathname)?<Guardian child={child} setChild={setChild} onPreview={setDialog}/>:pathname==='/child'?<ChildHome onPreview={setDialog}/>:<Upcoming/>}
+        <Entrance key={pathname}>{pathname==='/'?<Navigate to="/today" replace/>:!demo?(pathname==='/today'?<Home session={session}/>:pathname==='/records'?<><div className="page-heading"><div><p className="eyebrow">하루하루 쌓이는 가족의 기록</p><h1>우리 아이의 기록</h1><p className="page-subtitle">등하원부터 작은 배움까지, 지난 하루를 돌아보세요.</p></div></div>{session.accessReady?<DailyWorkspace records/>:<section className="card"><h2>가족 연결 후 기록을 볼 수 있어요</h2><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</>:<Upcoming/>):['/today','/calendar','/tuition'].includes(pathname)?<Guardian child={child} setChild={setChild} onPreview={setDialog}/>:pathname==='/child'?<ChildHome onPreview={setDialog}/>:<Upcoming/>}
+        </Entrance>
       </main><footer className="page-footer">아이하루 · 가족의 하루를 잇다<span>{demo?'화면 미리보기 · 실제 전송 및 저장 없음':'가족의 정보는 정해진 공유 범위 안에서'}</span></footer>
     </div>{dialog&&<PreviewDialog title={dialog} onClose={()=>setDialog(null)}/>}
   </div>;

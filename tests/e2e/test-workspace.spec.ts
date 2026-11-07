@@ -142,6 +142,12 @@ for (const width of [320, 390, 768, 1024, 1440]) {
             ),
           )
           .toBe(true);
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollHeight <= window.innerHeight,
+          ),
+        ).toBe(true);
+        await expect(page.locator("main")).toHaveCSS("overflow-y", "auto");
       });
     }
     expect(calls).toEqual([]);
@@ -197,4 +203,37 @@ test("validation, cancellation, font preferences and reset remain usable", async
     "테스트 보호자",
   );
   expect(calls).toEqual([]);
+});
+
+test("content pane scrolls by keyboard while shell stays fixed", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 640 });
+  await page.goto("/test/family");
+  const main = page.locator("main");
+  await main.focus();
+  await page.keyboard.press("Control+End");
+  await expect
+    .poll(() =>
+      main.evaluate(
+        (el) => el.scrollTop + el.clientHeight >= el.scrollHeight - 2,
+      ),
+    )
+    .toBe(true);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.locator(".topbar")).toBeInViewport();
+});
+test("map configuration failure is recoverable and clearly labels example data", async ({
+  page,
+}) => {
+  await page.goto("/test/location");
+  await expect(
+    page.getByRole("region", { name: "카카오 예시 지도" }),
+  ).toBeVisible();
+  await expect(page.getByText("지도 연결 설정을 준비 중이에요.")).toBeVisible();
+  await page.getByRole("button", { name: "다시 연결", exact: true }).click();
+  await expect(page.getByText("지도 연결 설정을 준비 중이에요.")).toBeVisible();
+  await expect(
+    page.getByText("제주 예시 좌표 · 실제 아이 위치가 아니에요"),
+  ).toBeVisible();
 });

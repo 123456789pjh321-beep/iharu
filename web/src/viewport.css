@@ -1,0 +1,157 @@
+/* A fixed workspace shell with one accessible, independently scrollable content pane. */
+html,
+body,
+#root {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+body {
+  margin: 0;
+}
+#root > .app,
+#root > .auth-app,
+#root > .test-workspace {
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.app > .app-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.topbar,
+.auth-header,
+.test-environment-banner,
+.test-entry-banner,
+.demo-bar {
+  flex-shrink: 0;
+}
+.app .main,
+.auth-app .auth-main,
+.test-workspace .test-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  scrollbar-color: var(--line) transparent;
+  padding-bottom: 32px;
+}
+.auth-app.entry-page .auth-main {
+  width: 100%;
+  max-width: none;
+  align-items: start;
+  align-content: start;
+}
+.auth-app.entry-page .auth-intro {
+  max-width: 540px;
+  justify-self: end;
+}
+.auth-app.entry-page .auth-panel {
+  width: 100%;
+  max-width: 480px;
+  justify-self: start;
+}
+.app .page-footer,
+.auth-app .auth-footer {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 9px 140px 9px 24px;
+  border-top: 1px solid var(--line);
+  font-size: 0.65rem;
+  background: var(--surface);
+}
+.workspace-rail {
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.workspace-rail::-webkit-scrollbar {
+  display: none;
+}
+.workspace-rail nav a {
+  transition:
+    background-color 0.22s,
+    color 0.22s,
+    transform 0.22s;
+}
+.workspace-rail nav a:hover {
+  transform: translateX(-2px);
+}
+.rail-active-dot {
+  transition: background 0.22s;
+}
+.workspace-rail {
+  animation: rail-arrive 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes rail-arrive {
+  from {
+    opacity: 0;
+    translate: 12px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.display-popover {
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+}
+.connection-shortcut .button {
+  white-space: normal;
+}
+@media (max-width: 760px) {
+  .app .main,
+  .auth-app .auth-main,
+  .test-workspace .test-main {
+    padding-bottom: 28px;
+    scroll-padding-bottom: 28px;
+  }
+  .app .page-footer,
+  .auth-app .auth-footer {
+    display: none;
+  }
+  .auth-app.entry-page .auth-main {
+    padding-bottom: 32px;
+  }
+  .auth-app.entry-page .auth-intro,
+  .auth-app.entry-page .auth-panel {
+    max-width: 100%;
+  }
+  .test-workspace .test-environment-banner {
+    font-size: 0.65rem;
+    padding-block: 8px;
+  }
+  .workspace-mobile-nav {
+    position:relative;inset:auto;order:100;flex-shrink:0;width:100%;min-width:0;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-rail {
+    animation: none;
+  }
+  .workspace-rail nav a {
+    transition: none;
+  }
+  .workspace-rail nav a:hover {
+    transform: none;
+  }
+}
+html[data-motion="reduced"] .workspace-rail {
+  animation: none;
+}
+html[data-motion="reduced"] .workspace-rail nav a {
+  transition: none;
+  transform: none;
+}
+
+.app .main::-webkit-scrollbar,.auth-app .auth-main::-webkit-scrollbar,.test-workspace .test-main::-webkit-scrollbar{display:none}

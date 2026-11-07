@@ -1,3 +1,4 @@
+import {KakaoMap} from '../maps/KakaoMap';
 import {
   useEffect,
   useRef,
@@ -81,7 +82,7 @@ const pages: Record<
   },
   location: {
     title: "아이 위치",
-    description: "가상 지도에서 아이가 직접 위치를 보내는 흐름을 확인해요.",
+    description: "카카오 지도에서 예시 위치를 보내는 흐름을 확인해요.",
     icon: "pin",
   },
   fees: {
@@ -477,7 +478,7 @@ export default function TestWorkspace() {
   useEffect(() => {
     document.title = `${meta?.title || "기능 테스트"} · 아이하루 테스트`;
     setError("");
-    window.scrollTo(0, 0);
+    document.getElementById("test-main")?.scrollTo(0, 0);
     document.getElementById("test-main")?.focus({ preventScroll: true });
   }, [page, meta?.title]);
   useEffect(() => {
@@ -2140,60 +2141,7 @@ function TestLocation({
   return (
     <div className="test-two-columns">
       <Card title="위치 전송 시뮬레이션" icon="pin">
-        <div
-          className="test-map"
-          role="img"
-          aria-label={`가상 지도. ${current?.sharing ? nickname + "의 마지막 전송 위치: " + points[current.point].label : "공유한 위치 없음"}`}
-        >
-          <svg viewBox="0 0 500 330" aria-hidden="true">
-            <defs>
-              <pattern
-                id="test-map-grid"
-                width="34"
-                height="34"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 34 0 L 0 0 0 34"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth=".5"
-                />
-              </pattern>
-            </defs>
-            <rect width="500" height="330" fill="url(#test-map-grid)" />
-            <path
-              d="M0 210 500 90M110 0 260 330M0 100 500 270"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="14"
-              opacity=".12"
-            />
-            {Object.entries(points).map(([key, p]) => (
-              <g key={key} transform={`translate(${p.x * 5},${p.y * 3.3})`}>
-                <circle
-                  r={current?.sharing && current.point === key ? 23 : 13}
-                  fill={
-                    current?.sharing && current.point === key
-                      ? "var(--primary)"
-                      : "var(--surface)"
-                  }
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <text
-                  y="43"
-                  textAnchor="middle"
-                  fill="currentColor"
-                  fontSize="15"
-                >
-                  {p.label}
-                </text>
-              </g>
-            ))}
-          </svg>
-          <span>실제 지도·GPS가 아닌 가상 테스트 지도</span>
-        </div>
+        <KakaoMap point={current?.sharing?current.point:point}/>
         <div className="test-location-status">
           <Icon name="pin" />
           <div>
@@ -2246,7 +2194,7 @@ function TestLocation({
           <Icon name="shield" />
           <p>
             위치 권한을 요청하거나 실제 좌표를 수집하지 않아요. 운영 위치 기능의
-            실제 GPS·지도 연동은 아직 별도 개발 대상이에요.
+            카카오 지도에 예시 좌표를 표시해요. 실제 GPS 수집·가족 간 위치 전송은 별도 개발 대상이에요.
           </p>
         </div>
       </Card>

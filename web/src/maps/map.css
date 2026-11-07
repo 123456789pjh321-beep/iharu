@@ -1,0 +1,113 @@
+.kakao-map-panel {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-sub);
+  text-align: left;
+}
+.kakao-map-host {
+  height: 360px;
+  width: 100%;
+  background: var(--surface-sub);
+}
+.kakao-map-fallback {
+  position: absolute;
+  inset: 0 0 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  gap: 12px;
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--mint),
+    var(--surface-sub)
+  );
+}
+.kakao-map-fallback p {
+  max-width: 380px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.kakao-map-caption {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--surface);
+  font-size: 0.8rem;
+}
+.kakao-map-caption span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.upcoming-page:has(.kakao-map-panel) {
+  max-width: 1100px;
+  width: 100%;
+  padding-top: 24px;
+}
+.upcoming-page .kakao-map-panel {
+  margin: 24px 0;
+}
+.connection-shortcut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--line);
+  background: var(--mint);
+  border-radius: 14px;
+  padding: 20px;
+  margin: 18px 0;
+}
+.connection-shortcut p {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 6px 0;
+}
+.connection-shortcut .connection-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.connection-key {
+  font-family: monospace;
+  overflow-wrap: anywhere;
+  letter-spacing: 0.02em;
+}
+.connection-guide {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0;
+}
+.connection-guide span {
+  padding: 12px 8px;
+  background: var(--surface-sub);
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+.connection-guide b {
+  display: block;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+@media (max-width: 760px) {
+  .kakao-map-host {
+    height: 280px;
+  }
+  .connection-guide {
+    grid-template-columns: 1fr;
+  }
+  .connection-guide b {
+    display: inline;
+    margin-right: 8px;
+  }
+}
