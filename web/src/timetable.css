@@ -11,9 +11,9 @@
 .timetable-week button.is-today{box-shadow:inset 0 0 0 1px var(--line)}
 .timetable-week button[aria-pressed=true]{background:var(--primary);color:#fff}.timetable-week button[aria-pressed=true]>span{color:#fff}
 .timetable-week i{width:4px;height:4px;border-radius:50%;background:transparent}.timetable-week .has-events{background:currentColor}
-.timetable-filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding:14px 16px 12px;overscroll-behavior-x:contain}
-.timetable-filters button{flex-shrink:0;min-height:38px;padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--line);border-radius:22px;font:inherit;font-size:.8rem;cursor:pointer}
-.timetable-filters button[aria-pressed=true]{background:var(--mint);color:var(--primary);border-color:var(--primary);font-weight:750}
+.member-filters{display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding:14px 16px 12px;overscroll-behavior-x:contain}
+.member-filters button{flex-shrink:0;min-height:38px;padding:7px 14px;background:var(--surface);color:var(--muted);border:1px solid var(--line);border-radius:22px;font:inherit;font-size:.8rem;cursor:pointer}
+.member-filters button[aria-pressed=true]{background:var(--mint);color:var(--primary);border-color:var(--primary);font-weight:750}
 .timetable-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 16px 16px;font-size:.82rem;font-weight:700}
 .timetable-summary>span{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.timetable-summary small{color:var(--muted);font-weight:500}
 .timetable-day{min-height:200px;touch-action:pan-y;padding:0 16px 22px}
@@ -77,3 +77,5 @@
 .timetable-current-summary+.timetable-viewport .timetable-scroll{max-height:calc(100dvh - 410px)}.calendar-daily .timetable-current-summary+.timetable-viewport .timetable-scroll{max-height:calc(100dvh - 340px)}
 .calendar-month-picker.calendar-daily-date{font-variant-numeric:tabular-nums;font-size:.95rem}
 @media(max-width:360px){.calendar-month-picker.calendar-daily-date{font-size:.75rem;min-width:106px}}
+
+.member-filters{min-width:0;max-width:100%;box-sizing:border-box}.member-filters button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}.fee-member-filters{padding:0 0 16px;margin-bottom:4px}

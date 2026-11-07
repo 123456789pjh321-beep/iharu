@@ -14,7 +14,7 @@ const info:Record<string,{title:string;body:string;icon:IconName}> = {
 export function Upcoming() {
   const {pathname}=useLocation(); const item=info[pathname];
   return <div className="upcoming-page"><span className="upcoming-icon"><Icon name={item?.icon || 'home'}/></span><p className="eyebrow">{item?'연결 준비 중':'페이지를 찾을 수 없어요'}</p><h1>{item?.title || '우리 가족의 하루로 돌아갈까요?'}</h1><p>{item?.body || '주소를 다시 확인하거나 홈으로 이동해 주세요.'}</p>
-    {pathname==='/location'&&<><KakaoMap/><Link className="button" to="/test/location">예시 위치 전송 테스트</Link></>}
+    {pathname==='/location'&&<><KakaoMap/></>}
     {pathname.includes('chat') && <div className="sticker-teaser" aria-label="그림 메시지 예시"><span><b aria-hidden="true">👋</b>안녕!</span><span><b aria-hidden="true">🥰</b>사랑해요</span><span><b aria-hidden="true">🏠</b>집에 왔어요</span></div>}
     <Link to={pathname.startsWith('/child')?'/child':'/today'} className="button primary">{pathname.startsWith('/child')?'내 하루로 돌아가기':'오늘 화면으로 돌아가기'}<Icon name="arrow"/></Link>
   </div>;
