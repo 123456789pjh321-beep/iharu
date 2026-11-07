@@ -1,0 +1,20 @@
+import {createContext,useContext,useLayoutEffect,useRef,useState,type ReactNode} from 'react';
+import {LazyMotion,domAnimation,MotionConfig,m} from 'motion/react';
+import {Icon} from './Icon';
+type Preferences={theme:'light'|'dark';quiet:boolean};
+const defaults:Preferences={theme:'light',quiet:false};
+const Context=createContext<{preferences:Preferences;setPreference:(p:Partial<Preferences>)=>void}>({preferences:defaults,setPreference:()=>{}});
+function readPreferences():Preferences{try{const p=JSON.parse(localStorage.getItem('iharu:appearance')||'null');return {theme:p?.theme==='dark'?'dark':'light',quiet:p?.quiet===true};}catch{return defaults;}}
+export function ExperienceProvider({children}:{children:ReactNode}){
+ const [preferences,setPreferences]=useState(readPreferences);
+ useLayoutEffect(()=>{document.documentElement.dataset.theme=preferences.theme;document.documentElement.dataset.motion=preferences.quiet?'reduced':'full';try{localStorage.setItem('iharu:appearance',JSON.stringify(preferences));}catch{/* Optional display preferences. */}},[preferences]);
+ return <Context.Provider value={{preferences,setPreference:p=>setPreferences(current=>({...current,...p}))}}><LazyMotion features={domAnimation} strict><MotionConfig reducedMotion={preferences.quiet?'always':'user'} transition={{duration:.28,ease:[.22,1,.36,1]}}>{children}</MotionConfig></LazyMotion></Context.Provider>;
+}
+export function DisplaySettings(){
+ const {preferences,setPreference}=useContext(Context),ref=useRef<HTMLDetailsElement>(null);
+ return <details ref={ref} className="display-settings" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();ref.current?.removeAttribute('open');ref.current?.querySelector('summary')?.focus();}}}>
+ <summary aria-label="화면 설정"><Icon name="settings"/><span>화면</span></summary><div className="display-popover"><h2>편안한 화면으로</h2><p>이 기기에서 사용할 화면을 골라요.</p><fieldset><legend>화면 색상</legend><div className="display-options"><button type="button" aria-pressed={preferences.theme==='light'} onClick={()=>setPreference({theme:'light'})}><Icon name="sun"/>밝게</button><button type="button" aria-pressed={preferences.theme==='dark'} onClick={()=>setPreference({theme:'dark'})}><Icon name="moon"/>어둡게</button></div></fieldset><button type="button" className="motion-preference" aria-pressed={preferences.quiet} onClick={()=>setPreference({quiet:!preferences.quiet})}><span><strong>움직임 줄이기</strong><small>전환 효과를 차분하게 표시해요.</small></span><span className="preference-switch" aria-hidden="true"/></button><small>기기의 움직임 줄이기 설정도 존중해요.</small></div></details>;
+}
+/** Enter-only: no exit delay or route remount. */
+export function Entrance({children,className=''}:{children:ReactNode;className?:string}){const {preferences}=useContext(Context);return <m.div className={className} initial={preferences.quiet?false:{opacity:0,y:10}} animate={{opacity:1,y:0}}>{children}</m.div>;}
+export function FamilyArtwork(){return <div className="family-artwork" aria-hidden="true"><div className="art-orbit art-orbit-one"/><div className="art-orbit art-orbit-two"/><div className="art-calendar"><div className="art-card-label"><Icon name="calendar"/><span>함께 챙기는 일정</span><span className="art-dot"/></div><div className="art-calendar-days">{['월','화','수','목','금'].map((d,i)=><span key={d} className={i===2?'selected':''}><small>{d}</small><i/></span>)}</div><div className="art-schedule-line"><b/><span/><i/></div><div className="art-schedule-line second"><b/><span/><i/></div></div><div className="art-message"><span className="art-message-icon"><Icon name="chat"/></span><div><strong>그림으로 전하는 마음</strong><span>짧은 소식도, 가족과 함께</span></div><Icon name="check"/></div><div className="art-family-badge"><Icon name="home"/><span>가족의 하루를 잇다</span></div><span className="art-spark spark-one">✦</span><span className="art-spark spark-two">✧</span></div>}

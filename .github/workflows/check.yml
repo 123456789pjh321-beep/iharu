@@ -1,0 +1,63 @@
+name: Check
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: iharu_ci
+          POSTGRES_PASSWORD: isolated-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d iharu_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Check with deployment variables present (isolated fixtures only)
+        run: npm run check
+        env:
+          APP_ENV: production
+          DEMO_MODE: 'false'
+          APP_ORIGIN: https://iharu.example.test
+          BETTER_AUTH_SECRET: ci-fixture-only-not-a-deployment-secret-0001
+          APP_DATABASE_URL: postgresql://app_fixture:fixture@127.0.0.1:1/unreachable
+          AUTH_DATABASE_URL: postgresql://auth_fixture:fixture@127.0.0.1:1/unreachable
+      - name: Verify actual PostgreSQL concurrency and role isolation
+        run: npm run test:postgres
+        env:
+          CI: 'true'
+          IHARU_CI_DATABASE_URL: postgresql://postgres:isolated-ci-only@127.0.0.1:5432/iharu_ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Keep browser failure details
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-${{ github.run_id }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
+

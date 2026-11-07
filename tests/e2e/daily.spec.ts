@@ -1,0 +1,43 @@
+import {test,expect,type Page} from '@playwright/test';
+import {koreaToday} from '../../shared/schedules';
+test.use({baseURL:'http://127.0.0.1:4174',actionTimeout:10000});
+const origin='http://127.0.0.1:4174';
+async function fixture(page:Page){
+ const email=`schedule-${crypto.randomUUID()}@example.test`,password='schedule-browser-fixture-password';
+ async function post(path:string,data:object){const r=await page.request.post(path,{headers:{Origin:origin,'Idempotency-Key':crypto.randomUUID()},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
+ await post('/api/auth/sign-up/email',{email,password,name:'가상 보호자',callbackURL:'/login?verified=1'});
+ const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);
+ await post('/api/auth/sign-in/email',{email,password});await post('/__test__/ready',{email});
+ const family=await post('/api/v1/families',{name:'일정 테스트 가족'}),draft=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});
+ await post('/__test__/verify-draft',{draftId:draft.id});const proof=await post(`/api/v1/child-registration-drafts/${draft.id}/consent-proofs`,{general:true,location:false,policyVersion:'6.1'});
+ const child=await post(`/api/v1/families/${family.id}/children`,{draftId:draft.id,proofId:proof.proofId,nickname:'가상 하늘',birthDate:'2018-03-02'});
+ return {familyId:family.id as string,childId:child.id as string,email,password,post};
+}
+test('P05 guardian and child share checkins, tasks, learning and pickup with persisted state',async({page,browser})=>{
+ test.setTimeout(90000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ const {familyId,childId,email,password,post}=await fixture(page);await page.setViewportSize({width:1440,height:1000});await page.goto('/today');
+ await expect(page.getByRole('heading',{name:'오늘의 등하원',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'할 일 추가',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.getByLabel('할 일 이름').fill('그림책 읽기');await dialog.getByLabel('자세한 내용').fill('좋아하는 장면을 골라요');await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(dialog.getByLabel('자세한 내용')).toHaveValue('좋아하는 장면을 골라요');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByRole('heading',{name:'그림책 읽기',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'메모 추가',exact:true}).click();await dialog.getByLabel('과목 · 선택').fill('읽기');await dialog.getByLabel('학습 메모',{exact:true}).fill('장면을 보고 이야기를 만들어 봤어요.');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();
+ await page.getByRole('button',{name:'픽업 요청',exact:true}).click();await dialog.getByLabel('담당 가족').selectOption({label:'가상 보호자'});await dialog.getByLabel('만날 장소').fill('정문');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();await page.getByRole('button',{name:'제가 맡을게요',exact:true}).click();await dialog.getByRole('button',{name:'픽업 맡기',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByText('픽업 약속됨',{exact:true})).toBeVisible();
+ const context=await browser.newContext({viewport:{width:390,height:844}}),child=await context.newPage();child.on('pageerror',e=>errors.push(e.message));
+ const pair=await(await context.request.post(origin+'/api/v1/device-pairings',{headers:{Origin:origin},data:{label:'P05 가상 기기'}})).json();await post(`/api/v1/device-pairings/${pair.id}/approve`,{childId,expectedVersion:1});
+ expect((await context.request.post(origin+`/api/v1/device-pairings/${pair.id}/exchange`,{headers:{Origin:origin},data:{exchangeKey:crypto.randomUUID()}})).ok()).toBe(true);
+ await context.addCookies(await page.context().cookies()); // Both credentials must still select the child actor on the child screen.
+ await child.goto(origin+'/child/connected');await expect(child.getByRole('heading',{name:'그림책 읽기'})).toBeVisible();
+ await child.getByRole('button',{name:'도착했어요',exact:true}).click();await child.getByRole('dialog').getByRole('button',{name:'네, 기록할게요'}).click();await expect(child.getByRole('dialog')).not.toBeVisible();await expect(child.getByRole('heading',{name:'도착',exact:true})).toBeVisible();
+ await child.getByRole('button',{name:'다 했어요',exact:true}).click();await child.getByRole('dialog').getByRole('button',{name:'다 했어요',exact:true}).click();await expect(child.getByRole('dialog')).not.toBeVisible();await expect(child.getByText('완료',{exact:true})).toBeVisible();await expect(child.getByRole('button',{name:'다시 열기',exact:true})).toHaveCount(0);const checkins=await(await context.request.get(origin+`/api/v1/children/${childId}/today`,{headers:{'X-Iharu-Actor':'child'}})).json();expect(checkins.data.checkins[0].actorType).toBe('CHILD');await expect(child.getByText('정문',{exact:true})).toHaveCount(0);
+ await child.evaluate(()=>window.scrollTo(0,0));await child.screenshot({path:'test-results/p05-child-390.png',fullPage:true});
+ await page.getByRole('button',{name:'최신 기록 확인',exact:true}).click();await expect(page.getByText('완료',{exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'도착',exact:true})).toBeVisible();await page.getByRole('button',{name:'아이를 만났어요',exact:true}).click();await dialog.getByRole('button',{name:'아이 만남 기록',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByText('만남 기록됨',{exact:true})).toBeVisible();
+ await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:'test-results/p05-home-1440.png',fullPage:true});
+ for(const width of [320,390,768]){await page.setViewportSize({width,height:900});await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+ await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'큰 글씨'}).click();await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/p05-home-390-large.png',fullPage:true});await page.evaluate(()=>document.documentElement.style.fontSize='200%');await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.evaluate(()=>document.documentElement.style.removeProperty('font-size'));
+ await page.goto(`/records?family=${familyId}&child=${childId}`);await expect(page.getByRole('heading',{name:'우리 아이의 기록'})).toBeVisible();await page.getByLabel('기록 종류').selectOption('CHECKIN');await page.getByRole('button',{name:'정정',exact:true}).click();await dialog.getByLabel('기록 종류').selectOption('DEPARTED');await dialog.getByLabel('기록 사유').fill('종류를 잘못 눌렀어요');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByRole('heading',{name:'출발',exact:true})).toBeVisible();await expect(page.getByRole('heading',{name:'도착 · 정정된 원본',exact:true})).toBeVisible();
+ await post('/api/auth/sign-out',{});await post('/api/auth/sign-in/email',{email,password});await page.reload();await expect(page.getByRole('heading',{name:'출발',exact:true})).toBeVisible();await page.getByLabel('기록 종류').selectOption('ALL');await expect(page.getByRole('heading',{name:'그림책 읽기',exact:true})).toBeVisible();await expect(page.getByText('장면을 보고 이야기를 만들어 봤어요.',{exact:true})).toBeVisible();await expect(page.getByText('만남 기록됨',{exact:true})).toBeVisible();await context.close();expect(errors).toEqual([]);
+});
+test('P05 changes calendar month without changing the selected day, and clears data when child changes',async({page})=>{
+ const {familyId,childId,post}=await fixture(page);await post(`/api/v1/children/${childId}/tasks`,{title:'첫 아이 전용 메모'});await page.goto('/today');await expect(page.getByRole('heading',{name:'첫 아이 전용 메모'})).toBeVisible();const date=page.getByLabel('보는 날짜');await expect(date).toHaveValue(koreaToday());await page.getByRole('button',{name:'달력 다음 달',exact:true}).click();await expect(date).toHaveValue(koreaToday());
+ const draft=await post(`/api/v1/families/${familyId}/child-registration-drafts`,{});await post('/__test__/verify-draft',{draftId:draft.id});const proof=await post(`/api/v1/child-registration-drafts/${draft.id}/consent-proofs`,{general:true,location:false,policyVersion:'6.1'});await post(`/api/v1/families/${familyId}/children`,{draftId:draft.id,proofId:proof.proofId,nickname:'가상 두리',birthDate:'2018-03-02'});
+ await page.reload();await page.getByRole('button',{name:'가상 두리',exact:true}).click();await expect(page.getByRole('heading',{name:'첫 아이 전용 메모'})).toHaveCount(0);await expect(page.getByText('오늘 할 일을 가볍게 적어 보세요.')).toBeVisible();
+});
+

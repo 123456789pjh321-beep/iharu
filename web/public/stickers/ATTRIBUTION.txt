@@ -1,0 +1,7 @@
+Twemoji graphics by Twitter, Inc. and other contributors.
+Source: https://github.com/jdecked/twemoji/tree/main/assets/svg
+License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+License URL: https://creativecommons.org/licenses/by/4.0/
+Local copies selected on 2026-09-21. Artwork unchanged; filenames mapped to the 아이하루 catalog IDs.
+The label "v1" identifies these immutable local artwork files, not the text catalog version.
+
