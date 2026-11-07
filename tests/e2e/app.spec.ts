@@ -39,7 +39,7 @@ test('child actions show a truthful dialog, close with Escape and return focus',
   await expect(button).toBeFocused();
   await page.getByRole('link',{name:'가족에게 말하기 그림으로 쉽게 보내요'}).click();
   await expect(page).toHaveURL(/\/login\?role=child$/);
-  await expect(page.getByRole('heading',{name:'내 하루에 로그인해요',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
 });
 
 test('mobile navigation and content order remain usable without horizontal overflow', async ({page})=>{
@@ -57,11 +57,10 @@ test('mobile navigation and content order remain usable without horizontal overf
   await page.goto('/today');
   await expect(page.locator('.attendance-card')).toBeVisible();
   const ys=await page.locator('.attendance-card,.family-calendar,.location-card,.tuition-card').evaluateAll(elements=>elements.map(e=>e.getBoundingClientRect().top));
-  expect(ys.length).toBe(4); expect(ys).toEqual([...ys].sort((a,b)=>a-b));
+  expect(ys.length).toBe(3); expect(ys).toEqual([...ys].sort((a,b)=>a-b));
   const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
   await nav.getByRole('button',{name:'더보기',exact:true}).click();
-  await page.getByRole('dialog',{name:'전체 메뉴',exact:true}).getByRole('link',{name:'위치',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'공유한 위치를 한눈에'})).toBeVisible();
+  await expect(page.getByRole('dialog',{name:'전체 메뉴',exact:true}).getByRole('link',{name:'위치',exact:true})).toHaveCount(0);
 });
 
 test('fixed Noto Sans replaces large type and 200 percent desktop reflow remains usable', async ({page})=>{

@@ -27,8 +27,8 @@ function LoginForm({reauthenticate=false}:{reauthenticate?:boolean}) {
   const [token] = useState(() => new URLSearchParams(search).get('token') || '');
   useEffect(()=>{ if (token) window.history.replaceState(null,'',pathname); },[token,pathname]);
   const mode = pathname === '/signup' ? 'signup' : pathname === '/forgot-password' ? 'forgot' : pathname === '/verify-email' ? 'verify' : pathname === '/reset-password' ? 'reset' : 'login';
-  const titles = { login:'다시 만나 반가워요', signup:'아이하루 시작하기', forgot:'비밀번호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 비밀번호 설정' };
-  const subtitles = { login:'보호자 계정이나 플랫폼 로그인으로 가족의 하루를 시작해요.', signup:'보호자 계정을 만들어요. 자녀 회원가입은 자녀 탭에서 진행해요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 비밀번호를 입력해 주세요.' };
+  const titles = { login:'로그인', signup:'아이하루 시작하기', forgot:'비밀번호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 비밀번호 설정' };
+  const subtitles = { login:'', signup:'보호자 계정을 만들어요. 자녀 회원가입은 자녀 탭에서 진행해요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 비밀번호를 입력해 주세요.' };
   const accountNotLinked = mode === 'login' && new URLSearchParams(search).get('error') === 'account_not_linked';
   const enabled = providers.data?.providers.find(p=>p.id==='email')?.enabled === true;
   const waiting = providers.data?.providers.every(p=>!p.enabled) === true;
@@ -51,7 +51,7 @@ function LoginForm({reauthenticate=false}:{reauthenticate?:boolean}) {
   }
   async function social(id:string) { setBusy(true);setError('');try {await startSocial(id,false,reauthenticate);}catch(e){setError((e as Error).message);setBusy(false);} }
   if(canonicalLogin)return <AuthLayout><Loading label="안전한 로그인 화면으로 이동하고 있어요"/><a className="button primary full" href={new URL(`${pathname}${reauthenticate?'?reauth=1':''}`,loginOrigin).href}>운영 로그인 화면 열기</a></AuthLayout>;
-  return <AuthLayout>{mode==='login'&&!reauthenticate&&<LoginRoleTabs/>}<div className="auth-title"><span className="eyebrow">보호자 계정</span><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>
+  return <AuthLayout>{mode==='login'&&!reauthenticate&&<LoginRoleTabs/>}{mode!=='login'&&<div className="auth-title"><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>}
     {providers.loading?<Loading label="로그인 방법을 확인하고 있어요"/>:providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:<>
       {waiting&&<div className="auth-notice setup-notice"><Icon name="clock"/><div><strong>로그인 연결을 준비하고 있어요</strong><p>준비가 끝나면 여기서 가족의 하루를 시작할 수 있어요.</p></div></div>}
       {mode==='login'&&new URLSearchParams(search).has('verified')&&!new URLSearchParams(search).has('error')&&<FormNotice message="이메일 확인을 마쳤어요. 로그인해 주세요."/>}
@@ -78,7 +78,7 @@ function LoginForm({reauthenticate=false}:{reauthenticate?:boolean}) {
           <button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!enabled?'이메일 로그인 준비 중':mode==='login'?'로그인':mode==='signup'?'인증 메일 보내기':mode==='reset'?'새 비밀번호 저장':'링크 다시 받기'}</button>{mode==='login'&&<Link className="button full signup-under-login" to="/signup">회원가입</Link>}
         </fieldset>
       </form>}
-      {mode==='signup'&&message&&<Link className="button full" to="/verify-email">인증 메일 다시 받기</Link>}{mode==='reset'&&<Link className="button full" to="/forgot-password">만료된 재설정 링크 다시 받기</Link>}{mode==='login'?<><div className="auth-divider"><span>다른 방법으로 이어가기</span></div><div className="social-buttons">{providers.data?.providers.filter(p=>['google','kakao','naver'].includes(p.id)).map(p=><button key={p.id} className={`button social-${p.id}`} disabled={!p.enabled||busy} onClick={()=>social(p.id)}>{p.name}로 계속하기{!p.enabled&&<span className="provider-state">준비 중</span>}</button>)}</div><Link className="button full phone-login" to="/phone"><Icon name="phone"/>휴대폰 번호로 로그인</Link><p className="auth-help">자녀는 자녀 탭에서 로그인해요. 부모가 가족 관리에서 발급한 승인번호로 자녀가 회원가입해요.</p></>:<Link className="auth-back" to="/login">로그인으로 돌아가기 <Icon name="arrow"/></Link>}
+      {mode==='signup'&&<p className="auth-help"><Link to="/legal/terms">이용약관</Link> · <Link to="/legal/privacy">개인정보처리방침</Link><br/>이메일 확인 후 게시된 문서를 읽고 이용 동의를 기록합니다.</p>}{mode==='signup'&&message&&<Link className="button full" to="/verify-email">인증 메일 다시 받기</Link>}{mode==='reset'&&<Link className="button full" to="/forgot-password">만료된 재설정 링크 다시 받기</Link>}{mode==='login'?<><div className="auth-divider"><span>다른 방법으로 이어가기</span></div><div className="social-buttons">{providers.data?.providers.filter(p=>['google','kakao','naver'].includes(p.id)).map(p=><button key={p.id} className={`button social-${p.id}`} disabled={!p.enabled||busy} onClick={()=>social(p.id)}>{p.name}로 계속하기{!p.enabled&&<span className="provider-state">준비 중</span>}</button>)}</div><Link className="button full phone-login" to="/phone"><Icon name="phone"/>휴대폰 번호로 로그인</Link></>:<Link className="auth-back" to="/login">로그인으로 돌아가기 <Icon name="arrow"/></Link>}
     </>}
   </AuthLayout>;
 }

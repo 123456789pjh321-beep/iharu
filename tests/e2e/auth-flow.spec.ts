@@ -51,7 +51,7 @@ test('browser signup → mail proof → login → home → account → logout pe
   await page.goto('/account/reauth');
   await page.getByRole('link',{name:'다른 로그인 방법으로 확인',exact:true}).click();
   await expect(page).toHaveURL(/\/login\?reauth=1$/);
-  await expect(page.getByRole('heading',{name:'다시 만나 반가워요'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
   await page.goto('/account');
   await page.getByRole('button',{name:'해제',exact:true}).click();
   await page.getByRole('button',{name:'연결 해제 확인',exact:true}).click();

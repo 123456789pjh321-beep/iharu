@@ -17,7 +17,7 @@ test('email-less Kakao session enters the live home without demo or protected-da
   await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   state='expired';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole('heading',{name:'다시 만나 반가워요'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
 });
 
 test('LOW session keeps additional verification and explicit social reauthentication reachable',async({page})=>{
@@ -28,7 +28,7 @@ test('LOW session keeps additional verification and explicit social reauthentica
   }
   await page.getByRole('link',{name:'연결한 소셜 계정으로 로그인',exact:true}).click();
   await expect(page).toHaveURL(/\/login\?reauth=1$/);
-  await expect(page.getByRole('heading',{name:'다시 만나 반가워요'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
 });
 
 

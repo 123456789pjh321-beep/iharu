@@ -2,7 +2,6 @@ import {Loading,ErrorState} from './Common';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {WorkspaceBrand,WorkspaceNavigation} from './WorkspaceNavigation';
-import { Icon } from './Icon';
 import {DisplaySettings,Entrance,FamilyArtwork} from './Experience';
 import {WorkspaceGateProvider,useWorkspaceGate} from './WorkspaceGate';
 
@@ -23,9 +22,9 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
     <header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/></div></header>
     {wide&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
-      {!wide && <aside className="auth-intro"><span className="eyebrow">가족의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>가족이 함께하는 하루를 시작하세요.</p><FamilyArtwork/><div className="auth-trust"><Icon name="shield"/><span>자녀 정보는 보호자의 번호 확인과 동의 후 연결해요.</span></div></aside>}
+      {!wide && <aside className="auth-intro"><span className="eyebrow">가족의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>가족이 함께하는 하루를 시작하세요.</p><FamilyArtwork/></aside>}
       <Entrance className="auth-panel">{children}</Entrance>
-    </main><footer className="auth-footer">아이하루 · 가족의 하루를 잇다 <Link to="/login?role=child">자녀 로그인</Link></footer>
+    </main><footer className="auth-footer">아이하루 · 가족의 하루를 잇다 <Link to="/legal/terms">이용약관</Link><Link to="/legal/privacy">개인정보처리방침</Link><Link to="/privacy">개인정보 관리</Link></footer>
   </div>;
 }
 export function PasswordField({ label='비밀번호', name='password', fresh=false,minimum }: { label?:string; name?:string; fresh?:boolean;minimum?:number }) {
