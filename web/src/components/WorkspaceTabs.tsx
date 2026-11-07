@@ -1,0 +1,2 @@
+import {NavLink} from 'react-router-dom';
+export function WorkspaceTabs({group}:{group:'day'|'family'}){const items=group==='day'?[['/today','한눈에'],['/today/calendar','월간 일정'],['/today/repeats','반복 일정'],['/tuition','학원비']]:[['/family','가족·자녀 관리'],['/device/connect','아이 기기 안내'],['/account','계정·로그인 방법']];return <nav className="subnav workspace-tabs" aria-label={group==='day'?'오늘 화면 보기':'가족 연결 메뉴'}>{items.map(([to,label])=><NavLink key={to} to={to} end>{label}</NavLink>)}</nav>}

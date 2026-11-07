@@ -1,21 +1,23 @@
+import {WorkspaceTabs} from './WorkspaceTabs';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {WorkspaceBrand,WorkspaceNavigation} from './WorkspaceNavigation';
 import { Icon } from './Icon';
 import {DisplaySettings,Entrance,FamilyArtwork} from './Experience';
 
-export function AuthLayout({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+export function AuthLayout({ children, wide:requestedWide = false }: { children: ReactNode; wide?: boolean }) {
   const { pathname } = useLocation();
+  const wide=requestedWide||['/account','/family','/device','/child','/phone'].some(p=>pathname.startsWith(p));
   const [large, setLarge] = useState(() => { try { return localStorage.getItem('iharu:large-type') === 'true'; } catch { return false; } });
   useEffect(() => { document.documentElement.classList.toggle('large-type',large); try { localStorage.setItem('iharu:large-type',String(large)); } catch { /* optional preference */ } }, [large]);
   useEffect(() => { document.title = `${pathname.startsWith('/family')?'우리 가족':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정'} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
   return <div className={`auth-app ${wide?'workspace-page':'entry-page'}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
     <header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/><button className="font-toggle" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button></div></header>
-    <div className="test-entry-banner"><span>기능을 먼저 살펴보세요</span><Link to="/test/today">인증 없이 기능 테스트<Icon name="arrow"/></Link></div>
-    {wide&&<WorkspaceNavigation childMode={pathname.startsWith('/child')}/> }
+    {!wide&&<div className="test-entry-banner"><span>기능을 먼저 살펴보세요</span><Link to="/test/today">인증 없이 기능 테스트<Icon name="arrow"/></Link></div>}
+    {wide&&<WorkspaceNavigation childMode={pathname.startsWith('/child')||pathname.startsWith('/device')}/> }
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
       {!wide && <aside className="auth-intro"><span className="eyebrow">가족의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>가족이 함께하는 하루를 시작하세요.</p><FamilyArtwork/><div className="auth-trust"><Icon name="shield"/><span>아이 정보는 보호자 확인과 동의 후 등록해요.</span></div></aside>}
-      <Entrance key={pathname} className="auth-panel">{children}</Entrance>
+      <Entrance key={pathname} className="auth-panel">{wide&&["/account","/phone"].some(p=>pathname.startsWith(p))&&<WorkspaceTabs group="family"/>}{children}</Entrance>
     </main><footer className="auth-footer">아이하루 · 가족의 하루를 잇다 <Link to="/device/connect">아이 기기 연결</Link></footer>
   </div>;
 }
