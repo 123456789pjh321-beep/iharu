@@ -40,6 +40,7 @@ it('requires a real signed-in parent, confirms the exact child and creates a fam
  const fresh=new Browser();expect((await fresh.req(api+'login',{loginId:registered.loginId,password:'wrong-password'})).status).toBe(401);
  expect((await fresh.ok(api+'login',{loginId:registered.loginId,password:'child-secret-2026'})).status).toBe('CONNECTED');
  const [consent]=await query<{location:boolean}>(db.db,"SELECT EXISTS(SELECT 1 FROM app.child_consents WHERE child_id=$1 AND purpose='location') AS location",[approved.childId]);expect(consent.location).toBe(false);
+ await p.ok(`/api/v1/children/${approved.childId}/consents/revoke`,{purpose:'general',expectedVersion:1});expect((await new Browser().req(api+'login',{loginId:registered.loginId,password:'child-secret-2026'})).status).toBe(400);
 });
 it('renews and expires codes, prevents role mixing, and rejects forged fields and cross-origin calls',async()=>{
  const c=new Browser(),p=await parent('child-parent-three@example.test');

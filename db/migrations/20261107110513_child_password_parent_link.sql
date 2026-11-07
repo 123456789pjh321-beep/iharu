@@ -43,14 +43,14 @@ BEGIN
    SELECT * INTO a FROM app_private.child_accounts WHERE login_id=p->>'loginId' AND password_hash=p->>'passwordHash' FOR UPDATE;
   ELSE SELECT * INTO a FROM app_private.child_accounts WHERE proof_hash=p->>'proofHash' FOR UPDATE; END IF;
   IF NOT FOUND THEN RAISE EXCEPTION 'CHILD_LOGIN_INVALID'; END IF;
-  IF a.child_id IS NULL AND a.pending_expires_at<=now() THEN RAISE EXCEPTION 'CHILD_SIGNUP_EXPIRED'; END IF;
+  IF a.pending_expires_at<=now() AND (a.child_id IS NULL OR op<>'childaccount.login') THEN RAISE EXCEPTION 'CHILD_SIGNUP_EXPIRED'; END IF;
   IF op='childaccount.renew' OR (op='childaccount.login' AND a.child_id IS NULL) THEN
    UPDATE app_private.child_accounts SET proof_hash=coalesce(p->>'newProofHash',proof_hash),code_hash=p->>'codeHash',code_expires_at=now()+interval '15 minutes' WHERE id=a.id RETURNING * INTO a;
    RETURN jsonb_build_object('loginId',a.login_id,'name',a.name,'status','WAITING','expiresAt',a.code_expires_at);
   END IF;
   IF a.child_id IS NULL AND op='childaccount.finish' THEN RAISE EXCEPTION 'CHILD_NOT_APPROVED'; END IF;
   IF a.child_id IS NULL THEN RETURN jsonb_build_object('loginId',a.login_id,'name',a.name,'status',CASE WHEN a.code_expires_at<=now() THEN 'EXPIRED' ELSE 'WAITING' END,'expiresAt',a.code_expires_at); END IF;
-  SELECT * INTO ch FROM app.children WHERE id=a.child_id AND status='ACTIVE';
+  SELECT * INTO ch FROM app.children WHERE id=a.child_id AND status='ACTIVE' FOR UPDATE;
   IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM app.child_consents WHERE child_id=ch.id AND purpose='general' AND revoked_at IS NULL)
    OR NOT EXISTS(SELECT 1 FROM app.memberships m JOIN iharu_auth.members am ON am.id=m.member_id WHERE m.family_id=ch.family_id AND m.member_id=a.approved_by AND m.status='ACTIVE' AND am.status='ACTIVE') THEN RAISE EXCEPTION 'CHILD_ACCESS_REVOKED'; END IF;
   IF op='childaccount.status' THEN RETURN jsonb_build_object('loginId',a.login_id,'name',a.name,'status','APPROVED','familyName',(SELECT name FROM app.families WHERE id=ch.family_id)); END IF;
