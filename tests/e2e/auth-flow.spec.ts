@@ -31,10 +31,10 @@ test('browser signup → mail proof → login → home → account → logout pe
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   }
   await page.setViewportSize({width:390,height:844});
-  await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
+  await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/home-390-large.png',fullPage:true});
-  await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
+  await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'달력',exact:true}).click();
   await expect(page.locator('.direct-calendar')).toBeVisible();
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'오늘',exact:true}).click();

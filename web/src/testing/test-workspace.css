@@ -50,7 +50,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-family: "Manrope Variable", sans-serif;
+  font-family: "Noto Sans KR Variable", sans-serif;
   color: var(--primary);
   font-size: 0.65rem;
   font-weight: 800;
@@ -336,7 +336,7 @@
   font-variant-numeric: tabular-nums;
 }
 .test-event-time strong {
-  font-family: "Manrope Variable", sans-serif;
+  font-family: "Noto Sans KR Variable", sans-serif;
   color: var(--navy);
   font-weight: 750;
   font-size: 1rem;
@@ -426,7 +426,7 @@
   background: var(--surface-sub);
   border: 1px solid var(--line);
   border-radius: 50%;
-  font-family: "Manrope Variable", sans-serif;
+  font-family: "Noto Sans KR Variable", sans-serif;
   font-weight: 700;
   font-size: 0.7rem;
   color: var(--muted);
@@ -527,7 +527,7 @@
   min-width: 0;
 }
 .test-month-days > button > strong {
-  font-family: "Manrope Variable", sans-serif;
+  font-family: "Noto Sans KR Variable", sans-serif;
   font-size: 0.79rem;
   font-weight: 700;
 }
@@ -1021,7 +1021,7 @@
   color: var(--muted);
 }
 .test-pair-code > strong {
-  font-family: "Manrope Variable", sans-serif;
+  font-family: "Noto Sans KR Variable", sans-serif;
   font-size: clamp(1.5rem, 7vw, 2.4rem);
   letter-spacing: 0.12em;
   color: var(--primary);
@@ -1091,7 +1091,7 @@
 .test-financial-summary strong {
   font-size: 1.65rem;
   color: var(--navy);
-  font-family: "Manrope Variable", var(--app-font);
+  font-family: var(--app-font);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }

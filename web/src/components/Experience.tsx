@@ -1,20 +1,19 @@
-import {createContext,useContext,useLayoutEffect,useRef,useState,type ReactNode} from 'react';
+import {createContext,useContext,useLayoutEffect,useState,type ReactNode} from 'react';
 import {LazyMotion,domAnimation,MotionConfig,m} from 'motion/react';
 import {Icon} from './Icon';
-type Preferences={theme:'light'|'dark';quiet:boolean;font:'pretendard'|'noto'|'manrope'};
-const defaults:Preferences={theme:'light',quiet:false,font:'pretendard'};
+type Preferences={theme:'light'|'dark';quiet:boolean;font:'noto'};
+const defaults:Preferences={theme:'light',quiet:false,font:'noto'};
 const Context=createContext<{preferences:Preferences;setPreference:(p:Partial<Preferences>)=>void}>({preferences:defaults,setPreference:()=>{}});
-function readPreferences():Preferences{try{const p=JSON.parse(localStorage.getItem('iharu:appearance')||'null');return {theme:p?.theme==='dark'?'dark':'light',quiet:p?.quiet===true,font:p?.font==='noto'?'noto':p?.font==='manrope'?'manrope':'pretendard'};}catch{return defaults;}}
+function readPreferences():Preferences{try{const p=JSON.parse(localStorage.getItem('iharu:appearance')||'null');return {theme:p?.theme==='dark'?'dark':'light',quiet:p?.quiet===true,font:'noto'};}catch{return defaults;}}
 export function ExperienceProvider({children}:{children:ReactNode}){
  const [preferences,setPreferences]=useState(readPreferences);
- useLayoutEffect(()=>{document.documentElement.dataset.theme=preferences.theme;document.documentElement.dataset.motion=preferences.quiet?'reduced':'full';document.documentElement.dataset.font=preferences.font;try{localStorage.setItem('iharu:appearance',JSON.stringify(preferences));}catch{/* Optional display preferences. */}},[preferences]);
+ useLayoutEffect(()=>{document.documentElement.dataset.theme=preferences.theme;document.documentElement.dataset.motion=preferences.quiet?'reduced':'full';document.documentElement.dataset.font='noto';document.documentElement.classList.remove('large-type');try{localStorage.setItem('iharu:appearance',JSON.stringify({...preferences,font:'noto'}));localStorage.removeItem('iharu:large-type');}catch{/* Optional display preferences. */}},[preferences]);
  return <Context.Provider value={{preferences,setPreference:p=>setPreferences(current=>({...current,...p}))}}><LazyMotion features={domAnimation} strict><MotionConfig reducedMotion={preferences.quiet?'always':'user'} transition={{duration:.28,ease:[.22,1,.36,1]}}>{children}</MotionConfig></LazyMotion></Context.Provider>;
 }
 export function useExperience(){return useContext(Context);}
 export function DisplaySettings(){
- const {preferences,setPreference}=useContext(Context),ref=useRef<HTMLDetailsElement>(null);
- return <details ref={ref} className="display-settings" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();ref.current?.removeAttribute('open');ref.current?.querySelector('summary')?.focus();}}}>
- <summary aria-label="화면 설정"><Icon name="settings"/><span>화면</span></summary><div className="display-popover"><h2>편안한 화면으로</h2><p>이 기기에서 사용할 화면을 골라요.</p><fieldset><legend>화면 색상</legend><div className="display-options"><button type="button" aria-pressed={preferences.theme==='light'} onClick={()=>setPreference({theme:'light'})}><Icon name="sun"/>밝게</button><button type="button" aria-pressed={preferences.theme==='dark'} onClick={()=>setPreference({theme:'dark'})}><Icon name="moon"/>어둡게</button></div></fieldset><fieldset className="font-options"><legend>글꼴</legend><div className="display-options display-font-options">{([{id:'pretendard',label:'프리텐다드'},{id:'noto',label:'노토 산스'},{id:'manrope',label:'만로프'}] as const).map(font=><button key={font.id} type="button" aria-pressed={preferences.font===font.id} onClick={()=>setPreference({font:font.id})}>{font.label}</button>)}</div></fieldset><button type="button" className="motion-preference" aria-pressed={preferences.quiet} onClick={()=>setPreference({quiet:!preferences.quiet})}><span><strong>움직임 줄이기</strong><small>전환 효과를 차분하게 표시해요.</small></span><span className="preference-switch" aria-hidden="true"/></button><small>기기의 움직임 줄이기 설정도 존중해요.</small></div></details>;
+ const {preferences,setPreference}=useContext(Context);
+ return <div className="theme-toggle" role="group" aria-label="화면 밝기"><button type="button" aria-pressed={preferences.theme==='light'} onClick={()=>setPreference({theme:'light'})}><Icon name="sun"/><span>밝게</span></button><button type="button" aria-pressed={preferences.theme==='dark'} onClick={()=>setPreference({theme:'dark'})}><Icon name="moon"/><span>어둡게</span></button></div>;
 }
 /** Enter-only: no exit delay or route remount. */
 export function Entrance({children,className=''}:{children:ReactNode;className?:string}){return <m.div className={className} initial={false} animate={{opacity:1}}>{children}</m.div>;}

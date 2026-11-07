@@ -347,6 +347,24 @@ try{
   const messages=await family2.command<{items:{id:string}[]}>(b,'workspace.chat.list',{});assert.equal(messages.items.filter(i=>i.id===one.id).length,1);
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_v77('workspace.me','{}')"),{code:'42501'});
  });
+ await check('UI80 monthly tuition is parent-only and simultaneous payment writes have one winner',async()=>{
+  const bm=await family2.command<{id:string}>(b,'workspace.me');
+  const fee=await family1.command<{id:string}>(a,'workspace.items.create',{kind:'FEE',data:{title:'월별 학원비',date:'2027-01-31',amount:180000,feeFrequency:'MONTHLY',feePayerId:bm.id}});
+  const payload={id:fee.id,version:1,month:'2027-02',paid:true};
+  const outcomes=await Promise.allSettled([family1.command(b,'workspace.fees.payment',payload),family2.command(a,'workspace.fees.payment',payload)]);
+  assert.equal(outcomes.filter(r=>r.status==='fulfilled').length,1);assert.equal((outcomes.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
+  const list=await family1.command<{items:{fee:{dueDate:string;paid:boolean}}[]}>(a,'workspace.items.list',{kind:'FEE',from:'2027-01-01',to:'2027-03-31'});
+  assert.deepEqual(list.items.map(i=>i.fee.dueDate),['2027-01-31','2027-02-28','2027-03-31']);assert.deepEqual(list.items.map(i=>i.fee.paid),[false,true,false]);
+  const codeHash=family1.digest('workspace-code:'+randomUUID()),raw=family1.token(),workspaceHash=family1.digest('workspace:'+raw);
+  await family1.command(a,'workspace.invite.issue',{consent:true,codeHash});
+  await family1.command(anonymous,'workspace.child.signup',{loginId:'fee_pg_child',name:'가상 자녀',passwordHash:'fixture-only-'.padEnd(100,'a'),codeHash,tokenHash:workspaceHash,deviceHash:family1.digest('device:'+raw),proofHash:family1.digest('proof:'+raw),unusedCodeHash:family1.digest('unused:'+raw)});
+  const child={requestId:randomUUID(),workspaceHash};
+  assert.deepEqual((await family1.command<{items:unknown[]}>(child,'workspace.items.list',{from:'2027-01-01',to:'2027-03-31',kind:'FEE'})).items,[]);
+  await assert.rejects(family1.command(child,'workspace.items.get',{id:fee.id}),{message:'FEE_PARENT_REQUIRED'});
+  await assert.rejects(family1.command(child,'workspace.fees.payment',{...payload,version:2}),{message:'FEE_PARENT_REQUIRED'});
+  await assert.rejects(query(db1,'SELECT * FROM app_private.workspace_fee_payments'),{code:'42501'});
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_v78('workspace.me','{}')"),{code:'42501'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

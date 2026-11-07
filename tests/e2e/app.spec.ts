@@ -64,12 +64,12 @@ test('mobile navigation and content order remain usable without horizontal overf
   await expect(page.getByRole('heading',{name:'공유한 위치를 한눈에'})).toBeVisible();
 });
 
-test('large type persists and 200 percent desktop reflow keeps all content inside viewport', async ({page})=>{
+test('fixed Noto Sans replaces large type and 200 percent desktop reflow remains usable', async ({page})=>{
   await page.setViewportSize({width:1440,height:1000});
   await page.goto('/today');
-  await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
+  await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('html')).not.toHaveClass(/large-type/);await expect(page.locator('html')).toHaveAttribute('data-font','noto');
   // 1440px at 200% zoom gives an effective 720 CSS-pixel layout viewport.
   await page.setViewportSize({width:720,height:700});
   await page.evaluate(()=>document.documentElement.style.fontSize='32px');

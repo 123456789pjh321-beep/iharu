@@ -9,7 +9,7 @@ const info:Record<string,{title:string;body:string;icon:IconName}> = {
   '/repeats':{title:'한 번 등록해, 매주 편하게',body:'학교와 학원 일정을 요일별로 반복하고 휴강·보강을 따로 관리할 수 있어요. 지금은 화면을 준비하고 있어요.',icon:'repeat'},
   '/notifications':{title:'가족의 새로운 소식',body:'일정과 대화의 새 소식을 이곳에서 확인해요. 알림 수신 기능을 준비하고 있어요.',icon:'bell'},
   '/tuition':{title:'한눈에 보는 학원비',body:'매달 학원비와 납부 기록을 모아 볼 수 있도록 준비하고 있어요. 현재 금액을 입력하거나 결제하는 기능은 제공하지 않아요.',icon:'wallet'},
-  '/settings':{title:'우리 가족에게 맞게',body:'가족 연결, 기기 관리와 알림 설정을 준비하고 있어요. 큰 글씨는 화면 상단에서 바로 바꿀 수 있어요.',icon:'settings'},
+  '/settings':{title:'우리 가족에게 맞게',body:'가족 연결, 기기 관리와 알림 설정을 준비하고 있어요.',icon:'settings'},
 };
 export function Upcoming() {
   const {pathname}=useLocation(); const item=info[pathname];
