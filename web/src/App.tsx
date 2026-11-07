@@ -10,6 +10,7 @@ import { useApi } from './api';
 import { sessionSchema, type SignedInSession } from './auth';
 import { AuthLayout,WorkspaceFrame } from './components/AuthLayout';
 const TestWorkspace=lazy(()=>import('./testing/TestWorkspace'));
+const AdminConsole=lazy(()=>import('./pages/AdminConsole'));
 const ChatPage=lazy(()=>import('./pages/Chat').then(m=>({default:m.ChatPage})));
 import { DailyWorkspace } from './pages/Daily';
 import { Home } from './pages/Home';
@@ -67,6 +68,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
 export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/test/*" element={<Suspense fallback={<Loading label="테스트 작업실을 준비하고 있어요"/>}><TestWorkspace/></Suspense>}/>
   <Route element={<WorkspaceFrame/>}><Route path="/notifications" element={<NotificationsPage/>}/>
+  <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>
   <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
   <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/location" element={<WorkspaceEntry mode="location"/>}/><Route path="/today" element={<WorkspaceEntry mode="home"/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
 

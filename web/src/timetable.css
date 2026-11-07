@@ -68,5 +68,12 @@
 .calendar-daily{flex:1;min-height:0}
 .calendar-daily .timetable-summary{padding-top:8px}
 .calendar-daily .timetable-scroll{max-height:calc(100dvh - 300px)}
+.timetable-day{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.timetable-summary>span{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.timetable-now-jump{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:7px;color:var(--primary);background:var(--mint);font-size:.75rem;font-weight:800;min-height:32px}
+.timetable-now-jump .icon{width:14px;height:14px}.timetable-current-summary{display:flex;gap:9px;align-items:flex-start;padding:0 16px 12px;font-size:.75rem;color:var(--muted)}.timetable-current-summary>strong{color:var(--primary);flex-shrink:0;font-weight:850}.timetable-current-summary>span{overflow-wrap:anywhere}
+.timetable-now{z-index:6;border-top-width:2px;padding:0;text-align:right}.timetable-now>strong{display:inline-block;background:#bd3346;color:white;border-radius:5px;padding:4px 7px;font-size:.72rem;font-weight:850;line-height:1.2;transform:translateY(-50%);margin-right:3px;box-shadow:0 1px 4px #0002}
+.timetable-time-axis>.current-hour{font-weight:850;color:var(--primary);font-size:.77rem}.timetable-event.current-event{box-shadow:inset 0 0 0 1px var(--event-color)}
+.timetable-current-summary+.timetable-viewport .timetable-scroll{max-height:calc(100dvh - 410px)}.calendar-daily .timetable-current-summary+.timetable-viewport .timetable-scroll{max-height:calc(100dvh - 340px)}
 .calendar-month-picker.calendar-daily-date{font-variant-numeric:tabular-nums;font-size:.95rem}
 @media(max-width:360px){.calendar-month-picker.calendar-daily-date{font-size:.75rem;min-width:106px}}

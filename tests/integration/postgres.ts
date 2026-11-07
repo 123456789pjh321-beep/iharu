@@ -376,6 +376,25 @@ try{
   assert.equal((await family2.command<{data:{startTime:string}}>(b,'workspace.items.get',{id:created.id})).data.startTime,'15:00');
   await family1.command(a,'workspace.items.delete',{id:created.id,version:2});await assert.rejects(family2.command(b,'workspace.items.get',{id:created.id}),{message:'NOT_FOUND'});
  });
+ await check('UI83 administrator APIs are inaccessible through runtime tables, helper functions or forged member context',async()=>{
+  await assert.rejects(family1.command(a,'admin.overview'),{message:'ADMIN_REQUIRED'});
+  await admin.query('INSERT INTO app_private.system_admins(member_id) VALUES($1)',[a.memberId]);
+  await admin.query('UPDATE iharu_auth.session_guard SET reauthenticated_at=now()');
+  assert.equal((await family1.command<{allowed:boolean}>(a,'admin.access')).allowed,true);
+  const [acl]=await query<{public_execute:boolean}>(db1,"SELECT EXISTS(SELECT 1 FROM pg_proc p, LATERAL aclexplode(p.proacl) a WHERE p.oid='app_private.admin_command(text,jsonb)'::regprocedure AND a.grantee=0 AND a.privilege_type='EXECUTE') AS public_execute");assert.equal(acl.public_execute,false);
+  for(const sql of ['SELECT * FROM app_private.system_admins','SELECT * FROM app_private.system_member_directory','SELECT * FROM app_private.system_events','SELECT * FROM app_private.system_request_logs',"SELECT app_private.system_member_json('00000000-0000-0000-0000-000000000001')","SELECT app_private.workspace_command_v82('workspace.me','{}')"]){await assert.rejects(query(db1,sql),{code:'42501'});}
+  await assert.rejects(query(authdb,"SELECT app_private.admin_command('admin.overview','{}')"),{code:'42501'});
+  await assert.rejects(family2.command({memberId:a.memberId,sessionId:b.sessionId,requestId:randomUUID()},'admin.overview'),{message:'ADMIN_REQUIRED'});
+ });
+ await check('UI83 concurrent admin writes have one winner and role/session revocation takes effect immediately',async()=>{
+  const edits=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'admin.member.update',{id:b.memberId,version:0,name:'운영 동시 변경 '+i,reason:'실제 PostgreSQL 충돌 검사'})));
+  assert.equal(edits.filter(x=>x.status==='fulfilled').length,1);assert.equal((edits.find(x=>x.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
+  await family1.command(a,'admin.role.set',{id:b.memberId,version:0,active:true,reason:'관리자 권한 검증용 부여'});assert.equal((await family2.command<{allowed:boolean}>(b,'admin.access')).allowed,true);
+  await family1.command(a,'admin.role.set',{id:b.memberId,version:1,active:false,reason:'관리자 권한 검증용 해제'});await assert.rejects(family2.command(b,'admin.overview'),{message:'ADMIN_REQUIRED'});
+  await assert.rejects(family1.command(a,'admin.role.set',{id:a.memberId,version:1,active:false,reason:'마지막 관리자 보호 검증'}),{message:'LAST_ADMIN'});
+  await family1.command(a,'admin.member.sessions.revoke',{id:b.memberId,version:1,reason:'분실 기기 세션 종료 검증'});await assert.rejects(family2.command(b,'workspace.me'),{message:'AUTH_REQUIRED'});
+  const history=await family1.command<{total:number}>(a,'admin.history',{category:'ADMIN',targetId:b.memberId});assert.equal(history.total,4);
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

@@ -10,16 +10,18 @@ const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=1.2;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
 export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
- const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef(''),gesture=useRef<{x:number;y:number}|null>(null),suppressClick=useRef(0);
+ const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef(''),gesture=useRef<{x:number;y:number;dragging:boolean}|null>(null),suppressClick=useRef(0);
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
  useEffect(()=>{if(member!=='all'&&!members.some(m=>m.id===member))setMember('all');},[members,member]);
  useCalendarSlide(page,day,'day');
  const today=koreaToday(),weekStart=addDays(day,-new Date(day+'T12:00:00Z').getUTCDay()),dates=Array.from({length:7},(_,n)=>addDays(weekStart,n)),events=dailySchedules(items,day,member),allDay=events.filter(i=>i.data.allDay),layout=timetableLayout(events),next=layout.find(({item})=>schedulePhase(item,day,today,now)==='upcoming')?.start;
+ const currentEvents=events.filter(i=>!i.data.allDay&&schedulePhase(i,day,today,now)==='current');
+ const scrollToNow=()=>{const node=scroller.current;if(node)node.scrollTop=Math.max(0,timeMinutes(koreaTime())*minuteHeight-node.clientHeight*.3);};
  useLayoutEffect(()=>{
   if(loading||scrolledDay.current===day||!scroller.current)return;
   scrolledDay.current=day;
-  const first=layout[0]?.start??540,last=Math.max(...layout.map(r=>r.end),first),current=timeMinutes(now),target=day===today&&current>=first&&current<=last?current:first;
-  scroller.current.scrollTop=Math.max(0,Math.floor(target/60)-1)*60*minuteHeight;
+  const target=day===today?timeMinutes(now):(layout[0]?.start??540);
+  scroller.current.scrollTop=Math.max(0,target*minuteHeight-scroller.current.clientHeight*.3);
  },[day,loading,layout,now,today]);
  const content=(item:WorkspaceItem)=>{
   const who=scheduleAssignee(item,members),phase=schedulePhase(item,day,today,now),upNext=phase==='upcoming'&&timeMinutes(item.data.startTime!)===next;
@@ -27,15 +29,16 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  };
  const label=(item:WorkspaceItem)=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${item.data.allDay?'종일':item.data.startTime+' – '+item.data.endTime} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':'')} aria-label={embedded?'일간 일정':'일별 시간표'}>
-  {!embedded&&<><div className="timetable-toolbar"><label className="calendar-month-picker timetable-date"><span aria-hidden="true">{Number(day.slice(5,7))}월 {Number(day.slice(8))}일 {weekday[new Date(day+'T12:00:00Z').getUTCDay()]}요일</span><input type="date" aria-label="시간표 날짜 선택" value={day} onChange={e=>{if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))setDay(e.target.value);}}/></label><div className="timetable-date-actions"><button className="icon-button" aria-label="이전 날" onClick={()=>setDay(addDays(day,-1))}><Icon name="chevron" className="flip"/></button><button className="button compact" onClick={()=>setDay(today)}>오늘</button><button className="icon-button" aria-label="다음 날" onClick={()=>setDay(addDays(day,1))}><Icon name="chevron"/></button></div></div>
+  {!embedded&&<><div className="timetable-toolbar"><label className="calendar-month-picker timetable-date"><span aria-hidden="true">{Number(day.slice(5,7))}월 {Number(day.slice(8))}일 {weekday[new Date(day+'T12:00:00Z').getUTCDay()]}요일</span><input type="date" aria-label="시간표 날짜 선택" value={day} onChange={e=>{if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))setDay(e.target.value);}}/></label><div className="timetable-date-actions"><button className="icon-button" aria-label="이전 날" onClick={()=>setDay(addDays(day,-1))}><Icon name="chevron" className="flip"/></button><button className="button compact" onClick={()=>{if(day===today)scrollToNow();else setDay(today);}}>오늘</button><button className="icon-button" aria-label="다음 날" onClick={()=>setDay(addDays(day,1))}><Icon name="chevron"/></button></div></div>
   <div className="timetable-week" aria-label="날짜 선택">{dates.map((date,n)=><button type="button" key={date} aria-label={`${date} 시간표`} aria-pressed={date===day} className={date===today?'is-today':''} onClick={()=>setDay(date)}><span>{weekday[n]}</span><strong>{Number(date.slice(8))}</strong><i className={items.some(i=>visibleOn(i,date))?'has-events':''} aria-hidden="true"/></button>)}</div>
   <div className="timetable-filters" role="group" aria-label="시간표 구성원 필터"><button type="button" aria-pressed={member==='all'} onClick={()=>setMember('all')}>전체 보기</button>{members.map(m=><button type="button" key={m.id} aria-pressed={member===m.id} onClick={()=>setMember(m.id)}>{m.name}</button>)}</div></>}
-  <div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}{day===today&&<small>오늘 · {now}</small>}</span><button type="button" className="button compact" onClick={()=>create(day)}><Icon name="plus"/>일정 등록</button></div>
-  <div className="calendar-viewport timetable-viewport"><div ref={page} className="timetable-day" aria-busy={loading} onPointerDown={e=>{if(e.button===0&&e.isPrimary)gesture.current={x:e.clientX,y:e.clientY};}} onPointerMove={e=>{const g=gesture.current;if(g&&Math.abs(e.clientX-g.x)>20&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5)e.currentTarget.setPointerCapture(e.pointerId);}} onPointerCancel={()=>{gesture.current=null;}} onPointerUp={e=>{const g=gesture.current;gesture.current=null;if(g&&Math.abs(e.clientX-g.x)>60&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5){suppressClick.current=Date.now()+350;setDay(addDays(day,e.clientX<g.x?1:-1));}}} onClickCapture={e=>{if(Date.now()<suppressClick.current){e.preventDefault();e.stopPropagation();}}}>
+  <div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}{day===today&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span><button type="button" className="button compact" onClick={()=>create(day)}><Icon name="plus"/>일정 등록</button></div>
+  {day===today&&!loading&&<div className="timetable-current-summary" aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
+  <div className="calendar-viewport timetable-viewport"><div ref={page} className="timetable-day" aria-busy={loading} onDragStart={e=>e.preventDefault()} onPointerDown={e=>{if(e.button===0&&e.isPrimary)gesture.current={x:e.clientX,y:e.clientY,dragging:false};}} onPointerMove={e=>{const g=gesture.current;if(g&&Math.abs(e.clientX-g.x)>20&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5){g.dragging=true;e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);}}} onPointerCancel={()=>{gesture.current=null;}} onPointerUp={e=>{const g=gesture.current;gesture.current=null;if(g?.dragging){suppressClick.current=Date.now()+350;if(Math.abs(e.clientX-g.x)>60&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5)setDay(addDays(day,e.clientX<g.x?1:-1));}}} onClickCapture={e=>{if(Date.now()<suppressClick.current){e.preventDefault();e.stopPropagation();}}}>
    {allDay.length>0&&<div className="timetable-all-day"><span>종일</span><div>{allDay.map(item=><button type="button" key={item.id} className="timetable-card timetable-all-day-card" style={{'--event-color':eventColor(item,members)} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} data-timetable-item={item.id}>{content(item)}</button>)}</div></div>}
    <div className="timetable-scroll" ref={scroller} data-calendar-scroll aria-label="하루 시간 눈금">
     <div className="timetable-grid" style={{height:1440*minuteHeight}}>
-     <div className="timetable-time-axis" aria-hidden="true">{Array.from({length:49},(_,tick)=><span key={tick} className={tick%2?'minor-tick':''} style={{top:tick*30*minuteHeight}}>{timeLabel(tick*30)}</span>)}</div>
+     <div className="timetable-time-axis" aria-hidden="true">{Array.from({length:49},(_,tick)=><span key={tick} className={(tick%2?'minor-tick ':'')+(day===today&&Math.floor(timeMinutes(now)/60)===tick/2?'current-hour':'')} style={{top:tick*30*minuteHeight}}>{timeLabel(tick*30)}</span>)}</div>
      <div className="timetable-event-area">
       <div className="timetable-slots" role="group" aria-label="15분 단위 일정 등록">{Array.from({length:96},(_,index)=>{
        const time=timeLabel(index*15);
@@ -46,11 +49,11 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
       })}</div>
       {layout.map(({item,start,end,column,columns})=>{
        const duration=end-start;
-       return <button type="button" key={item.id} className={'timetable-card timetable-event '+(duration<30?'short-event ':duration<60?'compact-event ':'')+(columns>1?'overlap-event':'')} style={{'--event-color':eventColor(item,members),top:start*minuteHeight,height:duration*minuteHeight,left:`calc(${column/columns*100}% + 2px)`,width:`calc(${100/columns}% - 5px)`} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} title={label(item)} data-timetable-item={item.id} data-start-minute={start} data-end-minute={end}>
+       return <button type="button" key={item.id} className={'timetable-card timetable-event '+(schedulePhase(item,day,today,now)==='current'?'current-event ':'')+(duration<30?'short-event ':duration<60?'compact-event ':'')+(columns>1?'overlap-event':'')} style={{'--event-color':eventColor(item,members),top:start*minuteHeight,height:duration*minuteHeight,left:`calc(${column/columns*100}% + 2px)`,width:`calc(${100/columns}% - 5px)`} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} title={label(item)} data-timetable-item={item.id} data-start-minute={start} data-end-minute={end}>
         {content(item)}
        </button>;
       })}
-      {day===today&&<div className="timetable-now" style={{top:timeMinutes(now)*minuteHeight}} aria-label={'현재 시간 '+now}><span/>{now}</div>}
+      {day===today&&<div className="timetable-now" style={{top:timeMinutes(now)*minuteHeight}} aria-label={'현재 시간 '+now}><span/><strong>현재 {now}</strong></div>}
      </div>
     </div>
    </div>

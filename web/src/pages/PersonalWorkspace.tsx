@@ -15,7 +15,7 @@ import {authPost} from '../auth';
 import {koreaToday,addDays} from '../../../shared/schedules';
 import type {WorkspaceMe,WorkspaceItem,WorkspaceKind,WorkspaceData,WorkspaceMember} from '../../../shared/workspace';
 export type PersonalMode='home'|'calendar'|'timetable'|'repeats'|'fees'|'records'|'family'|'chat'|'account'|'location';
-const titles:Record<PersonalMode,string>={home:'오늘도 함께 챙겨요',calendar:'달력',timetable:'시간표',repeats:'반복 일정',fees:'학원비',records:'메모',family:'관리',chat:'대화',account:'내 계정',location:'위치'};
+const titles:Record<PersonalMode,string>={home:'오늘도 함께 챙겨요',calendar:'달력',timetable:'시간표',repeats:'반복 일정',fees:'학원비',records:'메모',family:'가족 관리',chat:'대화',account:'내 계정',location:'위치'};
 const days=['일','월','화','수','목','금','토'];
 const won=(value:number)=>new Intl.NumberFormat('ko-KR').format(value)+'원';
 type Editor={kind:WorkspaceKind;item?:WorkspaceItem;draft?:WorkspaceItem;date:string;time?:string};
