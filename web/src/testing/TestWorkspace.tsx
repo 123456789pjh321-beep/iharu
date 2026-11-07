@@ -459,22 +459,7 @@ export default function TestWorkspace() {
       title: string;
       detail: string;
       run: () => void;
-    } | null>(null),
-    [large, setLarge] = useState(() => {
-      try {
-        return localStorage.getItem("iharu:large-type") === "true";
-      } catch {
-        return false;
-      }
-    });
-  useEffect(() => {
-    document.documentElement.classList.toggle("large-type", large);
-    try {
-      localStorage.setItem("iharu:large-type", String(large));
-    } catch {
-      /* optional */
-    }
-  }, [large]);
+    } | null>(null);
   useEffect(() => {
     document.title = `${meta?.title || "기능 테스트"} · 아이하루 테스트`;
     setError("");
@@ -766,14 +751,7 @@ export default function TestWorkspace() {
             운영 서비스로
           </Link>
           <DisplaySettings />
-          <button
-            className="font-toggle" aria-label="큰 글씨"
-            aria-pressed={large}
-            onClick={() => setLarge((v) => !v)}
-          >
-            <Icon name="type" />
-            <span>큰 글씨</span>
-          </button>
+
         </div>
       </header>
       <div className="test-environment-banner">

@@ -27,7 +27,7 @@ test('mobile More exposes every destination, traps focus and closes on navigatio
 });
 test('large type, dark theme and reduced motion preserve mobile menu access',async({page})=>{
  await page.setViewportSize({width:320,height:740});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/test/chat');
- await page.getByRole('button',{name:'큰 글씨',exact:true}).click();await page.getByLabel('화면 설정',{exact:true}).click();await page.getByRole('button',{name:'어둡게',exact:true}).click();
+ await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);await expect(page.getByLabel('화면 설정',{exact:true})).toHaveCount(0);await page.getByRole('button',{name:'어둡게',exact:true}).click();
  await page.keyboard.press('Escape');await page.getByRole('button',{name:'더 보기',exact:true}).click();
  const menu=page.getByRole('dialog',{name:'전체 메뉴',exact:true});await expect(menu).toBeVisible();
  expect(await menu.evaluate(el=>getComputedStyle(el).animationName)).toBe('none');

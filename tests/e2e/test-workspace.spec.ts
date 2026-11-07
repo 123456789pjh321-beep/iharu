@@ -159,7 +159,7 @@ test("test workspace supports large text and 200 percent reflow", async ({
   const calls = await isolate(page);
   await page.setViewportSize({ width: 720, height: 800 });
   await page.goto("/test/today");
-  await page.getByRole("button", { name: "큰 글씨", exact: true }).click();
+  await expect(page.getByRole("button", { name: "큰 글씨", exact: true })).toHaveCount(0);
   await page.evaluate(() => (document.documentElement.style.fontSize = "32px"));
   await expect
     .poll(() =>
@@ -170,7 +170,7 @@ test("test workspace supports large text and 200 percent reflow", async ({
     .toBe(true);
   expect(calls).toEqual([]);
 });
-test("validation, cancellation, font preferences and reset remain usable", async ({
+test("validation, cancellation, fixed font and theme preferences remain usable", async ({
   page,
 }) => {
   const calls = await isolate(page);
@@ -184,8 +184,7 @@ test("validation, cancellation, font preferences and reset remain usable", async
   await expect(d).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(d).toHaveCount(0);
-  await page.getByText("화면", { exact: true }).click();
-  await page.getByRole("button", { name: "노토 산스", exact: true }).click();
+  await expect(page.getByRole("button", { name: "노토 산스", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "어둡게", exact: true }).click();
   await page.keyboard.press("Escape");
   await page.reload();

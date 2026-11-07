@@ -25,7 +25,7 @@ it('parent-issued number joins A/B/C, shared reads are mutual, and only each aut
  const codeB=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:codeB.code});const next=await a.ok('invite.issue',{consent:true});
  expect((await c.req(api+'child.signup',{loginId:'seojun_1',name:'가상 서준',password:'child-fixture-password',code:'invalid'})).status).toBe(400);
  await c.ok('child.signup',{loginId:'seojun_1',name:'가상 서준',password:'child-fixture-password',code:next.code});const cr=await c.ok('items.create',payload('C 반복','REPEAT'));
- for(const user of [a,b,c])expect((await user.ok('items.list',listing)).items).toHaveLength(3);
+ for(const user of [a,b])expect((await user.ok('items.list',listing)).items).toHaveLength(3);expect((await c.ok('items.list',listing)).items).toHaveLength(2);
  const meA=await a.ok('me'),meB=await b.ok('me'),meC=await c.ok('me');expect(meA.family.isHost).toBe(true);expect(meC.family.hostId).toBe(meA.id);expect(meC.role).toBe('CHILD');
  expect((await a.req(api+'items.update',{...payload('호스트 위조'),id:cr.id,version:1})).status).toBe(403);expect((await a.req(api+'items.delete',{id:br.id,version:1})).status).toBe(403);
  expect((await c.req(api+'invite.issue',{consent:true})).status).toBe(403);expect((await b.req(api+'invite.issue',{consent:true})).status).toBe(403);expect((await b.req(api+'family.remove',{familyId:meA.family.id,profileId:meC.id,version:1})).status).toBe(403);
@@ -80,4 +80,47 @@ it('group messages paginate across months, deduplicate retries and respect remov
 });
 it('accepts all-day schedules and rejects invalid color and timed ranges',async()=>{
  const a=await parent('all-day');const input=payload('종일 일정');await a.ok('items.create',{...input,data:{...input.data,allDay:true,startTime:'00:00',endTime:'00:00',color:3}});expect((await a.req(api+'items.create',{...input,data:{...input.data,color:99}})).status).toBe(400);expect((await a.req(api+'items.create',{...input,data:{...input.data,endTime:'15:00'}})).status).toBe(400);
+});
+
+it('monthly tuition clamps month-end, separates each payment and lets the designated parent mark only payments',async()=>{
+ const a=await parent('fee-a'),b=await parent('fee-b'),x=await parent('fee-x');const bm=await b.ok('me');const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ const input={kind:'FEE',data:{...payload('월말 피아노','FEE').data,date:'2027-01-31',feeFrequency:'MONTHLY',feePayerId:bm.id}};
+ const created=await a.ok('items.create',input);
+ const months=async()=> (await a.ok('items.list',{from:'2027-01-01',to:'2027-04-30',kind:'FEE'})).items;
+ expect((await months()).map((i:any)=>i.fee.dueDate)).toEqual(['2027-01-31','2027-02-28','2027-03-31','2027-04-30']);
+ expect((await b.ok('items.list',{from:'2027-02-01',to:'2027-02-28',kind:'FEE'})).items[0].fee).toMatchObject({payerId:bm.id,payerName:'fee-b',canMarkPaid:true,paid:false});
+ expect((await b.req(api+'items.update',{...input,id:created.id,version:1})).status).toBe(403);
+ expect((await x.req(api+'fees.payment',{id:created.id,version:1,month:'2027-01',paid:true})).status).toBe(404);
+ await b.ok('fees.payment',{id:created.id,version:1,month:'2027-01',paid:true});
+ expect((await months()).map((i:any)=>i.fee.paid)).toEqual([true,false,false,false]);
+ expect((await a.req(api+'fees.payment',{id:created.id,version:1,month:'2027-02',paid:true})).status).toBe(409);
+ await a.ok('fees.payment',{id:created.id,version:2,month:'2027-02',paid:true});
+ await a.ok('items.update',{...input,id:created.id,version:3,data:{...input.data,untilDate:'2027-03-31',amount:160000}});
+ expect((await months()).map((i:any)=>i.fee.paid)).toEqual([true,true,false]);
+ expect((await a.req(api+'fees.payment',{id:created.id,version:4,month:'2027-04',paid:true})).status).toBe(400);
+ const host=await a.ok('me');await a.ok('family.remove',{familyId:host.family.id,profileId:bm.id,version:1});
+ expect((await b.req(api+'fees.payment',{id:created.id,version:4,month:'2027-03',paid:true})).status).toBe(404);
+ expect((await months())[0].fee.payerName).toBe('연결 해제된 부모');
+ expect((await a.req(api+'items.update',{...input,id:created.id,version:4})).status).toBe(400);
+});
+it('one-off and legacy payments stay in their original month, with leap years and invalid recurrence checked',async()=>{
+ const a=await parent('fee-once');const original=payload('일회 납부','FEE');const old=await a.ok('items.create',{...original,data:{...original.data,paid:true}});
+ expect((await a.ok('items.get',{id:old.id})).fee.paid).toBe(true);expect((await a.ok('items.list',{from:'2026-12-01',to:'2026-12-31',kind:'FEE'})).items).toHaveLength(0);
+ const input={...original,data:{...original.data,date:'2028-01-31',feeFrequency:'MONTHLY'}};await a.ok('items.create',input);
+ expect((await a.ok('items.list',{from:'2028-02-01',to:'2028-02-29',kind:'FEE'})).items[0].fee.dueDate).toBe('2028-02-29');
+ expect((await a.req(api+'items.create',{...input,data:{...input.data,untilDate:'2027-12-31'}})).status).toBe(400);
+ expect((await a.req(api+'items.create',{...input,data:{...input.data,feeFrequency:'YEARLY'}})).status).toBe(400);
+ expect((await a.req(api+'fees.payment',{id:old.id,version:1,month:'2026-13',paid:true})).status).toBe(400);
+});
+it('children cannot read any fee or mutate fee/payment endpoints, and cannot be chosen as payers',async()=>{
+ const a=await parent('fee-parent'),child=new Browser(),outsider=await parent('fee-outsider');const code=await a.ok('invite.issue',{consent:true});await child.ok('child.signup',{loginId:'fee_child',name:'가상 자녀',password:'child-fixture-password',code:code.code});const cm=await child.ok('me'),xm=await outsider.ok('me');
+ const input=payload('부모에게만 보이는 학원비','FEE'),fee=await a.ok('items.create',input);
+ expect((await child.ok('items.list',listing)).items).toEqual([]);expect((await child.ok('items.list',{...listing,kind:'FEE'})).items).toEqual([]);
+ expect((await child.req(api+'items.get',{id:fee.id})).status).toBe(403);
+ expect((await child.req(api+'items.create',input)).status).toBe(403);
+ expect((await child.req(api+'items.update',{...input,id:fee.id,version:1})).status).toBe(403);
+ expect((await child.req(api+'items.delete',{id:fee.id,version:1})).status).toBe(403);
+ expect((await child.req(api+'fees.payment',{id:fee.id,version:1,month:'2026-11',paid:true})).status).toBe(403);
+ for(const feePayerId of [cm.id,xm.id])expect((await a.req(api+'items.create',{...input,data:{...input.data,feePayerId}})).status).toBe(400);
+ for(const statement of ['SELECT * FROM app_private.workspace_fee_payments',"SELECT app_private.workspace_command_v78('workspace.me','{}')", "SELECT app_private.workspace_fee_due('{}','2026-11-01')"]){await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,statement);})).rejects.toMatchObject({code:'42501'});}
 });

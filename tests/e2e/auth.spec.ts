@@ -25,10 +25,10 @@ test('account pages reflow at phone widths and large text with accessible form l
   }
   await page.setViewportSize({width:390,height:844});await page.goto('/login');
   await page.screenshot({path:'test-results/login-390.png',fullPage:true});
-  await page.getByRole('button',{name:'큰 글씨',exact:true}).click();await page.reload();
-  await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);await page.reload();
+  await expect(page.locator('html')).not.toHaveClass(/large-type/);await expect(page.locator('html')).toHaveAttribute('data-font','noto');
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-  await page.setViewportSize({width:1440,height:1000});await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
+  await page.setViewportSize({width:1440,height:1000});await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);
   await page.screenshot({path:'test-results/login-1440.png',fullPage:true});
   await page.goto('/account/reauth');
   await page.getByLabel('비밀번호',{exact:true}).fill('user-owned-test-password');

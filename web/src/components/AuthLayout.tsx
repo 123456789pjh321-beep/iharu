@@ -18,11 +18,9 @@ function StableWorkspaceFrame(){
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false }: { children: ReactNode; wide?: boolean;personalChild?:boolean }) {
   const { pathname } = useLocation();
   const wide=requestedWide||['/account','/family','/device','/child','/phone'].some(p=>pathname.startsWith(p));
-  const [large, setLarge] = useState(() => { try { return localStorage.getItem('iharu:large-type') === 'true'; } catch { return false; } });
-  useEffect(() => { document.documentElement.classList.toggle('large-type',large); try { localStorage.setItem('iharu:large-type',String(large)); } catch { /* optional preference */ } }, [large]);
   useEffect(() => { const names:Record<string,string>={'/today':'오늘','/today/calendar':'달력','/today/repeats':'반복 일정','/tuition':'학원비','/records':'메모','/chat':'대화','/child/chat':'대화','/family':'관리','/location':'위치','/account':'내 계정'};document.title = `${names[pathname]||(pathname.startsWith('/family')?'우리 가족':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정')} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
   return <div className={`auth-app ${wide?'workspace-page':'entry-page'}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
-    <header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/><button className="font-toggle" aria-label="큰 글씨" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button></div></header>
+    <header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/></div></header>
     {!wide&&<div className="test-entry-banner"><span>기능을 먼저 살펴보세요</span><Link to="/test/today">인증 없이 기능 테스트<Icon name="arrow"/></Link></div>}
     {wide&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
