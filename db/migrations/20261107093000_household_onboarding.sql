@@ -73,7 +73,9 @@ BEGIN
   IF NOT FOUND OR ch.consenter_id<>actor OR NOT EXISTS(SELECT 1 FROM app_private.household_profiles WHERE child_id=cid) THEN RAISE EXCEPTION 'NOT_FOUND'; END IF;
   IF ch.version<>(p->>'expectedVersion')::integer THEN RAISE EXCEPTION 'VERSION_CONFLICT'; END IF;
   -- Idempotency payloads may hold copied titles. Remove this child's cached payloads too.
-  DELETE FROM app_private.schedule_idempotency WHERE payload::text LIKE '%'||cid::text||'%' OR response::text LIKE '%'||cid::text||'%';
+  DELETE FROM app_private.schedule_idempotency si WHERE si.payload::text LIKE '%'||cid::text||'%' OR si.response::text LIKE '%'||cid::text||'%'
+   OR EXISTS(SELECT 1 FROM app.schedule_series s WHERE s.child_id=cid AND (si.payload::text LIKE '%'||s.id::text||'%' OR si.response::text LIKE '%'||s.id::text||'%'))
+   OR EXISTS(SELECT 1 FROM app.occurrences o WHERE o.child_id=cid AND (si.payload::text LIKE '%'||o.id::text||'%' OR si.response::text LIKE '%'||o.id::text||'%'));
   DELETE FROM app.children WHERE id=cid;
   PERFORM app_private.record_event('HOUSEHOLD_CHILD_DELETED',cid,true);
   RETURN jsonb_build_object('status','DELETED');

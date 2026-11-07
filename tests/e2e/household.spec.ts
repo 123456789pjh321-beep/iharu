@@ -130,6 +130,7 @@ for (const width of [320, 390, 768, 1024, 1440])
       "/account",
       "/account/reauth",
       "/account/email",
+      "/phone?link=1",
       "/family/invite",
       "/device/connect",
     ]) {

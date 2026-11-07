@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { useApi } from "../api";
 import { sessionSchema } from "../auth";
 import {
@@ -13,7 +13,7 @@ import { Icon } from "../components/Icon";
 import { familyRequest } from "../family";
 import { ChildManagement } from "./Family";
 import "./household.css";
-export function StartGuide({ compact = false }: { compact?: boolean }) {
+export function StartGuide({ compact = false, target="/start" }: { compact?: boolean; target?:string }) {
   return (
     <section
       className={"start-guide " + (compact ? "compact" : "")}
@@ -25,7 +25,7 @@ export function StartGuide({ compact = false }: { compact?: boolean }) {
           <h2>우리 가족, 이렇게 시작해요</h2>
           <p>보호자는 로그인, 아이는 연결 번호만 있으면 돼요.</p>
         </div>
-        <Link className="button primary" to="/start">
+        <Link className="button primary" to={target}>
           가족 연결 시작
           <Icon name="arrow" />
         </Link>
@@ -57,6 +57,7 @@ export function StartGuide({ compact = false }: { compact?: boolean }) {
   );
 }
 export function HouseholdPage() {
+ const {pathname}=useLocation();
   const session = useApi("/api/account/session", sessionSchema);
   if (session.loading)
     return (
@@ -70,7 +71,7 @@ export function HouseholdPage() {
         <ErrorState message={session.error} retry={session.retry} />
       </AuthLayout>
     );
-  if (!session.data?.authenticated) return <Navigate to="/login" replace />;
+  if (!session.data?.authenticated) return pathname==='/start'?<AuthLayout wide><div className="family-heading"><div><span className="eyebrow">START TOGETHER</span><h1>가족 연결, 세 단계면 충분해요</h1><p>누가 사용할 기기인지 먼저 골라 주세요.</p></div></div><div className="guide-role-cards"><div><Icon name="shield"/><strong>나는 보호자예요</strong><p>내 계정으로 로그인하고 가족을 만들어요. 자녀 별명을 추가하고 아이의 연결 요청을 수락해요.</p><Link className="button primary" to="/login">보호자 로그인·가입</Link></div><div><Icon name="device"/><strong>나는 아이예요</strong><p>이메일·비밀번호 없이 시작해요. 6자리 번호를 보호자에게 알려 주고, 내 이름을 확인하면 연결돼요.</p><Link className="button primary" to="/device/connect">아이 연결 시작</Link></div></div><StartGuide target="/login"/><section className="account-card"><h2>승인은 가족이 직접 해요</h2><p>가족을 만든 관리자가 다른 보호자의 참여 요청을 수락해요. 자녀를 등록한 보호자가 그 아이의 기기와 공유할 정보를 승인해요. 앱 운영자의 심사를 기다리지 않아요.</p><p>기관에서 법정 가족관계를 확인하는 인증과는 다른, 우리 가족끼리의 연결이에요.</p></section></AuthLayout>:<Navigate to="/login" replace />;
   return (
     <AuthLayout wide>
       <div className="family-heading">
