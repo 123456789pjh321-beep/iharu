@@ -124,3 +124,16 @@ it('children cannot read any fee or mutate fee/payment endpoints, and cannot be 
  for(const feePayerId of [cm.id,xm.id])expect((await a.req(api+'items.create',{...input,data:{...input.data,feePayerId}})).status).toBe(400);
  for(const statement of ['SELECT * FROM app_private.workspace_fee_payments',"SELECT app_private.workspace_command_v78('workspace.me','{}')", "SELECT app_private.workspace_fee_due('{}','2026-11-01')"]){await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,statement);})).rejects.toMatchObject({code:'42501'});}
 });
+
+it('stores all-family schedules once, preserves author permissions and rejects mixed or non-schedule assignments',async()=>{
+ const a=await parent('all-family-a'),b=await parent('all-family-b'),x=await parent('all-family-x'),child=new Browser();
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});const childInvite=await a.ok('invite.issue',{consent:true});await child.ok('child.signup',{loginId:'all_family_child',name:'가상 자녀',password:'child-fixture-password',code:childInvite.code});
+ for(const kind of ['EVENT','REPEAT']){
+  const input=payload('가족 전체 '+kind,kind),created=await a.ok('items.create',{...input,data:{...input.data,allMembers:true}});
+  for(const reader of [a,b,child])expect((await reader.ok('items.get',{id:created.id})).data).toMatchObject({allMembers:true,title:'가족 전체 '+kind});
+  expect((await x.req(api+'items.get',{id:created.id})).status).toBe(404);expect((await b.req(api+'items.delete',{id:created.id,version:1})).status).toBe(403);
+  await a.ok('items.update',{...input,id:created.id,version:1,data:{...input.data,assigneeId:(await b.ok('me')).id}});expect((await a.ok('items.get',{id:created.id})).data.allMembers).toBeUndefined();
+ }
+ const am=await a.ok('me'),input=payload('잘못된 대상');expect((await a.req(api+'items.create',{...input,data:{...input.data,allMembers:true,assigneeId:am.id}})).status).toBe(400);
+ for(const kind of ['FEE','NOTE','CHAT']){const input=payload('잘못된 전체 '+kind,kind);expect((await a.req(api+'items.create',{...input,data:{...input.data,allMembers:true}})).status).toBe(400);}
+});

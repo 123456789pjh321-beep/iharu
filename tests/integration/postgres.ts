@@ -365,6 +365,17 @@ try{
   await assert.rejects(query(db1,'SELECT * FROM app_private.workspace_fee_payments'),{code:'42501'});
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_v78('workspace.me','{}')"),{code:'42501'});
  });
+ await check('UI81 whole-family schedule remains one row and retains author-only editing',async()=>{
+  const data={title:'가족 전체 시간표',date:'2026-11-08',startTime:'14:15',endTime:'15:00',allMembers:true,weekdays:[]};
+  const created=await family1.command<{id:string}>(a,'workspace.items.create',{kind:'EVENT',data});
+  const read=await family2.command<{id:string;mine:boolean;data:{allMembers:boolean}}>(b,'workspace.items.get',{id:created.id});
+  assert.equal(read.id,created.id);assert.equal(read.data.allMembers,true);assert.equal(read.mine,false);
+  const listed=await family2.command<{items:{id:string}[]}>(b,'workspace.items.list',{from:'2026-11-08',to:'2026-11-08'});assert.equal(listed.items.filter(i=>i.id===created.id).length,1);
+  await assert.rejects(family2.command(b,'workspace.items.update',{id:created.id,version:1,kind:'EVENT',data}),{message:'AUTHOR_ONLY'});
+  await family1.command(a,'workspace.items.update',{id:created.id,version:1,kind:'EVENT',data:{...data,startTime:'15:00',endTime:'16:00'}});
+  assert.equal((await family2.command<{data:{startTime:string}}>(b,'workspace.items.get',{id:created.id})).data.startTime,'15:00');
+  await family1.command(a,'workspace.items.delete',{id:created.id,version:2});await assert.rejects(family2.command(b,'workspace.items.get',{id:created.id}),{message:'NOT_FOUND'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

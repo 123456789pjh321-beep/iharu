@@ -12,6 +12,7 @@ import './polish.css';
 import './onboarding.css';
 import './personal-workspace.css';
 import './direct-workspace.css';
+import './timetable.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><ExperienceProvider><App/></ExperienceProvider></StrictMode>);
 
 
