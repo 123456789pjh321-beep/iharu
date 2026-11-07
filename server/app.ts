@@ -1,3 +1,4 @@
+import {workspaceRoutes} from './workspace/routes.js';
 import {childAccountRoutes} from './child-accounts/routes.js';
 import {guardianRoutes} from './guardian/routes.js';
 import { familyRoutes } from './family/routes.js';
@@ -44,6 +45,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   });
   app.route('/', accountRoutes(authRuntime));
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
+  app.route('/', workspaceRoutes(authRuntime,familyRuntime));
   app.route('/', childAccountRoutes(authRuntime,familyRuntime));
   app.route('/', familyRoutes(authRuntime,familyRuntime));
   app.route('/', scheduleRoutes(authRuntime,familyRuntime));

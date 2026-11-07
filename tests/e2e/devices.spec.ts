@@ -25,7 +25,7 @@ test('F05 two browsers complete renewed pairing, reload, lost exchange reply, pi
   await child.screenshot({path:'test-results/f05-confirm-390.png',fullPage:true});
   let lost=true;await child.route('**/api/v1/device-pairings/*/exchange',async route=>{if(lost){lost=false;await route.fetch();await route.abort('failed');}else await route.continue();});
   await child.getByRole('button',{name:'내 기기로 연결하기'}).click();await expect(child.getByRole('alert')).toBeVisible();await child.getByRole('button',{name:'내 기기로 연결하기'}).click();
-  await expect(child.getByRole('heading',{name:'F05 첫째, 반가워요'})).toBeVisible();await child.reload();await child.getByRole('link',{name:'가족에게 말하기'}).click();await expect(child).toHaveURL(origin+`/child/chat?child=${first}`);
+  await expect(child.getByRole('heading',{name:'F05 첫째, 반가워요'})).toBeVisible();await child.reload();await child.getByRole('link',{name:'가족에게 말하기'}).click();await expect(child).toHaveURL(origin+`/child/chat?legacy=1&child=${first}`);
   await expect(child.getByRole('heading',{name:'F05 첫째 가족방'})).toBeVisible();await expect(child.getByText('F05 둘째')).toHaveCount(0);
   const devices=await(await page.request.get(`/api/v1/children/${first}/devices`)).json();expect(devices.devices).toHaveLength(1);
   await sendPicture(child,'도착했어요');await page.getByRole('link',{name:'F05 첫째 가족방 열기'}).click();await expect(page.locator('.chat-bubble').filter({hasText:'도착했어요'})).toHaveCount(1);
@@ -35,8 +35,8 @@ test('F05 two browsers complete renewed pairing, reload, lost exchange reply, pi
   await child.screenshot({path:'test-results/f05-chat-768.png',fullPage:true});
   // A signed-in guardian in the same browser must not widen the child view.
   await ctx.addCookies(await page.context().cookies());await child.reload();await expect(child.getByRole('heading',{name:'F05 첫째 가족방'})).toBeVisible();await expect(child.getByText('F05 둘째')).toHaveCount(0);
-  await child.goto(origin+`/child/chat?child=${second}`);await expect(child.getByRole('heading',{name:'선택한 대화방에 접근할 수 없어요'})).toBeVisible();await expect(child.getByRole('region',{name:'메시지 만들기'})).toHaveCount(0);
-  await child.goto(origin+`/child/chat?child=${first}`);await expect(child.locator('.chat-bubble')).toHaveCount(2);
+  await child.goto(origin+`/child/chat?legacy=1&child=${second}`);await expect(child.getByRole('heading',{name:'선택한 대화방에 접근할 수 없어요'})).toBeVisible();await expect(child.getByRole('region',{name:'메시지 만들기'})).toHaveCount(0);
+  await child.goto(origin+`/child/chat?legacy=1&child=${first}`);await expect(child.locator('.chat-bubble')).toHaveCount(2);
   const revoke=await page.request.delete(`/api/v1/children/${first}/devices/${devices.devices[0].id}`,{headers:{Origin:origin},data:{}});expect(revoke.ok()).toBe(true);
   await child.getByRole('button',{name:'대화 새로고침'}).click();await expect(child.getByRole('heading',{name:'기기 연결을 확인해 주세요'})).toBeVisible();await expect(child.locator('.chat-bubble')).toHaveCount(0);await expect(child.getByRole('region',{name:'메시지 만들기'})).toHaveCount(0);
   expect((await ctx.request.get(origin+'/api/v1/chat-rooms',{headers:{'X-Iharu-Actor':'child'}})).status()).toBe(401);

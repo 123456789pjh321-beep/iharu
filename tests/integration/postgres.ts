@@ -313,6 +313,25 @@ try{
   assert.equal(finishes[0].sealed,finishes[1].sealed);assert.equal((await admin.query('SELECT id FROM app.child_devices WHERE child_id=$1',[rows[0].child_id])).rowCount,1);
   await assert.rejects(query(db1,'SELECT * FROM app_private.child_accounts'),{code:'42501'});
  });
+ await check('UI76 parent code has one concurrent winner and shared data remains author-only',async()=>{
+  const aMe=await family1.command<{id:string}>(a,'workspace.me'),bMe=await family2.command<{id:string}>(b,'workspace.me');
+  const data={title:'개인 소유',date:'2026-11-07',weekdays:[]};
+  const own=await family2.command<{id:string}>(b,'workspace.items.create',{kind:'EVENT',data});
+  const codeHash=family1.digest('workspace-code:'+randomBytes(12).toString('hex'));
+  await family1.command(a,'workspace.invite.issue',{consent:true,codeHash});
+  const outcomes=await Promise.allSettled([family1.command(b,'workspace.family.join',{codeHash}),family2.command(b,'workspace.family.join',{codeHash})]);
+  assert.equal(outcomes.filter(r=>r.status==='fulfilled').length,1);
+  assert.equal((await family1.command<{mine:boolean}>(a,'workspace.items.get',{id:own.id})).mine,false);
+  await assert.rejects(family1.command(a,'workspace.items.update',{id:own.id,version:1,kind:'EVENT',data}),{message:'AUTHOR_ONLY'});
+  await assert.rejects(family1.command(a,'workspace.items.delete',{id:own.id,version:1}),{message:'AUTHOR_ONLY'});
+  const me=await family1.command<{family:{id:string;members:{id:string;version:number}[]}}>(a,'workspace.me');
+  await family1.command(a,'workspace.family.remove',{familyId:me.family.id,profileId:bMe.id,version:me.family.members.find(m=>m.id===bMe.id)!.version});
+  await assert.rejects(family1.command(a,'workspace.items.get',{id:own.id}),{message:'NOT_FOUND'});
+  assert.equal((await family2.command<{mine:boolean}>(b,'workspace.items.get',{id:own.id})).mine,true);
+  await family2.command(b,'workspace.items.update',{id:own.id,version:1,kind:'EVENT',data:{...data,title:'제외 후 내 수정'}});
+  assert.notEqual(aMe.id,bMe.id);
+  await assert.rejects(query(db1,'SELECT * FROM app_private.workspace_items'),{code:'42501'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

@@ -20,7 +20,7 @@ test('browser signup → mail proof → login → home → account → logout pe
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole('heading',{name:'오늘도 함께 챙겨요'})).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'오늘의 등하원',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   await expect(page.getByText('서준',{exact:true})).toHaveCount(0);
   for(const path of ['/login','/signup','/']) {
     await page.goto(path);await expect(page).toHaveURL(/\/today$/);
@@ -35,11 +35,11 @@ test('browser signup → mail proof → login → home → account → logout pe
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/home-390-large.png',fullPage:true});
   await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
-  await page.getByRole('link',{name:'가족 달력 열기',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'계정 확인 후 일정을 연결해요'})).toBeVisible();
+  await page.locator('.personal-module').filter({hasText:'월간 일정'}).click();
+  await expect(page.locator('.personal-calendar')).toBeVisible();
   await page.getByRole('link',{name:'한눈에',exact:true}).click();
   await expect(page).toHaveURL(/\/today$/);
-  await page.locator('main').getByRole('link',{name:'내 계정',exact:true}).click();
+  await page.goto('/account');
   await expect(page.getByRole('heading',{name:'로그인 방법과 기기'})).toBeVisible();
   await expect(page.getByText('현재 기기',{exact:true})).toBeVisible();
   await page.reload();

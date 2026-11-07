@@ -36,7 +36,7 @@ test('Kakao without verified contact sees successful login and actionable chat s
   const protectedRequests:string[]=[];
   page.on('request',r=>{if(r.url().includes('/api/v1/chat-rooms'))protectedRequests.push(r.url());});
   await page.route('**/api/account/session',r=>r.fulfill({json:{authenticated:true,assurance:'HIGH',email:null,emailVerified:false,accessReady:false}}));
-  await page.goto('/chat');
+  await page.goto('/chat?legacy=1');
   await expect(page.getByText('로그인 완료',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'가족 대화를 준비하고 있어요'})).toBeVisible();
   await expect(page.getByRole('link',{name:'가족 연결 상태 확인'})).toHaveAttribute('href','/family');
@@ -48,7 +48,7 @@ test('chat retains versioned API error message and redirects when session expire
   await page.route('**/api/account/session',r=>r.fulfill({json:{authenticated:true,assurance:'HIGH',email:'fixture@example.test',emailVerified:true,accessReady:true}}));
   let expired=false;
   await page.route('**/api/v1/chat-rooms',r=>r.fulfill({status:expired?401:403,json:{error:{code:expired?'AUTH_REQUIRED':'ACCESS_NOT_READY',message:'계정 확인과 가족 연결을 먼저 마쳐 주세요.'},meta:{requestId:'fixture',serverNow:new Date().toISOString()}}}));
-  await page.goto('/chat');
+  await page.goto('/chat?legacy=1');
   await expect(page.getByText('계정 확인과 가족 연결을 먼저 마쳐 주세요.')).toBeVisible();
   expired=true;
   await page.route('**/api/account/session',r=>r.fulfill({json:{authenticated:false}}));

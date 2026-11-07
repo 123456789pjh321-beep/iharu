@@ -1,3 +1,4 @@
+import {PersonalWorkspace,type PersonalMode} from './pages/PersonalWorkspace';
 import {RouteEffects} from './components/RouteEffects';
 import {GuardianVerificationPage} from './pages/GuardianVerification';
 import {NotificationsPage} from './pages/Notifications';
@@ -9,7 +10,7 @@ import { sessionSchema, type SignedInSession } from './auth';
 import { AuthLayout } from './components/AuthLayout';
 const TestWorkspace=lazy(()=>import('./testing/TestWorkspace'));
 const ChatPage=lazy(()=>import('./pages/Chat').then(m=>({default:m.ChatPage})));
-function ChatRoute({childMode=false}:{childMode?:boolean}){return <Suspense fallback={<Loading/>}><ChatPage childMode={childMode}/></Suspense>;}
+function ChatRoute({childMode=false}:{childMode?:boolean}){const {search}=useLocation();return new URLSearchParams(search).get('legacy')!=='1'?<WorkspaceEntry mode="chat"/>: <Suspense fallback={<Loading/>}><ChatPage childMode={childMode}/></Suspense>;}
 import { DailyWorkspace } from './pages/Daily';
 import { Home } from './pages/Home';
 import {copy} from './copy';
@@ -69,17 +70,20 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/test/*" element={<Suspense fallback={<Loading label="테스트 작업실을 준비하고 있어요"/>}><TestWorkspace/></Suspense>}/>
   <Route path="/notifications" element={<NotificationsPage/>}/>
   <Route path="/chat" element={<ChatRoute/>}/><Route path="/child/chat" element={<ChatRoute childMode/>}/>
-  <Route path="/today/calendar" element={<SchedulePage/>}/><Route path="/today/repeats" element={<SchedulePage mode="repeats"/>}/>
+  <Route path="/today" element={<WorkspaceEntry mode="home"/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
   <Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="/calendar" element={<ScheduleAlias/>}/><Route path="/repeats" element={<ScheduleAlias repeats/>}/>
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
   <Route path="/family/verification" element={<GuardianVerificationPage/>}/><Route path="/family/verification/review" element={<GuardianVerificationPage review/>}/>
   <Route path="/family" element={<FamilyPage/>}/><Route path="/family/invite" element={<FamilyInvitePage/>}/>
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/>
-  <Route path="/phone" element={<PhonePage/>}/><Route path="/account" element={<AccountPage/>}/>
+  <Route path="/phone" element={<PhonePage/>}/><Route path="/account" element={<AccountEntry/>}/>
   <Route path="/account/reauth" element={<ReauthPage/>}/><Route path="/account/email" element={<EmailLinkPage/>}/>
   <Route path="/settings" element={<Navigate to="/account" replace/>}/><Route path="*" element={<Shell/>}/>
 </Routes></BrowserRouter>;}
 function ScheduleAlias({repeats=false}:{repeats?:boolean}){const health=useApi('/api/health',healthResponse);if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
 
 
+
+function WorkspaceEntry({mode}:{mode:PersonalMode}){const {search}=useLocation(),health=useApi('/api/health',healthResponse),session=useApi('/api/account/session',sessionSchema);if(health.loading||session.loading)return <AuthLayout wide><Loading/></AuthLayout>;const legacy=new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled;if(!legacy&&(session.error||session.data?.authenticated&&(session.data.assurance==='LOW'||!session.data.emailVerified)))return <Shell/>;if(!legacy)return <PersonalWorkspace mode={mode}/>;return mode==='calendar'||mode==='repeats'?<SchedulePage mode={mode==='calendar'?'calendar':'repeats'}/>:mode==='chat'?<Suspense fallback={<Loading/>}><ChatPage childMode={location.pathname.startsWith('/child')}/></Suspense>:<Shell/>;}
+function AccountEntry(){const s=useApi('/api/account/session',sessionSchema);if(s.loading)return <AuthLayout wide><Loading/></AuthLayout>;return s.data?.authenticated?<AccountPage/>:<PersonalWorkspace mode="account"/>;}
