@@ -25,6 +25,8 @@ export function useCalendarSlide(grid:RefObject<HTMLDivElement|null>,period:stri
   outgoing.className='calendar-motion-snapshot';
   outgoing.setAttribute('aria-hidden','true');outgoing.inert=true;
   viewport.appendChild(outgoing);
+  const scrollSources=node.querySelectorAll<HTMLElement>('[data-calendar-scroll]');
+  outgoing.querySelectorAll<HTMLElement>('[data-calendar-scroll]').forEach((target,index)=>{const source=scrollSources[index];if(source){target.scrollTop=source.scrollTop;target.scrollLeft=source.scrollLeft;}});
   const timing={duration:280,easing:'cubic-bezier(.22,.61,.36,1)'};
   const animations=[
    node.animate([{transform:`translateX(${direction*100}%)`},{transform:'translateX(0)'}],timing),
