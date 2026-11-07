@@ -2,7 +2,7 @@ import {query} from '../auth/database.js';
 import { Hono,type Context } from 'hono';
 import { getCookie,setCookie,deleteCookie } from 'hono/cookie';
 import { bodyLimit } from 'hono/body-limit';
-import { randomInt } from 'node:crypto';
+import { randomInt,randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { currentSession } from '../auth/routes.js';
 import type { AuthService } from '../auth/service.js';
@@ -20,7 +20,7 @@ export function familyRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Famil
   if(!anonymous.has(op)){
    if(!svc)return fail('AUTH_REQUIRED',401);
    const s=await currentSession(svc,c.req.raw);if(!s)return fail('AUTH_REQUIRED',401);
-   if(s.guard.assurance!=='HIGH'||!s.user.emailVerified||(!s.guard.access_ready&&!['family.create','invite.accept'].includes(op))||s.user.email.endsWith('@identity.iharu.invalid'))return fail('ACCESS_NOT_READY',403);
+   if(s.guard.assurance!=='HIGH'||!s.user.emailVerified||(!s.guard.access_ready&&!['family.create','invite.accept','household.status','household.create','household.join'].includes(op))||s.user.email.endsWith('@identity.iharu.invalid'))return fail('ACCESS_NOT_READY',403);
    c.set('actor',{memberId:s.guard.member_id,sessionId:s.session.id,requestId:c.get('requestId')});
    if(recent){try{await svc.policy.requireRecent(s.session.id);}catch{return fail('REAUTH_REQUIRED',403);}}
   }else c.set('actor',{requestId:c.get('requestId')});
@@ -59,6 +59,15 @@ export function familyRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Famil
     const raw=db.token();const r=await db.command<{sealed:string}>(actor,op,{...input,deviceHash:db.digest(`device:${raw}`),sealed:db.seal(raw)});
     setCookie(c,deviceName,db.unseal(r.sealed),{...cookieOptions,maxAge:30*86400});return c.json({status:'CONNECTED'});
    }
+   if(op==='household.invite'){
+    const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const code='IH-'+Array.from(randomBytes(12),b=>alphabet[b&31]).join('').match(/.{4}/g)!.join('-');
+    const result=await db.command(actor,'invite.create',{...input,tokenHash:db.digest(`invite:${code}`)});
+    return c.json({...result,code,expiresAt:new Date(Date.now()+86400000).toISOString()});
+   }
+   if(op==='household.join'){
+    await svc.policy.takeLimits([{key:`household:join:${actor.memberId}`,windowMs:600000,limit:5},{key:`household:join-ip:${ip}`,windowMs:600000,limit:30}]);
+    const result=await db.command(actor,'invite.accept',{tokenHash:db.digest(`invite:${input.code}`)});return c.json(result);
+   }
    if(op==='invite.create'){
     const token=db.token();const r=await db.command(actor,op,{...input,tokenHash:db.digest(`invite:${token}`)});
     return c.json({...r,inviteUrl:`${svc!.settings.origin}/family/invite#${token}`});
@@ -93,6 +102,12 @@ export function familyRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Famil
   catch{console.error(JSON.stringify({code:'SETUP_DATABASE_UNAVAILABLE',requestId:c.get('requestId')}));}
   return c.json({accountReady:s.guard.access_ready&&emailVerified,emailVerified,emailDeliveryAvailable:!!svc?.settings.mail,databaseReady,...onboarding});
  });
+ app.get('/api/v1/household/status',endpoint('household.status',empty));
+ app.post('/api/v1/household/create',endpoint('household.create',z.object({name:familyName,authorityConsent:z.literal(true)}).strict(),()=>({}),true));
+ app.post('/api/v1/household/children',endpoint('household.child.create',z.object({familyId:id,nickname:z.string().trim().min(1).max(24),guardianConsent:z.literal(true),policyVersion:z.literal('household-1')}).strict(),()=>({}),true));
+ app.post('/api/v1/household/invite',endpoint('household.invite',z.object({familyId:id}).strict(),()=>({}),true));
+ app.post('/api/v1/household/join',endpoint('household.join',z.object({code:z.string().trim().toUpperCase().regex(/^IH-(?:[A-HJ-NP-Z2-9]{4}-){2}[A-HJ-NP-Z2-9]{4}$/)}).strict(),()=>({}),true));
+ app.delete('/api/v1/household/children/:childId',endpoint('household.child.delete',expected,child,true));
  app.get('/api/v1/me',endpoint('me',empty));
  app.post('/api/v1/families',endpoint('family.create',z.object({name:familyName}).strict(),()=>({}),true));
  app.get('/api/v1/families/:familyId/members',endpoint('family.members',empty,family));

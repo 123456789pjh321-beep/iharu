@@ -292,6 +292,23 @@ try{
   await family1.command(b,'consent.revoke',{childId:child,purpose:'general',expectedVersion:1});
   await assert.rejects(schedules2.command(b,'template.import',payload),{message:'NOT_FOUND'});
  });
+ await check('UI73 self-managed child erasure removes schedule, message and device data under app_runtime',async()=>{
+  const f=await family1.command<{id:string}>(b,'household.create',{name:'isolated managed household',authorityConsent:true});
+  const child=await family1.command<{id:string}>(b,'household.child.create',{familyId:f.id,nickname:'isolated managed child',guardianConsent:true,policyVersion:'household-1'});
+  await schedules1.command(b,'create',{...schedulePayload,childId:child.id,key:randomUUID()});
+  await chat1.command(b,'send',{childId:child.id,kind:'TEXT',body:'isolated erase fixture',clientMessageId:randomUUID(),key:randomUUID()});
+  const room=(await admin.query('SELECT id FROM app.rooms WHERE child_id=$1',[child.id])).rows[0].id;
+  const otherCount=(await admin.query('SELECT count(*)::int n FROM app.children WHERE id<>$1',[child.id])).rows[0].n;
+  await assert.rejects(family2.command(a,'household.child.delete',{childId:child.id,expectedVersion:1}),{message:'NOT_FOUND'});
+  await family1.command(b,'household.child.delete',{childId:child.id,expectedVersion:1});
+  for(const table of ['app.children','app.rooms','app.schedule_series','app.occurrences','app_private.household_profiles']){
+   const col=table==='app.children'?'id':'child_id';assert.equal((await admin.query(`SELECT 1 FROM ${table} WHERE ${col}=$1`,[child.id])).rowCount,0);
+  }
+  assert.equal((await admin.query('SELECT 1 FROM app.messages WHERE room_id=$1',[room])).rowCount,0);
+  assert.equal((await admin.query('SELECT 1 FROM app_private.message_jobs WHERE room_id=$1',[room])).rowCount,0);
+  assert.equal((await admin.query('SELECT count(*)::int n FROM app.children')).rows[0].n,otherCount);
+  await assert.rejects(query(db1,'SELECT * FROM app_private.household_profiles'),{code:'42501'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

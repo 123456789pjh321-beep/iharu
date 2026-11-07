@@ -1,10 +1,11 @@
-import {useEffect,useState,type ReactNode} from 'react';
-import {Link,NavLink,Navigate,useSearchParams} from 'react-router-dom';
+import {WorkspaceTabs} from '../components/WorkspaceTabs';
+import {useState,type ReactNode} from 'react';
+import {Link,Navigate,useSearchParams} from 'react-router-dom';
 import {useApi} from '../api';
 import {sessionSchema} from '../auth';
 import {familiesSchema,childSessionSchema,type Family} from '../../../shared/family';
 import {calendarResponse,seriesResponse,scheduleChildrenResponse,koreaToday,addDays,type Occurrence,type ScheduleSeries,type CalendarData} from '../../../shared/schedules';
-import {Icon,type IconName} from '../components/Icon';
+import {Icon} from '../components/Icon';
 import {Loading,ErrorState} from '../components/Common';
 import {AuthLayout,FormNotice} from '../components/AuthLayout';
 import {NewScheduleDialog,EditScheduleDialog,ClosureDialog,weekLabels} from '../components/ScheduleForms';
@@ -12,12 +13,7 @@ import {ScheduleTemplateDialog} from '../components/ScheduleTemplateDialog';
 import {scheduleRequest,useScheduleAction} from '../schedules';
 
 function ScheduleLayout({children,mode}:{children:ReactNode;mode:'calendar'|'repeats'}){
- const [large,setLarge]=useState(()=>{try{return localStorage.getItem('iharu:large-type')==='true';}catch{return false;}});
- useEffect(()=>{document.documentElement.classList.toggle('large-type',large);try{localStorage.setItem('iharu:large-type',String(large));}catch{/* preference only */}},[large]);
- useEffect(()=>{document.title=`${mode==='calendar'?'우리 가족 달력':'반복 일정'} · 아이하루`;document.getElementById('schedule-main')?.focus();},[mode]);
- const nav:[string,string,IconName][]=[['/today','오늘','home'],['/location','아이 위치','pin'],['/chat','가족 대화','chat'],['/records','기록','book']];
- const links=(className:string)=><nav className={className} aria-label={className==='bottom-nav'?'모바일 주 메뉴':'주 메뉴'}>{nav.map(([url,label,icon],i)=><Link className={i===0?'active':''} aria-current={i===0?'page':undefined} key={url} to={url}><Icon name={icon}/><span>{label}</span></Link>)}</nav>;
- return <div className="app schedule-app"><a className="skip-link" href="#schedule-main">본문 바로가기</a><aside className="sidebar"><Link to="/today" className="brand"><span className="brandmark"><Icon name="sun"/></span>아이하루</Link><p className="tagline">가족의 하루를 잇다</p><p className="sidebar-caption">우리 가족</p>{links('side-nav')}<div className="sidebar-bottom"><Link to="/family"><Icon name="home"/>가족과 아이 관리</Link><Link to="/account"><Icon name="settings"/>내 계정</Link></div></aside><div className="app-content"><header className="topbar"><Link to="/today" className="brand mobile-brand">아이하루</Link><span className="desktop-context">가족의 하루를 잇다</span><div className="top-actions"><button className="font-toggle" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button><Link className="icon-button" to="/family" aria-label="가족과 아이 관리"><Icon name="home"/></Link></div></header><main id="schedule-main" className="main" tabIndex={-1}><nav className="schedule-subnav" aria-label="오늘 하위 메뉴"><Link to="/today">한눈에</Link><NavLink to="/today/calendar">월간 일정</NavLink><Link to="/tuition">학원비</Link><NavLink to="/today/repeats">반복 일정</NavLink></nav>{children}</main><footer className="page-footer">아이하루 · 가족의 하루를 잇다<span>일정 기준 · 한국 시간</span></footer></div>{links('bottom-nav')}</div>;
+ return <AuthLayout wide><WorkspaceTabs group="day"/><div aria-label={mode==='calendar'?'가족 달력 작업실':'반복 일정 작업실'}>{children}</div></AuthLayout>;
 }
 export function SchedulePage({mode='calendar'}:{mode?:'calendar'|'repeats'}){
  const session=useApi('/api/account/session',sessionSchema);
@@ -25,7 +21,7 @@ export function SchedulePage({mode='calendar'}:{mode?:'calendar'|'repeats'}){
  if(session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;
  if(!session.data?.authenticated)return <Navigate to="/login" replace/>;
  if(session.data.assurance==='LOW')return <Navigate to="/account" replace/>;
- return <ScheduleLayout mode={mode}><>{session.data.accessReady?<ScheduleWorkspace mode={mode}/>:<section className="card schedule-empty"><Icon name="calendar"/><h1>우리 가족 달력</h1><h2>계정 확인 후 일정을 연결해요</h2><p>로그인은 완료됐어요. 이메일과 보호자 확인 상태를 가족 관리에서 확인해 주세요.</p><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</></ScheduleLayout>;
+ return <ScheduleLayout mode={mode}><>{session.data.accessReady?<ScheduleWorkspace mode={mode}/>:<section className="card schedule-empty"><Icon name="calendar"/><h1>우리 가족 달력</h1><h2>가족 연결부터 시작해요</h2><p>로그인은 완료됐어요. 가족을 만들고 자녀 별명을 추가하면 일정을 사용할 수 있어요.</p><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</></ScheduleLayout>;
 }
 function ScheduleWorkspace({mode}:{mode:'calendar'|'repeats'}){
  const families=useApi('/api/v1/me',familiesSchema);const [search,setSearch]=useSearchParams();

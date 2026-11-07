@@ -45,7 +45,7 @@ export function DeviceConnectPage(){
  <p className="pairing-time">{expired?'이 번호는 더 이상 사용할 수 없어요':`${Math.floor(remaining/60)}분 ${String(remaining%60).padStart(2,'0')}초 안에 연결해 주세요`}</p>
  {target?<><button className="button primary full child-cta" disabled={busy||expired} onClick={connect}>내 기기로 연결하기 <Icon name="arrow"/></button><button className="button full child-cta" disabled={busy} onClick={cancel}>다른 아이예요 · 연결 취소</button></>:<button className="button primary full child-cta" disabled={busy||expired} onClick={()=>void check()}><Icon name="check"/>보호자 확인이 끝났어요</button>}
  <button className="button full child-cta" disabled={busy} onClick={start}>새 번호 받기 <Icon name="repeat"/></button><p className="account-caption">새 번호를 받으면 이전 번호는 사용할 수 없어요.<br/>화면을 보고 있는 동안 보호자 확인 결과를 알려 드려요.</p>
- </>:<><div className="connection-guide" aria-label="이메일 없이 연결하는 순서"><span><b>01</b>아이가 번호 요청</span><span><b>02</b>보호자가 확인·수락</span><span><b>03</b>내 이름 확인 후 연결</span></div><div className="device-steps"><span><Icon name="device"/>번호 받기</span><Icon name="arrow"/><span><Icon name="shield"/>보호자 확인</span></div><button className="button primary full child-cta" disabled={busy} onClick={start}>연결 번호 받기 <Icon name="arrow"/></button><Link className="button full" to="/child/connected">이미 연결한 기기로 들어가기</Link></>}
+ </>:<><div className="connection-guide" aria-label="이메일 없이 연결하는 순서"><span><b>01</b>아이가 번호 요청</span><span><b>02</b>보호자가 확인·수락</span><span><b>03</b>내 이름 확인 후 연결</span></div><button className="button primary full child-cta" disabled={busy} onClick={start}>연결 번호 받기 <Icon name="arrow"/></button><Link className="button full" to="/child/connected">이미 연결한 기기로 들어가기</Link></>}
  </div></AuthLayout>;
 }
 export function ConnectedChildPage(){
