@@ -33,3 +33,46 @@ flowchart TD
 기존 운영 DB의 일정/자녀/자녀계정 수가 모두 0임을 사전 읽기 조회로 확인했다. 작성자를 추정하여 이전 자료를 다른 사람에게 귀속시키는 이관은 하지 않는다. 기존 성인 로그인은 유지된다.
 
 검증: API/정책 통합 테스트에 개인 CRUD, A/B/C 공유, 호스트의 타인 수정 거부, 제외 후 자녀 재로그인, 번호 만료/재사용/역할/Origin/RLS 검사를 포함한다. 실제 PostgreSQL에 동시 번호 소비 1승자 검사를 추가한다. 브라우저에서는 개인 일정 → 부모 번호 → 자녀 가입 → 공유 → 제외 흐름과 320/390/768/1440px 화면을 검사한다.
+
+
+## 추가·수정 파일
+
+|파일|변경 내용|
+|---|---|
+|`db/migrations/20261107114451_personal_author_family_sharing.sql`|개인 소유 자료, 부모 호스트·초대·연결·제외, 자녀 계정 및 FORCE RLS|
+|`docs/UI76-personal-family-permissions.md`|권한 그림·표·운영 규칙과 파일 변경 목록|
+|`server/app.ts`|새 작업 API 라우트 연결|
+|`server/child-accounts/routes.ts`|자녀가 번호를 발급하던 공개 API 종료|
+|`server/family/service.ts`|개인 자녀 세션 컨텍스트와 정책 함수 연결|
+|`server/workspace/routes.ts`|자녀 가입·로그인, 가족 번호·연결 관리, 작성자 전용 CRUD API|
+|`shared/workspace.ts`|개인 자료와 가족 프로필의 입력 검증·형식|
+|`tests/child-accounts.test.ts`|기존 번호 발급 API 종료 및 비밀번호 해시 검증|
+|`tests/e2e/auth-flow.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/e2e/child-account-onboarding.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/e2e/daily.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/e2e/devices.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/e2e/family.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/e2e/login-landing.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/e2e/messages.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/e2e/schedules.spec.ts`|기존 회귀 시나리오 경로 갱신 또는 새 가입·공유·반응형 브라우저 검증|
+|`tests/integration/postgres.ts`|실제 PG 동시 번호 소비와 호스트/작성자 권한 검증|
+|`tests/workspace.test.ts`|개인 CRUD, A/B/C 공유·제외·소유권·번호·세션 검증|
+|`web/src/App.tsx`|개인 작업 화면 기본 경로, 기존 고급 화면·추가 확인 경로 유지|
+|`web/src/components/AuthLayout.tsx`|자녀 개인 작업 메뉴와 비밀번호 길이 안내|
+|`web/src/components/Icon.tsx`|승인번호와 달력 아이콘 연결|
+|`web/src/components/WorkspaceNavigation.tsx`|자녀 개인 메뉴 연결|
+|`web/src/components/WorkspaceTabs.tsx`|기존 고급 화면 이동 문맥 유지|
+|`web/src/main.tsx`|개인 작업 화면 스타일 로딩|
+|`web/src/pages/Account.tsx`|개인 이용과 부모 번호 가족 연결 안내|
+|`web/src/pages/ChildAccount.tsx`|직접 정한 ID·이름·비밀번호·부모 승인번호 가입과 자녀 로그인|
+|`web/src/pages/Daily.tsx`|기존 고급 일별 화면의 선택 문맥 유지|
+|`web/src/pages/Device.tsx`|기존 기기 대화 경로 유지|
+|`web/src/pages/Family.tsx`|새 가족 화면 기본 적용, 기존 고급 경로 유지|
+|`web/src/pages/Home.tsx`|부모 발급 번호 방식으로 안내 정정|
+|`web/src/pages/Login.tsx`|로그인 하단 회원가입 버튼과 부모 번호 안내|
+|`web/src/pages/PersonalWorkspace.tsx`|월간·반복·학원비·기록·대화·가족의 개인/공유 UI와 작성자별 버튼|
+|`web/src/pages/Schedules.tsx`|기존 고급 반복 화면의 선택 문맥 유지|
+|`web/src/personal-workspace.css`|공통 자료·가족·달력·편집기와 반응형 가입 양식|
+|`web/src/workspace-api.ts`|동일 출처 개인 작업 API 호출|
+
+삭제한 파일: 없음.
