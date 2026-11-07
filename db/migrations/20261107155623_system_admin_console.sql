@@ -1,4 +1,5 @@
 -- UI83. System administration is separate from family ownership.
+SELECT set_config('iharu.migration_executor',current_user,true);
 CREATE TABLE app_private.system_admins (
  member_id uuid PRIMARY KEY REFERENCES iharu_auth.members(id) ON DELETE CASCADE,
  active boolean NOT NULL DEFAULT true, version integer NOT NULL DEFAULT 1,
@@ -237,6 +238,9 @@ BEGIN
  INSERT INTO app_private.system_events(category,action,actor_id,target_id,request_id,details) VALUES(category_name,action_name,actor,target,nullif(current_setting('iharu.request_id',true),'')::uuid,detail);
  RETURN CASE WHEN TG_OP='DELETE' THEN OLD ELSE NEW END;
 END $$;
+-- Managed databases may revoke default PUBLIC function execution. Only the DDL
+-- executor needs these three trigger functions during installation.
+DO $$ BEGIN EXECUTE format('GRANT EXECUTE ON FUNCTION app_private.system_device_guard(),app_private.system_admin_account_guard(),app_private.system_capture_change() TO %I',current_setting('iharu.migration_executor')); END $$;
 RESET ROLE;
 CREATE TRIGGER system_block_suspended_device BEFORE INSERT OR UPDATE OF status ON app.child_devices FOR EACH ROW EXECUTE FUNCTION app_private.system_device_guard();
 CREATE TRIGGER system_protect_admin_account BEFORE DELETE OR UPDATE OF status ON iharu_auth.members FOR EACH ROW EXECUTE FUNCTION app_private.system_admin_account_guard();
@@ -247,6 +251,7 @@ CREATE TRIGGER system_auth_history AFTER INSERT OR DELETE ON iharu_auth.session 
 SET LOCAL ROLE iharu_policy;
 REVOKE ALL ON app_private.system_member_directory FROM PUBLIC,app_runtime;
 REVOKE ALL ON FUNCTION app_private.system_is_admin(),app_private.system_member_json(uuid),app_private.system_log_request(jsonb),app_private.admin_command(text,jsonb),app_private.system_device_guard(),app_private.system_admin_account_guard(),app_private.system_capture_change(),app_private.workspace_command(text,jsonb),app_private.child_account_command(text,jsonb),app_private.workspace_command_v82(text,jsonb),app_private.child_account_command_v82(text,jsonb) FROM PUBLIC,app_runtime;
+DO $$ BEGIN EXECUTE format('REVOKE EXECUTE ON FUNCTION app_private.system_device_guard(),app_private.system_admin_account_guard(),app_private.system_capture_change() FROM %I',current_setting('iharu.migration_executor')); END $$;
 GRANT EXECUTE ON FUNCTION app_private.admin_command(text,jsonb),app_private.system_log_request(jsonb),app_private.workspace_command(text,jsonb),app_private.child_account_command(text,jsonb) TO app_runtime;
 RESET ROLE;
 REVOKE CREATE ON SCHEMA app_private FROM iharu_policy;

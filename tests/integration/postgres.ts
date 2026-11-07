@@ -43,7 +43,14 @@ try{
  try{
   await migration.query('BEGIN');await migration.query('SET LOCAL ROLE migration_admin');
   await migration.query(await readFile('tests/helpers/realtime-provider.sql','utf8'));
-  for(const name of (await readdir('db/migrations')).filter(n=>/^\d+_[a-z0-9_]+\.sql$/.test(n)).sort()){await migration.query('SET LOCAL ROLE migration_admin');await migration.query(await readFile(`db/migrations/${name}`,'utf8'));}
+  for(const name of (await readdir('db/migrations')).filter(n=>/^\d+_[a-z0-9_]+\.sql$/.test(n)).sort()){
+   // Production hardening revokes PUBLIC execution for new private functions.
+   if(name==='20261107155623_system_admin_console.sql'){
+    await migration.query('SET LOCAL ROLE iharu_policy');
+    await migration.query('ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC');
+   }
+   await migration.query('SET LOCAL ROLE migration_admin');await migration.query(await readFile(`db/migrations/${name}`,'utf8'));
+  }
   await migration.query('COMMIT');
  }catch(e){await migration.query('ROLLBACK');throw e;}finally{migration.release();}
  await admin.query("UPDATE app_private.family_release SET child_deletion_verified_at=now(),verification_reference='disposable-postgres-fixture'");
