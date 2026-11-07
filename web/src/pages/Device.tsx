@@ -1,5 +1,5 @@
 import {useState,useEffect,useRef} from 'react';
-import {Link,Navigate} from 'react-router-dom';
+import {Link,Navigate,useLocation} from 'react-router-dom';
 import {AuthLayout,FormNotice} from '../components/AuthLayout';
 import {Icon} from '../components/Icon';
 import {Loading,ErrorState} from '../components/Common';
@@ -13,7 +13,8 @@ const storageKey='iharu-pairing-progress';
 // proofs and device session tokens remain exclusively in HttpOnly cookies.
 function restorePair():Pairing|null{try{return pairingSchema.parse(JSON.parse(sessionStorage.getItem(storageKey)||'null'));}catch{return null;}}
 function savePair(pair:Pairing|null){try{if(pair)sessionStorage.setItem(storageKey,JSON.stringify(pair));else sessionStorage.removeItem(storageKey);}catch{/* Pairing still works when browser storage is disabled. */}}
-export function DeviceConnectPage(){
+export function DeviceConnectPage(){const {search}=useLocation();return new URLSearchParams(search).get('legacy')==='1'?<LegacyDeviceConnectPage/>:<Navigate to="/login?role=child" replace/>;}
+function LegacyDeviceConnectPage(){
  const childSession=useApi('/api/v1/child-session',childSessionSchema),guardian=useApi('/api/account/session',sessionSchema);
  const [pair,setPair]=useState<Pairing|null>(restorePair),[status,setStatus]=useState<PairingStatus|null>(null);
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[connected,setConnected]=useState(false),[remaining,setRemaining]=useState(0),[stopped,setStopped]=useState(false),[paused,setPaused]=useState(false);
@@ -55,4 +56,5 @@ export function ConnectedChildPage(){
  if(session.error)return <AuthLayout wide><div className="device-connect"><span className="device-hero"><Icon name="device"/></span><h1>연결을 확인해 주세요</h1><p>보호자에게 기기 연결 상태를 확인해 달라고 해 주세요.</p><button className="button primary full child-cta" onClick={session.retry}>다시 확인하기</button><Link className="button full child-cta" to="/device/connect">기기 연결하기</Link></div></AuthLayout>;
  return <AuthLayout wide><div className="device-connect child-day-home"><span className="badge green">가족 연결 완료</span><h1>{session.data?.nickname}, 반가워요</h1><p>{session.data?.familyName}<br/>오늘의 일정과 할 일을 확인해요.</p><div className="child-ready-grid"><Link className="button primary child-cta" to={`/child/chat?child=${session.data!.childId}`}><Icon name="chat"/><strong>가족에게 말하기</strong></Link><Link className="button child-cta" to="/child/schedules"><Icon name="calendar"/><strong>내 일정 보기</strong></Link></div><ChildDailyContent childId={session.data!.childId} nickname={session.data!.nickname}/><FormNotice error={error}/><button className="button full" onClick={async()=>{try{await familyRequest('/api/v1/child-session/logout',{});savePair(null);window.location.assign('/device/connect');}catch(e){setError((e as Error).message);}}}>이 기기 연결 끝내기</button></div></AuthLayout>;
 }
+
 
