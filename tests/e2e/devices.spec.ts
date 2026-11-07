@@ -13,10 +13,10 @@ async function setup(page:Page){
 async function sendPicture(page:Page,label:string){await page.getByRole('button',{name:label,exact:true}).click();await page.getByRole('button',{name:'보낼 말 확인하기'}).click();await page.getByRole('dialog').getByRole('button',{name:'보내기',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);}
 test('F05 two browsers complete renewed pairing, reload, lost exchange reply, pictures in both directions and revocation',async({page,browser})=>{
  test.setTimeout(90000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));const {first,second}=await setup(page);
- await page.goto('/family');await page.getByRole('button',{name:'F05 첫째 동의·공유·기기 관리'}).click();
+ await page.goto('/family?legacy=1');await page.getByRole('button',{name:'F05 첫째 동의·공유·기기 관리'}).click();
  const ctx=await browser.newContext({viewport:{width:390,height:844}}),child=await ctx.newPage();child.on('pageerror',e=>errors.push(e.message));
  try{
-  await child.goto(origin+'/device/connect');await child.getByRole('button',{name:'연결 번호 받기'}).click();const oldCode=(await child.locator('.pairing-code').innerText()).replace(/\s/g,'');
+  await child.goto(origin+'/device/connect?legacy=1');await child.getByRole('button',{name:'연결 번호 받기'}).click();const oldCode=(await child.locator('.pairing-code').innerText()).replace(/\s/g,'');
   await child.getByRole('button',{name:'새 번호 받기'}).click();await expect.poll(async()=>child.locator('.pairing-code').innerText()).not.toBe(oldCode.slice(0,3)+' '+oldCode.slice(3));
   const code=(await child.locator('.pairing-code').innerText()).replace(/\s/g,'');await child.reload();await expect(child.locator('.pairing-code')).toContainText(code.slice(0,3));
   const rejected=await page.request.post('/api/v1/device-pairings/resolve',{headers:{Origin:origin},data:{code:oldCode}});expect(rejected.status()).toBe(400);
@@ -40,13 +40,13 @@ test('F05 two browsers complete renewed pairing, reload, lost exchange reply, pi
   const revoke=await page.request.delete(`/api/v1/children/${first}/devices/${devices.devices[0].id}`,{headers:{Origin:origin},data:{}});expect(revoke.ok()).toBe(true);
   await child.getByRole('button',{name:'대화 새로고침'}).click();await expect(child.getByRole('heading',{name:'기기 연결을 확인해 주세요'})).toBeVisible();await expect(child.locator('.chat-bubble')).toHaveCount(0);await expect(child.getByRole('region',{name:'메시지 만들기'})).toHaveCount(0);
   expect((await ctx.request.get(origin+'/api/v1/chat-rooms',{headers:{'X-Iharu-Actor':'child'}})).status()).toBe(401);
-  await page.goto('/device/connect');await expect(page.getByRole('heading',{name:'아이 기기에서 시작해 주세요'})).toBeVisible();expect(errors).toEqual([]);
+  await page.goto('/device/connect?legacy=1');await expect(page.getByRole('heading',{name:'아이 기기에서 시작해 주세요'})).toBeVisible();expect(errors).toEqual([]);
  }finally{await ctx.close();}
 });
 test('F05 child rejects the wrong approved name and obtains a new code without creating a device',async({page,browser})=>{
  const {post,second}=await setup(page),ctx=await browser.newContext({viewport:{width:320,height:740}}),child=await ctx.newPage();
  try{
-  await child.goto(origin+'/device/connect');await child.getByRole('button',{name:'연결 번호 받기'}).click();const code=(await child.locator('.pairing-code').innerText()).replace(/\s/g,'');
+  await child.goto(origin+'/device/connect?legacy=1');await child.getByRole('button',{name:'연결 번호 받기'}).click();const code=(await child.locator('.pairing-code').innerText()).replace(/\s/g,'');
   const p=await post('/api/v1/device-pairings/resolve',{code});await post(`/api/v1/device-pairings/${p.id}/approve`,{childId:second,expectedVersion:p.version});
   await expect(child.getByRole('heading',{name:'내 이름이 맞나요?'})).toBeVisible({timeout:10000});await expect(child.getByRole('region',{name:'연결할 아이 확인'})).toContainText('F05 둘째');
   await child.getByRole('button',{name:'다른 아이예요 · 연결 취소'}).click();await expect(child.getByRole('heading',{name:'가족과 연결해 볼까요?'})).toBeVisible();
@@ -54,4 +54,5 @@ test('F05 child rejects the wrong approved name and obtains a new code without c
   await child.getByRole('button',{name:'연결 번호 받기'}).click();await expect(child.locator('.pairing-code')).toBeVisible();await expect.poll(()=>child.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }finally{await ctx.close();}
 });
+
 

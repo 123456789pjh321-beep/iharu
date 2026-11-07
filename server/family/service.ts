@@ -12,9 +12,10 @@ export class FamilyService {
       // Tests use the exact non-owner runtime role on their isolated connection.
       if(this.testRole){if(this.testRole!=='app_runtime')throw new Error('INVALID_TEST_ROLE');await query(tx,'SET LOCAL ROLE app_runtime');}
       await query(tx,`SELECT set_config('iharu.member_id',$1,true),set_config('iharu.session_id',$2,true),set_config('iharu.device_hash',$3,true),set_config('iharu.request_id',$4,true)`,[actor.memberId||'',actor.sessionId||'',actor.deviceHash||'',actor.requestId]);
-      const [row]=await query<{data:T}>(tx,op.startsWith('guardian.')?'SELECT app_private.guardian_command($1,$2::jsonb) AS data':'SELECT app_private.family_command($1,$2::jsonb) AS data',[op,JSON.stringify(input)]);
+      const [row]=await query<{data:T}>(tx,op.startsWith('childaccount.')?'SELECT app_private.child_account_command($1,$2::jsonb) AS data':op.startsWith('guardian.')?'SELECT app_private.guardian_command($1,$2::jsonb) AS data':'SELECT app_private.family_command($1,$2::jsonb) AS data',[op,JSON.stringify(input)]);
       return row.data;
     });
   }
 }
+
 

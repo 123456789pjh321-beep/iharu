@@ -38,8 +38,8 @@ test('child actions show a truthful dialog, close with Escape and return focus',
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(button).toBeFocused();
   await page.getByRole('link',{name:'가족에게 말하기 그림으로 쉽게 보내요'}).click();
-  await expect(page).toHaveURL(/\/device\/connect$/);
-  await expect(page.getByRole('heading',{name:'가족과 연결해 볼까요?',exact:true})).toBeVisible();
+  await expect(page).toHaveURL(/\/login\?role=child$/);
+  await expect(page.getByRole('heading',{name:'내 하루에 로그인해요',exact:true})).toBeVisible();
 });
 
 test('mobile navigation and content order remain usable without horizontal overflow', async ({page})=>{

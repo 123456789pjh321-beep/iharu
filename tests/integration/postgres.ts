@@ -1,3 +1,4 @@
+import {childPasswordHash} from '../../server/child-accounts/routes.js';
 // CI-only disposable PostgreSQL. Never run against a Supabase/Preview/production database.
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
@@ -292,6 +293,27 @@ try{
   await family1.command(b,'consent.revoke',{childId:child,purpose:'general',expectedVersion:1});
   await assert.rejects(schedules2.command(b,'template.import',payload),{message:'NOT_FOUND'});
  });
+ await check('UI75 concurrent parent approvals create one child and prevent code reuse',async()=>{
+  const parents:FamilyActor[]=[];
+  for(const name of ['child-parent-c','child-parent-d']){
+   const email=name+'@example.test';
+   const registered=await app.request(origin+'/api/auth/sign-up/email',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({email,name:'가상 부모',password:'isolated-parent-child-password',callbackURL:'/login?verified=1'})});assert.equal(registered.status,200);
+   await admin.query('UPDATE iharu_auth."user" SET "emailVerified"=true WHERE email=$1',[email]);
+   const login=await app.request(origin+'/api/auth/sign-in/email',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({email,password:'isolated-parent-child-password'})});assert.equal(login.status,200);
+   const row=(await admin.query('SELECT m.id,s.id AS session FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id JOIN iharu_auth.session s ON s."userId"=u.id WHERE u.email=$1',[email])).rows[0];parents.push({memberId:row.id,sessionId:row.session,requestId:randomUUID()});
+  }
+  const anonymous={requestId:randomUUID()},codeHash=family1.digest('child-code:123456'),proofHash=family1.digest('signup:ci-proof'),loginId='i'+randomBytes(5).toString('hex');
+  await family1.command(anonymous,'childaccount.register',{loginId,name:'가상 동시 승인',passwordHash:await childPasswordHash('fixture-child-password'),codeHash,proofHash});
+  const preview=await family1.command<{requestId:string}>(parents[0],'childaccount.resolve',{codeHash});
+  const answers=await Promise.allSettled([family1.command(parents[0],'childaccount.approve',{codeHash,requestId:preview.requestId,consent:true}),family2.command(parents[1],'childaccount.approve',{codeHash,requestId:preview.requestId,consent:true})]);
+  assert.equal(answers.filter(x=>x.status==='fulfilled').length,1);assert.equal(answers.filter(x=>x.status==='rejected').length,1);
+  const rows=(await admin.query('SELECT child_id,approved_by FROM app_private.child_accounts WHERE login_id=$1',[loginId])).rows;assert.equal(rows.length,1);assert.ok(rows[0].child_id);
+  const raw1=family1.token(),raw2=family2.token();
+  const finishes=await Promise.all([family1.command<{sealed:string}>(anonymous,'childaccount.finish',{proofHash,deviceHash:family1.digest('device:'+raw1),sealed:family1.seal(raw1)}),family2.command<{sealed:string}>(anonymous,'childaccount.finish',{proofHash,deviceHash:family2.digest('device:'+raw2),sealed:family2.seal(raw2)})]);
+  assert.equal(finishes[0].sealed,finishes[1].sealed);assert.equal((await admin.query('SELECT id FROM app.child_devices WHERE child_id=$1',[rows[0].child_id])).rowCount,1);
+  await assert.rejects(query(db1,'SELECT * FROM app_private.child_accounts'),{code:'42501'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
+
 

@@ -11,6 +11,7 @@ import './workspace.css';
 import './testing/test-workspace.css';
 import './viewport.css';
 import './polish.css';
+import './onboarding.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><ExperienceProvider><App/></ExperienceProvider></StrictMode>);
 
 
