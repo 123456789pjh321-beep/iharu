@@ -4,10 +4,12 @@
 - 보호자: 초대 링크와 동일한 24시간 고유키를 복사하거나 가족 참여 화면에 입력 가능. 고유키 자체는 아이 정보 접근 권한이 아니며 운영자 승인 및 아이별 공유 범위 유지. 보호자 계정의 기존 인증 요건 유지.
 - 지도: 카카오 JavaScript SDK 지연 로드, 예시 지점 3곳, 선택 시 이동, 크기 변경 대응, 재시도 및 설정 오류 안내. VITE_KAKAO_MAP_JS_KEY 공개 JavaScript 키만 사용. REST/Native 키 사용 안 함. Kakao 앱의 지도 사용 설정과 운영 도메인 등록 필요.
 - 위치 데이터: 현재 지도는 제주 예시 좌표. 실제 아이 GPS 수집/서버 전송 구현 아님. 테스트 작업실은 로컬 예시 데이터만 사용.
-- 공통 레이아웃: 100dvh 고정 셸, 본문 내부 스크롤, 헤더·오른쪽 메뉴 고정. 긴 내용과 폼은 내부 스크롤로 접근. 모바일 하단 메뉴·안전 영역 확보.
+- 공통 레이아웃: 100dvh 고정 셸, 본문 내부 스크롤, 헤더·오른쪽 메뉴 고정. 긴 내용과 폼은 내부 스크롤로 접근. 모바일 하단 메뉴를 셸의 별도 행으로 배치해 큰 글씨에서도 본문 버튼을 가리지 않도록 수정.
 - 전환: 경로별 본문 opacity/이동 효과와 메뉴 진입 효과. 사용자·OS 움직임 줄이기 설정 존중.
 - 검증: 기본 단위/API 133개. 브라우저 회귀에 5개 폭 × 13메뉴의 바깥 스크롤 검사, 키보드 본문 스크롤, 지도 미설정 오류 안내 추가.
 
 추가: maps/KakaoMap.tsx, maps/map.css, viewport.css, 본 문서.
 수정: App.tsx, main.tsx, AuthLayout.tsx, Login.tsx, Device.tsx, Family.tsx, Upcoming.tsx, testing/TestWorkspace.tsx, tests/e2e/test-workspace.spec.ts, vercel.json.
 삭제: 없음.
+
+지도 운영 점검: SDK 요청이 HTTP 401 AccessDeniedError (`domain mismatched`, caller `https://myiharu.com`)로 거절됨. 카카오 개발자 콘솔 > 앱 > 앱 설정 > 앱 > 플랫폼 키 > 해당 JavaScript 키 > JavaScript SDK 도메인에 https://myiharu.com 등록 필요. 지도 SDK 코드 및 Vercel 공개 키는 반영되었으나 외부 도메인 등록 전 실제 지도 활성 완료로 간주하지 않음.

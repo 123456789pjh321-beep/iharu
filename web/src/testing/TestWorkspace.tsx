@@ -82,7 +82,7 @@ const pages: Record<
   },
   location: {
     title: "아이 위치",
-    description: "가상 지도에서 아이가 직접 위치를 보내는 흐름을 확인해요.",
+    description: "카카오 지도에서 예시 위치를 보내는 흐름을 확인해요.",
     icon: "pin",
   },
   fees: {
