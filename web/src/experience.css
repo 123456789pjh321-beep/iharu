@@ -24,3 +24,4 @@ html[data-theme=dark] :is(.auth-intro h1,.auth-title h2,.family-welcome h1,.acco
 html[data-theme=dark] :is(.mint,.child-label.mint){background:#294b41;color:#b8e5d3}
 html[data-theme=dark] :is(.peach,.child-label.peach){background:#4c3b31;color:#f1c7aa}
 html[data-theme=dark] .chat-message.mine .chat-bubble{background:#23483e;color:var(--ink)}
+html[data-theme=dark] .button:is(.social-google,.social-kakao,.social-naver){background:var(--surface-sub);color:var(--ink);border-color:var(--line)}
