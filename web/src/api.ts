@@ -5,13 +5,14 @@ const responseErrorSchema = z.union([
   z.object({error:z.object({code:z.string(),message:z.string()})}).transform(v=>v.error),
   z.object({code:z.string(),message:z.string().optional()}),
 ]);
-export function useApi<T>(path: string, schema: z.ZodType<T>, actor?: 'child') {
+export function useApi<T>(path: string, schema: z.ZodType<T>, actor?: 'child', enabled=true) {
   const [state, setState] = useState<{ data?:T; error?:string; errorCode?:string; loading:boolean }>({ loading:true });
   const [revision, setRevision] = useState({number:0,background:false});
   const previousRequest = useRef('');
   const retry = useCallback(() => setRevision(v => ({number:v.number+1,background:false})), []);
   const refresh = useCallback(() => setRevision(v => ({number:v.number+1,background:true})), []);
   useEffect(() => {
+    if(!enabled)return;
     const controller = new AbortController();
     const identity=JSON.stringify([path,actor]);
     const preserve=revision.background&&previousRequest.current===identity;
@@ -36,7 +37,7 @@ export function useApi<T>(path: string, schema: z.ZodType<T>, actor?: 'child') {
       }
     })();
     return () => controller.abort();
-  }, [path, schema, revision, actor]);
+  }, [path, schema, revision, actor, enabled]);
   return { ...state, retry, refresh };
 }
 

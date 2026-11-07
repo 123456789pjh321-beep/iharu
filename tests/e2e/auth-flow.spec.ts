@@ -18,13 +18,13 @@ test('browser signup → mail proof → login → home → account → logout pe
   await page.getByLabel('비밀번호',{exact:true}).fill('browser-parent-password-2026');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByRole('heading',{name:'오늘도 함께 챙겨요'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   await expect(page.getByText('서준',{exact:true})).toHaveCount(0);
   for(const path of ['/login','/signup','/']) {
     await page.goto(path);await expect(page).toHaveURL(/\/today$/);
-    await expect(page.getByRole('heading',{name:'오늘도 함께 챙겨요'})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   }
   for(const width of [320,390,768,1440]) {
     await page.setViewportSize({width,height:900});
@@ -35,9 +35,9 @@ test('browser signup → mail proof → login → home → account → logout pe
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/home-390-large.png',fullPage:true});
   await page.getByRole('button',{name:'큰 글씨',exact:true}).click();
-  await page.getByRole('navigation',{name:'오늘 화면 보기'}).getByRole('link',{name:'달력',exact:true}).click();
-  await expect(page.locator('.personal-calendar')).toBeVisible();
-  await page.getByRole('navigation',{name:'오늘 화면 보기'}).getByRole('link',{name:'오늘',exact:true}).click();
+  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'달력',exact:true}).click();
+  await expect(page.locator('.direct-calendar')).toBeVisible();
+  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'오늘',exact:true}).click();
   await expect(page).toHaveURL(/\/today$/);
   await page.goto('/account');
   await expect(page.getByRole('heading',{name:'로그인 방법과 기기'})).toBeVisible();

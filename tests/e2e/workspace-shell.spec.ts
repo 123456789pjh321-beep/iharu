@@ -18,7 +18,7 @@ async function login(page: Page, request: APIRequestContext, email: string) {
     .fill("household-browser-password-2026");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "오늘도 함께 챙겨요" }),
+    page.getByRole("heading", { name: "오늘의 일정", exact:true }),
   ).toBeVisible();
 }
 for(const width of [320,390,768,1024,1440])test(`workspace shell remains visible on all menus at ${width}px`,async({page,request})=>{

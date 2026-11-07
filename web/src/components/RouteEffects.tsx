@@ -26,10 +26,10 @@ export function RouteEffects(){
    const main=document.querySelector<HTMLElement>('main');
    if(!main||main.querySelector('.loading-state')||!main.querySelector('h1,h2,form'))return;
    finished=true;
-   if(!preferences.quiet&&!reduced.matches){
+   if(!document.querySelector('.workspace-page')&&!preferences.quiet&&!reduced.matches){
     // Animate content only: fixed headers, popovers and navigation keep their geometry.
     const content=main.querySelector<HTMLElement>(':scope > .auth-panel,:scope > div')||main;
-    animation=content.animate([{opacity:.4,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:260,easing:'cubic-bezier(.22,1,.36,1)'});
+    animation=content.animate([{transform:'translateY(2px)'},{transform:'translateY(0)'}],{duration:260,easing:'cubic-bezier(.22,1,.36,1)'});
    }
    document.querySelectorAll<HTMLElement>('.subnav,.test-subnav').forEach(nav=>{
     const active=nav.querySelector<HTMLElement>('[aria-current="page"],.active');
@@ -42,7 +42,7 @@ export function RouteEffects(){
   const cancel=()=>{if(reduced.matches)animation?.cancel();};
   reduced.addEventListener('change',cancel);
   window.addEventListener('resize',queue,{passive:true});queue();
-  return()=>{observer.disconnect();resize.disconnect();cancelAnimationFrame(frame);animation?.cancel();reduced.removeEventListener('change',cancel);window.removeEventListener('resize',queue);root.style.removeProperty('--workspace-top');};
+  return()=>{observer.disconnect();resize.disconnect();cancelAnimationFrame(frame);animation?.cancel();reduced.removeEventListener('change',cancel);window.removeEventListener('resize',queue);};
  },[pathname,preferences.quiet]);
  return null;
 }
