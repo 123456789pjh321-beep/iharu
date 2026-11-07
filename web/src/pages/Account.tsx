@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useApi } from '../api';
-import { emailLinkSchema, authPost, methodNames, methodsSchema, providersSchema, sessionSchema, sessionsSchema, startSocial } from '../auth';
+import {useSharedSession} from '../components/WorkspaceGate';
+import { emailLinkSchema, authPost, methodNames, methodsSchema, providersSchema, sessionsSchema, startSocial } from '../auth';
 import { AuthLayout, FormNotice, PasswordField } from '../components/AuthLayout';
 import { ErrorState, Loading } from '../components/Common';
 import { Icon } from '../components/Icon';
@@ -12,7 +13,7 @@ function useAction() {
   return {busy,error,message,setMessage,run};
 }
 export function AccountPage(){
-  const session=useApi('/api/account/session',sessionSchema);
+  const session=useSharedSession();
   if(session.loading)return <AuthLayout wide><Loading label="내 계정을 확인하고 있어요"/></AuthLayout>;
   if(session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;
   if(!session.data?.authenticated)return <Navigate to="/login" replace/>;
@@ -22,14 +23,14 @@ function LowAccount(){
   const action=useAction();
   return <><span className="account-symbol"><Icon name="shield"/></span><div className="auth-title"><span className="eyebrow">추가 확인</span><h1>한 번 더 확인할게요</h1><p>휴대폰 번호 확인을 마쳤어요. 가족 정보는 추가 확인 후 열 수 있어요.</p></div><FormNotice error={action.error} message={action.message}/><div className="low-actions"><Link className="button primary full" to="/account/reauth">기존 이메일 계정으로 확인</Link><Link className="button full" to="/login?reauth=1">연결한 소셜 계정으로 로그인</Link><button className="button full" disabled={action.busy} onClick={()=>action.run(async()=>{const r=await authPost('/api/account/recovery',{});action.setMessage(`복구 요청을 저장했어요. 접수 번호: ${r.caseId}. 확인이 끝나기 전에는 가족 정보가 열리지 않아요.`);})}>기존 방법을 사용할 수 없어요</button><button className="auth-back" disabled={action.busy} onClick={()=>action.run(async()=>{await authPost('/api/account/logout',{sessionId:'current'});window.location.assign('/login');})}>로그아웃</button></div><p className="auth-help">추가 확인 후 가족 관리에서 부모 승인번호를 발급할 수 있어요.</p></>;
 }
-function VerifiedAccount({name,email,emailVerified}:{name:string;email?:string|null;emailVerified?:boolean}){
+function VerifiedAccount({email,emailVerified}:{name:string;email?:string|null;emailVerified?:boolean}){
   const methods=useApi('/api/account/methods',methodsSchema),sessions=useApi('/api/account/sessions',sessionsSchema),providers=useApi('/api/account/providers',providersSchema);
   const action=useAction();const [confirm,setConfirm]=useState<string|null>(null);
   const enabled=(id:string)=>providers.data?.providers.find(p=>p.id===id)?.enabled===true;
   const hasEmail=methods.data?.methods.some(m=>m.provider==='credential');
-  return <><div className="account-heading"><div><span className="eyebrow">내 계정</span><h1>로그인 방법과 기기</h1><p>{name}님의 계정을 한곳에서 관리해요.</p></div><span className="account-symbol"><Icon name="shield"/></span></div>
+  return <><div className="account-heading"><div><h1>로그인 방법과 기기</h1></div><span className="account-symbol"><Icon name="shield"/></span></div>
     <FormNotice error={action.error} message={action.message}/>
-    <Link className="button full" to="/today"><Icon name="home"/>오늘 화면으로</Link><section className="account-overview"><span className="badge green">계정 로그인 완료</span><p>{email||'연락받을 이메일을 연결해 주세요.'}{email&&!emailVerified&&' · 이메일 확인 필요'}</p><small>가족 연결 없이도 개인 자료를 관리할 수 있어요. 함께 사용하려면 부모가 가족 관리에서 승인번호를 발급하고, 보호자는 번호를 입력하거나 자녀는 가입할 때 입력해요.</small><Link className="button primary full" to="/family">가족 연결 상태 보기 <Icon name="arrow"/></Link></section>
+    <section className="account-overview"><span className="badge green">계정 로그인 완료</span><p>{email||'연락받을 이메일을 연결해 주세요.'}{email&&!emailVerified&&' · 이메일 확인 필요'}</p></section>
     <div className="account-grid"><section className="account-card"><h2><Icon name="shield"/>로그인 방법</h2><p>다른 방법을 추가하면 계정을 더 쉽게 찾을 수 있어요.</p>
       <Resource loading={methods.loading} error={methods.error} retry={methods.retry}>{methods.data?.methods.map(m=><div className="account-row" key={m.id}><strong>{methodNames[m.provider]||'연결된 계정'}</strong><button className="button compact" disabled={action.busy} onClick={()=>{if(confirm!==m.id){setConfirm(m.id);return;}void action.run(async()=>{await authPost('/api/account/unlink',{accountId:m.id});setConfirm(null);methods.retry();sessions.retry();action.setMessage('연결을 해제하고 다른 기기를 로그아웃했어요.');});}}>{confirm===m.id?'연결 해제 확인':'해제'}</button></div>)}</Resource>
       <p className="account-caption">연결·해제 전 5분 이내의 본인 확인이 필요해요.</p><Link className="button quiet full" to="/account/reauth">본인 인증 다시 하기 <Icon name="arrow"/></Link>

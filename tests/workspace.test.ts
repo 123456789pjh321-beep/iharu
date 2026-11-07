@@ -57,3 +57,27 @@ it('assignee must be self or an active family member and never becomes the autho
  const me=await a.ok('me');await a.ok('family.remove',{familyId:me.family.id,profileId:bm.id,version:me.family.members.find((m:{id:string})=>m.id===bm.id).version});expect((await a.req(api+'items.create',{...input,data:{...input.data,assigneeId:bm.id}})).status).toBe(400);
  await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v76('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
 });
+
+it('switches a signed-in parent atomically, preserves records, and protects populated host families',async()=>{
+ const a=await parent('switch-a'),b=await parent('switch-b'),c=await parent('switch-c');
+ await b.ok('invite.issue',{consent:true});const before=await b.ok('me'),own=await b.ok('items.create',payload('전환 후에도 내 자료'));
+ const leaveCurrent={familyId:before.family.id,version:before.family.members[0].version};
+ expect((await b.req(api+'family.join',{code:'000000',leaveCurrent})).status).toBe(400);expect((await b.ok('me')).family.id).toBe(before.family.id);
+ const invite=await a.ok('invite.issue',{consent:true});expect((await b.req(api+'family.join',{code:invite.code})).status).toBe(400);
+ expect((await b.req(api+'family.join',{code:invite.code,leaveCurrent:{...leaveCurrent,version:999}})).status).toBe(409);
+ await b.ok('family.join',{code:invite.code,leaveCurrent});expect((await b.ok('me')).family.id).toBe((await a.ok('me')).family.id);expect((await b.ok('items.get',{id:own.id})).mine).toBe(true);
+ const target=await c.ok('invite.issue',{consent:true}),host=await a.ok('me');expect((await a.req(api+'family.join',{code:target.code,leaveCurrent:{familyId:host.family.id,version:host.family.members.find((m:{id:string})=>m.id===host.id).version}})).status).toBe(400);expect((await a.ok('me')).family.members).toHaveLength(2);
+});
+it('group messages paginate across months, deduplicate retries and respect removals and author-only edits',async()=>{
+ const a=await parent('chat-a'),b=await parent('chat-b'),x=await parent('chat-x');const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ const key=crypto.randomUUID(),first=await a.ok('chat.send',{text:'월 경계 테스트',clientMessageId:key});expect((await a.ok('chat.send',{text:'월 경계 테스트',clientMessageId:key})).id).toBe(first.id);expect((await a.req(api+'chat.send',{text:'다른 본문',clientMessageId:key})).status).toBe(409);
+ await query(database.db,"UPDATE app_private.workspace_items SET created_at='2025-01-01T01:01:00Z' WHERE id=$1",[first.id]);
+ await b.ok('chat.send',{text:'오늘 메시지',clientMessageId:crypto.randomUUID()});
+ const newest=await a.ok('chat.list',{limit:1});expect(newest.items[0].data.note).toBe('오늘 메시지');expect(newest.hasMore).toBe(true);const older=await a.ok('chat.list',{limit:1,before:newest.nextCursor});expect(older.items[0].id).toBe(first.id);expect(older.hasMore).toBe(false);expect(older.items[0].createdAt).toContain('2025-01-01');
+ expect((await x.ok('chat.list',{})).items).toHaveLength(0);expect((await a.ok('chat.list',{query:'월 경계'})).items).toHaveLength(1);expect((await b.req(api+'items.delete',{id:first.id,version:1})).status).toBe(403);
+ await a.ok('items.delete',{id:first.id,version:1});expect((await a.ok('chat.list',{})).items).toHaveLength(1);await a.ok('chat.send',{text:'월 경계 테스트',clientMessageId:key});expect((await a.ok('chat.list',{})).items).toHaveLength(1);
+ const host=await a.ok('me'),member=await b.ok('me');await a.ok('family.remove',{familyId:host.family.id,profileId:member.id,version:1});expect((await a.ok('chat.list',{})).items).toHaveLength(0);expect((await b.ok('chat.list',{})).items).toHaveLength(1);
+});
+it('accepts all-day schedules and rejects invalid color and timed ranges',async()=>{
+ const a=await parent('all-day');const input=payload('종일 일정');await a.ok('items.create',{...input,data:{...input.data,allDay:true,startTime:'00:00',endTime:'00:00',color:3}});expect((await a.req(api+'items.create',{...input,data:{...input.data,color:99}})).status).toBe(400);expect((await a.req(api+'items.create',{...input,data:{...input.data,endTime:'15:00'}})).status).toBe(400);
+});

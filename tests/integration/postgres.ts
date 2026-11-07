@@ -336,6 +336,17 @@ try{
   assert.notEqual(aMe.id,bMe.id);
   await assert.rejects(query(db1,'SELECT * FROM app_private.workspace_items'),{code:'42501'});
  });
+ await check('UI78 concurrent chat retry is idempotent and atomic parent switch preserves the previous family on failure',async()=>{
+  const meB=await family2.command<{id:string}>(b,'workspace.me');
+  const ownCode=family2.digest('workspace-code:'+randomUUID());await family2.command(b,'workspace.invite.issue',{consent:true,codeHash:ownCode});
+  const old=await family2.command<{family:{id:string;members:{id:string;version:number}[]}}>(b,'workspace.me');const leaveCurrent={familyId:old.family.id,version:old.family.members.find(m=>m.id===meB.id)!.version};
+  await assert.rejects(family2.command(b,'workspace.family.join',{codeHash:family2.digest('invalid'),leaveCurrent}),{message:'INVITE_INVALID'});
+  assert.equal((await family2.command<{family:{id:string}}>(b,'workspace.me')).family.id,old.family.id);
+  const codeHash=family1.digest('workspace-code:'+randomUUID());await family1.command(a,'workspace.invite.issue',{consent:true,codeHash});await family2.command(b,'workspace.family.join',{codeHash,leaveCurrent});
+  const payload={text:'동시 전송 하나',clientMessageId:randomUUID()};const [one,two]=await Promise.all([family1.command<{id:string}>(a,'workspace.chat.send',payload),family2.command<{id:string}>(a,'workspace.chat.send',payload)]);assert.equal(one.id,two.id);
+  const messages=await family2.command<{items:{id:string}[]}>(b,'workspace.chat.list',{});assert.equal(messages.items.filter(i=>i.id===one.id).length,1);
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_v77('workspace.me','{}')"),{code:'42501'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 

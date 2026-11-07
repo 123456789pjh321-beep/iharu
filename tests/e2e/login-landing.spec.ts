@@ -7,14 +7,14 @@ test('email-less Kakao session enters the live home without demo or protected-da
   let state:'signed-in'|'expired'|'error'='signed-in';
   await page.route('**/api/account/session',route=>state==='error'?route.fulfill({status:503,json:{error:{code:'AUTH_UNAVAILABLE',message:'연결을 확인해 주세요.'}}}):route.fulfill({json:state==='expired'?{authenticated:false}:{authenticated:true,assurance:'HIGH',name:'가상 카카오 보호자',email:null,emailVerified:false,accessReady:false}}));
   await page.goto('/login');await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByRole('heading',{name:'오늘도 함께 챙겨요'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   await expect(page.getByText('로그인 완료',{exact:true})).toBeVisible();
   expect(paths.filter(p=>p.startsWith('/api/demo/')||p.startsWith('/api/v1/'))).toEqual([]);
-  await page.reload();await expect(page.getByRole('heading',{name:'오늘도 함께 챙겨요'})).toBeVisible();
+  await page.reload();await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   state='error';await page.reload();await expect(page.getByRole('alert')).toBeVisible();
   await expect(page).toHaveURL(/\/today$/);
   state='signed-in';await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'오늘도 함께 챙겨요'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
   state='expired';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole('heading',{name:'다시 만나 반가워요'})).toBeVisible();

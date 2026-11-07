@@ -1,4 +1,5 @@
 import {PersonalWorkspace,type PersonalMode} from './pages/PersonalWorkspace';
+import {useWorkspaceGate} from './components/WorkspaceGate';
 import {RouteEffects} from './components/RouteEffects';
 import {GuardianVerificationPage} from './pages/GuardianVerification';
 import {NotificationsPage} from './pages/Notifications';
@@ -7,10 +8,9 @@ import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react
 import { envelope, healthSchema, type ChildFilter } from '../../shared/contracts';
 import { useApi } from './api';
 import { sessionSchema, type SignedInSession } from './auth';
-import { AuthLayout } from './components/AuthLayout';
+import { AuthLayout,WorkspaceFrame } from './components/AuthLayout';
 const TestWorkspace=lazy(()=>import('./testing/TestWorkspace'));
 const ChatPage=lazy(()=>import('./pages/Chat').then(m=>({default:m.ChatPage})));
-function ChatRoute({childMode=false}:{childMode?:boolean}){const {search}=useLocation();return new URLSearchParams(search).get('legacy')!=='1'?<WorkspaceEntry mode="chat"/>: <Suspense fallback={<Loading/>}><ChatPage childMode={childMode}/></Suspense>;}
 import { DailyWorkspace } from './pages/Daily';
 import { Home } from './pages/Home';
 import {copy} from './copy';
@@ -68,22 +68,25 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
 }
 export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/test/*" element={<Suspense fallback={<Loading label="테스트 작업실을 준비하고 있어요"/>}><TestWorkspace/></Suspense>}/>
-  <Route path="/notifications" element={<NotificationsPage/>}/>
-  <Route path="/chat" element={<ChatRoute/>}/><Route path="/child/chat" element={<ChatRoute childMode/>}/>
+  <Route element={<WorkspaceFrame/>}><Route path="/notifications" element={<NotificationsPage/>}/>
+  <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
   <Route path="/location" element={<WorkspaceEntry mode="location"/>}/><Route path="/today" element={<WorkspaceEntry mode="home"/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
-  <Route path="/child/schedules" element={<ChildSchedulePage/>}/>
+
   <Route path="/calendar" element={<ScheduleAlias/>}/><Route path="/repeats" element={<ScheduleAlias repeats/>}/>
-  {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
+
   <Route path="/family/verification" element={<GuardianVerificationPage/>}/><Route path="/family/verification/review" element={<GuardianVerificationPage review/>}/>
-  <Route path="/family" element={<FamilyPage/>}/><Route path="/family/invite" element={<FamilyInvitePage/>}/>
-  <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/>
+  <Route path="/family" element={<WorkspaceEntry mode="family"/>}/><Route path="/family/invite" element={<FamilyInvitePage/>}/>
+
   <Route path="/phone" element={<PhonePage/>}/><Route path="/account" element={<AccountEntry/>}/>
   <Route path="/account/reauth" element={<ReauthPage/>}/><Route path="/account/email" element={<EmailLinkPage/>}/>
+  </Route>
+  {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
+  <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/><Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="/settings" element={<Navigate to="/account" replace/>}/><Route path="*" element={<Shell/>}/>
 </Routes></BrowserRouter>;}
-function ScheduleAlias({repeats=false}:{repeats?:boolean}){const health=useApi('/api/health',healthResponse);if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
+function ScheduleAlias({repeats=false}:{repeats?:boolean}){const {health}=useWorkspaceGate();if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
 
 
 
-function WorkspaceEntry({mode}:{mode:PersonalMode}){const {search}=useLocation(),health=useApi('/api/health',healthResponse),session=useApi('/api/account/session',sessionSchema);if(health.loading||session.loading)return <AuthLayout wide><Loading/></AuthLayout>;const legacy=new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled;if(!legacy&&(session.error||session.data?.authenticated&&(session.data.assurance==='LOW'||!session.data.emailVerified)))return <Shell/>;if(!legacy)return <PersonalWorkspace mode={mode}/>;return mode==='calendar'||mode==='repeats'?<SchedulePage mode={mode==='calendar'?'calendar':'repeats'}/>:mode==='chat'?<Suspense fallback={<Loading/>}><ChatPage childMode={location.pathname.startsWith('/child')}/></Suspense>:<Shell/>;}
-function AccountEntry(){const s=useApi('/api/account/session',sessionSchema);if(s.loading)return <AuthLayout wide><Loading/></AuthLayout>;return s.data?.authenticated?<AccountPage/>:<PersonalWorkspace mode="account"/>;}
+function WorkspaceEntry({mode}:{mode:PersonalMode}){const {search}=useLocation(),{health,session}=useWorkspaceGate();if(health.loading||session.loading)return <AuthLayout wide><Loading/></AuthLayout>;const legacy=new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled;if(!legacy&&session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;if(!legacy&&session.data?.authenticated&&session.data.assurance==='LOW')return <Navigate to="/account" replace/>;if(!legacy&&session.data?.authenticated&&!session.data.emailVerified)return <AuthLayout wide><section className="account-card"><span className="badge green">로그인 완료</span><h1>{mode==='home'?'오늘의 일정':'이메일 확인'}</h1><p>개인 자료와 가족 공유를 사용하려면 이메일을 연결하고 확인해 주세요.</p><Link className="button primary" to="/account/email">이메일 연결</Link></section></AuthLayout>;if(!legacy)return <PersonalWorkspace mode={mode}/>;return mode==='family'?<FamilyPage/>:mode==='calendar'||mode==='repeats'?<SchedulePage mode={mode==='calendar'?'calendar':'repeats'}/>:mode==='chat'?<Suspense fallback={<Loading/>}><ChatPage childMode={location.pathname.startsWith('/child')}/></Suspense>:<Shell/>;}
+function AccountEntry(){const {session:s}=useWorkspaceGate();if(s.loading)return <AuthLayout wide><Loading/></AuthLayout>;return s.data?.authenticated?<AccountPage/>:<PersonalWorkspace mode="account"/>;}
