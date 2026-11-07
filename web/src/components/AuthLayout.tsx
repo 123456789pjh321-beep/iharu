@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {WorkspaceBrand,WorkspaceNavigation} from './WorkspaceNavigation';
 import { Icon } from './Icon';
 import {DisplaySettings,Entrance,FamilyArtwork} from './Experience';
 
@@ -8,8 +9,9 @@ export function AuthLayout({ children, wide = false }: { children: ReactNode; wi
   const [large, setLarge] = useState(() => { try { return localStorage.getItem('iharu:large-type') === 'true'; } catch { return false; } });
   useEffect(() => { document.documentElement.classList.toggle('large-type',large); try { localStorage.setItem('iharu:large-type',String(large)); } catch { /* optional preference */ } }, [large]);
   useEffect(() => { document.title = `${pathname.startsWith('/family')?'우리 가족':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정'} · 아이하루`; window.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
-  return <div className="auth-app"><a className="skip-link" href="#auth-main">본문 바로가기</a>
-    <header className="auth-header"><Link to="/today" className="brand"><span className="brandmark"><Icon name="sun"/></span>아이하루</Link><div className="auth-display-actions"><DisplaySettings/><button className="font-toggle" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button></div></header>
+  return <div className={`auth-app ${wide?'workspace-page':'entry-page'}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
+    <header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/><button className="font-toggle" aria-pressed={large} onClick={()=>setLarge(v=>!v)}><Icon name="type"/><span>큰 글씨</span></button></div></header>
+    {wide&&<WorkspaceNavigation childMode={pathname.startsWith('/child')}/> }
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
       {!wide && <aside className="auth-intro"><span className="eyebrow">가족의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>가족이 함께하는 하루를 시작하세요.</p><FamilyArtwork/><div className="auth-trust"><Icon name="shield"/><span>아이 정보는 보호자 확인과 동의 후 등록해요.</span></div></aside>}
       <Entrance className="auth-panel">{children}</Entrance>
