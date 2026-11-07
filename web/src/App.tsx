@@ -1,3 +1,4 @@
+import {RouteEffects} from './components/RouteEffects';
 import {GuardianVerificationPage} from './pages/GuardianVerification';
 import {NotificationsPage} from './pages/Notifications';
 import { lazy, Suspense, useEffect, useState } from 'react';
@@ -64,7 +65,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
     </div>{dialog&&<PreviewDialog title={dialog} onClose={()=>setDialog(null)}/>}
   </div>;
 }
-export default function App(){return <BrowserRouter><Routes>
+export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/test/*" element={<Suspense fallback={<Loading label="테스트 작업실을 준비하고 있어요"/>}><TestWorkspace/></Suspense>}/>
   <Route path="/notifications" element={<NotificationsPage/>}/>
   <Route path="/chat" element={<ChatRoute/>}/><Route path="/child/chat" element={<ChatRoute childMode/>}/>
@@ -80,4 +81,5 @@ export default function App(){return <BrowserRouter><Routes>
   <Route path="/settings" element={<Navigate to="/account" replace/>}/><Route path="*" element={<Shell/>}/>
 </Routes></BrowserRouter>;}
 function ScheduleAlias({repeats=false}:{repeats?:boolean}){const health=useApi('/api/health',healthResponse);if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
+
 
