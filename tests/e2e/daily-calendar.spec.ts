@@ -31,7 +31,17 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
   await page.getByLabel('이 날의 일정 검색').fill('자녀');await expect(daily.locator('.timetable-title')).toHaveText(['자녀 수업']);
   await page.getByLabel('이 날의 일정 검색').fill('');await page.getByLabel('구성원 일정 필터').selectOption('all');
   for(const width of [320,390,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(daily.locator('.timetable-person').filter({hasText:'가상 서하'})).toBeVisible();await page.screenshot({path:`test-results/ui82-calendar-daily-${width}.png`});}
-  await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:'test-results/ui82-calendar-daily-dark.png'});await page.getByRole('button',{name:'밝게',exact:true}).click();
+  await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'어둡게',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+  // Theme colors transition briefly; verify the settled text contrast before capturing.
+  await expect.poll(()=>daily.locator('.timetable-title').first().evaluate(title=>{
+   const card=title.closest('.timetable-card')!;
+   const ctx=document.createElement('canvas').getContext('2d')!;
+   const luminance=(color:string)=>{ctx.fillStyle=color;ctx.fillRect(0,0,1,1);const rgb=ctx.getImageData(0,0,1,1).data;return [0.2126,0.7152,0.0722].reduce((sum,weight,i)=>{const value=rgb[i]/255;return sum+weight*(value<=0.04045?value/12.92:((value+0.055)/1.055)**2.4);},0);};
+   const foreground=luminance(getComputedStyle(title).color),background=luminance(getComputedStyle(card).backgroundColor);
+   return (Math.max(foreground,background)+0.05)/(Math.min(foreground,background)+0.05);
+  })).toBeGreaterThanOrEqual(4.5);
+  await page.screenshot({path:'test-results/ui82-calendar-daily-dark.png',animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();
   await page.getByRole('button',{name:today+' 15:30 일정 등록',exact:true}).click();await expect(page.getByLabel('시작 시간',{exact:true})).toHaveValue('15:30');await page.getByLabel('제목',{exact:true}).fill('가족 산책');await page.getByLabel('가족 구성원',{exact:true}).selectOption('ALL');await page.getByRole('button',{name:'저장',exact:true}).click();
   await expect(daily.locator('.timetable-card').filter({hasText:'가족 산책'}).locator('.timetable-person')).toHaveText('전체');
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'시간표',exact:true}).click();await expect(page.locator('.timetable-card').filter({hasText:'가족 산책'})).toContainText('15:30');
