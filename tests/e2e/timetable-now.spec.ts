@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {addDays,koreaToday} from '../../shared/schedules';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
-test('timetable opens at the current minute, highlights ongoing work, and drags both ways without opening an editor',async({page,request})=>{
+test('timetable highlights visible current work without restoring empty early hours and preserves day gestures',async({page,request})=>{
  test.setTimeout(90000);const today=koreaToday(),email='timetable-now@example.test',password='timetable-now-fixture-2026';
  await page.setViewportSize({width:720,height:1024});await page.clock.install({time:new Date(today+'T15:37:00+09:00')});
  await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'현재 시각 부모',password,callbackURL:'/login?verified=1'}});const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
@@ -13,6 +13,6 @@ test('timetable opens at the current minute, highlights ongoing work, and drags 
  await drag(true);await expect(page.getByLabel('시간표 날짜 선택')).toHaveValue(addDays(today,1));await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(page.getByRole('dialog')).toHaveCount(0);
  await drag(false);await expect(page.getByLabel('시간표 날짜 선택')).toHaveValue(today);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect.poll(visibleNow).toBe(true);await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.locator('.timetable-scroll').evaluate(el=>{el.scrollTop=0;});await page.getByRole('button',{name:'현재 시간으로 이동'}).click();await expect.poll(visibleNow).toBe(true);
- await page.clock.setSystemTime(new Date(today+'T00:05:00+09:00'));await page.reload();await expect(page.locator('.timetable-day')).toHaveAttribute('aria-busy','false');await expect(page.locator('.timetable-now strong')).toHaveText('현재 00:05');await expect.poll(visibleNow).toBe(true);await expect(page.getByLabel('현재 진행 중인 일정')).toContainText('등록된 일정이 없는 시간');
+ await page.clock.setSystemTime(new Date(today+'T00:05:00+09:00'));await page.reload();await expect(page.locator('.timetable-day')).toHaveAttribute('aria-busy','false');await expect(page.locator('.timetable-now')).toHaveCount(0);await expect(page.locator('.timetable-grid')).toHaveAttribute('data-start-minute','900');await expect.poll(()=>page.locator('.timetable-scroll').evaluate(el=>el.scrollTop)).toBe(0);await page.getByRole('button',{name:'현재 시간으로 이동'}).click();await expect.poll(()=>page.locator('.timetable-scroll').evaluate(el=>el.scrollTop)).toBe(0);await expect(page.getByLabel('현재 진행 중인 일정')).toContainText('등록된 일정이 없는 시간');
  await page.setViewportSize({width:320,height:844});await page.getByRole('button',{name:'어둡게',exact:true}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/ui83-timetable-midnight-mobile.png',animations:'disabled'});
 });

@@ -18,7 +18,7 @@
 
 ## 수정 파일
 - `web/src/App.tsx`: 공개 페이지 지연 로드 경로.
-- `web/src/components/AuthLayout.tsx`: 푸터 소개 링크.
+- `web/src/components/AuthLayout.tsx`, `web/src/onboarding.css`: 푸터 소개 링크와 휴대폰 진입 지원.
 - `package.json`: 공개 페이지 빌드 단계 연결.
 - `vercel.json`: 두 경로의 공개 HTML 연결.
 - `server/preview.ts`, `tests/helpers/auth-server.ts`: 로컬/검증 서버에 동일 경로 매핑.

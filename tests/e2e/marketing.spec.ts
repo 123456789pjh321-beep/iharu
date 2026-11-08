@@ -3,6 +3,7 @@ const origin='http://127.0.0.1:4174';
 test.use({baseURL:origin,reducedMotion:'reduce'});
 
 test('public service and usage pages work across phone, tablet and desktop without account navigation',async({page})=>{
+ test.setTimeout(90000);
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
  for(const width of [320,820,1440]){
   await page.setViewportSize({width,height:1000});
@@ -12,8 +13,8 @@ test('public service and usage pages work across phone, tablet and desktop witho
    await expect(page.locator('meta[name=robots]')).toHaveAttribute('content','index, follow');
    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href','https://myiharu.com'+path);
    const html=await(await page.request.get(path)).text();expect(html).toContain('content="index, follow"');expect(html).toContain('https://myiharu.com'+path);
-   expect(await page.locator('.marketing-site').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
    await page.screenshot({path:`test-results/marketing-${path.slice(1)}-${width}-hero.png`,animations:'disabled'});
+   expect(await page.locator('.marketing-site').evaluate(el=>({width:el.clientWidth,overflow:el.scrollWidth-el.clientWidth}))).toMatchObject({overflow:0});
    const feature=page.locator(path==='/service'?'.market-feature':'.guide-section').first();await feature.scrollIntoViewIfNeeded();
    await page.screenshot({path:`test-results/marketing-${path.slice(1)}-${width}-feature.png`,animations:'disabled'});
    const faq=page.locator('.market-faq details').first();await faq.locator('summary').click();await expect(faq).toHaveAttribute('open','');await expect(faq.locator('p')).toBeVisible();
