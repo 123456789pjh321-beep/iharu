@@ -24,7 +24,7 @@ export function PersonalCalendar({month,day,items,members,loading=false,setMonth
  const weekStart=addDays(day,-new Date(day+'T12:00:00Z').getUTCDay());
  useCalendarSlide(grid,view==='month'?month:view==='day'?day:weekStart,view);
  const dates=view==='week'?Array.from({length:7},(_,n)=>addDays(weekStart,n)):Array.from({length:Math.ceil((offset+count)/7)*7},(_,n)=>addDays(first,n-offset));
- const shown=items.filter(i=>matchesMember(i,member));
+ const shown=items.filter(i=>i.kind==='EVENT'&&matchesMember(i,member));
  const move=(delta:number)=>{if(view!=='month'){selectDay(addDays(day,delta*(view==='week'?7:1)));}else{const date=new Date(Number(month.slice(0,4)),Number(month.slice(5))-1+delta,1),m=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');setMonth(m);setDay(m+'-01');}};
  moveRef.current=move;
  return <section className="direct-calendar" aria-label="일정 달력">

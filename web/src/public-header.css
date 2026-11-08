@@ -1,0 +1,62 @@
+/* One fixed-height header shared by public pages and account entry. */
+.market-header {
+  --market-blue: #0878d1;
+  --market-ink: #19364c;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e9eff4;
+  background: #ffffffed;
+  backdrop-filter: blur(18px);
+  color: var(--market-ink);
+  color-scheme: light;
+  font-family: 'Noto Sans KR Variable', sans-serif;
+}
+.market-header * { box-sizing: border-box; }
+.market-header > .market-container {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  width: min(1180px, calc(100% - 64px));
+  height: 88px;
+  margin-inline: auto;
+}
+.market-header .icon { width: 22px; height: 22px; }
+.market-header button { font-family: inherit; color: inherit; background: transparent; cursor: pointer; }
+.market-header :focus-visible { outline: 3px solid #0878d1; outline-offset: 4px; }
+.market-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; color: var(--market-ink); }
+.market-brand > span { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: var(--market-blue); color: white; }
+.market-brand > span .icon { width: 30px; height: 30px; }
+.market-brand strong { font-size: 24px; line-height: 1.25; letter-spacing: -1px; font-weight: 850; }
+.market-brand small { display: block; font-size: 8px; letter-spacing: 1.6px; margin-top: 6px; font-weight: 650; }
+.market-nav { display: flex; align-items: center; flex: 1; gap: 24px; margin-left: 12px; }
+.market-nav a { padding: 12px 0; font-size: 15px; font-weight: 650; white-space: nowrap; }
+.market-nav a[aria-current], .market-login[aria-current] { color: var(--market-blue); }
+.market-header-actions { display: flex; align-items: center; gap: 24px; }
+.market-login { font-size: 14px; font-weight: 650; }
+.market-signup { display: flex; align-items: center; gap: 22px; padding: 13px 20px; border-radius: 10px; background: var(--market-blue); color: white; font-size: 14px; font-weight: 700; }
+.market-menu-button { display: none; }
+@media (max-width: 1050px) {
+  .market-header > .market-container { gap: 20px; }
+  .market-nav { gap: 18px; }
+  .market-nav a { font-size: 13px; }
+  .market-header-actions { gap: 16px; }
+  .market-signup { padding-inline: 14px; gap: 12px; }
+}
+@media (max-width: 760px) {
+  .market-header > .market-container { width: calc(100% - 40px); height: 70px; }
+  .market-brand > span { width: 34px; height: 34px; border-radius: 10px; }
+  .market-brand > span .icon { width: 24px; height: 24px; }
+  .market-brand strong { font-size: 21px; }
+  .market-brand small { font-size: 6px; margin-top: 4px; }
+  .market-header-actions { margin-left: auto; gap: 10px; }
+  .market-signup { display: none; }
+  .market-login { display: flex; align-items: center; min-height: 44px; font-size: 12px; }
+  .market-menu-button { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #dce6ee; border-radius: 9px; }
+  .market-menu-button .icon { width: 19px; }
+  .market-nav { display: none; position: absolute; top: 70px; left: 0; right: 0; margin: 0; padding: 14px 20px; gap: 8px; background: white; box-shadow: 0 16px 20px #19364c12; border-bottom: 1px solid #dce6ee; }
+  .market-nav.open { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .market-nav a { padding: 12px; border-radius: 8px; font-size: 14px; text-align: left; }
+  .market-nav a[aria-current] { background: #eaf4fd; }
+}

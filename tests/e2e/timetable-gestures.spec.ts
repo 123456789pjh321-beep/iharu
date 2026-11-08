@@ -40,7 +40,7 @@ test('timetable touch swipes work on cards and week buttons while vertical scrol
    expect(await page.evaluate(p=>!!document.elementFromPoint(p.x,p.y)?.closest('.timetable-event'),from)).toBe(true);
    await touch(from,to);
   };
-  await swipeCard(true);await expect(date).toHaveValue('2027-01-01');await settled();await expect(selected).toHaveAttribute('aria-pressed','true');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await swipeCard(true);await expect(date).toHaveValue('2027-01-07');await settled();await expect(selected).toHaveAttribute('aria-pressed','true');await expect(page.getByRole('dialog')).toHaveCount(0);
   await swipeCard(false);await expect(date).toHaveValue('2026-12-31');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   const p=(await pane.boundingBox())!,before=await pane.evaluate(node=>node.scrollTop),x=p.x+p.width*.7,y=Math.min(p.y+p.height-60,780);
   await touch({x,y},{x:x+3,y:y-160});await expect.poll(()=>pane.evaluate(node=>node.scrollTop)).toBeGreaterThan(before+50);await expect(date).toHaveValue('2026-12-31');await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -50,21 +50,22 @@ test('timetable touch swipes work on cards and week buttons while vertical scrol
   c=await visibleCard();await touch({x:c.right,y:c.y},{x:c.left,y:c.y},true);await expect(date).toHaveValue('2026-12-31');await expect(page.getByRole('dialog')).toHaveCount(0);
   c=await visibleCard();await page.touchscreen.tap((c.left+c.right)/2,c.y);await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('매일 가족 일정');await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   const swipeRegion=async(region:Locator,left:boolean)=>{const b=(await region.boundingBox())!;await touch({x:b.x+(left?b.width-30:30),y:b.y+30},{x:b.x+(left?30:b.width-30),y:b.y+32});};
-  await swipeRegion(page.locator('.timetable-week'),true);await expect(date).toHaveValue('2027-01-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button',{name:'2027-01-02 시간표',exact:true}).tap();await expect(date).toHaveValue('2027-01-02');await settled();await date.fill('2026-12-30');await settled();await expect(card).toHaveAttribute('data-dates','2026-12-31 2027-01-01');
-  await swipeRegion(pane,true);await expect(date).toHaveValue('2026-12-31');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
+  await swipeRegion(page.locator('.timetable-week'),true);await expect(date).toHaveValue('2027-01-07');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button',{name:'2027-01-09 시간표',exact:true}).tap();await expect(date).toHaveValue('2027-01-09');await settled();await date.fill('2026-12-30');await settled();await expect(card).toHaveAttribute('data-dates','2026-12-31 2027-01-01 2027-01-02');
+  await date.fill('2026-12-24');await settled();await swipeRegion(pane,true);await expect(date).toHaveValue('2026-12-31');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   await swipeRegion(page.getByRole('group',{name:'시간표 구성원 필터'}),true);await expect(date).toHaveValue('2026-12-31');
   await page.screenshot({path:'test-results/ui89-timetable-touch-390.png',animations:'disabled'});
 
   await page.setViewportSize({width:820,height:1100});
   await pane.hover();
   for(let n=0;n<3;n++)await page.mouse.wheel(120,0);
-  await expect(date).toHaveValue('2027-01-01');await settled();await page.waitForTimeout(300);
+  await expect(date).toHaveValue('2027-01-07');await settled();await page.waitForTimeout(300);
   await page.mouse.wheel(-120,0);await expect(date).toHaveValue('2026-12-31');await settled();
   const scrollBefore=await pane.evaluate(node=>node.scrollTop);await page.mouse.wheel(0,160);await expect.poll(()=>pane.evaluate(node=>node.scrollTop)).toBeGreaterThan(scrollBefore);await expect(date).toHaveValue('2026-12-31');
-  const w=(await page.locator('.timetable-week').boundingBox())!;await page.mouse.move(w.x+w.width-20,w.y+30);await page.mouse.down();await page.mouse.move(w.x+20,w.y+32,{steps:10});await page.mouse.up();await expect(date).toHaveValue('2027-01-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
+  const w=(await page.locator('.timetable-week').boundingBox())!;await page.mouse.move(w.x+w.width-20,w.y+30);await page.mouse.down();await page.mouse.move(w.x+20,w.y+32,{steps:10});await page.mouse.up();await expect(date).toHaveValue('2027-01-07');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:'test-results/ui89-timetable-tablet-820.png',animations:'disabled'});
 
+  for(const eventDate of ['2026-12-31','2027-01-01'])await context.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'EVENT',data:{title:'매일 가족 일정',date:eventDate,startTime:'09:00',endTime:'18:00'}}});
   await page.goto('/today/calendar');await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'일간',exact:true}).click();await page.getByLabel('달력 날짜 선택').fill('2026-12-31');await settled();
   await swipeCard(true);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(errors).toEqual([]);

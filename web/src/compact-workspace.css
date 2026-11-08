@@ -70,10 +70,10 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .workspace-page .chat-send .icon{width:22px;height:22px}
 .workspace-page .group-chat .personal-chat-emoji{margin:0 0 8px}
 
-/* Three adjacent dates share one quiet hourly axis. */
-.workspace-page .timetable-week{grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 12px 0 0;padding:0 0 0 56px;border:0}
+/* A Sunday–Saturday week shares one quiet hourly axis. */
+.workspace-page .timetable-week{grid-template-columns:repeat(7,minmax(0,1fr));gap:0;margin:0;padding:0 0 0 56px;border:0;border-top:1px solid var(--line)}
 .workspace-page .timetable-week button{min-height:60px;gap:0;border:1px solid var(--line);border-right:0;border-radius:0;background:var(--surface-sub)}
-.workspace-page .timetable-week button:last-child{border-right:1px solid var(--line)}
+.workspace-page .timetable-week button:first-child{border-left:0}
 .workspace-page .timetable-week button>span{color:var(--muted)}
 .workspace-page .timetable-week .holiday-date>span{color:var(--holiday-ink)}
 .workspace-page .timetable-week .saturday-date>span{color:var(--primary)}
@@ -93,7 +93,7 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .workspace-page .timetable-card.compact-event .timetable-range,.workspace-page .timetable-card.short-event .timetable-range{display:none}
 .workspace-page .timetable-card.short-event{padding:0 3px}
 .workspace-page .timetable-card.short-event .timetable-title{font-size:.65rem;line-height:1.2}
-.workspace-page .timetable-all-day{grid-template-columns:56px minmax(0,1fr);padding:0 12px 6px 0;gap:0}
+.workspace-page .timetable-all-day{grid-template-columns:56px minmax(0,1fr);padding:0 0 6px;gap:0}
 .workspace-page .timetable-all-day-columns{display:grid;gap:0}
 .workspace-page .timetable-all-day-columns>div{display:grid;align-content:start;gap:3px;padding:2px}
 .workspace-page .timetable-all-day-card{width:100%;min-height:28px}
@@ -144,15 +144,19 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 @media(min-width:761px){.conversation-sticker-tray{grid-template-rows:76px;grid-auto-columns:76px}}
 @media(max-height:600px){.conversation-stickers-heading{margin-bottom:2px}.conversation-stickers-heading>span{display:none}}
 
-/* Reserve identical scrollbar space in the date header and timed rows. */
-.workspace-page .timetable-week,.workspace-page .timetable-all-day,.workspace-page .timetable-scroll{scrollbar-gutter:stable;scrollbar-width:thin}
+/* Align the borderless outer edges without reserving scrollbar space. */
+.workspace-page .timetable-week,.workspace-page .timetable-all-day,.workspace-page .timetable-scroll{scrollbar-gutter:auto;scrollbar-width:none}
 .workspace-page .timetable-week,.workspace-page .timetable-all-day{overflow:hidden}
-.workspace-page .timetable-week button{background:var(--surface);border-bottom:0;min-height:60px}
+.workspace-page .timetable-week button{background:var(--surface);border-block:0;min-height:60px}
 .workspace-page .timetable-week button>strong{font-size:.85rem;font-weight:650;width:28px;height:28px}
 .workspace-page .timetable-scroll{padding-top:0;padding-bottom:16px}
 .workspace-page .timetable-event-area{border-left:0}
 .workspace-page .timetable-day-column{background-color:var(--surface);background-position-y:var(--timetable-line-offset,0px);box-shadow:inset 0 1px 0 var(--line)}
-.workspace-page .timetable-day-column:first-child{border-left:1px solid var(--line)}
+.workspace-page .timetable-day-column:first-child{border-left:0}
+.workspace-page .timetable-day-column:last-of-type{border-right:0}
+.workspace-page .timetable-grid{margin-right:0;background:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent 48px);background-position-y:var(--timetable-line-offset,0px);box-shadow:inset 0 1px 0 var(--line)}
+.workspace-page .timetable-scroll::-webkit-scrollbar,.workspace-page .calendar-grid::-webkit-scrollbar{display:none;width:0;height:0}
+.workspace-page .calendar-grid{scrollbar-width:none;scrollbar-gutter:auto}
 .workspace-page .timetable-time-axis>span{white-space:nowrap}
 .workspace-page .timetable-time-axis>span:first-child{transform:none;padding-top:3px}
 .workspace-page .timetable-card{border:0;border-left:3px solid var(--event-color);border-radius:4px;background:color-mix(in srgb,var(--event-color) 14%,var(--surface));gap:3px}
@@ -171,7 +175,7 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 }
 
 /* Match calendar weekday/date hierarchy; the weekday band has no box borders. */
-.workspace-page .timetable-weekdays{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex-shrink:0;box-sizing:border-box;margin:0;padding:8px 12px 12px 56px;overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:thin;border:0;background:var(--surface);text-align:center;font-size:.7rem;color:var(--muted)}
+.workspace-page .timetable-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));flex-shrink:0;box-sizing:border-box;margin:0;padding:8px 0 12px 56px;overflow:hidden;scrollbar-gutter:auto;scrollbar-width:none;border:0;background:var(--surface);text-align:center;font-size:.7rem;color:var(--muted)}
 .workspace-page .timetable-weekdays>span{border:0;background:none}
 .workspace-page .timetable-weekdays>.holiday-date{color:var(--holiday-ink)}
 .workspace-page .timetable-weekdays>.saturday-date{color:var(--primary)}
@@ -179,3 +183,19 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 @media(max-width:360px){.workspace-page .timetable-weekdays{padding-left:52px}}
 
 .conversation-sticker-tray::-webkit-scrollbar{display:none}
+
+.timetable-week-navigation{display:flex;align-items:center;gap:2px}
+.timetable-week-navigation button{display:grid;place-items:center;min-width:36px;min-height:44px;padding:6px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:.75rem;border-radius:8px;cursor:pointer}
+.timetable-week-navigation button:hover{background:var(--mint)}
+.timetable-week-navigation .icon{width:18px;height:18px}
+@media(max-width:760px){
+ .timetable-weekly .workspace-date-picker{font-size:clamp(.8rem,3.4vw,1.15rem)}
+ .timetable-weekly .workspace-date-navigation{flex-basis:0}
+ .timetable-weekly .timetable-card .timetable-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:.6rem;overflow-wrap:anywhere}
+ .timetable-weekly .timetable-card .timetable-range,.timetable-weekly .timetable-now>strong{display:none}
+ .timetable-weekly .timetable-card.short-event .timetable-title{-webkit-line-clamp:1}
+}
+
+/* Holiday names remain readable within seven narrow date columns. */
+.workspace-page .timetable-week .calendar-holiday{white-space:normal;overflow-wrap:anywhere;font-size:.58rem;line-height:1.3;max-width:100%}
+.workspace-page .timetable-week button{min-width:0}

@@ -12,8 +12,8 @@ export function WorkspaceToolbar({title,navigation,createLabel,onCreate,children
  </header>{onCreate&&createLabel&&<PlusButton className="workspace-add-action" label={createLabel} onClick={onCreate}/>}</>;
 }
 
-export function DateNavigator({type,value,inputLabel,onChange}:{
- type:'date'|'month';value:string;inputLabel:string;
+export function DateNavigator({type,value,inputLabel,onChange,displayLabel}:{
+ type:'date'|'month';value:string;inputLabel:string;displayLabel?:string;
  onChange:(value:string)=>void;
 }){
  const label=type==='month'
@@ -21,7 +21,7 @@ export function DateNavigator({type,value,inputLabel,onChange}:{
   : `${Number(value.slice(5,7))}월 ${Number(value.slice(8))}일 (${weekdays[new Date(value+'T12:00:00Z').getUTCDay()]})`;
  return <div className="workspace-date-navigation" role="group" aria-label="날짜 선택">
   <label className="workspace-date-picker" title={value}>
-   <span aria-hidden="true">{label}</span><Icon name="chevron"/>
+   <span aria-hidden="true">{displayLabel||label}</span><Icon name="chevron"/>
    <input type={type} aria-label={inputLabel} value={value} onClick={e=>{try{e.currentTarget.showPicker?.();}catch{/* Native input remains available without picker support. */}}} onChange={e=>{
     const next=e.target.value;
     if((type==='month'?/^\d{4}-\d{2}$/:/^\d{4}-\d{2}-\d{2}$/).test(next))onChange(next);
