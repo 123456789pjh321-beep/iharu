@@ -19,3 +19,8 @@
 - 같은 날의 동일 항목은 한 표시로 묶되 `N건`을 표시하고 날짜 상세에서 각 원본을 확인합니다. 데이터 병합·삭제나 권한 변경은 없습니다.
 - 막대를 누른 날짜의 원본 일정이 열리고, 날짜 숫자·더 보기에서는 모든 일정을 개별로 확인할 수 있습니다.
 - 추가: `shared/calendar-layout.ts`, `web/src/components/CalendarWeekRow.tsx`, `tests/calendar-layout.test.ts`, `tests/e2e/calendar-merged-events.spec.ts`. 수정: `PersonalCalendar.tsx`, `compact-workspace.css`, 관련 회귀 검사. 삭제 없음.
+
+## 공개 문서 비로그인 메뉴 수정
+- `/legal/terms`, `/legal/privacy`, `/legal/children`, `/privacy`에서 인증 확인 전·비로그인·로그아웃 후에는 앱 하단 메뉴를 생성하지 않습니다. 로그인 사용자의 메뉴는 유지합니다.
+- 공개 문서의 하단 메뉴 여백을 없애고 약관·개인정보 링크가 있는 일반 푸터를 표시합니다.
+- 수정: `AuthLayout.tsx`, `compact-workspace.css`. 추가: `public-legal-navigation.spec.ts`.

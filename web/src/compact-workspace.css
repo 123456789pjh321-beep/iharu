@@ -122,3 +122,5 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .calendar-duplicate-count{flex-shrink:0;margin-left:auto;font-size:.6rem;color:var(--muted)}
 .direct-calendar .calendar-grid.week-view .calendar-cell{min-height:inherit}
 .direct-calendar .calendar-grid.week-view .calendar-week-row{min-height:max(300px,calc(var(--calendar-week-header) + var(--calendar-event-rows)*32px + 32px))}
+.auth-app.workspace-page.public-document-page .auth-main.auth-wide{margin-bottom:0}
+.auth-app.workspace-page.public-document-page .auth-footer{display:flex;flex-wrap:wrap;gap:12px;position:static;padding:20px 16px max(20px,env(safe-area-inset-bottom))}

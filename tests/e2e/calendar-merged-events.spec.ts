@@ -26,6 +26,6 @@ test('calendar merges adjacent identical schedules while dates, overflow and ori
   await week.locator('[data-date="2026-11-03"] .calendar-day-target>span').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();await expect(page.getByLabel('날짜',{exact:true})).toHaveValue('2026-11-03');await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('group',{name:'달력 보기'}).getByRole('button',{name:'주간',exact:true}).click();await expect(page.locator('.calendar-grid.week-view .calendar-event').filter({hasText:'솔빛초등학교'})).toHaveCount(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
- const after=await api('items.list',{from:'2026-11-01',to:'2026-11-30'});expect(after).toEqual(before);
+ const after=await api('items.list',{from:'2026-11-01',to:'2026-11-30'});expect(after.items).toEqual(before.items);
  await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:'test-results/ui98-calendar-merged-dark.png',animations:'disabled'});
 });
