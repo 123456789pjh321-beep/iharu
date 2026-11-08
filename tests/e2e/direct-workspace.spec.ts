@@ -59,7 +59,7 @@ test('calendar slides in the chosen direction, survives fast navigation and resp
  expect(await page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
  await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'다음 기간'}).click();await expect(page.getByLabel('달력 월 선택')).not.toHaveValue(initial);
  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
- await page.getByLabel('달력 보기').selectOption('week');await page.getByRole('button',{name:'다음 기간'}).click();await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
+ await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await page.getByRole('button',{name:'다음 기간'}).click();await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
  await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await expect(page.locator('.calendar-grid')).toBeVisible();await page.getByRole('button',{name:'다음 기간'}).click();
  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
 });
@@ -130,8 +130,12 @@ for(const width of [320,768,1440])test(`all functional canvases and calendar edi
    const controls=await navigation.locator('button,.workspace-date-picker').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,height:r.height};}));
    expect(controls).toHaveLength(4);
    for(let i=0;i<controls.length;i++){expect(controls[i].height).toBeGreaterThanOrEqual(44);if(i){expect(controls[i].x).toBeGreaterThanOrEqual(controls[i-1].right);expect(controls[i].y).toBe(controls[0].y);}}
-   const toolbarBox=(await toolbar.boundingBox())!,actionBox=(await toolbar.locator('.workspace-toolbar-actions').boundingBox())!;
-   expect(actionBox.x+actionBox.width).toBeLessThanOrEqual(toolbarBox.x+toolbarBox.width);expect(actionBox.y+actionBox.height).toBeLessThanOrEqual(toolbarBox.y+toolbarBox.height);
+   const toolbarBox=(await toolbar.boundingBox())!,action=page.locator('.workspace-add-action'),actionBox=(await action.boundingBox())!;
+   await expect(action).toHaveCount(1);expect(actionBox.width).toBeGreaterThanOrEqual(56);expect(actionBox.height).toBeGreaterThanOrEqual(56);
+   expect(actionBox.x+actionBox.width).toBeLessThanOrEqual(toolbarBox.x+toolbarBox.width);expect(actionBox.y+actionBox.height).toBeLessThanOrEqual(900);
+   if(width<=760){const nav=(await page.getByRole('navigation',{name:'모바일 주 메뉴'}).boundingBox())!;expect(actionBox.y+actionBox.height).toBeLessThan(nav.y);}
+   expect(await navigation.locator('.workspace-date-picker').evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(18);
+   if(path==='/today/calendar')await expect(page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button')).toHaveText(['월간','주간','일간']);
    if(path!=='/records'){
     const filter=page.locator('.member-filters'),filterBox=(await filter.boundingBox())!;
     expect(filterBox.y).toBeGreaterThanOrEqual(toolbarBox.y+toolbarBox.height-1);
@@ -141,11 +145,11 @@ for(const width of [320,768,1440])test(`all functional canvases and calendar edi
    await input.fill(daily?'2026-12-31':'2026-12');
    await navigation.getByRole('button',{name:/^다음/}).click();await expect(input).toHaveValue(daily?'2027-01-01':'2027-01');
    await navigation.getByRole('button',{name:/^이전/}).click();await expect(input).toHaveValue(daily?'2026-12-31':'2026-12');
-   await toolbar.locator('.workspace-toolbar-actions .button').click();await expect(page.getByRole('dialog')).toBeVisible();
+   await action.click();await expect(page.getByRole('dialog')).toBeVisible();
    await expect(page.locator('#personal-date')).toHaveValue(daily?'2026-12-31':'2026-12-01');await page.getByRole('button',{name:'편집 닫기'}).click();
    await navigation.getByRole('button',{name:'오늘',exact:true}).click();await expect(input).toHaveValue(daily?koreaToday():koreaToday().slice(0,7));
-   await page.screenshot({path:`test-results/ui88-${path.replaceAll('/','-')}-${width}.png`,animations:'disabled'});
-   if(width===320){await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:`test-results/ui88-${path.replaceAll('/','-')}-dark.png`,animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();}
+   await page.screenshot({path:`test-results/ui90-${path.replaceAll('/','-')}-${width}.png`,animations:'disabled'});
+   if(width===320){await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:`test-results/ui90-${path.replaceAll('/','-')}-dark.png`,animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();}
   }
   if(['/tuition','/family','/account'].includes(path))await page.screenshot({path:`test-results/ui78-${path.slice(1)}-${width}.png`});
   await expect(page.locator('.workspace-tabs,.personal-context')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

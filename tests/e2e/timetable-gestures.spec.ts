@@ -65,7 +65,7 @@ test('timetable touch swipes work on cards and week buttons while vertical scrol
   const w=(await page.locator('.timetable-week').boundingBox())!;await page.mouse.move(w.x+w.width-20,w.y+30);await page.mouse.down();await page.mouse.move(w.x+20,w.y+32,{steps:10});await page.mouse.up();await expect(date).toHaveValue('2027-01-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:'test-results/ui89-timetable-tablet-820.png',animations:'disabled'});
 
-  await page.goto('/today/calendar');await page.getByLabel('달력 보기',{exact:true}).selectOption('day');await page.getByLabel('달력 날짜 선택').fill('2026-12-31');await settled();
+  await page.goto('/today/calendar');await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'일간',exact:true}).click();await page.getByLabel('달력 날짜 선택').fill('2026-12-31');await settled();
   await swipeCard(true);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(errors).toEqual([]);
  }finally{await context.close();}

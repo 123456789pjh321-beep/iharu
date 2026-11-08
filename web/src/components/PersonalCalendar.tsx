@@ -1,5 +1,4 @@
 import {useState,useRef,useEffect,type CSSProperties} from 'react';
-import {Icon} from './Icon';
 import {MemberFilter} from './MemberFilter';
 import {DateNavigator,WorkspaceToolbar} from './WorkspaceToolbar';
 import {PersonalTimetable} from './PersonalTimetable';
@@ -25,9 +24,8 @@ export function PersonalCalendar({month,day,items,members,loading=false,setMonth
  const move=(delta:number)=>{if(view!=='month'){selectDay(addDays(day,delta*(view==='week'?7:1)));}else{const date=new Date(Number(month.slice(0,4)),Number(month.slice(5))-1+delta,1),m=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');setMonth(m);setDay(m+'-01');}};
  moveRef.current=move;
  return <section className="direct-calendar" aria-label="일정 달력">
- <WorkspaceToolbar title="달력" navigation={<DateNavigator type={view==='day'?'date':'month'} value={view==='day'?day:month} inputLabel={view==='day'?'달력 날짜 선택':'달력 월 선택'} previousLabel="이전 기간" nextLabel="다음 기간" onMove={move} onToday={()=>selectDay(today)} onChange={value=>selectDay(view==='day'?value:value+'-01')}/> }>
-  <label className="calendar-view"><span className="sr-only">달력 보기</span><select aria-label="달력 보기" value={view} onChange={e=>setView(e.target.value as 'month'|'week'|'day')}><option value="month">월간</option><option value="week">주간</option><option value="day">일간</option></select></label>
-  <button type="button" className="button primary" onClick={()=>create(day)}><Icon name="plus"/>일정 등록</button>
+ <WorkspaceToolbar title="달력" createLabel="일정 등록" onCreate={()=>create(day)} navigation={<DateNavigator type={view==='day'?'date':'month'} value={view==='day'?day:month} inputLabel={view==='day'?'달력 날짜 선택':'달력 월 선택'} previousLabel="이전 기간" nextLabel="다음 기간" onMove={move} onToday={()=>selectDay(today)} onChange={value=>selectDay(view==='day'?value:value+'-01')}/> }>
+  <div className="calendar-view-switch" role="group" aria-label="달력 보기">{([['month','월간'],['week','주간'],['day','일간']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</div>
  </WorkspaceToolbar>
  <MemberFilter members={members} value={member} onChange={setMember} label="달력 구성원 필터"/>
  {view==='day'?<PersonalTimetable embedded day={day} items={shown} members={members} loading={loading} setDay={selectDay} create={create} edit={edit}/>:<><div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div><div className="calendar-viewport"><div ref={grid} className={'calendar-grid '+(view==='week'?'week-view':'')} onPointerDown={e=>{if(e.button===0&&e.isPrimary)gesture.current={x:e.clientX,y:e.clientY};}} onPointerMove={e=>{const g=gesture.current;if(g&&Math.abs(e.clientX-g.x)>20&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5)e.currentTarget.setPointerCapture(e.pointerId);}} onPointerCancel={()=>{gesture.current=null;}} onPointerUp={e=>{const g=gesture.current;gesture.current=null;if(g&&Math.abs(e.clientX-g.x)>60&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5){suppressClick.current=Date.now()+350;move(e.clientX<g.x?1:-1);}}} onClickCapture={e=>{if(Date.now()<suppressClick.current){e.preventDefault();e.stopPropagation();}}}>

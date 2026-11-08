@@ -34,9 +34,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  };
  const label=(item:WorkspaceItem)=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${item.data.allDay?'종일':item.data.startTime+' – '+item.data.endTime} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':'')} aria-label={embedded?'일간 일정':'일별 시간표'}>
-  {!embedded&&<><WorkspaceToolbar title="시간표" navigation={<DateNavigator type="date" value={day} inputLabel="시간표 날짜 선택" previousLabel="이전 날" nextLabel="다음 날" onChange={setDay} onMove={delta=>setDay(addDays(day,delta))} onToday={()=>{if(day===today)scrollToNow();else setDay(today);}}/>}>
-   <button type="button" className="button primary" onClick={()=>create(day)}><Icon name="plus"/>일정 등록</button>
-  </WorkspaceToolbar>
+  {!embedded&&<><WorkspaceToolbar title="시간표" createLabel="일정 등록" onCreate={()=>create(day)} navigation={<DateNavigator type="date" value={day} inputLabel="시간표 날짜 선택" previousLabel="이전 날" nextLabel="다음 날" onChange={setDay} onMove={delta=>setDay(addDays(day,delta))} onToday={()=>{if(day===today)scrollToNow();else setDay(today);}}/>}/>
   <MemberFilter className="timetable-filters" members={members} value={member} onChange={setMember} label="시간표 구성원 필터"/>
   <div ref={week} className="timetable-week" aria-label="날짜 선택" {...weekSwipe}>{dates.map((date,n)=><button type="button" key={date} aria-label={`${date} 시간표`} aria-pressed={date===day} className={date===today?'is-today':''} onClick={()=>setDay(date)}><span>{weekday[n]}</span><strong>{Number(date.slice(8))}</strong><i className={items.some(i=>visibleOn(i,date))?'has-events':''} aria-hidden="true"/></button>)}</div></>}
   <div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}{day===today&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span></div>
