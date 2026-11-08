@@ -11,7 +11,7 @@
     "dev:api": "node --watch --import tsx --env-file-if-exists=.env.local server/dev.ts",
     "dev:web": "vite --host 0.0.0.0",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json",
-    "build": "npm run typecheck && vite build",
+    "build": "npm run typecheck && vite build && node scripts/build-marketing.mjs",
     "start": "node --import tsx --env-file-if-exists=.env.local server/preview.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
