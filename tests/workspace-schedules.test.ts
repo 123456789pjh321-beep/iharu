@@ -9,10 +9,10 @@ it('orders day views and editor lists by time, with all-day first and stable equ
  expect(chronologicalSchedules(rows).at(-1)?.id).toBe('other');
  expect(dailySchedules([event('b','09:00'),event('a','09:00')],'2026-11-08').map(i=>i.id)).toEqual(['a','b']);
 });
-it('expands repeating schedules only within their dates and weekdays and includes all-family schedules in each member filter',()=>{
+it('keeps fixed timetable repeats on their weekdays across legacy date limits and member filters',()=>{
  const repeat={...event('repeat','08:30',{date:'2026-11-01',untilDate:'2026-11-15',weekdays:[0],allMembers:true}),kind:'REPEAT' as const},own=event('own','09:00'),child=event('child','10:00',{assigneeId:'child'});
  expect(dailySchedules([repeat,own,child],'2026-11-08','child').map(i=>i.id)).toEqual(['repeat','child']);
- expect(dailySchedules([repeat],'2026-11-09')).toEqual([]);expect(dailySchedules([repeat],'2026-11-22')).toEqual([]);
+ expect(dailySchedules([repeat],'2026-11-09')).toEqual([]);expect(dailySchedules([repeat],'2026-11-22')).toHaveLength(1);expect(dailySchedules([repeat],'2026-10-25')).toHaveLength(1);expect(dailySchedules([{...repeat,data:{...repeat.data,untilDate:undefined}}],'2030-01-06')).toHaveLength(1);
  expect(scheduleAssignee(repeat,members)).toBe('전체');expect(scheduleAssignee(child,members)).toBe('서준');expect(matchesMember(own,'child')).toBe(false);
 });
 it('marks current time as start-inclusive and end-exclusive without treating all-day or future dates as running',()=>{

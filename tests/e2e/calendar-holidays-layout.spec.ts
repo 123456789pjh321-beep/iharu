@@ -27,5 +27,5 @@ test('holidays, day agenda and full-screen editors use a bottom navigation at ev
  await page.setViewportSize({width:820,height:1180});await page.goto('/today/calendar');await page.getByLabel('달력 월 선택').fill('2026-10');await expect(page.locator('[data-date="2026-10-05"] .calendar-holiday')).toHaveText('대체공휴일(개천절)');
  await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:'test-results/ui96-calendar-dark.png',animations:'disabled'});
  await page.getByRole('group',{name:'달력 보기'}).getByRole('button',{name:'일간',exact:true}).click();await page.getByLabel('달력 날짜 선택').fill('2026-10-05');await expect(page.locator('.timetable-holiday')).toHaveText('대체공휴일(개천절)');
- await page.goto('/timetable');await page.getByLabel('시간표 날짜 선택').fill('2027-05-13');await expect(page.locator('.timetable-holiday')).toHaveText('부처님오신날');
+ await page.clock.setFixedTime(new Date('2027-05-13T12:00:00+09:00'));await page.goto('/timetable');await expect(page.locator('.timetable-holiday')).toHaveText('부처님오신날');
 });

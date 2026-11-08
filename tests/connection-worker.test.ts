@@ -16,7 +16,7 @@ describe('connection-only service worker',()=>{
  it('returns a retry page for network loss without exposing the requested URL',async()=>{
   const run=harness(async()=>{throw new Error('offline');});const r=await run('/login?token=private');
   expect(r?.status).toBe(200);expect(r?.headers.get('Cache-Control')).toBe('no-store');
-  const html=await r!.text();expect(html).toContain('다시 연결');expect(html).not.toContain('private');
+  const html=await r!.text();expect(html).toContain('다시 연결');expect(html).toContain('href="/timetable">시간표로 이동');expect(html).not.toContain('private');
  });
  it('preserves successful live responses and redirects',async()=>{
   for(const status of [200,302,401]){const live=new Response('live',{status});expect(await harness(async()=>live)('/today')).toBe(live);}

@@ -5,6 +5,7 @@
   "description": "가족의 일정, 시간표와 학원비를 한곳에서 관리해요.",
   "lang": "ko-KR",
   "start_url": "/timetable",
+  "launch_handler": {"client_mode": "navigate-existing"},
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",

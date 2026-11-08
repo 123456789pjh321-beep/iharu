@@ -2,7 +2,7 @@ import {useEffect,useLayoutEffect,useRef,type RefObject} from 'react';
 import {useExperience} from './Experience';
 
 /** Keep the live calendar mounted; the outgoing page is visual-only and inert. */
-export function useCalendarSlide(grid:RefObject<HTMLDivElement|null>,period:string,view:string){
+export function useCalendarSlide(grid:RefObject<HTMLDivElement|null>,period:string,view:string,enabled=true){
  const {preferences}=useExperience();
  const previous=useRef<{period:string;view:string;page:HTMLElement}|null>(null);
  const active=useRef<{animations:Animation[];page:HTMLElement}|null>(null);
@@ -14,6 +14,7 @@ export function useCalendarSlide(grid:RefObject<HTMLDivElement|null>,period:stri
   return()=>{preference.removeEventListener('change',changed);stop();previous.current=null;};
  },[]);
  useLayoutEffect(()=>{
+  if(!enabled){stop();previous.current=null;return;}
   const node=grid.current,viewport=node?.parentElement;if(!node||!viewport)return;
   const before=previous.current;
   previous.current={period,view,page:node.cloneNode(true) as HTMLElement};

@@ -151,7 +151,7 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 .workspace-page .timetable-week button>strong{font-size:.85rem;font-weight:650;width:28px;height:28px}
 .workspace-page .timetable-scroll{padding-top:0;padding-bottom:16px}
 .workspace-page .timetable-event-area{border-left:0}
-.workspace-page .timetable-day-column{background-color:var(--surface);background-position-y:var(--timetable-line-offset,0px);box-shadow:inset 0 1px 0 var(--line)}
+.workspace-page .timetable-day-column{background-color:var(--surface);background-position-y:var(--timetable-line-offset,0px);box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line)}
 .workspace-page .timetable-day-column:first-child{border-left:0}
 .workspace-page .timetable-day-column:last-of-type{border-right:0}
 /* Horizontal rules belong to schedule columns; the entire time axis stays clear. */
@@ -222,3 +222,19 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 .workspace-page .timetable-day-headings button.is-today>span{font-weight:800;color:var(--primary)}
 .workspace-page .timetable-day-headings .calendar-holiday{width:100%;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .workspace-page .timetable-day-headings button:focus-visible{outline:2px solid var(--primary);outline-offset:-2px}
+
+/* A fixed weekly template has no date picker or horizontal navigation. */
+.workspace-page .timetable-fixed-title{margin:0;font-size:1.15rem;font-weight:750;color:var(--ink)}
+.workspace-page .schedule-member-field>span{font-size:.85rem;font-weight:650;color:var(--muted)}
+.schedule-member-options{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+.schedule-member-choice{position:relative;display:inline-flex;min-width:0;cursor:pointer}
+.schedule-member-choice input{position:absolute;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:0;opacity:0}
+.schedule-member-choice>span{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;box-sizing:border-box;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:.85rem;overflow-wrap:anywhere}
+.schedule-member-choice .icon{width:16px;height:16px;visibility:hidden;flex-shrink:0}
+.schedule-member-choice input:checked+span{border-color:var(--primary);background:var(--mint);color:var(--primary);font-weight:700}
+.schedule-member-choice input:checked+span .icon{visibility:visible}
+.schedule-member-choice input:focus-visible+span{outline:2px solid var(--primary);outline-offset:2px}
+.schedule-member-choice:has(input:disabled){cursor:default}
+
+.schedule-week-label{margin:0;font-size:.85rem;font-weight:650;color:var(--muted)}
+.schedule-week-label small{margin-left:8px;font-weight:400}

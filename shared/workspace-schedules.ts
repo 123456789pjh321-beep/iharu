@@ -9,7 +9,8 @@ export function timetableWeekDates(date:string){
 
 /** Expand occurrences after the caller chooses calendar EVENT or timetable REPEAT records. */
 export function visibleOn(item:WorkspaceItem,date:string){
- if(item.kind==='REPEAT')return date>=item.data.date&&date<=(item.data.untilDate||'')&&item.data.weekdays.includes(new Date(date+'T12:00:00Z').getUTCDay());
+ // Timetable repeats are a fixed weekly template; legacy date bounds are metadata only.
+ if(item.kind==='REPEAT')return item.data.weekdays.includes(new Date(date+'T12:00:00Z').getUTCDay());
  if(item.kind!=='EVENT')return false;
  const {data}=item,frequency=data.calendarFrequency||'ONCE';
  if(frequency==='ONCE')return data.date===date;
