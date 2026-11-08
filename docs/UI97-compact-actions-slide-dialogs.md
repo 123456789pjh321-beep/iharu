@@ -1,4 +1,4 @@
-# 등록 버튼·슬라이딩 창·메신저·5일 시간표
+# 등록 버튼·슬라이딩 창·메신저·3일 시간표
 
 2026-11-08. 기존 Android TWA와 브라우저에 공통 적용하는 웹 패치.
 
@@ -6,10 +6,10 @@
 - 공통 개인 편집창과 날짜별 일정 창은 아래에서 올라와 열리고, 아래로 내려간 다음 닫힌다. 등록·수정·복사·저장·삭제 후 닫기와 Escape/닫기 버튼에서 동일하게 적용한다. 인증 또는 접근 권한이 사라지는 경우는 지연하지 않고 즉시 제거한다.
 - 닫히는 동안 원래 모달의 포커스 경계를 유지하고 추가 클릭을 차단한다. 미저장 확인 취소 시 내용과 화면을 유지한다. API 실패에는 창을 닫지 않는다. 시스템/기존 화면 설정의 동작 줄이기 및 백그라운드 전환을 고려한다.
 - 대화 입력창·이모티콘 버튼·전송 버튼은 기본 44px 높이로 정렬한다. 전송 글자는 제거하고 종이비행기 아이콘과 접근성 이름을 유지한다. 이모티콘 목록은 입력 바로 위에 놓는다. 여러 줄 입력은 최대 132px까지 커지며, 비우거나 전송하면 기본 높이로 돌아간다.
-- 시간표 날짜 탭은 선택일의 앞뒤 2일을 포함한 5일로 표시한다. 선택일은 가운데이며 주말·월 경계·연도 경계 및 기존 스와이프 탐색을 유지한다.
+- 시간표는 처음에 오늘·내일·모레 3일을 같은 시간축의 3열로 표시한다. 날짜 선택/스와이프 후에는 시작일부터 3일을 표시한다. 시간 눈금은 1시간, 1시간 높이는 48px이며 일정 카드는 제목과 시간으로 간소화한다. 구성원은 필터·접근성 이름·상세에서 확인하며 장소/반복은 상세에서 확인한다. 주말·월 경계·연도 경계 및 기존 스와이프 탐색을 유지한다.
 
-검증 범위: 아이콘의 접근성 이름, 추가·저장·미저장 취소, 열기/닫기 이동 방향과 닫기 완료 전 모달 유지, 동작 줄이기, 포커스 복원, 5일/연도 경계, 입력창 높이와 여러 줄 입력, 이모티콘 위치. 320/390/820/1024/1440px 및 기존 브라우저 회귀 검사를 수행한다. 실물 Android 키보드 검증을 대체하지 않는다.
+검증 범위: 아이콘의 접근성 이름, 추가·저장·미저장 취소, 열기/닫기 이동 방향과 닫기 완료 전 모달 유지, 동작 줄이기, 포커스 복원, 3일 열/시간 배치/연도 경계, 입력창 높이와 여러 줄 입력, 이모티콘 위치. 320/390/820/1024/1440px 및 기존 브라우저 회귀 검사를 수행한다. 실물 Android 키보드 검증을 대체하지 않는다.
 
 추가: PlusButton.tsx, useSlidingDialog.ts, compact-actions.spec.ts, 본 문서.
-수정: WorkspaceToolbar.tsx, CalendarDaySheet.tsx, PersonalWorkspace.tsx, PersonalFees.tsx, PersonalChat.tsx, PersonalTimetable.tsx, compact-workspace.css, calendar-holidays-layout.spec.ts, timetable-gestures.spec.ts.
+수정: WorkspaceToolbar.tsx, CalendarDaySheet.tsx, PersonalWorkspace.tsx, PersonalFees.tsx, PersonalChat.tsx, PersonalTimetable.tsx, compact-workspace.css, calendar-holidays-layout.spec.ts, timetable-gestures.spec.ts, direct-workspace.spec.ts, daily-calendar.spec.ts.
 삭제: 없음.

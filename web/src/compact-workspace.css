@@ -76,4 +76,33 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .workspace-page .chat-send .icon{width:22px;height:22px}
 .workspace-page .group-chat .personal-chat-emoji{margin:0 0 8px}
 
-.workspace-page .timetable-week{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* Three adjacent dates share one quiet hourly axis. */
+.workspace-page .timetable-week{grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 12px 0 0;padding:0 0 0 56px;border:0}
+.workspace-page .timetable-week button{min-height:60px;gap:0;border:1px solid var(--line);border-right:0;border-radius:0;background:var(--surface-sub)}
+.workspace-page .timetable-week button:last-child{border-right:1px solid var(--line)}
+.workspace-page .timetable-week button>span{color:var(--muted)}
+.workspace-page .timetable-week .holiday-date>span{color:var(--holiday-ink)}
+.workspace-page .timetable-week .saturday-date>span{color:var(--primary)}
+.workspace-page .timetable-week button[aria-pressed=true]{background:var(--mint)}
+.workspace-page .timetable-week .calendar-holiday{width:100%;font-size:.6rem;padding:0 3px}
+.workspace-page .timetable-summary{min-height:40px;padding:4px 12px 8px;font-size:.75rem;gap:10px}
+.workspace-page .timetable-current-summary{min-width:0;padding:0;font-size:.7rem;gap:5px}
+.workspace-page .timetable-current-summary>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.workspace-page .timetable-current-summary.empty{display:none}
+.workspace-page .timetable-scroll{padding-top:8px}
+.workspace-page .timetable-event-area{display:grid;background:none}
+.workspace-page .timetable-day-column{position:relative;min-width:0;height:100%;border-right:1px solid var(--line);background:repeating-linear-gradient(to bottom,var(--line) 0,var(--line) 1px,transparent 1px,transparent 48px);background-color:color-mix(in srgb,var(--surface-sub) 55%,var(--surface))}
+.workspace-page .timetable-day-column.today-column{background-color:color-mix(in srgb,var(--mint) 35%,var(--surface))}
+.workspace-page .timetable-card{border-radius:6px;border-left-width:2px;gap:2px;padding:4px 6px;box-shadow:none}
+.workspace-page .timetable-card .timetable-title{font-size:.8rem;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.workspace-page .timetable-card .timetable-range{font-size:.65rem;line-height:1.35;white-space:nowrap;display:block;overflow:hidden;text-overflow:ellipsis}
+.workspace-page .timetable-card.compact-event .timetable-range,.workspace-page .timetable-card.short-event .timetable-range{display:none}
+.workspace-page .timetable-card.short-event{padding:0 3px}
+.workspace-page .timetable-card.short-event .timetable-title{font-size:.65rem;line-height:1.2}
+.workspace-page .timetable-all-day{grid-template-columns:56px minmax(0,1fr);padding:0 12px 6px 0;gap:0}
+.workspace-page .timetable-all-day-columns{display:grid;gap:0}
+.workspace-page .timetable-all-day-columns>div{display:grid;align-content:start;gap:3px;padding:2px}
+.workspace-page .timetable-all-day-card{width:100%;min-height:28px}
+.workspace-page .timetable-all-day-card .timetable-range{display:none}
+.workspace-page .timetable-now>strong{font-size:.6rem;padding:3px 4px;margin-right:0;white-space:nowrap}
+@media(max-width:360px){.workspace-page .timetable-week{padding-left:52px}.workspace-page .timetable-all-day{grid-template-columns:52px minmax(0,1fr)}.workspace-page .timetable-card{padding-inline:3px}.workspace-page .timetable-card .timetable-title{font-size:.7rem}.workspace-page .timetable-card .timetable-range{font-size:.6rem}.workspace-page .timetable-summary{font-size:.7rem}.workspace-page .timetable-current-summary{max-width:35%}}
