@@ -13,7 +13,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
   const signup=await context.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId:'picture_child',name:'그림 아이',password,code:invite.code||invite.data?.code}});expect(signup.ok(),await signup.text()).toBe(true);
   await child.goto('/child/chat');
   const tray=child.getByRole('group',{name:'그림 메시지 선택'}),input=child.getByRole('textbox',{name:'가족에게 전할 말'}),send=child.getByRole('button',{name:'메시지 보내기'});
-  await expect(tray.getByRole('button')).toHaveCount(24);await expect(child.getByRole('button',{name:'이모티콘',exact:true})).toHaveCount(0);
+  await expect(tray.getByRole('button')).toHaveCount(24);expect(await tray.evaluate(el=>getComputedStyle(el).scrollbarWidth)).toBe('none');await expect(child.getByRole('button',{name:'이모티콘',exact:true})).toHaveCount(0);
   for(const label of ['안녕','어디야','학원','아빠','엄마','나 집이야']){
    const button=tray.getByRole('button',{name:label+' 그림 선택'});await expect(button.getByRole('img',{name:label,exact:true})).toHaveCount(1);
    const src=await button.locator('image').getAttribute('href');expect((await context.request.get(src!)).status()).toBe(200);
@@ -36,8 +36,9 @@ test('child picture messages persist, reach the parent, retry once, and remain a
   }
   await tray.getByRole('button',{name:'안녕 그림 선택'}).click();expect((await input.boundingBox())!.y+(await input.boundingBox())!.height).toBeLessThanOrEqual((await child.getByRole('navigation',{name:'모바일 주 메뉴'}).boundingBox())!.y);await child.screenshot({path:'test-results/picture-chat-landscape.png'});await child.getByRole('button',{name:'그림 선택 취소'}).click();
   await child.setViewportSize({width:390,height:844});await tray.getByRole('button',{name:'엄마 그림 선택'}).click();await expect(send).toBeEnabled();await child.getByRole('button',{name:'그림 선택 취소'}).click();await expect(send).toBeDisabled();
-  await child.getByRole('button',{name:'다음 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
-  await child.getByRole('button',{name:'이전 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBe(0);
+  expect((await tray.boundingBox())!.height).toBeLessThanOrEqual(90);expect((await child.locator('.chat-message.mine .picture-bubble').boundingBox())!.width).toBeLessThanOrEqual(110);expect((await child.locator('.group-chat-history').boundingBox())!.height).toBeGreaterThan(350);
+  const before=await tray.evaluate(el=>el.scrollLeft);await child.getByRole('button',{name:'다음 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBeGreaterThan(before);
+  const next=await tray.evaluate(el=>el.scrollLeft);await child.getByRole('button',{name:'이전 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBeLessThan(next);
   await child.screenshot({path:'test-results/picture-chat-mobile.png'});
   await child.getByRole('button',{name:'어둡게',exact:true}).click();await child.screenshot({path:'test-results/picture-chat-dark.png'});
  }finally{await context.close();}

@@ -132,17 +132,17 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .conversation-stickers-heading>div{display:flex;gap:4px;margin-left:auto}
 .conversation-stickers-heading button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);cursor:pointer}
 .conversation-stickers-heading .icon{width:16px;height:16px}
-.conversation-sticker-tray{display:grid;grid-template-rows:repeat(2,90px);grid-auto-flow:column;grid-auto-columns:90px;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-snap-type:x proximity;padding:2px 2px 5px}
+.conversation-sticker-tray{display:grid;grid-template-rows:72px;grid-auto-flow:column;grid-auto-columns:72px;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;scroll-snap-type:x proximity;padding:2px 2px 5px}
 .conversation-sticker-tray>button{min-width:0;min-height:0;padding:2px;border:1px solid var(--line);border-radius:15px;background:var(--surface);cursor:pointer;scroll-snap-align:start;overflow:hidden}
 .conversation-sticker-tray>button[aria-pressed=true]{border:2px solid var(--primary);padding:1px;background:var(--mint);box-shadow:0 0 0 1px var(--primary)}
 .conversation-sticker-tray>button:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
 .conversation-sticker-selection{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;margin-bottom:6px;padding:0 8px;border-radius:10px;background:var(--mint);font-size:.75rem;color:var(--ink)}
 .conversation-sticker-selection .icon-button{width:36px;min-width:36px;height:36px;min-height:36px;padding:6px}
-.group-chat .chat-bubble.picture-bubble{width:132px;padding:4px;border-radius:20px;line-height:1}
+.group-chat .chat-bubble.picture-bubble{width:100px;padding:4px;border-radius:20px;line-height:1}
 .workspace-page .group-chat .chat-new-message{position:static;align-self:center;margin:4px 0;flex-shrink:0}
 html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticker-wash:#2c443b;--sticker-ink:#f0f7ef}
-@media(min-width:761px){.conversation-sticker-tray{grid-template-rows:repeat(2,96px);grid-auto-columns:96px}}
-@media(max-height:600px){.conversation-sticker-tray{grid-template-rows:76px}.conversation-stickers-heading{margin-bottom:2px}.conversation-stickers-heading>span{display:none}}
+@media(min-width:761px){.conversation-sticker-tray{grid-template-rows:76px;grid-auto-columns:76px}}
+@media(max-height:600px){.conversation-stickers-heading{margin-bottom:2px}.conversation-stickers-heading>span{display:none}}
 
 /* Reserve identical scrollbar space in the date header and timed rows. */
 .workspace-page .timetable-week,.workspace-page .timetable-all-day,.workspace-page .timetable-scroll{scrollbar-gutter:stable;scrollbar-width:thin}
@@ -169,3 +169,13 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
  .workspace-page .conversation-sticker-tray{grid-template-rows:64px;grid-auto-columns:64px}
  .workspace-page .conversation-sticker-selection{min-height:32px;margin-bottom:4px}
 }
+
+/* Match calendar weekday/date hierarchy; the weekday band has no box borders. */
+.workspace-page .timetable-weekdays{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex-shrink:0;box-sizing:border-box;margin:0;padding:8px 12px 12px 56px;overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:thin;border:0;background:var(--surface);text-align:center;font-size:.7rem;color:var(--muted)}
+.workspace-page .timetable-weekdays>span{border:0;background:none}
+.workspace-page .timetable-weekdays>.holiday-date{color:var(--holiday-ink)}
+.workspace-page .timetable-weekdays>.saturday-date{color:var(--primary)}
+.workspace-page .timetable-week button{min-height:40px;padding-block:5px}
+@media(max-width:360px){.workspace-page .timetable-weekdays{padding-left:52px}}
+
+.conversation-sticker-tray::-webkit-scrollbar{display:none}
