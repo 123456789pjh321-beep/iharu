@@ -68,7 +68,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
   </div>;
 }
 export default function App(){return <BrowserRouter><RouteEffects/><Routes>
-  {['/service','/guide'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
+  {['/service','/guide','/notices','/notices/:slug','/blog','/blog/:slug'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
   <Route element={<WorkspaceFrame/>}><Route path="/notifications" element={<NotificationsPage/>}/>
   <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>

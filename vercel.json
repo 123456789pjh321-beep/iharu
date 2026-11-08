@@ -38,7 +38,39 @@
       "destination": "/guide.html"
     },
     {
-      "source": "/((?!api(?:/|$)|assets/|\\.well-known/|sw\\.js$|manifest\\.webmanifest$|app-icon\\.svg$|icon\\.svg$).*)",
+      "source": "/notices",
+      "destination": "/notices.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog.html"
+    },
+    {
+      "source": "/notices/picture-messages",
+      "destination": "/notices/picture-messages.html"
+    },
+    {
+      "source": "/notices/schedule-registration",
+      "destination": "/notices/schedule-registration.html"
+    },
+    {
+      "source": "/notices/welcome-guide",
+      "destination": "/notices/welcome-guide.html"
+    },
+    {
+      "source": "/blog/shared-morning",
+      "destination": "/blog/shared-morning.html"
+    },
+    {
+      "source": "/blog/first-picture-conversation",
+      "destination": "/blog/first-picture-conversation.html"
+    },
+    {
+      "source": "/blog/monthly-tuition-routine",
+      "destination": "/blog/monthly-tuition-routine.html"
+    },
+    {
+      "source": "/((?!api(?:/|$)|assets/|robots\\.txt$|sitemap\\.xml$|\\.well-known/|sw\\.js$|manifest\\.webmanifest$|app-icon\\.svg$|icon\\.svg$).*)",
       "destination": "/index.html"
     }
   ],
