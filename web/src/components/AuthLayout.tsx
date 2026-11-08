@@ -4,6 +4,8 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import {WorkspaceBrand,WorkspaceNavigation} from './WorkspaceNavigation';
 import {DisplaySettings,Entrance,FamilyArtwork} from './Experience';
 import {WorkspaceGateProvider,useWorkspaceGate} from './WorkspaceGate';
+import {workspaceRequest} from '../workspace-api';
+import type {WorkspaceMe} from '../../../shared/workspace';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
@@ -12,9 +14,16 @@ export function AuthEntryFrame({children}:{children:ReactNode}){return <AuthLayo
 export function WorkspaceFrame(){return <WorkspaceGateProvider><StableWorkspaceFrame/></WorkspaceGateProvider>;}
 function StableWorkspaceFrame(){
  const {pathname,search}=useLocation(),{health,session}=useWorkspaceGate();
- if(new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled)return <Outlet/>;
  const publicDocument=pathname.startsWith('/legal/')||pathname==='/privacy';
- return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true} personalChild={pathname==='/child/chat'}><FrameContext.Provider value>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<Outlet/>}</FrameContext.Provider></AuthLayoutRoot>;
+ const [childSession,setChildSession]=useState<{source:unknown;authenticated:boolean}|null>(null);
+ useEffect(()=>{
+  let active=true;setChildSession(null);
+  if(publicDocument&&!session.loading&&session.data?.authenticated===false){const source=session.data;void workspaceRequest<WorkspaceMe>('me').then(me=>{if(active)setChildSession({source,authenticated:me.role==='CHILD'});}).catch(()=>{});}
+  return()=>{active=false;};
+ },[publicDocument,session.loading,session.data]);
+ const childNavigation=childSession?.source===session.data&&childSession?.authenticated===true;
+ if(new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled)return <Outlet/>;
+ return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<Outlet/>}</FrameContext.Provider></AuthLayoutRoot>;
 }
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false,showNavigation=true }: { children: ReactNode; wide?: boolean;personalChild?:boolean;showNavigation?:boolean }) {
   const { pathname } = useLocation();
