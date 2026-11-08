@@ -1,7 +1,7 @@
 import { test,expect } from '@playwright/test';
 test.use({baseURL:'http://127.0.0.1:4174'});
 
-test('browser signup → mail proof → login → home → account → logout persists through the real API and SQL',async({page,request})=>{
+test('browser signup → mail proof → login → timetable → account → logout persists through the real API and SQL',async({page,request})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.setViewportSize({width:390,height:844});
   await page.goto('/signup');
@@ -17,14 +17,15 @@ test('browser signup → mail proof → login → home → account → logout pe
   await page.getByLabel('아이디',{exact:true}).fill('browser-parent@example.test');
   await page.getByLabel('암호',{exact:true}).fill('browser-parent-password-2026');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
-  await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
+  await expect(page).toHaveURL(/\/timetable$/);
+  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','대화','학원비','더보기']);await expect(nav.getByRole('link',{name:'오늘',exact:true})).toHaveCount(0);
+  await expect(page.locator('.personal-timetable')).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
+  await expect(page.locator('.personal-timetable')).toBeVisible();
   await expect(page.getByText('서준',{exact:true})).toHaveCount(0);
   for(const path of ['/login','/signup','/']) {
-    await page.goto(path);await expect(page).toHaveURL(/\/today$/);
-    await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
+    await page.goto(path);await expect(page).toHaveURL(/\/timetable$/);
+    await expect(page.locator('.personal-timetable')).toBeVisible();
   }
   for(const width of [320,390,768,1440]) {
     await page.setViewportSize({width,height:900});
@@ -37,8 +38,8 @@ test('browser signup → mail proof → login → home → account → logout pe
   await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'달력',exact:true}).click();
   await expect(page.locator('.direct-calendar')).toBeVisible();
-  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'오늘',exact:true}).click();
-  await expect(page).toHaveURL(/\/today$/);
+  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'시간표',exact:true}).click();
+  await expect(page).toHaveURL(/\/timetable$/);
   await page.goto('/account');
   await expect(page.getByRole('heading',{name:'로그인 방법과 기기'})).toBeVisible();
   await expect(page.getByText('현재 기기',{exact:true})).toBeVisible();
@@ -47,7 +48,7 @@ test('browser signup → mail proof → login → home → account → logout pe
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/account-390.png',fullPage:true});
   await page.locator('.auth-header').getByRole('link',{name:'아이하루',exact:true}).click();
-  await expect(page).toHaveURL(/\/today$/);
+  await expect(page).toHaveURL(/\/timetable$/);
   await page.goto('/account/reauth');
   await page.getByRole('link',{name:'다른 로그인 방법으로 확인',exact:true}).click();
   await expect(page).toHaveURL(/\/login\?reauth=1$/);

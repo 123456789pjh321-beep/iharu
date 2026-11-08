@@ -247,13 +247,13 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
     });
     try {
       const signIn=async(b:Browser)=>{
-        const start=await b.request('/api/auth/sign-in/social',{provider:'kakao',callbackURL:'/today',errorCallbackURL:'/login'});
+        const start=await b.request('/api/auth/sign-in/social',{provider:'kakao',callbackURL:'/timetable',errorCallbackURL:'/login'});
         expect(start.status).toBe(200);
         const state=new URL((await start.json()).url).searchParams.get('state')!;
         const callback=`/api/auth/callback/kakao?${new URLSearchParams({code:'isolated-code',state})}`;
         const response=await b.request(callback);
         expect(response.status).toBe(302);
-        expect(new URL(response.headers.get('location')!,origin).href).toBe(`${origin}/today`);
+        expect(new URL(response.headers.get('location')!,origin).href).toBe(`${origin}/timetable`);
         expect(response.headers.get('set-cookie')).toContain('HttpOnly');
         return callback;
       };

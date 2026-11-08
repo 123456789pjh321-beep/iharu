@@ -26,7 +26,7 @@ function LoginEntry({child,providers}:{child:boolean;providers:ReturnType<typeof
   if(child)return <ChildAccountPage/>;
   if(session.loading)return <Loading label="로그인 상태를 확인하고 있어요"/>;
   if(session.error)return <ErrorState message={session.error} retry={session.retry}/>;
-  if(session.data?.authenticated)return <Navigate to={session.data.assurance==='LOW'?'/account':'/today'} replace/>;
+  if(session.data?.authenticated)return <Navigate to={session.data.assurance==='LOW'?'/account':'/timetable'} replace/>;
   return <LoginForm providers={providers}/>;
 }
 function LoginForm({providers,reauthenticate=false}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean}) {
@@ -50,7 +50,7 @@ function LoginForm({providers,reauthenticate=false}:{providers:ReturnType<typeof
     event.preventDefault(); const form = new FormData(event.currentTarget); setBusy(true);setError('');setMessage('');
     try {
       const email = String(form.get('email') || '').trim(); const password = String(form.get('password') || '');
-      if (mode === 'login') { await authPost('/api/auth/sign-in/email',{email,password}); navigate(reauthenticate?'/account':'/today',{replace:true}); }
+      if (mode === 'login') { await authPost('/api/auth/sign-in/email',{email,password}); navigate(reauthenticate?'/account':'/timetable',{replace:true}); }
       if (mode === 'signup') { await authPost('/api/auth/sign-up/email',{email,password,name:String(form.get('name')).trim(),callbackURL:'/login?verified=1'});setMessage('가입을 진행할 수 있는 이메일이면 인증 메일이 도착해요. 메일함과 스팸함을 확인해 주세요.'); }
       if (mode === 'forgot') { await authPost('/api/auth/request-password-reset',{email,redirectTo:'/reset-password'});setMessage('일치하는 이메일 계정이 있으면 재설정 링크를 보내드려요. 메일함을 확인해 주세요.'); }
       if (mode === 'verify') { await authPost('/api/auth/send-verification-email',{email,callbackURL:'/login?verified=1'});setMessage('인증이 필요한 계정이면 메일을 보내드려요. 메일함과 스팸함을 확인해 주세요.'); }
@@ -98,7 +98,7 @@ export function PhonePage() {
   const enabled=providers.data?.providers.find(p=>p.id==='phone')?.enabled===true;
   useEffect(()=>{if(seconds<=0)return; const timer=window.setTimeout(()=>setSeconds(s=>s-1),1000);return()=>clearTimeout(timer);},[seconds]);
   async function send(){setBusy(true);setError('');try{await authPost('/api/auth/phone-number/send-otp',{phoneNumber:phone});setSent(true);setSeconds(60);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  async function verify(event:FormEvent){event.preventDefault();setBusy(true);setError('');try{await authPost('/api/auth/phone-number/verify',{phoneNumber:phone,code,...(link?{updatePhoneNumber:true}:{})});navigate(link?'/account':'/today',{replace:true});}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+  async function verify(event:FormEvent){event.preventDefault();setBusy(true);setError('');try{await authPost('/api/auth/phone-number/verify',{phoneNumber:phone,code,...(link?{updatePhoneNumber:true}:{})});navigate(link?'/account':'/timetable',{replace:true});}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   return <AuthLayout><div className="auth-title"><span className="eyebrow">휴대폰 인증</span><h2>{link?'휴대폰 연결하기':'번호로 간편하게 시작해요'}</h2><p>휴대폰 번호 확인 후, 보호자 본인확인을 별도로 진행해요.</p></div><FormNotice error={error}/>
     {providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:providers.loading?<Loading label="휴대폰 인증을 확인하고 있어요"/>:<>
       {!enabled&&<FormNotice message="휴대폰 인증은 준비 중이에요. 다른 로그인 방법을 이용해 주세요."/>}

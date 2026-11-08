@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {chronologicalSchedules,dailySchedules,matchesMember,scheduleAssignee,schedulePhase,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../shared/workspace-schedules';
+import {chronologicalSchedules,dailySchedules,matchesMember,scheduleAssignee,schedulePhase,timetableBounds,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../shared/workspace-schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../shared/workspace';
 const members:WorkspaceMember[]=[{id:'parent',name:'부모',kind:'PARENT',host:true,version:1},{id:'child',name:'서준',kind:'CHILD',host:false,version:1}];
 function event(id:string,startTime:string,extra:Partial<WorkspaceItem['data']>={}):WorkspaceItem{return {id,kind:'EVENT',data:{title:id,date:'2026-11-08',startTime,endTime:'18:00',weekdays:[],place:'',note:'',paid:false,...extra},ownerId:'parent',ownerName:'부모',mine:true,version:1};}
@@ -33,4 +33,17 @@ it('keeps every selected weekday in the same Sunday–Saturday week',()=>{
  for(const date of expected)expect(timetableWeekDates(date)).toEqual(expected);
  expect(timetableWeekDates('2027-01-01')).toEqual(['2026-12-27','2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-02']);
  expect(timetableWeekDates('2028-02-29')).toEqual(['2028-02-27','2028-02-28','2028-02-29','2028-03-01','2028-03-02','2028-03-03','2028-03-04']);
+});
+
+it('bounds a whole week by its earliest start and latest finish with exactly one hour of context',()=>{
+ expect(timetableBounds([{start:560,end:780},{start:540,end:850},{start:1030,end:1090}])).toEqual({start:480,end:1150});
+ expect(timetableBounds([{start:495,end:805}])).toEqual({start:435,end:865});
+});
+it('caps the visible schedule range at midnight without extending into another day',()=>{
+ expect(timetableBounds([{start:5,end:35}])).toEqual({start:0,end:95});
+ expect(timetableBounds([{start:1390,end:1435}])).toEqual({start:1330,end:1440});
+});
+it('keeps an empty or all-day-only week usable without a midnight-length grid',()=>{
+ expect(timetableBounds([])).toEqual({start:540,end:1080});
+ expect(timetableBounds(timetableLayout([event('anniversary','00:00',{allDay:true})]))).toEqual({start:540,end:1080});
 });
