@@ -3,7 +3,28 @@ const origin='http://127.0.0.1:4174',password='privacy-fixture-password-2026';te
 async function signup(client:APIRequestContext,email:string,name='검증 계정'){expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await client.get('/__test__/mail')).json();await client.get(mail.find((m:{to:string})=>m.to===email).url);expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);await api(client,'workspace/me');}
 async function api(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
 test('login copy is concise and location is absent from production navigation and Today',async({page})=>{
- await page.setViewportSize({width:390,height:844});for(const path of ['/login','/login?role=child']){await page.goto(path);await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();for(const text of ['보호자 계정','다시 만나 반가워요','내 하루에 로그인해요','직접 정한 자녀 ID와 비밀번호를 입력해요.','자녀 로그인'])await expect(page.getByText(text,{exact:true})).toHaveCount(0);await page.screenshot({path:'test-results/ui84-login-'+(path.includes('child')?'id':'email')+'.png',fullPage:true});}
+ await page.emulateMedia({reducedMotion:'reduce'});
+ for(const width of [320,768,1320]){
+  await page.setViewportSize({width,height:900});
+  let parentGeometry:number[]|undefined;
+  for(const child of [false,true]){
+   await page.goto(child?'/login?role=child':'/login');
+   await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
+   const tabs=page.getByRole('navigation',{name:'로그인 대상'});
+   await expect(tabs.getByRole('link',{name:child?'자녀':'학부모',exact:true})).toHaveAttribute('aria-current','page');
+   await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
+   await expect(page.getByLabel('암호',{exact:true})).toBeVisible();
+   for(const text of ['보호자 계정','다시 만나 반가워요','내 하루에 로그인해요','직접 정한 자녀 ID와 비밀번호를 입력해요.','자녀 로그인','이메일·플랫폼'])await expect(page.getByText(text,{exact:true})).toHaveCount(0);
+   const geometry=await page.locator('.auth-login-form').evaluate(form=>{
+    const top=form.getBoundingClientRect().top;
+    return [...form.querySelectorAll('.form-field,.auth-login-actions .button')].flatMap(el=>{const r=el.getBoundingClientRect();return [r.top-top,r.width,r.height];});
+   });
+   if(parentGeometry)geometry.forEach((value,i)=>expect(Math.abs(value-parentGeometry![i])).toBeLessThanOrEqual(1));else parentGeometry=geometry;
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+   await page.screenshot({path:`test-results/ui85-login-${child?'child':'parent'}-${width}.png`,fullPage:true,animations:'disabled'});
+  }
+ }
+
  await signup(page.request,'ui84-location@example.test');let maps=0;page.on('request',r=>{if(/dapi.kakao.com.*maps/.test(r.url()))maps++;});await page.goto('/today');await expect(page.locator('[data-home-section="schedule"]')).toBeVisible();await expect(page.locator('[data-home-section="location"]')).toHaveCount(0);await page.getByRole('button',{name:'더보기',exact:true}).click();await expect(page.getByRole('dialog').getByRole('link',{name:'위치',exact:true})).toHaveCount(0);await expect(page.getByRole('dialog').getByRole('link',{name:'개인정보 관리',exact:true})).toBeVisible();await page.goto('/location');await expect(page).toHaveURL(/\/today$/);expect(maps).toBe(0);
 });
 test('monthly family filters keep their full height and remain clickable on short and narrow screens',async({page,playwright})=>{

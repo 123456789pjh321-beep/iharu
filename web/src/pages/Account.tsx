@@ -45,7 +45,7 @@ function Resource({loading,error,retry,children}:{loading:boolean;error?:string;
 export function ReauthPage(){
   const action=useAction();
   async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();const password=String(new FormData(event.currentTarget).get('password'));await action.run(async()=>{await authPost('/api/account/reauthenticate',{password});window.location.assign('/account');});}
-  return <AuthLayout><div className="auth-title"><span className="eyebrow">계정 보호</span><h2>본인 인증 다시 하기</h2><p>현재 계정에 연결한 비밀번호를 입력해 주세요.</p></div><FormNotice error={action.error}/><form className="auth-form" onSubmit={submit}><fieldset disabled={action.busy}><legend className="sr-only">본인 확인</legend><PasswordField/><button className="button primary full">확인하고 계속하기</button></fieldset></form><p className="auth-help">소셜 계정만 사용한다면 연결한 소셜 계정으로 다시 로그인해 주세요.</p><Link className="button full" to="/login?reauth=1">다른 로그인 방법으로 확인</Link><Link className="auth-back" to="/account">계정으로 돌아가기 <Icon name="arrow"/></Link></AuthLayout>;
+  return <AuthLayout><div className="auth-title"><span className="eyebrow">계정 보호</span><h2>본인 인증 다시 하기</h2><p>현재 계정에 연결한 암호를 입력해 주세요.</p></div><FormNotice error={action.error}/><form className="auth-form" onSubmit={submit}><fieldset disabled={action.busy}><legend className="sr-only">본인 확인</legend><PasswordField/><button className="button primary full">확인하고 계속하기</button></fieldset></form><p className="auth-help">소셜 계정만 사용한다면 연결한 소셜 계정으로 다시 로그인해 주세요.</p><Link className="button full" to="/login?reauth=1">다른 로그인 방법으로 확인</Link><Link className="auth-back" to="/account">계정으로 돌아가기 <Icon name="arrow"/></Link></AuthLayout>;
 }
 export function EmailLinkPage(){
   const providers=useApi('/api/account/providers',providersSchema);

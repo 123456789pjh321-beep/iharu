@@ -19,7 +19,7 @@ test('account pages reflow at phone widths and large text with accessible form l
   for(const width of [320,390,768,1440]){
     await page.setViewportSize({width,height:900});
     for(const path of ['/login','/signup','/forgot-password','/verify-email','/reset-password','/phone','/account/reauth','/account/email']){
-      await page.goto(path);if(path==='/login')await expect(page.getByLabel('이메일',{exact:true})).toBeVisible();else await expect(page.locator('.auth-title')).toBeVisible();
+      await page.goto(path);if(path==='/login')await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();else await expect(page.locator('.auth-title')).toBeVisible();
       await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     }
   }
@@ -31,11 +31,11 @@ test('account pages reflow at phone widths and large text with accessible form l
   await page.setViewportSize({width:1440,height:1000});await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);
   await page.screenshot({path:'test-results/login-1440.png',fullPage:true});
   await page.goto('/account/reauth');
-  await page.getByLabel('비밀번호',{exact:true}).fill('user-owned-test-password');
-  await page.getByRole('button',{name:'비밀번호 표시',exact:true}).click();
-  await expect(page.getByLabel('비밀번호',{exact:true})).toHaveAttribute('type','text');
-  await page.getByRole('button',{name:'비밀번호 숨기기',exact:true}).click();
-  await expect(page.getByLabel('비밀번호',{exact:true})).toHaveAttribute('type','password');
+  await page.getByLabel('암호',{exact:true}).fill('user-owned-test-password');
+  await page.getByRole('button',{name:'암호 표시',exact:true}).click();
+  await expect(page.getByLabel('암호',{exact:true})).toHaveAttribute('type','text');
+  await page.getByRole('button',{name:'암호 숨기기',exact:true}).click();
+  await expect(page.getByLabel('암호',{exact:true})).toHaveAttribute('type','password');
 });
 
 test('F02 email linking resends a pending proof and offers recovery after a failed confirmation',async({page})=>{
