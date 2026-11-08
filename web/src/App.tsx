@@ -11,6 +11,7 @@ import { useApi } from './api';
 import { sessionSchema, type SignedInSession } from './auth';
 import { AuthLayout,WorkspaceFrame } from './components/AuthLayout';
 const TestWorkspace=lazy(()=>import('./testing/TestWorkspace'));
+const MarketingPage=lazy(()=>import('./pages/Marketing'));
 const AdminConsole=lazy(()=>import('./pages/AdminConsole'));
 const ChatPage=lazy(()=>import('./pages/Chat').then(m=>({default:m.ChatPage})));
 import { DailyWorkspace } from './pages/Daily';
@@ -67,6 +68,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
   </div>;
 }
 export default function App(){return <BrowserRouter><RouteEffects/><Routes>
+  {['/service','/guide'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
   <Route element={<WorkspaceFrame/>}><Route path="/notifications" element={<NotificationsPage/>}/>
   <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>

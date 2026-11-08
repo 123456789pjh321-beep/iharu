@@ -124,3 +124,20 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .direct-calendar .calendar-grid.week-view .calendar-week-row{min-height:max(300px,calc(var(--calendar-week-header) + var(--calendar-event-rows)*32px + 32px))}
 .auth-app.workspace-page.public-document-page .auth-main.auth-wide{margin-bottom:0}
 .auth-app.workspace-page.public-document-page .auth-footer{display:flex;flex-wrap:wrap;gap:12px;position:static;padding:20px 16px max(20px,env(safe-area-inset-bottom))}
+
+/* Reserve identical scrollbar space in the date header and timed rows. */
+.workspace-page .timetable-week,.workspace-page .timetable-all-day,.workspace-page .timetable-scroll{scrollbar-gutter:stable;scrollbar-width:thin}
+.workspace-page .timetable-week,.workspace-page .timetable-all-day{overflow:hidden}
+.workspace-page .timetable-week button{background:var(--surface);border-bottom:0;min-height:60px}
+.workspace-page .timetable-week button>strong{font-size:.85rem;font-weight:650;width:28px;height:28px}
+.workspace-page .timetable-scroll{padding-top:0;padding-bottom:16px}
+.workspace-page .timetable-event-area{border-left:0}
+.workspace-page .timetable-day-column{background-color:var(--surface);background-position-y:var(--timetable-line-offset,0px);box-shadow:inset 0 1px 0 var(--line)}
+.workspace-page .timetable-day-column:first-child{border-left:1px solid var(--line)}
+.workspace-page .timetable-time-axis>span{white-space:nowrap}
+.workspace-page .timetable-time-axis>span:first-child{transform:none;padding-top:3px}
+.workspace-page .timetable-card{border:0;border-left:3px solid var(--event-color);border-radius:4px;background:color-mix(in srgb,var(--event-color) 14%,var(--surface));gap:3px}
+.workspace-page .timetable-card .timetable-title{font-size:.75rem;font-weight:650;line-height:1.35}
+.workspace-page .timetable-card .timetable-range{font-size:.65rem;font-weight:400}
+.workspace-page .timetable-card:hover{box-shadow:none;filter:brightness(.96)}
+@media(max-width:760px){.workspace-page .timetable-card{border-left-width:2px;padding-inline:4px}.workspace-page .timetable-card .timetable-title{font-size:.65rem}.workspace-page .timetable-card .timetable-range{font-size:.6rem}}

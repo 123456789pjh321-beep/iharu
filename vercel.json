@@ -30,6 +30,14 @@
       "destination": "/api"
     },
     {
+      "source": "/service",
+      "destination": "/service.html"
+    },
+    {
+      "source": "/guide",
+      "destination": "/guide.html"
+    },
+    {
       "source": "/((?!api(?:/|$)|assets/|\\.well-known/|sw\\.js$|manifest\\.webmanifest$|app-icon\\.svg$|icon\\.svg$).*)",
       "destination": "/index.html"
     }

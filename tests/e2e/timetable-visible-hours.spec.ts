@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+const origin='http://127.0.0.1:4174';test.use({baseURL:origin,reducedMotion:'reduce'});
+test('timetable begins at the earliest timed event, aligns columns and supports creation without a floating button',async({page,request})=>{
+ test.setTimeout(90000);const email='visible-hours@example.test',password='visible-hours-fixture-2026';
+ expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'시간표 정렬',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
+ for(const data of [{title:'학교 수업',date:'2027-04-12',startTime:'09:10',endTime:'13:10'},{title:'가장 이른 수업',date:'2027-04-13',startTime:'08:20',endTime:'09:20'},{title:'오후 영어 수업',date:'2027-04-14',startTime:'16:00',endTime:'17:00'},{title:'가족 기념일',date:'2027-04-12',allDay:true}])expect((await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'EVENT',data}})).ok()).toBe(true);
+ for(const width of [320,820,1440]){
+  await page.setViewportSize({width,height:1000});await page.goto('/timetable');await page.getByLabel('시간표 날짜 선택').fill('2027-04-12');
+  await expect(page.locator('.timetable-grid')).toHaveAttribute('data-start-minute','500');await expect(page.locator('.timetable-time-axis>span').first()).toHaveText('08:20');await expect(page.locator('.workspace-add-action')).toHaveCount(0);
+  const firstTick=(await page.locator('.timetable-time-axis>span').first().boundingBox())!;expect(firstTick.x).toBeGreaterThanOrEqual(0);expect(firstTick.height).toBeLessThan(20);
+  const headers=await page.locator('[data-timetable-date]').evaluateAll(nodes=>nodes.map(el=>({x:el.getBoundingClientRect().x,right:el.getBoundingClientRect().right}))),columns=await page.locator('.timetable-day-column').evaluateAll(nodes=>nodes.map(el=>({x:el.getBoundingClientRect().x,right:el.getBoundingClientRect().right})));
+  for(let n=0;n<3;n++){expect(Math.abs(headers[n].x-columns[n].x)).toBeLessThanOrEqual(1);expect(Math.abs(headers[n].right-columns[n].right)).toBeLessThanOrEqual(1);}
+  const earliest=page.locator('.timetable-event').filter({hasText:'가장 이른 수업'}),grid=(await page.locator('.timetable-grid').boundingBox())!;expect((await earliest.boundingBox())!.y-grid.y).toBeCloseTo(0,0);expect((await earliest.boundingBox())!.height).toBeCloseTo(48,0);
+  expect(await page.locator('.timetable-slot').evaluateAll(nodes=>nodes.every(el=>el.getAttribute('data-time')!>='08:20'))).toBe(true);
+  await page.screenshot({path:`test-results/ui100-timetable-${width}.png`,animations:'disabled'});
+  await page.locator('.timetable-scroll').evaluate(el=>{el.scrollTop=200;});const after=await page.locator('.timetable-day-column').evaluateAll(nodes=>nodes.map(el=>el.getBoundingClientRect().x));for(let n=0;n<3;n++)expect(Math.abs(after[n]-headers[n].x)).toBeLessThanOrEqual(1);
+ }
+ await page.locator('.timetable-day-column').first().locator('[data-time="08:20"]').click();await expect(page.getByLabel('시작 시간',{exact:true})).toHaveValue('08:20');await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
+ await page.getByLabel('시간표 날짜 선택').fill('2027-04-15');await expect(page.locator('.timetable-grid')).toHaveAttribute('data-start-minute','540');
+ await page.locator('.timetable-day-column').first().locator('[data-time="09:00"]').focus();await page.keyboard.press('Home');await expect(page.locator('.timetable-day-column').first().locator('[data-time="09:00"]')).toBeFocused();await page.keyboard.press('Enter');await expect(page.getByRole('dialog')).toBeVisible();await page.getByLabel('제목',{exact:true}).fill('이른 아침 일정');await page.getByLabel('시작 시간',{exact:true}).fill('00:05');await page.getByLabel('종료 시간',{exact:true}).fill('00:35');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.timetable-grid')).toHaveAttribute('data-start-minute','5');
+ await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:'test-results/ui100-timetable-midnight-dark.png',animations:'disabled'});
+ await page.goto('/today/calendar');await expect(page.locator('.workspace-add-action')).toHaveCount(0);await page.getByLabel('달력 월 선택').fill('2027-04');await page.locator('.calendar-cell[data-date="2027-04-15"] .calendar-day-target>span').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();await expect(page.getByRole('dialog',{name:'일정 등록',exact:true})).toBeVisible();
+});

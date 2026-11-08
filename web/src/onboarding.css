@@ -17,3 +17,7 @@
 @media(max-width:420px){.auth-app.entry-page .auth-main{padding:18px 12px 32px}.auth-app.entry-page .auth-panel{padding:20px 16px}.auth-role-tabs{margin-bottom:20px}.auth-title h1,.auth-title h2{font-size:1.4rem}.parent-start-guide li{gap:10px}.parent-family-grid .account-card{padding:18px 14px}.auth-action-grid{grid-template-columns:1fr}.parent-child-row{flex-wrap:wrap}.parent-child-row>.badge{margin-left:58px}.parent-link-code{font-size:2.3rem;letter-spacing:.16em}}
 @media(max-height:800px) and (min-width:901px){.auth-app.entry-page .auth-main{padding-top:28px}.auth-intro .family-artwork{transform:scale(.8);transform-origin:top center}}
 .large-type .auth-app.entry-page .auth-main{grid-template-columns:minmax(0,560px)}.large-type .auth-app.entry-page .auth-intro{display:none}.large-type .auth-app.entry-page .auth-panel{max-width:560px}
+
+/* Keep public introduction links reachable from mobile login and signup. */
+.auth-app.entry-page .auth-footer{display:flex;flex-wrap:wrap}
+@media(max-width:760px){.auth-app.entry-page .auth-footer{padding:4px 12px max(4px,env(safe-area-inset-bottom));gap:0 12px;font-size:.65rem}.auth-app.entry-page .auth-footer-brand{display:none}}
