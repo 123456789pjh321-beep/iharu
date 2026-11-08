@@ -159,3 +159,12 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 .workspace-page .timetable-card .timetable-range{font-size:.65rem;font-weight:400}
 .workspace-page .timetable-card:hover{box-shadow:none;filter:brightness(.96)}
 @media(max-width:760px){.workspace-page .timetable-card{border-left-width:2px;padding-inline:4px}.workspace-page .timetable-card .timetable-title{font-size:.65rem}.workspace-page .timetable-card .timetable-range{font-size:.6rem}}
+
+/* Keep the picture tray and send control reachable in a short landscape viewport. */
+.workspace-page .group-chat .chat-send{margin:0}
+@media(max-height:500px){
+ .workspace-page .group-chat .chat-room-header{padding-block:4px;min-height:44px;flex-shrink:0}
+ .workspace-page .group-chat-history{padding-block:0}
+ .workspace-page .conversation-sticker-tray{grid-template-rows:64px;grid-auto-columns:64px}
+ .workspace-page .conversation-sticker-selection{min-height:32px;margin-bottom:4px}
+}

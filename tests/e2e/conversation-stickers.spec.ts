@@ -8,7 +8,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);
  await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
  const invite=await(await page.request.post('/api/v1/workspace/invite.issue',{headers:{Origin:origin},data:{consent:true}})).json();
- const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},hasTouch:true,isMobile:true}),child=await context.newPage();
+ const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},hasTouch:true,isMobile:true,extraHTTPHeaders:{'x-fixture-client':'picture-child'}}),child=await context.newPage();
  try{
   const signup=await context.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId:'picture_child',name:'그림 아이',password,code:invite.code||invite.data?.code}});expect(signup.ok(),await signup.text()).toBe(true);
   await child.goto('/child/chat');
@@ -34,6 +34,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
    const t=(await tray.boundingBox())!,i=(await input.boundingBox())!,nav=(await child.getByRole('navigation',{name:'모바일 주 메뉴'}).boundingBox())!;
    expect(t.y+t.height).toBeLessThanOrEqual(i.y);expect(i.y+i.height).toBeLessThanOrEqual(nav.y);expect(await child.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   }
+  await tray.getByRole('button',{name:'안녕 그림 선택'}).click();expect((await input.boundingBox())!.y+(await input.boundingBox())!.height).toBeLessThanOrEqual((await child.getByRole('navigation',{name:'모바일 주 메뉴'}).boundingBox())!.y);await child.screenshot({path:'test-results/picture-chat-landscape.png'});await child.getByRole('button',{name:'그림 선택 취소'}).click();
   await child.setViewportSize({width:390,height:844});await tray.getByRole('button',{name:'엄마 그림 선택'}).click();await expect(send).toBeEnabled();await child.getByRole('button',{name:'그림 선택 취소'}).click();await expect(send).toBeDisabled();
   await child.getByRole('button',{name:'다음 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
   await child.getByRole('button',{name:'이전 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBe(0);
