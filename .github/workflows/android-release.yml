@@ -51,8 +51,17 @@ jobs:
         if: steps.prior.outputs.run == ''
         with: {packages: 'platform-tools', log-accepted-android-sdk-licenses: false}
       - uses: gradle/actions/setup-gradle@v4
+        id: gradle
+        continue-on-error: true
         if: steps.prior.outputs.run == ''
         with: {gradle-version: '8.13'}
+      - name: Recover an unavailable Gradle distribution using its official checksum
+        if: steps.prior.outputs.run == '' && steps.gradle.outcome == 'failure'
+        run: |
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 180 'https://mirrors.cloud.tencent.com/gradle/gradle-8.13-bin.zip' -o "$RUNNER_TEMP/iharu-gradle.zip"
+          printf '%s  %s\n' '20f1b1176237254a6fc204d8434196fa11a4cfb387567519c61556e8710aed78' "$RUNNER_TEMP/iharu-gradle.zip" | sha256sum --check --strict -
+          unzip -q "$RUNNER_TEMP/iharu-gradle.zip" -d "$RUNNER_TEMP/iharu-gradle"
+          printf '%s\n' "$RUNNER_TEMP/iharu-gradle/gradle-8.13/bin" >> "$GITHUB_PATH"
       - name: Install SDK
         if: steps.prior.outputs.run == ''
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'

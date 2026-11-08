@@ -4,6 +4,8 @@ import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ComponentName;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Looper;
@@ -12,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import androidx.browser.customtabs.CustomTabsCallback;
 import com.google.androidbrowserhelper.trusted.QualityEnforcer;
+import com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,6 +26,18 @@ import org.robolectric.annotation.Config;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk={28,35})
 public class RuntimeRecoveryTest {
+    @Test public void browserDataManagerExistsBeforeOnlineLauncherEnablesIt() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        ComponentName component = new ComponentName(context,ManageDataLauncherActivity.class);
+        var info = context.getPackageManager().getActivityInfo(component,PackageManager.GET_META_DATA);
+        assertFalse(info.exported);
+        assertEquals("https://myiharu.com/today",info.metaData.getString("android.support.customtabs.trusted.MANAGE_SPACE_URL"));
+        assertEquals(component.getClassName(),context.getApplicationInfo().manageSpaceActivityName);
+        // This is the exact call that threw on-device when the manifest entry was absent.
+        ManageDataLauncherActivity.addSiteSettingsShortcut(context,null);
+        assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            context.getPackageManager().getComponentEnabledSetting(component));
+    }
     @Test public void oldQualityEnforcerReproducesMainThreadCrash() {
         Bundle args = new Bundle(); args.putString("crash_reason", "offline navigation fixture");
         new QualityEnforcer().extraCallbackWithResult("quality_enforcement.crash", args);
