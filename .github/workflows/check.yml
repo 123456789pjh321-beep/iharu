@@ -51,7 +51,7 @@ jobs:
           CI: 'true'
           IHARU_CI_DATABASE_URL: postgresql://postgres:isolated-ci-only@127.0.0.1:5432/iharu_ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e -- tests/e2e/timetable-gestures.spec.ts
+      - run: npm run test:e2e
       - name: Keep browser verification screenshots
         if: always()
         uses: actions/upload-artifact@v4
