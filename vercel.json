@@ -30,7 +30,7 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api(?:/|$)|assets/|\\.well-known/|manifest\\.webmanifest$|app-icon\\.svg$|icon\\.svg$).*)",
+      "source": "/((?!api(?:/|$)|assets/|\\.well-known/|sw\\.js$|manifest\\.webmanifest$|app-icon\\.svg$|icon\\.svg$).*)",
       "destination": "/index.html"
     }
   ],
@@ -55,10 +55,22 @@
           "value": "DENY"
         }
       ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
     }
   ],
   "env": {
     "DEMO_MODE": "true"
   }
 }
-

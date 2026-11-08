@@ -1,3 +1,4 @@
+import {registerConnectionFallback} from './register-service-worker';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -17,3 +18,5 @@ import './workspace-controls.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><ExperienceProvider><App/></ExperienceProvider></StrictMode>);
 
 
+
+registerConnectionFallback();
