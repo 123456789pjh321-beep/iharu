@@ -2,7 +2,7 @@ import {timetableRuns} from '../../../shared/timetable-runs';
 import {useHolidays} from './useHolidays';
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
 import {addDays,koreaToday} from '../../../shared/schedules';
-import {dailySchedules,scheduleAssignee,schedulePhase,timetableBounds,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../../../shared/workspace-schedules';
+import {dailySchedules,scheduleAssignee,schedulePhase,timetableRange,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../../../shared/workspace-schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {eventColor} from './scheduleColors';
 import {Icon} from './Icon';
@@ -12,7 +12,7 @@ import {useDaySwipe} from './useDaySwipe';
 
 const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=.8;
-const hourLabel=(hour:number)=>`${hour<12||hour===24?'오전':'오후'} ${hour%12||12}`;
+const hourLabel=(hour:number)=>hour===24?'밤 12':`${hour<12?'오전':'오후'} ${hour%12||12}`;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
 export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays((embedded?day:koreaToday()).slice(0,7));
@@ -23,10 +23,10 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  useCalendarSlide(page,period,'day',embedded);
  const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),undefined,embedded);
  const sourceItems=items.filter(item=>item.kind===(embedded?'EVENT':'REPEAT'));
- const lanes=dates.map(date=>{const events=dailySchedules(sourceItems,date,member);return {date,events,allDay:events.filter(i=>i.data.allDay),layout:timetableLayout(events)};});
+ const lanes=dates.map(date=>{const events=dailySchedules(sourceItems,date,member);return {date,events,allDay:events.filter(i=>i.data.allDay),layout:timetableLayout(events,embedded?undefined:timetableRange)};});
  const joined=timetableRuns(lanes),joinedKeys=new Set(joined.flatMap(run=>run.days.map(({date,item})=>date+':'+item.id)));
  const events=lanes.flatMap(lane=>lane.events),showToday=dates.includes(today),currentEvents=dailySchedules(sourceItems,today,member).filter(i=>!i.data.allDay&&schedulePhase(i,today,today,now)==='current');
- const timed=lanes.flatMap(lane=>lane.layout),bounds=timetableBounds(timed),startMinute=embedded?(timed.length?Math.max(0,Math.min(...timed.map(row=>row.start))-60):540):bounds.start,endMinute=embedded?1440:bounds.end;
+ const timed=lanes.flatMap(lane=>lane.layout),startMinute=embedded?(timed.length?Math.max(0,Math.min(...timed.map(row=>row.start))-60):540):timetableRange.start,endMinute=timetableRange.end;
  const firstSlot=Math.floor(startMinute/15),lastSlot=Math.ceil(endMinute/15)-1,activeSlot=Math.min(lastSlot,Math.max(firstSlot,slot));
  const ticks=[startMinute,...Array.from({length:Math.floor(endMinute/60)-Math.floor(startMinute/60)},(_,n)=>(Math.floor(startMinute/60)+n+1)*60).filter(minute=>minute-startMinute>=20&&endMinute-minute>=20),endMinute];
  const scrollToNow=()=>{const node=scroller.current;if(node)node.scrollTop=Math.max(0,(timeMinutes(koreaTime())-startMinute)*minuteHeight-node.clientHeight*.3);};

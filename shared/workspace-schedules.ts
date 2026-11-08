@@ -38,14 +38,11 @@ export function chronologicalSchedules(items:WorkspaceItem[]){return [...items].
 
 export function timeMinutes(time:string){const [hours,minutes]=time.split(':').map(Number);return hours*60+minutes;}
 export function timeLabel(minutes:number){return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
-/** Whole-hour bounds: two hours before the first start; at least one hour after the last finish. */
-export function timetableBounds(rows:ReadonlyArray<{start:number;end:number}>){
- if(!rows.length)return {start:540,end:1080};
- return {start:Math.max(0,(Math.floor(Math.min(...rows.map(row=>row.start))/60)-2)*60),end:Math.min(1440,(Math.ceil(Math.max(...rows.map(row=>row.end))/60)+1)*60)};
-}
+/** Weekly timetable always spans 06:00 through the end of the day (24:00). */
+export const timetableRange={start:360,end:1440} as const;
 /** Greedy interval packing: simultaneous events get separate columns in one time grid. */
-export function timetableLayout(items:WorkspaceItem[]){
- const rows=items.filter(i=>!i.data.allDay&&i.data.startTime&&i.data.endTime&&i.data.endTime>i.data.startTime).sort(compareScheduleTime).map(item=>({item,start:timeMinutes(item.data.startTime!),end:timeMinutes(item.data.endTime!),column:0,columns:1}));
+export function timetableLayout(items:WorkspaceItem[],range?:{start:number;end:number}){
+ const rows=items.filter(i=>!i.data.allDay&&i.data.startTime&&i.data.endTime&&i.data.endTime>i.data.startTime).sort(compareScheduleTime).map(item=>({item,start:timeMinutes(item.data.startTime!),end:timeMinutes(item.data.endTime!),column:0,columns:1})).filter(row=>!range||row.end>range.start&&row.start<range.end).map(row=>range?{...row,start:Math.max(row.start,range.start),end:Math.min(row.end,range.end)}:row);
  let group:typeof rows=[],ends:number[]=[],groupEnd=-1;
  const finish=()=>{for(const row of group)row.columns=ends.length;group=[];ends=[];};
  for(const row of rows){if(row.start>=groupEnd){finish();groupEnd=-1;}let column=ends.findIndex(end=>end<=row.start);if(column<0)column=ends.length;row.column=column;ends[column]=row.end;group.push(row);groupEnd=Math.max(groupEnd,row.end);}

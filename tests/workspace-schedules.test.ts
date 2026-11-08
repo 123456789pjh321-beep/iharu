@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {chronologicalSchedules,dailySchedules,matchesMember,scheduleAssignee,schedulePhase,timetableBounds,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../shared/workspace-schedules';
+import {chronologicalSchedules,dailySchedules,matchesMember,scheduleAssignee,schedulePhase,timetableRange,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../shared/workspace-schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../shared/workspace';
 const members:WorkspaceMember[]=[{id:'parent',name:'부모',kind:'PARENT',host:true,version:1},{id:'child',name:'서준',kind:'CHILD',host:false,version:1}];
 function event(id:string,startTime:string,extra:Partial<WorkspaceItem['data']>={}):WorkspaceItem{return {id,kind:'EVENT',data:{title:id,date:'2026-11-08',startTime,endTime:'18:00',weekdays:[],place:'',note:'',paid:false,...extra},ownerId:'parent',ownerName:'부모',mine:true,version:1};}
@@ -35,18 +35,19 @@ it('keeps every selected weekday in the same Sunday–Saturday week',()=>{
  expect(timetableWeekDates('2028-02-29')).toEqual(['2028-02-27','2028-02-28','2028-02-29','2028-03-01','2028-03-02','2028-03-03','2028-03-04']);
 });
 
-it('bounds a whole week by its earliest start and latest finish using whole hours',()=>{
- expect(timetableBounds([{start:560,end:780},{start:540,end:850},{start:1030,end:1090}])).toEqual({start:420,end:1200});
- expect(timetableBounds([{start:550,end:1090}])).toEqual({start:420,end:1200});
- expect(timetableBounds([{start:495,end:805}])).toEqual({start:360,end:900});
+it('clips weekly events at 06:00 without moving or mutating their original times',()=>{
+ const before=event('before','05:00',{endTime:'06:00'}),crossing=event('crossing','05:30',{endTime:'06:30'}),morning=event('morning','06:15',{endTime:'07:00'}),late=event('late','23:30',{endTime:'23:59'});
+ const rows=timetableLayout([before,crossing,morning,late],timetableRange);
+ expect(rows.map(({item,start,end,column,columns})=>({id:item.id,start,end,column,columns}))).toEqual([
+  {id:'crossing',start:360,end:390,column:0,columns:2},{id:'morning',start:375,end:420,column:1,columns:2},{id:'late',start:1410,end:1439,column:0,columns:1}
+ ]);
+ expect(crossing.data.startTime).toBe('05:30');expect(timetableLayout([before,crossing])[0].start).toBe(300);
 });
-it('caps the visible schedule range at midnight without extending into another day',()=>{
- expect(timetableBounds([{start:5,end:35}])).toEqual({start:0,end:120});
- expect(timetableBounds([{start:1390,end:1435}])).toEqual({start:1260,end:1440});
-});
-it('keeps an empty or all-day-only week usable without a midnight-length grid',()=>{
- expect(timetableBounds([])).toEqual({start:540,end:1080});
- expect(timetableBounds(timetableLayout([event('anniversary','00:00',{allDay:true})]))).toEqual({start:540,end:1080});
+it('keeps empty, filtered and all-day-only timetables within the same fixed range',()=>{
+ expect(timetableRange).toEqual({start:360,end:1440});
+ expect(timetableLayout([],timetableRange)).toEqual([]);
+ expect(timetableLayout([event('anniversary','00:00',{allDay:true})],timetableRange)).toEqual([]);
+ expect(timetableLayout([event('early','00:05',{endTime:'00:35'})],timetableRange)).toEqual([]);
 });
 
 it('expands calendar daily and weekly recurrence inclusively without turning it into timetable repeats',()=>{
