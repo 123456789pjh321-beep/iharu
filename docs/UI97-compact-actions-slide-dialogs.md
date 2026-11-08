@@ -1,0 +1,26 @@
+# 등록 버튼·슬라이딩 창·메신저·3일 시간표
+
+2026-11-08. 기존 Android TWA와 브라우저에 공통 적용하는 웹 패치.
+
+- 시간표·달력·학원비·메모·반복 일정의 추가 버튼을 56px 원형 +로 통일한다. 오늘 일정 및 날짜별 일정 창의 추가 버튼, 편집 상단 저장도 +로 표시한다. 접근성 이름과 마우스 안내는 각각 등록/저장 의미를 유지한다.
+- 공통 개인 편집창과 날짜별 일정 창은 아래에서 올라와 열리고, 아래로 내려간 다음 닫힌다. 등록·수정·복사·저장·삭제 후 닫기와 Escape/닫기 버튼에서 동일하게 적용한다. 인증 또는 접근 권한이 사라지는 경우는 지연하지 않고 즉시 제거한다.
+- 닫히는 동안 원래 모달의 포커스 경계를 유지하고 추가 클릭을 차단한다. 미저장 확인 취소 시 내용과 화면을 유지한다. API 실패에는 창을 닫지 않는다. 시스템/기존 화면 설정의 동작 줄이기 및 백그라운드 전환을 고려한다.
+- 대화 입력창·이모티콘 버튼·전송 버튼은 기본 44px 높이로 정렬한다. 전송 글자는 제거하고 종이비행기 아이콘과 접근성 이름을 유지한다. 이모티콘 목록은 입력 바로 위에 놓는다. 여러 줄 입력은 최대 132px까지 커지며, 비우거나 전송하면 기본 높이로 돌아간다.
+- 시간표는 처음에 오늘·내일·모레 3일을 같은 시간축의 3열로 표시한다. 날짜 선택/스와이프 후에는 시작일부터 3일을 표시한다. 시간 눈금은 1시간, 1시간 높이는 48px이며 일정 카드는 제목과 시간으로 간소화한다. 구성원은 필터·접근성 이름·상세에서 확인하며 장소/반복은 상세에서 확인한다. 주말·월 경계·연도 경계 및 기존 스와이프 탐색을 유지한다.
+
+검증 범위: 아이콘의 접근성 이름, 추가·저장·미저장 취소, 열기/닫기 이동 방향과 닫기 완료 전 모달 유지, 동작 줄이기, 포커스 복원, 3일 열/시간 배치/연도 경계, 입력창 높이와 여러 줄 입력, 이모티콘 위치. 320/390/820/1024/1440px 및 기존 브라우저 회귀 검사를 수행한다. 실물 Android 키보드 검증을 대체하지 않는다.
+
+추가: PlusButton.tsx, useSlidingDialog.ts, compact-actions.spec.ts, 본 문서.
+수정: WorkspaceToolbar.tsx, CalendarDaySheet.tsx, PersonalWorkspace.tsx, PersonalFees.tsx, PersonalChat.tsx, PersonalTimetable.tsx, compact-workspace.css, calendar-holidays-layout.spec.ts, timetable-gestures.spec.ts, direct-workspace.spec.ts, daily-calendar.spec.ts.
+삭제: 없음.
+
+## UI98 — 달력 동일 일정 연결 표시
+- 월간·주간에서 제목, 대상, 시간, 장소, 메모, 색상, 작성자가 같은 연속 날짜를 한 막대로 표시합니다. 주 경계와 일정이 없는 날에는 나눕니다.
+- 같은 날의 동일 항목은 한 표시로 묶되 `N건`을 표시하고 날짜 상세에서 각 원본을 확인합니다. 데이터 병합·삭제나 권한 변경은 없습니다.
+- 막대를 누른 날짜의 원본 일정이 열리고, 날짜 숫자·더 보기에서는 모든 일정을 개별로 확인할 수 있습니다.
+- 추가: `shared/calendar-layout.ts`, `web/src/components/CalendarWeekRow.tsx`, `tests/calendar-layout.test.ts`, `tests/e2e/calendar-merged-events.spec.ts`. 수정: `PersonalCalendar.tsx`, `compact-workspace.css`, 관련 회귀 검사. 삭제 없음.
+
+## 공개 문서 비로그인 메뉴 수정
+- `/legal/terms`, `/legal/privacy`, `/legal/children`, `/privacy`에서 인증 확인 전·비로그인·로그아웃 후에는 앱 하단 메뉴를 생성하지 않습니다. 로그인 사용자의 메뉴는 유지합니다.
+- 공개 문서의 하단 메뉴 여백을 없애고 약관·개인정보 링크가 있는 일반 푸터를 표시합니다.
+- 수정: `AuthLayout.tsx`, `compact-workspace.css`. 추가: `public-legal-navigation.spec.ts`.

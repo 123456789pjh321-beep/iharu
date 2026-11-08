@@ -1,14 +1,15 @@
+import {CalendarWeekRow} from './CalendarWeekRow';
 import {CalendarDaySheet} from './CalendarDaySheet';
 import {useHolidays} from './useHolidays';
-import {useState,useRef,useEffect,type CSSProperties} from 'react';
+import {useState,useRef,useEffect} from 'react';
 import {MemberFilter} from './MemberFilter';
 import {DateNavigator,WorkspaceToolbar} from './WorkspaceToolbar';
 import {PersonalTimetable} from './PersonalTimetable';
-import {calendarColors,eventColor} from './scheduleColors';
+import {calendarColors} from './scheduleColors';
 export {calendarColors,eventColor} from './scheduleColors';
 import {addDays,koreaToday} from '../../../shared/schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
-import {dailySchedules,matchesMember,scheduleAssignee} from '../../../shared/workspace-schedules';
+import {dailySchedules,matchesMember} from '../../../shared/workspace-schedules';
 export {visibleOn} from '../../../shared/workspace-schedules';
 import {useCalendarSlide} from './useCalendarSlide';
 const weekdays=['일','월','화','수','목','금','토'];
@@ -32,9 +33,7 @@ export function PersonalCalendar({month,day,items,members,loading=false,setMonth
  </WorkspaceToolbar>
  <MemberFilter members={members} value={member} onChange={setMember} label="달력 구성원 필터"/>
  {view==='day'?<PersonalTimetable embedded day={day} items={shown} members={members} loading={loading} setDay={selectDay} create={create} edit={edit}/>:<><div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div><div className="calendar-viewport"><div ref={grid} className={'calendar-grid '+(view==='week'?'week-view':'')} onPointerDown={e=>{if(e.button===0&&e.isPrimary)gesture.current={x:e.clientX,y:e.clientY};}} onPointerMove={e=>{const g=gesture.current;if(g&&Math.abs(e.clientX-g.x)>20&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5)e.currentTarget.setPointerCapture(e.pointerId);}} onPointerCancel={()=>{gesture.current=null;}} onPointerUp={e=>{const g=gesture.current;gesture.current=null;if(g&&Math.abs(e.clientX-g.x)>60&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5){suppressClick.current=Date.now()+350;move(e.clientX<g.x?1:-1);}}} onClickCapture={e=>{if(Date.now()<suppressClick.current){e.preventDefault();e.stopPropagation();}}}>
- {dates.map(date=>{const events=dailySchedules(shown,date),inMonth=date.slice(0,7)===month,holiday=holidays.name(date),dow=new Date(date+'T12:00:00Z').getUTCDay();return <div key={date} className={'calendar-cell '+(holiday||dow===0?'holiday-date ':dow===6?'saturday-date ':'')+(!inMonth?'outside ':'')+(date===day?'selected ':'')+(date===today?'is-today':'')} data-date={date}>
- <button type="button" className="calendar-day-target" aria-label={`${date}${holiday?' '+holiday:''} 일정 보기`} aria-pressed={day===date} onClick={()=>{setDay(date);if(!inMonth)setMonth(date.slice(0,7));setDetail(date);}}><span>{Number(date.slice(8))}</span>{date===today&&<small>오늘</small>}</button>
- <div className="calendar-cell-events">{holiday&&<span className="calendar-holiday" title={holiday}>{holiday}</span>}{events.slice(0,view==='week'?10:3).map(item=><button key={item.id} type="button" className="calendar-event" title={scheduleAssignee(item,members)} style={{'--event-color':eventColor(item,members)} as CSSProperties} onClick={()=>{setDay(date);edit(item);}} aria-label={`${item.data.title} · ${item.data.allDay?'종일':item.data.startTime} · ${item.mine?'수정':'상세'}`}><span className="event-time">{item.data.allDay?'종일':item.data.startTime}</span><strong>{item.data.allMembers&&<span className="calendar-all-members">전체 · </span>}{item.data.title}</strong></button>)}{events.length>(view==='week'?10:3)&&<button type="button" className="calendar-overflow" onClick={()=>{setDay(date);setDetail(date);}}>+{events.length-(view==='week'?10:3)}개</button>}</div></div>;})}
+ {Array.from({length:dates.length/7},(_,index)=><CalendarWeekRow key={dates[index*7]} dates={dates.slice(index*7,index*7+7)} items={shown} members={members} month={month} day={day} today={today} weekView={view==='week'} holidayName={holidays.name} openDay={date=>{setDay(date);if(date.slice(0,7)!==month)setMonth(date.slice(0,7));setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
  </div></div></>}<div className="calendar-legend">{members.map((m,n)=><span key={m.id}><i style={{background:calendarColors[n%calendarColors.length]}}/>{m.name}</span>)}</div>
  {holidays.unavailable&&<p className="holiday-status" role="status">이 연도의 공휴일 정보를 확인하지 못했어요.</p>}
  {detail&&<CalendarDaySheet date={detail} holiday={holidays.name(detail)} items={dailySchedules(shown,detail)} members={members} loading={loading} close={()=>setDetail(null)} create={()=>{setDetail(null);create(detail);}} edit={item=>{setDetail(null);edit(item);}}/>}

@@ -25,14 +25,14 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
   const daily=page.getByRole('region',{name:'일간 일정',exact:true});
   await expect(daily).toBeVisible();await expect(page.getByLabel('달력 날짜 선택')).toHaveValue(today);
   await expect(daily.locator('.timetable-title')).toHaveText(['가족 기념일','자녀 수업','부모 회의']);
-  await expect(daily.locator('.timetable-person')).toHaveText(['전체','가상 서하','일간 부모']);
+  await expect(daily.locator('.timetable-card').nth(0)).toHaveAccessibleName(/전체/);await expect(daily.locator('.timetable-card').nth(1)).toHaveAccessibleName(/가상 서하/);await expect(daily.locator('.timetable-card').nth(2)).toHaveAccessibleName(/일간 부모/);
   await expect(page.locator('.timetable-toolbar,.timetable-filters,.calendar-weekdays')).toHaveCount(0);
   const memberFilter=page.getByRole('group',{name:'달력 구성원 필터'});
   await expect(page.getByRole('textbox',{name:/일정 검색/})).toHaveCount(0);
   await memberFilter.getByRole('button',{name:'가상 서하',exact:true}).click();await expect(daily.locator('.timetable-title')).toHaveText(['가족 기념일','자녀 수업']);
   await memberFilter.getByRole('button',{name:'일간 부모',exact:true}).click();await expect(daily.locator('.timetable-title')).toHaveText(['가족 기념일','부모 회의']);
   await memberFilter.getByRole('button',{name:'전체 보기',exact:true}).click();
-  for(const width of [320,390,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(daily.locator('.timetable-person').filter({hasText:'가상 서하'})).toBeVisible();await page.screenshot({path:`test-results/ui82-calendar-daily-${width}.png`});}
+  for(const width of [320,390,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(daily.getByRole('button',{name:/자녀 수업 · 가상 서하/})).toBeVisible();await page.screenshot({path:`test-results/ui82-calendar-daily-${width}.png`});}
   await page.setViewportSize({width:390,height:844});await page.getByRole('button',{name:'어둡게',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
   // Theme colors transition briefly; verify the settled text contrast before capturing.
@@ -45,10 +45,10 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
   })).toBeGreaterThanOrEqual(4.5);
   await page.screenshot({path:'test-results/ui82-calendar-daily-dark.png',animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();
   await page.getByRole('button',{name:today+' 15:30 일정 등록',exact:true}).click();await expect(page.getByLabel('시작 시간',{exact:true})).toHaveValue('15:30');await page.getByLabel('제목',{exact:true}).fill('가족 산책');await page.getByLabel('가족 구성원',{exact:true}).selectOption('ALL');await page.getByRole('button',{name:'저장',exact:true}).click();
-  await expect(daily.locator('.timetable-card').filter({hasText:'가족 산책'}).locator('.timetable-person')).toHaveText('전체');
+  await expect(daily.locator('.timetable-card').filter({hasText:'가족 산책'})).toHaveAccessibleName(/전체/);
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'시간표',exact:true}).click();await expect(page.locator('.timetable-card').filter({hasText:'가족 산책'})).toContainText('15:30');
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'달력',exact:true}).click();await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'일간',exact:true}).click();
-  await daily.locator('.timetable-card').filter({hasText:'가족 산책'}).click();await page.getByLabel('가족 구성원',{exact:true}).selectOption(childId);await page.getByLabel('제목',{exact:true}).fill('서하 산책');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(daily.locator('.timetable-card').filter({hasText:'서하 산책'}).locator('.timetable-person')).toHaveText('가상 서하');
+  await daily.locator('.timetable-card').filter({hasText:'가족 산책'}).click();await page.getByLabel('가족 구성원',{exact:true}).selectOption(childId);await page.getByLabel('제목',{exact:true}).fill('서하 산책');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(daily.locator('.timetable-card').filter({hasText:'서하 산책'})).toHaveAccessibleName(/가상 서하/);
   await page.getByLabel('달력 날짜 선택').fill('2026-11-30');await page.getByLabel('달력 날짜 선택').fill('2026-12-01');await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2026-12-01');await page.getByLabel('달력 날짜 선택').fill('2026-11-30');await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2026-11-30');
   await page.getByLabel('달력 날짜 선택').fill(today);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue(today);
   await page.getByLabel('달력 날짜 선택').fill(addDays(today,1));await expect(page.getByLabel('달력 날짜 선택')).toHaveValue(addDays(today,1));await page.getByLabel('달력 날짜 선택').fill(today);
@@ -68,6 +68,6 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
   await page.getByLabel('조회 월',{exact:true}).fill(addDays(today.slice(0,7)+'-28',4).slice(0,7));await expect(feeFilter.getByRole('button',{name:'가상 서하',exact:true})).toHaveAttribute('aria-pressed','true');await expect(page.locator('.personal-tuition-item')).toHaveCount(1);await expect(page.locator('.personal-fee-summary')).toContainText('200,000원');
   await feeFilter.getByRole('button',{name:'일간 부모',exact:true}).click();await expect(page.locator('.personal-tuition-item')).toHaveCount(0);await expect(page.locator('.personal-fee-summary')).toContainText('0원');
   await page.getByLabel('조회 월',{exact:true}).fill(today.slice(0,7));await expect(page.locator('.personal-tuition-item')).toHaveCount(4);await expect(page.locator('.personal-fee-summary')).toContainText('100,000원');await feeFilter.getByRole('button',{name:'전체 보기',exact:true}).click();await expect(page.locator('.personal-tuition-item')).toHaveCount(6);
-  await page.goto('/today/calendar');await expect(page.getByRole('textbox',{name:/일정 검색/})).toHaveCount(0);await memberFilter.getByRole('button',{name:'가상 서하',exact:true}).click();await expect(page.locator('.calendar-cell[data-date="'+today+'"] .calendar-event')).toHaveCount(2);await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await expect(page.locator('.calendar-cell[data-date="'+today+'"] .calendar-event')).toHaveCount(2);await page.screenshot({path:'test-results/ui83-calendar-member-buttons.png',animations:'disabled'});
+  await page.goto('/today/calendar');await expect(page.getByRole('textbox',{name:/일정 검색/})).toHaveCount(0);await memberFilter.getByRole('button',{name:'가상 서하',exact:true}).click();await expect(page.locator('.calendar-event[data-dates~="'+today+'"]')).toHaveCount(2);await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await expect(page.locator('.calendar-event[data-dates~="'+today+'"]')).toHaveCount(2);await page.screenshot({path:'test-results/ui83-calendar-member-buttons.png',animations:'disabled'});
  } finally {await childRequest.dispose();}
 });

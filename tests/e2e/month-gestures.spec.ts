@@ -30,7 +30,7 @@ test('tuition and notes swipe across months while filters, taps, scrolling and r
   const filter=page.getByRole('group',{name:'학원비 구성원 필터'}),selected=filter.getByRole('button',{name:'월 이동 부모',exact:true});await selected.click();
   await swipe(area.locator('.personal-tuition-item').first(),true);await expect(month).toHaveValue('2027-01');await settled();
   await expect(area.locator('.personal-fee-summary')).toContainText('100,000원');await expect(selected).toHaveAttribute('aria-pressed','true');await expect(page.getByRole('dialog')).toHaveCount(0);
-  await area.getByRole('button',{name:'매월 학원 수정',exact:true}).tap();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
+  await area.getByRole('button',{name:'매월 학원 수정',exact:true}).tap();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   await swipe(area,false);await expect(month).toHaveValue('2026-12');await settled();await expect(area.locator('.personal-fee-summary')).toContainText('120,000원');
   await swipe(filter,true);await expect(month).toHaveValue('2026-12');await expect(selected).toHaveAttribute('aria-pressed','true');
   await swipe(area,true,true);await expect(month).toHaveValue('2026-12');await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -41,10 +41,10 @@ test('tuition and notes swipe across months while filters, taps, scrolling and r
   const before=await scrollPosition();await touch({x:260,y:600},{x:263,y:350});await expect.poll(scrollPosition).toBeGreaterThan(before+50);await expect(month).toHaveValue('2026-12');
   await page.locator('.workspace-toolbar').scrollIntoViewIfNeeded();await page.waitForTimeout(400);
   await swipe(area,true);await expect(month).toHaveValue('2027-01');await settled();await expect(area.getByRole('button',{name:'1월 메모 수정',exact:true})).toBeVisible();await expect(area.getByRole('button',{name:'12월 메모 수정',exact:true})).toHaveCount(0);await expect(page.getByRole('dialog')).toHaveCount(0);
-  await area.getByRole('button',{name:'1월 메모 수정',exact:true}).tap();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('1월 메모');await page.getByRole('button',{name:'편집 닫기'}).click();
+  await area.getByRole('button',{name:'1월 메모 수정',exact:true}).tap();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('1월 메모');await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   await swipe(area,true);await expect(month).toHaveValue('2027-02');await settled();await expect(area.getByRole('button',{name:'눌러서 등록',exact:true})).toBeVisible();
   await swipe(area,true);await expect(month).toHaveValue('2027-03');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('button',{name:'메모 추가',exact:true}).click();await expect(page.locator('#personal-date')).toHaveValue('2027-03-01');await page.getByRole('button',{name:'편집 닫기'}).click();
+  await page.getByRole('button',{name:'메모 추가',exact:true}).click();await expect(page.locator('#personal-date')).toHaveValue('2027-03-01');await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:'test-results/ui92-empty-notes-swipe-390.png',animations:'disabled'});
 
   await page.setViewportSize({width:1440,height:1000});

@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
 import {Icon} from './Icon';
+import {PlusButton} from './PlusButton';
 
 const weekdays=['일','월','화','수','목','금','토'];
 
@@ -8,7 +9,7 @@ export function WorkspaceToolbar({title,navigation,createLabel,onCreate,children
   <h1 className="sr-only">{title}</h1>
   {navigation}
   {children&&<div className="workspace-toolbar-actions">{children}</div>}
- </header><button type="button" className="button primary workspace-add-action" aria-label={createLabel} title={createLabel} onClick={onCreate}><Icon name="plus"/><span>{createLabel}</span></button></>;
+ </header><PlusButton className="workspace-add-action" label={createLabel} onClick={onCreate}/></>;
 }
 
 export function DateNavigator({type,value,inputLabel,onChange}:{
