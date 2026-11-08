@@ -3,7 +3,7 @@ test.use({baseURL:'http://127.0.0.1:4174'});
 async function login(page:Page,request:APIRequestContext,email:string,ready=true){
  await page.request.post('/api/auth/sign-up/email',{headers:{Origin:'http://127.0.0.1:4174'},data:{email,password:'browser-family-password-2026',name:'가상 보호자',callbackURL:'/login?verified=1'}});
  const mail=await(await request.get('/__test__/mail')).json();const m=mail.find((m:{to:string})=>m.to===email);await page.goto(m.url);
- await page.getByLabel('이메일',{exact:true}).fill(email);await page.getByLabel('비밀번호',{exact:true}).fill('browser-family-password-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
+ await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill('browser-family-password-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
  if(ready)expect((await request.post('/__test__/ready',{data:{email}})).ok()).toBe(true);
 }
 test('family creation → verified fixture consent → child → separate device pairing → immediate revocation',async({page,browser,request})=>{

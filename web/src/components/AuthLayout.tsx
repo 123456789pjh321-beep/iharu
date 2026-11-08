@@ -27,9 +27,12 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
     </main><footer className="auth-footer">아이하루 · 가족의 하루를 잇다 <Link to="/legal/terms">이용약관</Link><Link to="/legal/privacy">개인정보처리방침</Link><Link to="/privacy">개인정보 관리</Link></footer>
   </div>;
 }
-export function PasswordField({ label='비밀번호', name='password', fresh=false,minimum }: { label?:string; name?:string; fresh?:boolean;minimum?:number }) {
+export function LoginActions({busy=false,ready=true,child=false}:{busy?:boolean;ready?:boolean;child?:boolean}) {
+  return <div className="auth-login-actions"><button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!ready?'이메일 로그인 준비 중':'로그인'}</button><Link className="button full" to={child?'/signup?role=child':'/signup'}>회원가입</Link></div>;
+}
+export function PasswordField({ label='암호', name='password', fresh=false,minimum }: { label?:string; name?:string; fresh?:boolean;minimum?:number }) {
   const [visible,setVisible] = useState(false);
-  return <div className="form-field"><label htmlFor={name}>{label}</label><div className="password-field"><input id={name} name={name} type={visible?'text':'password'} minLength={minimum??(fresh?12:1)} maxLength={128} required autoComplete={fresh?'new-password':'current-password'} aria-describedby={fresh?`${name}-hint`:undefined}/><button type="button" aria-pressed={visible} onClick={()=>setVisible(v=>!v)} aria-label={visible?'비밀번호 숨기기':'비밀번호 표시'}>{visible?'숨기기':'표시'}</button></div>{fresh&&<small id={`${name}-hint`}>{minimum??12}~128자로 입력해 주세요. 붙여넣기도 가능해요.</small>}</div>;
+  return <div className="form-field"><label htmlFor={name}>{label}</label><div className="password-field"><input id={name} name={name} type={visible?'text':'password'} minLength={minimum??(fresh?12:1)} maxLength={128} required autoComplete={fresh?'new-password':'current-password'} aria-describedby={fresh?`${name}-hint`:undefined}/><button type="button" aria-pressed={visible} onClick={()=>setVisible(v=>!v)} aria-label={`${label} ${visible?'숨기기':'표시'}`}>{visible?'숨기기':'표시'}</button></div>{fresh&&<small id={`${name}-hint`}>{minimum??12}~128자로 입력해 주세요. 붙여넣기도 가능해요.</small>}</div>;
 }
 export function FormNotice({ error, message }: { error?:string; message?:string }) {
   return <>{error&&<div className="auth-notice error" role="alert">{error}</div>}{message&&<div className="auth-notice" role="status">{message}</div>}</>;

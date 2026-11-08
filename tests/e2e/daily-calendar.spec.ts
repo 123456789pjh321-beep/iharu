@@ -10,7 +10,7 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
  await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'일간 부모',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();
  await page.goto(mails.find((m:{to:string})=>m.to===email).url);
- await page.getByLabel('이메일',{exact:true}).fill(email);await page.getByLabel('비밀번호',{exact:true}).fill(password);
+ await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill(password);
  await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByRole('heading',{name:'오늘의 일정',exact:true})).toBeVisible();
  await page.goto('/family');await page.getByRole('checkbox',{name:/부모·보호자이며/}).check();await page.getByRole('button',{name:'부모 승인번호 발급'}).click();
  const code=await page.locator('.personal-invite-code strong').innerText();

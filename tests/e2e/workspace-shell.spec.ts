@@ -12,9 +12,9 @@ async function login(page: Page, request: APIRequestContext, email: string) {
   });
   const mail = await (await request.get("/__test__/mail")).json();
   await page.goto(mail.find((m: { to: string }) => m.to === email).url);
-  await page.getByLabel("이메일", { exact: true }).fill(email);
+  await page.getByLabel("아이디", { exact: true }).fill(email);
   await page
-    .getByLabel("비밀번호", { exact: true })
+    .getByLabel("암호", { exact: true })
     .fill("household-browser-password-2026");
   await page.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(
