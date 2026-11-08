@@ -88,29 +88,31 @@ test('tuition recurrence, designated payer, parent-only home, navigation and fix
 test('today schedule and tuition member filters stay independent with collapsed totals and narrow screens',async({page,browser,request})=>{
  test.setTimeout(90000);await page.setViewportSize({width:390,height:844});await login(page,request,'today-filters@example.test','필터 부모');
  const api=async(op:string,data:object={})=>{const r=await page.request.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();};
- for(const [loginId,name] of [['today_filter_one','필터 자녀 하나'],['today_filter_two','필터 자녀 둘']]){
+ // Use separately authenticated family members so this filter scenario does not consume
+ // the shared test server's IP-wide child-signup quota used by child-account scenarios.
+ for(const [email,name] of [['today-filter-one@example.test','필터 가족 하나'],['today-filter-two@example.test','필터 가족 둘']]){
   const code=await issue(page),ctx=await browser.newContext({baseURL:origin});
-  try{const r=await ctx.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId,name,password:'fixture-child-2026',code}});expect(r.ok(),await r.text()).toBe(true);}finally{await ctx.close();}
+  try{const other=await ctx.newPage();await login(other,request,email,name);const r=await ctx.request.post('/api/v1/workspace/family.join',{headers:{Origin:origin},data:{code}});expect(r.ok(),await r.text()).toBe(true);}finally{await ctx.close();}
  }
- const me=await api('me'),one=me.family.members.find((m:{name:string})=>m.name==='필터 자녀 하나').id,two=me.family.members.find((m:{name:string})=>m.name==='필터 자녀 둘').id,today=koreaToday();
+ const me=await api('me'),one=me.family.members.find((m:{name:string})=>m.name==='필터 가족 하나').id,two=me.family.members.find((m:{name:string})=>m.name==='필터 가족 둘').id,today=koreaToday();
  const event=(title:string,startTime:string,extra:object)=>api('items.create',{kind:'EVENT',data:{title,date:today,startTime,endTime:'22:00',...extra}});
  await event('둘 오후 수업','16:00',{assigneeId:two});await event('하나 오전 수업','09:00',{assigneeId:one});await event('부모 일정','08:00',{assigneeId:me.id});await event('가족 전체 일정','18:00',{allMembers:true});
  await api('items.create',{kind:'FEE',data:{title:'하나 피아노',date:today,amount:180000,feeFrequency:'MONTHLY',assigneeId:one,feePayerId:me.id,untilDate:today.slice(0,4)+'-12-31'}});
  await api('items.create',{kind:'FEE',data:{title:'둘 교재',date:today,amount:60000,feeFrequency:'ONCE',assigneeId:two,feePayerId:me.id}});
  await page.goto('/today');const schedule=page.getByRole('region',{name:'오늘의 일정',exact:true}),fees=page.getByRole('region',{name:'학원비',exact:true}),sf=schedule.getByRole('group',{name:'오늘 일정 구성원 필터'}),ff=fees.getByRole('group',{name:'오늘 학원비 구성원 필터'});
  await expect(schedule.locator('.personal-item h3')).toHaveText(['부모 일정','하나 오전 수업','둘 오후 수업','가족 전체 일정']);await expect(fees.locator('summary strong')).toHaveText('240,000원');await expect(ff).toBeVisible();await expect(fees.locator('details')).not.toHaveAttribute('open','');
- await sf.getByRole('button',{name:'필터 자녀 하나',exact:true}).click();await expect(schedule.locator('.personal-item h3')).toHaveText(['하나 오전 수업','가족 전체 일정']);await expect(sf.getByRole('button',{name:'필터 자녀 하나',exact:true})).toHaveAttribute('aria-pressed','true');
- await ff.getByRole('button',{name:'필터 자녀 둘',exact:true}).click();await expect(fees.locator('summary strong')).toHaveText('60,000원');await expect(fees.locator('summary')).toContainText('필터 자녀 둘 합계');await expect(fees.locator('details')).not.toHaveAttribute('open','');await expect(fees.locator('.personal-tuition-item')).toBeHidden();await expect(schedule.locator('.personal-item h3')).toHaveText(['하나 오전 수업','가족 전체 일정']);
+ await sf.getByRole('button',{name:'필터 가족 하나',exact:true}).click();await expect(schedule.locator('.personal-item h3')).toHaveText(['하나 오전 수업','가족 전체 일정']);await expect(sf.getByRole('button',{name:'필터 가족 하나',exact:true})).toHaveAttribute('aria-pressed','true');
+ await ff.getByRole('button',{name:'필터 가족 둘',exact:true}).click();await expect(fees.locator('summary strong')).toHaveText('60,000원');await expect(fees.locator('summary')).toContainText('필터 가족 둘 합계');await expect(fees.locator('details')).not.toHaveAttribute('open','');await expect(fees.locator('.personal-tuition-item')).toBeHidden();await expect(schedule.locator('.personal-item h3')).toHaveText(['하나 오전 수업','가족 전체 일정']);
  await fees.locator('summary').click();await expect(fees.locator('.personal-tuition-item h3')).toHaveText(['둘 교재']);await expect(fees.locator('.personal-tuition-item')).toBeVisible();
- await ff.getByRole('button',{name:'필터 자녀 하나',exact:true}).click();await expect(fees.locator('details')).toHaveAttribute('open','');await expect(fees.locator('summary strong')).toHaveText('180,000원');await expect(fees.locator('.personal-tuition-item h3')).toHaveText(['하나 피아노']);
- await sf.getByRole('button',{name:'필터 자녀 둘',exact:true}).click();await expect(schedule.locator('.personal-item h3')).toHaveText(['둘 오후 수업','가족 전체 일정']);await expect(fees.locator('summary strong')).toHaveText('180,000원');
+ await ff.getByRole('button',{name:'필터 가족 하나',exact:true}).click();await expect(fees.locator('details')).toHaveAttribute('open','');await expect(fees.locator('summary strong')).toHaveText('180,000원');await expect(fees.locator('.personal-tuition-item h3')).toHaveText(['하나 피아노']);
+ await sf.getByRole('button',{name:'필터 가족 둘',exact:true}).click();await expect(schedule.locator('.personal-item h3')).toHaveText(['둘 오후 수업','가족 전체 일정']);await expect(fees.locator('summary strong')).toHaveText('180,000원');
  await ff.getByRole('button',{name:'필터 부모',exact:true}).click();await expect(fees.locator('summary strong')).toHaveText('0원');await expect(fees.locator('.personal-tuition-item')).toHaveCount(0);await expect(fees.getByText('필터 부모의 이번 달 학원비가 없어요.',{exact:true})).toBeVisible();
  await ff.getByRole('button',{name:'전체 보기',exact:true}).click();await sf.getByRole('button',{name:'전체 보기',exact:true}).click();await expect(fees.locator('summary strong')).toHaveText('240,000원');await expect(fees.locator('.personal-tuition-item')).toHaveCount(2);await expect(schedule.locator('.personal-item')).toHaveCount(4);
  for(const width of [320,390,768,1320]){
   await page.setViewportSize({width,height:1000});
   for(const filter of [sf,ff]){
    await filter.scrollIntoViewIfNeeded();await expect(filter).toBeVisible();expect(await filter.evaluate(el=>el.clientHeight>=38&&el.scrollHeight<=el.clientHeight+1)).toBe(true);
-   await filter.getByRole('button',{name:'필터 자녀 둘',exact:true}).click();await expect(filter.getByRole('button',{name:'필터 자녀 둘',exact:true})).toBeInViewport();
+   await filter.getByRole('button',{name:'필터 가족 둘',exact:true}).click();await expect(filter.getByRole('button',{name:'필터 가족 둘',exact:true})).toBeInViewport();
   }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/ui87-today-filters-${width}.png`,fullPage:true});
  }
