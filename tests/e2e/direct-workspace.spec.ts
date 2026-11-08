@@ -119,9 +119,37 @@ test('today schedule and tuition member filters stay independent with collapsed 
 });
 
 for(const width of [320,768,1440])test(`all functional canvases and calendar editor fit ${width}px`,async({page,request})=>{
- test.setTimeout(60000);await page.setViewportSize({width,height:900});await login(page,request,`direct-layout-${width}@example.test`);
+ test.setTimeout(90000);await page.setViewportSize({width,height:900});await login(page,request,`direct-layout-${width}@example.test`);
  await expect.poll(()=>page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);await page.screenshot({path:`test-results/ui78-today-${width}.png`});
- for(const path of ['/today','/timetable','/today/calendar','/tuition','/records','/family','/chat','/account']){await page.goto(path);await expect(page.locator('.auth-panel')).toBeVisible();await expect(page.locator('.auth-panel')).toHaveCSS('padding','0px');await expect(page.locator('.loading-state')).toHaveCount(0);await expect.poll(()=>page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);if(['/tuition','/family','/account'].includes(path))await page.screenshot({path:`test-results/ui78-${path.slice(1)}-${width}.png`});await expect(page.locator('.workspace-tabs,.personal-context')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+ for(const path of ['/today','/timetable','/today/calendar','/tuition','/records','/family','/chat','/account']){
+  await page.goto(path);await expect(page.locator('.auth-panel')).toBeVisible();await expect(page.locator('.auth-panel')).toHaveCSS('padding','0px');await expect(page.locator('.loading-state')).toHaveCount(0);
+  await expect.poll(()=>page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  if(['/timetable','/today/calendar','/tuition','/records'].includes(path)){
+   const toolbar=page.locator('.workspace-toolbar'),navigation=toolbar.getByRole('group',{name:'날짜 이동',exact:true});
+   await expect(toolbar).toHaveCount(1);
+   const controls=await navigation.locator('button,.workspace-date-picker').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,height:r.height};}));
+   expect(controls).toHaveLength(4);
+   for(let i=0;i<controls.length;i++){expect(controls[i].height).toBeGreaterThanOrEqual(44);if(i){expect(controls[i].x).toBeGreaterThanOrEqual(controls[i-1].right);expect(controls[i].y).toBe(controls[0].y);}}
+   const toolbarBox=(await toolbar.boundingBox())!,actionBox=(await toolbar.locator('.workspace-toolbar-actions').boundingBox())!;
+   expect(actionBox.x+actionBox.width).toBeLessThanOrEqual(toolbarBox.x+toolbarBox.width);expect(actionBox.y+actionBox.height).toBeLessThanOrEqual(toolbarBox.y+toolbarBox.height);
+   if(path!=='/records'){
+    const filter=page.locator('.member-filters'),filterBox=(await filter.boundingBox())!;
+    expect(filterBox.y).toBeGreaterThanOrEqual(toolbarBox.y+toolbarBox.height-1);
+    for(const button of await filter.getByRole('button').all()){const r=(await button.boundingBox())!;expect(r.y).toBeGreaterThanOrEqual(filterBox.y);expect(r.y+r.height).toBeLessThanOrEqual(filterBox.y+filterBox.height);}
+   }
+   const input=navigation.locator('input'),daily=path==='/timetable';
+   await input.fill(daily?'2026-12-31':'2026-12');
+   await navigation.getByRole('button',{name:/^다음/}).click();await expect(input).toHaveValue(daily?'2027-01-01':'2027-01');
+   await navigation.getByRole('button',{name:/^이전/}).click();await expect(input).toHaveValue(daily?'2026-12-31':'2026-12');
+   await toolbar.locator('.workspace-toolbar-actions .button').click();await expect(page.getByRole('dialog')).toBeVisible();
+   await expect(page.locator('#personal-date')).toHaveValue(daily?'2026-12-31':'2026-12-01');await page.getByRole('button',{name:'편집 닫기'}).click();
+   await navigation.getByRole('button',{name:'오늘',exact:true}).click();await expect(input).toHaveValue(daily?koreaToday():koreaToday().slice(0,7));
+   await page.screenshot({path:`test-results/ui88-${path.replaceAll('/','-')}-${width}.png`,animations:'disabled'});
+   if(width===320){await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:`test-results/ui88-${path.replaceAll('/','-')}-dark.png`,animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();}
+  }
+  if(['/tuition','/family','/account'].includes(path))await page.screenshot({path:`test-results/ui78-${path.slice(1)}-${width}.png`});
+  await expect(page.locator('.workspace-tabs,.personal-context')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
  await expect(page.getByText('오늘 화면으로',{exact:true})).toHaveCount(0);await page.goto('/today/calendar');await page.getByRole('button',{name:koreaToday()+' 일정 등록',exact:true}).click();await page.getByLabel('제목',{exact:true}).fill('좁은 화면 일정');await page.getByLabel('반복',{exact:true}).selectOption('REPEAT');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/ui78-calendar-${width}.png`});
 });
 
