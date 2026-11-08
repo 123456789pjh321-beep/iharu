@@ -1,9 +1,10 @@
 import {useEffect,useState} from 'react';
+import {MonthSwipeArea} from './MonthSwipeArea';
 import {MemberFilter} from './MemberFilter';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {Icon} from './Icon';
 const won=(n:number)=>new Intl.NumberFormat('ko-KR').format(n)+'원';
-export function PersonalFees({items,members,month,compact=false,edit,create}:{items:WorkspaceItem[];members:WorkspaceMember[];month:string;compact?:boolean;edit:(item:WorkspaceItem)=>void;create:()=>void}){
+export function PersonalFees({items,members,month,compact=false,edit,create,onMonthChange}:{items:WorkspaceItem[];members:WorkspaceMember[];month:string;compact?:boolean;edit:(item:WorkspaceItem)=>void;create:()=>void;onMonthChange?:(month:string)=>void}){
  const [member,setMember]=useState('all');
  useEffect(()=>{if(member!=='all'&&!members.some(m=>m.id===member))setMember('all');},[member,members]);
  const selected=member;
@@ -20,5 +21,6 @@ export function PersonalFees({items,members,month,compact=false,edit,create}:{it
   </button><div className="personal-fee-value"><strong>{won(item.data.amount||0)}</strong></div>
  </article>)}</div>:<button type="button" className="personal-empty direct-empty" onClick={create}><Icon name="plus"/>{selected!=='all'&&<span>{members.find(m=>m.id===selected)?.name}의 이번 달 학원비가 없어요.</span>}<strong>학원비 등록</strong></button>;
  if(compact)return <>{filter}<details className="personal-fee-disclosure" key={month}><summary className="personal-fee-summary"><span>{summaryLabel}</span><strong aria-live="polite" aria-atomic="true">{total}</strong><span className="fee-disclosure-label">상세 보기<Icon name="chevron"/></span></summary>{list}</details></>;
- return <div className="personal-fees-full">{filter}<div className="personal-fees-content"><div className="personal-fee-summary" aria-live="polite"><span>{summaryLabel}</span><strong>{total}</strong><span>{fees.length}건</span></div>{list}</div></div>;
+ const content=<div className="personal-fees-content"><div className="personal-fee-summary" aria-live="polite"><span>{summaryLabel}</span><strong>{total}</strong><span>{fees.length}건</span></div>{list}</div>;
+ return <div className="personal-fees-full">{filter}{onMonthChange?<MonthSwipeArea month={month} onChange={onMonthChange}>{content}</MonthSwipeArea>:content}</div>;
 }

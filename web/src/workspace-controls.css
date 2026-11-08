@@ -65,3 +65,7 @@
  .workspace-add-action>span{display:none}
 }
 @media(prefers-reduced-motion:reduce){.workspace-add-action{transition:none}}
+
+/* Monthly lists swipe independently of the date picker, family filters and editor. */
+.month-swipe-viewport{min-width:0}
+.month-swipe-area{width:100%;min-width:0;flex:1;min-height:max(320px,calc(100dvh - 280px));touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain;user-select:none;-webkit-user-select:none}
