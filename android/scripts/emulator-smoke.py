@@ -12,22 +12,33 @@ def launch():
  time.sleep(1)
 def nodes():
  adb('shell','uiautomator','dump','/sdcard/iharu-window.xml')
- return ET.fromstring(adb('shell','cat','/sdcard/iharu-window.xml'))
+ xml=adb('shell','cat','/sdcard/iharu-window.xml')
+ (OUT/'last-window.xml').write_text(xml)
+ return ET.fromstring(xml)
+def expect_offline():
+ for attempt in range(6):
+  if any(n.get('text')=='인터넷 연결을 확인해 주세요' for n in nodes().iter('node')):return
+  time.sleep(1)
+ raise AssertionError('Native offline screen missing; see last-window.xml and activity diagnostics')
 def tap(text):
  n=next((n for n in nodes().iter('node') if n.get('text')==text),None)
  assert n is not None,'Missing native UI: '+text
  x1,y1,x2,y2=map(int,re.findall(r'\d+',n.get('bounds')))
  adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2));time.sleep(.5)
-for i in range(12):
- launch()
- assert any(n.get('text')=='인터넷 연결을 확인해 주세요' for n in nodes().iter('node'))
- tap('다시 연결')
- assert any(n.get('text')=='인터넷 연결을 확인해 주세요' for n in nodes().iter('node'))
- if i==0:
-  (OUT/'offline-native.png').write_bytes(subprocess.run(['adb','exec-out','screencap','-p'],capture_output=True,check=True).stdout)
- tap('닫기')
-launch();adb('shell','settings','put','system','accelerometer_rotation','0');adb('shell','settings','put','system','user_rotation','1');time.sleep(2)
-assert any(n.get('text')=='인터넷 연결을 확인해 주세요' for n in nodes().iter('node'))
+try:
+ for i in range(12):
+  launch();expect_offline()
+  tap('다시 연결');expect_offline()
+  if i==0:
+   (OUT/'offline-native.png').write_bytes(subprocess.run(['adb','exec-out','screencap','-p'],capture_output=True,check=True).stdout)
+  tap('닫기')
+ launch();adb('shell','settings','put','system','accelerometer_rotation','0');adb('shell','settings','put','system','user_rotation','1');time.sleep(2)
+ expect_offline()
+finally:
+ # Preserve actual UI and OS evidence even when an assertion fails.
+ (OUT/'final-screen.png').write_bytes(subprocess.run(['adb','exec-out','screencap','-p'],capture_output=True,check=True).stdout)
+ for name,args in [('logcat',('logcat','-d')),('activity',('shell','dumpsys','activity','activities')),('connectivity',('shell','dumpsys','connectivity'))]:
+  (OUT/(name+'.txt')).write_text(adb(*args))
 crashes=adb('logcat','-b','crash','-d');(OUT/'crash-log.txt').write_text(crashes)
 assert 'com.myiharu.app' not in crashes,crashes
 exit_info=adb('shell','dumpsys','activity','exit-info','com.myiharu.app')
