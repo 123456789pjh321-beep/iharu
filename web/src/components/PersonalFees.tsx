@@ -20,5 +20,5 @@ export function PersonalFees({items,members,month,compact=false,edit,create}:{it
   </button><div className="personal-fee-value"><strong>{won(item.data.amount||0)}</strong></div>
  </article>)}</div>:<button type="button" className="personal-empty direct-empty" onClick={create}><Icon name="plus"/>{selected!=='all'&&<span>{members.find(m=>m.id===selected)?.name}의 이번 달 학원비가 없어요.</span>}<strong>학원비 등록</strong></button>;
  if(compact)return <>{filter}<details className="personal-fee-disclosure" key={month}><summary className="personal-fee-summary"><span>{summaryLabel}</span><strong aria-live="polite" aria-atomic="true">{total}</strong><span className="fee-disclosure-label">상세 보기<Icon name="chevron"/></span></summary>{list}</details></>;
- return <>{filter}<div className="personal-fee-summary" aria-live="polite"><span>{summaryLabel}</span><strong>{total}</strong><span>{fees.length}건</span></div>{list}</>;
+ return <div className="personal-fees-full">{filter}<div className="personal-fees-content"><div className="personal-fee-summary" aria-live="polite"><span>{summaryLabel}</span><strong>{total}</strong><span>{fees.length}건</span></div>{list}</div></div>;
 }
