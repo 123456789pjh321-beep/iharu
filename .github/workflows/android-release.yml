@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -12,18 +13,55 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {persist-credentials: false}
+      - name: Find a verified build with unchanged Android inputs
+        id: prior
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Reuse unsigned output only when every Android build/test input is unchanged.
+            // Bump the artifact name if the Java/Gradle/SDK recipe changes outside android/.
+            const {owner,repo}=context.repo;
+            const head=context.payload.pull_request?.head.sha || context.sha;
+            const artifacts=(await github.rest.actions.listArtifactsForRepo({owner,repo,name:'android-unsigned',per_page:10})).data.artifacts;
+            for(const artifact of artifacts){
+              if(artifact.expired || !artifact.workflow_run || artifact.workflow_run.head_repository_id!==context.payload.repository.id) continue;
+              const runId=artifact.workflow_run.id;
+              const jobs=(await github.rest.actions.listJobsForWorkflowRun({owner,repo,run_id:runId})).data.jobs;
+              if(!jobs.some(j=>j.name==='android' && j.conclusion==='success')) continue;
+              const base=artifact.workflow_run.head_sha;
+              const diff=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:`${base}...${head}`})).data;
+              if(!['ahead','identical'].includes(diff.status) || !diff.files || diff.files.length>=300) continue;
+              const nativeInput=p=>p.startsWith('android/') && p!=='android/README.md' && !p.startsWith('android/scripts/');
+              if(diff.files.some(f=>nativeInput(f.filename) || (f.previous_filename && nativeInput(f.previous_filename)))) continue;
+              core.setOutput('run',String(runId));
+              core.info(`Reusing verified unchanged Android build from run ${runId}, source ${base}`);
+              break;
+            }
+      - uses: actions/download-artifact@v4
+        if: steps.prior.outputs.run != ''
+        with:
+          name: android-unsigned
+          path: android-artifacts/
+          run-id: ${{ steps.prior.outputs.run }}
+          github-token: ${{ github.token }}
       - uses: actions/setup-java@v4
+        if: steps.prior.outputs.run == ''
         with: {distribution: temurin, java-version: '17'}
       - uses: android-actions/setup-android@v3
+        if: steps.prior.outputs.run == ''
         with: {packages: 'platform-tools', log-accepted-android-sdk-licenses: false}
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.prior.outputs.run == ''
         with: {gradle-version: '8.13'}
       - name: Install SDK
+        if: steps.prior.outputs.run == ''
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Build and lint unsigned distribution
+        if: steps.prior.outputs.run == ''
         working-directory: android
         run: gradle --no-daemon testDebugUnitTest bundleRelease assembleRelease assembleDebug lintRelease
       - name: Verify APK alignment and collect signing tool
+        if: steps.prior.outputs.run == ''
         run: |
           "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 android/app/build/outputs/apk/release/app-release-unsigned.apk
           mkdir -p android-artifacts
