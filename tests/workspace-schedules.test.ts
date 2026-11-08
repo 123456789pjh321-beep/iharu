@@ -35,15 +35,33 @@ it('keeps every selected weekday in the same Sunday–Saturday week',()=>{
  expect(timetableWeekDates('2028-02-29')).toEqual(['2028-02-27','2028-02-28','2028-02-29','2028-03-01','2028-03-02','2028-03-03','2028-03-04']);
 });
 
-it('bounds a whole week by its earliest start and latest finish with exactly one hour of context',()=>{
- expect(timetableBounds([{start:560,end:780},{start:540,end:850},{start:1030,end:1090}])).toEqual({start:480,end:1150});
- expect(timetableBounds([{start:495,end:805}])).toEqual({start:435,end:865});
+it('bounds a whole week by its earliest start and latest finish using whole hours',()=>{
+ expect(timetableBounds([{start:560,end:780},{start:540,end:850},{start:1030,end:1090}])).toEqual({start:420,end:1200});
+ expect(timetableBounds([{start:550,end:1090}])).toEqual({start:420,end:1200});
+ expect(timetableBounds([{start:495,end:805}])).toEqual({start:360,end:900});
 });
 it('caps the visible schedule range at midnight without extending into another day',()=>{
- expect(timetableBounds([{start:5,end:35}])).toEqual({start:0,end:95});
- expect(timetableBounds([{start:1390,end:1435}])).toEqual({start:1330,end:1440});
+ expect(timetableBounds([{start:5,end:35}])).toEqual({start:0,end:120});
+ expect(timetableBounds([{start:1390,end:1435}])).toEqual({start:1260,end:1440});
 });
 it('keeps an empty or all-day-only week usable without a midnight-length grid',()=>{
  expect(timetableBounds([])).toEqual({start:540,end:1080});
  expect(timetableBounds(timetableLayout([event('anniversary','00:00',{allDay:true})]))).toEqual({start:540,end:1080});
+});
+
+it('expands calendar daily and weekly recurrence inclusively without turning it into timetable repeats',()=>{
+ const daily=event('daily','09:00',{date:'2026-11-08',calendarFrequency:'DAILY',untilDate:'2026-11-10'});
+ for(const day of ['2026-11-08','2026-11-09','2026-11-10'])expect(dailySchedules([daily],day)).toHaveLength(1);
+ for(const day of ['2026-11-07','2026-11-11'])expect(dailySchedules([daily],day)).toEqual([]);
+ const weekly=event('weekly','09:00',{calendarFrequency:'WEEKLY',weekdays:[1,3]});
+ expect(dailySchedules([weekly],'2027-01-04')).toHaveLength(1);expect(dailySchedules([weekly],'2027-01-05')).toEqual([]);expect(dailySchedules([weekly],'2027-01-06')).toHaveLength(1);
+ expect(dailySchedules([event('once','09:00')],'2027-11-08')).toEqual([]);
+});
+it('clamps calendar month/year boundaries without drifting the original anchor',()=>{
+ const monthly=event('monthly','09:00',{date:'2027-01-31',calendarFrequency:'MONTHLY'});
+ for(const day of ['2027-01-31','2027-02-28','2027-03-31','2027-04-30','2028-02-29'])expect(dailySchedules([monthly],day)).toHaveLength(1);
+ for(const day of ['2027-02-27','2027-03-28','2027-03-30','2026-12-31'])expect(dailySchedules([monthly],day)).toEqual([]);
+ const yearly=event('birthday','00:00',{date:'2024-02-29',calendarFrequency:'YEARLY',allDay:true,untilDate:'2028-02-29'});
+ for(const day of ['2025-02-28','2028-02-29'])expect(dailySchedules([yearly],day)).toHaveLength(1);
+ for(const day of ['2023-02-28','2025-03-01','2028-02-28','2029-02-28'])expect(dailySchedules([yearly],day)).toEqual([]);
 });

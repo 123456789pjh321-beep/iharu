@@ -9,7 +9,7 @@ test('production account routes show truthful readiness and do not expose sample
   await expect(page.locator('#email')).toBeDisabled();
   await expect(page.getByText('서준',{exact:true})).toHaveCount(0);
   await page.getByRole('link',{name:'회원가입',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'아이하루 시작하기'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
   await page.goto('/phone');await expect(page.getByRole('button',{name:'인증번호 받기',exact:true})).toBeDisabled();
   await page.goto('/account');await expect(page).toHaveURL(/\/login$/);
   expect(errors).toEqual([]);
@@ -18,7 +18,7 @@ test('production account routes show truthful readiness and do not expose sample
 test('account pages reflow at phone widths and large text with accessible form labels',async({page})=>{
   for(const width of [320,390,768,1440]){
     await page.setViewportSize({width,height:900});
-    for(const path of ['/login','/signup','/forgot-password','/verify-email','/reset-password','/phone','/account/reauth','/account/email']){
+    for(const path of ['/login','/signup','/signup?role=parent','/signup?role=child','/forgot-password','/verify-email','/reset-password','/phone','/account/reauth','/account/email']){
       await page.goto(path);if(path==='/login')await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();else await expect(page.locator('.auth-title')).toBeVisible();
       await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     }

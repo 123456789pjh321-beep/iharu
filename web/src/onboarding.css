@@ -23,3 +23,16 @@
 @media(max-width:760px){.auth-app.entry-page .auth-footer{padding:4px 12px max(4px,env(safe-area-inset-bottom));gap:0 12px;font-size:.65rem}.auth-app.entry-page .auth-footer-brand{display:none}}
 
 .auth-entry-display{display:flex;justify-content:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+
+/* Choose the account owner before asking for signup details. */
+.signup-choice h1{font-size:1.6rem;line-height:1.4}
+.signup-role-options{display:grid;gap:12px;margin:24px 0}
+.signup-role-option{display:grid;grid-template-columns:44px minmax(0,1fr) 20px;align-items:center;gap:14px;padding:20px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);min-height:96px}
+.signup-role-option:hover{border-color:var(--primary);background:var(--mint)}
+.signup-role-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--mint);color:var(--primary)}
+.signup-role-option strong,.signup-role-option small{display:block}
+.signup-role-option strong{font-size:1.05rem;margin-bottom:5px}
+.signup-role-option small,.signup-choice-note{color:var(--muted);font-size:.8rem;line-height:1.7}
+.signup-role-option>.icon{width:18px;height:18px;color:var(--primary)}
+.signup-choice-note{text-align:center;margin:20px 0}
+@media(max-width:360px){.signup-role-option{gap:10px;padding:16px 12px}.signup-role-option small{font-size:.75rem}}

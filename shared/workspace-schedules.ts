@@ -9,7 +9,16 @@ export function timetableWeekDates(date:string){
 
 /** Expand occurrences after the caller chooses calendar EVENT or timetable REPEAT records. */
 export function visibleOn(item:WorkspaceItem,date:string){
- return item.kind==='EVENT'?item.data.date===date:item.kind==='REPEAT'&&date>=item.data.date&&date<=(item.data.untilDate||'')&&item.data.weekdays.includes(new Date(date+'T12:00:00Z').getUTCDay());
+ if(item.kind==='REPEAT')return date>=item.data.date&&date<=(item.data.untilDate||'')&&item.data.weekdays.includes(new Date(date+'T12:00:00Z').getUTCDay());
+ if(item.kind!=='EVENT')return false;
+ const {data}=item,frequency=data.calendarFrequency||'ONCE';
+ if(frequency==='ONCE')return data.date===date;
+ if(date<data.date||(data.untilDate&&date>data.untilDate))return false;
+ if(frequency==='DAILY')return true;
+ if(frequency==='WEEKLY')return data.weekdays.includes(new Date(date+'T12:00:00Z').getUTCDay());
+ const [year,month,day]=date.split('-').map(Number),[,anchorMonth,anchorDay]=data.date.split('-').map(Number);
+ const dueDay=Math.min(anchorDay,new Date(Date.UTC(year,month,0)).getUTCDate());
+ return day===dueDay&&(frequency==='MONTHLY'||month===anchorMonth);
 }
 export function scheduleAssignee(item:WorkspaceItem,members:WorkspaceMember[]){
  return item.data.allMembers?'전체':members.find(m=>m.id===(item.data.assigneeId||item.ownerId))?.name||(item.data.assigneeId?'연결 해제된 구성원':item.ownerName);
@@ -28,10 +37,10 @@ export function chronologicalSchedules(items:WorkspaceItem[]){return [...items].
 
 export function timeMinutes(time:string){const [hours,minutes]=time.split(':').map(Number);return hours*60+minutes;}
 export function timeLabel(minutes:number){return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
-/** One hour of context around the week's timed schedules, bounded by the day. */
+/** Whole-hour bounds: two hours before the first start; at least one hour after the last finish. */
 export function timetableBounds(rows:ReadonlyArray<{start:number;end:number}>){
  if(!rows.length)return {start:540,end:1080};
- return {start:Math.max(0,Math.min(...rows.map(row=>row.start))-60),end:Math.min(1440,Math.max(...rows.map(row=>row.end))+60)};
+ return {start:Math.max(0,(Math.floor(Math.min(...rows.map(row=>row.start))/60)-2)*60),end:Math.min(1440,(Math.ceil(Math.max(...rows.map(row=>row.end))/60)+1)*60)};
 }
 /** Greedy interval packing: simultaneous events get separate columns in one time grid. */
 export function timetableLayout(items:WorkspaceItem[]){

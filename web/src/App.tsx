@@ -1,3 +1,4 @@
+import {PublicFrame} from './components/PublicFrame';
 import {LegalPage,PrivacyPage} from './pages/Legal';
 import {PersonalWorkspace,type PersonalMode} from './pages/PersonalWorkspace';
 import {useWorkspaceGate} from './components/WorkspaceGate';
@@ -68,7 +69,10 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
   </div>;
 }
 export default function App(){return <BrowserRouter><RouteEffects/><Routes>
+  <Route element={<PublicFrame/>}>
   {['/service','/guide','/notices','/notices/:slug','/blog','/blog/:slug'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
+  {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
+  </Route>
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
   <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<NotificationsPage/>}/>
   <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>
@@ -83,7 +87,6 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/phone" element={<PhonePage/>}/><Route path="/account" element={<AccountEntry/>}/>
   <Route path="/account/reauth" element={<ReauthPage/>}/><Route path="/account/email" element={<EmailLinkPage/>}/>
   </Route>
-  {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/><Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="/settings" element={<Navigate to="/account" replace/>}/><Route path="*" element={<Shell/>}/>
 </Routes></BrowserRouter>;}
