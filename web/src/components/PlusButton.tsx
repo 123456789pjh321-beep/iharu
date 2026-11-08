@@ -1,6 +1,5 @@
 import type {ButtonHTMLAttributes} from 'react';
-import {Icon} from './Icon';
 
-export function PlusButton({label,className='',type='button',...props}:ButtonHTMLAttributes<HTMLButtonElement>&{label:string}){
- return <button {...props} type={type} className={`button primary plus-action ${className}`} aria-label={label} title={label}><Icon name="plus"/></button>;
+export function PlusButton({label,text='등록',className='',type='button',...props}:ButtonHTMLAttributes<HTMLButtonElement>&{label:string;text?:string}){
+ return <button {...props} type={type} className={`button compact registration-action ${className}`} aria-label={label} title={label}>{text}</button>;
 }

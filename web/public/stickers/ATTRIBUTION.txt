@@ -5,3 +5,6 @@ License URL: https://creativecommons.org/licenses/by/4.0/
 Local copies selected on 2026-09-21. Artwork unchanged; filenames mapped to the 아이하루 catalog IDs.
 The label "v1" identifies these immutable local artwork files, not the text catalog version.
 
+
+Additional family/dad.svg (1f468) and family/mom.svg (1f469) selected on 2026-11-08 from the same Twemoji source, artwork unchanged.
+아이하루 renders Korean labels and rounded backgrounds around selected graphics in the conversation UI.
