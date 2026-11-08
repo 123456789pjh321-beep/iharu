@@ -1,0 +1,50 @@
+name: Android release kit
+on:
+  pull_request:
+    paths: ['android/**', 'tests/store/**', 'playwright.store.config.ts', '.github/workflows/android-release.yml', 'web/public/**', 'web/index.html', 'vercel.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with: {gradle-version: '8.13'}
+      - name: Install SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Build and lint unsigned distribution
+        working-directory: android
+        run: gradle --no-daemon bundleRelease assembleRelease lintRelease
+      - name: Verify APK alignment and collect signing tool
+        run: |
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 android/app/build/outputs/apk/release/app-release-unsigned.apk
+          mkdir -p android-artifacts
+          cp android/app/build/outputs/apk/release/app-release-unsigned.apk android-artifacts/
+          cp android/app/build/outputs/bundle/release/app-release.aab android-artifacts/
+          cp "$ANDROID_HOME/build-tools/36.0.0/lib/apksigner.jar" android-artifacts/
+          cp android/app/build/reports/lint-results-release.* android-artifacts/
+          find android/app/build/intermediates/merged_manifests/release -name AndroidManifest.xml -exec cp {} android-artifacts/AndroidManifest.xml \;
+      - uses: actions/upload-artifact@v4
+        with: {name: android-unsigned, path: android-artifacts/, retention-days: 7}
+  store-screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config playwright.store.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: store-screenshots, path: test-results/store/, retention-days: 7}

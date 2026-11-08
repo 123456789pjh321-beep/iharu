@@ -30,7 +30,7 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api(?:/|$)|assets/).*)",
+      "source": "/((?!api(?:/|$)|assets/|\\.well-known/|manifest\\.webmanifest$|app-icon\\.svg$|icon\\.svg$).*)",
       "destination": "/index.html"
     }
   ],
