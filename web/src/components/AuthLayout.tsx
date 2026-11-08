@@ -8,6 +8,7 @@ import {WorkspaceGateProvider,useWorkspaceGate} from './WorkspaceGate';
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
+export function AuthEntryFrame({children}:{children:ReactNode}){return <AuthLayout><FrameContext.Provider value>{children}</FrameContext.Provider></AuthLayout>;}
 export function WorkspaceFrame(){return <WorkspaceGateProvider><StableWorkspaceFrame/></WorkspaceGateProvider>;}
 function StableWorkspaceFrame(){
  const {pathname,search}=useLocation(),{health,session}=useWorkspaceGate();

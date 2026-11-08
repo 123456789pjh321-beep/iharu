@@ -3,26 +3,34 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../api';
 import { providersSchema, sessionSchema, authPost, startSocial, socialErrorMessage } from '../auth';
-import { AuthLayout, FormNotice, LoginActions, PasswordField } from '../components/AuthLayout';
+import { AuthEntryFrame, AuthLayout, FormNotice, LoginActions, PasswordField } from '../components/AuthLayout';
 import { Loading, ErrorState } from '../components/Common';
 import { Icon } from '../components/Icon';
 
 export function LoginPage() {
   const {pathname,search}=useLocation();
-  if(['/login','/signup'].includes(pathname)&&new URLSearchParams(search).get('role')==='child')return <ChildAccountPage key={pathname}/>;
-  const reauthenticate=new URLSearchParams(search).get('reauth')==='1';
-  return ['/login','/signup'].includes(pathname)&&!reauthenticate?<LoginEntry/>:<LoginForm reauthenticate={reauthenticate}/>;
+  // Public login methods and the entry frame belong to the page, not to a role tab.
+  const providers=useLoginProviders();
+  const entry=['/login','/signup'].includes(pathname);
+  const child=entry&&new URLSearchParams(search).get('role')==='child';
+  const reauthenticate=!child&&new URLSearchParams(search).get('reauth')==='1';
+  return <AuthEntryFrame>
+    {((pathname==='/login'&&!reauthenticate)||(pathname==='/signup'&&child))&&<LoginRoleTabs child={child}/>}
+    {entry&&!reauthenticate?<LoginEntry child={child} providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
+  </AuthEntryFrame>;
 }
-function LoginEntry() {
+function useLoginProviders(){return useApi('/api/account/providers',providersSchema);}
+function LoginEntry({child,providers}:{child:boolean;providers:ReturnType<typeof useLoginProviders>}) {
   const session=useApi('/api/account/session',sessionSchema);
-  if(session.loading)return <AuthLayout><Loading label="로그인 상태를 확인하고 있어요"/></AuthLayout>;
-  if(session.error)return <AuthLayout><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;
+  useEffect(()=>{const refresh=()=>session.refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[session.refresh]);
+  if(child)return <ChildAccountPage/>;
+  if(session.loading)return <Loading label="로그인 상태를 확인하고 있어요"/>;
+  if(session.error)return <ErrorState message={session.error} retry={session.retry}/>;
   if(session.data?.authenticated)return <Navigate to={session.data.assurance==='LOW'?'/account':'/today'} replace/>;
-  return <LoginForm/>;
+  return <LoginForm providers={providers}/>;
 }
-function LoginForm({reauthenticate=false}:{reauthenticate?:boolean}) {
+function LoginForm({providers,reauthenticate=false}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean}) {
   const { pathname, search } = useLocation(); const navigate = useNavigate();
-  const providers = useApi('/api/account/providers',providersSchema);
   const [busy,setBusy] = useState(false); const [error,setError] = useState(''); const [message,setMessage] = useState('');
   const [token] = useState(() => new URLSearchParams(search).get('token') || '');
   useEffect(()=>{ if (token) window.history.replaceState(null,'',pathname); },[token,pathname]);
@@ -51,7 +59,7 @@ function LoginForm({reauthenticate=false}:{reauthenticate?:boolean}) {
   }
   async function social(id:string) { setBusy(true);setError('');try {await startSocial(id,false,reauthenticate);}catch(e){setError((e as Error).message);setBusy(false);} }
   if(canonicalLogin)return <AuthLayout><Loading label="안전한 로그인 화면으로 이동하고 있어요"/><a className="button primary full" href={new URL(`${pathname}${reauthenticate?'?reauth=1':''}`,loginOrigin).href}>운영 로그인 화면 열기</a></AuthLayout>;
-  return <AuthLayout>{mode==='login'&&!reauthenticate&&<LoginRoleTabs/>}{mode!=='login'&&<div className="auth-title"><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>}
+  return <AuthLayout>{mode!=='login'&&<div className="auth-title"><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>}
     {providers.loading?<Loading label="로그인 방법을 확인하고 있어요"/>:providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:<>
       {waiting&&<div className="auth-notice setup-notice"><Icon name="clock"/><div><strong>로그인 연결을 준비하고 있어요</strong><p>준비가 끝나면 여기서 가족의 하루를 시작할 수 있어요.</p></div></div>}
       {mode==='login'&&new URLSearchParams(search).has('verified')&&!new URLSearchParams(search).has('error')&&<FormNotice message="이메일 확인을 마쳤어요. 로그인해 주세요."/>}
