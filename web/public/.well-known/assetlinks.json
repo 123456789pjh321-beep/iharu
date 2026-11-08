@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.myiharu.app",
+      "sha256_cert_fingerprints": ["4E:E3:A5:62:88:CB:1E:98:D2:00:81:5E:89:AD:03:6D:E0:C8:84:6A:2A:9E:09:D2:27:B8:A4:1B:48:3E:DF:BC"]
+    }
+  }
+]
