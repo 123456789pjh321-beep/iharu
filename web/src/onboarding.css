@@ -21,3 +21,5 @@
 /* Keep public introduction links reachable from mobile login and signup. */
 .auth-app.entry-page .auth-footer{display:flex;flex-wrap:wrap}
 @media(max-width:760px){.auth-app.entry-page .auth-footer{padding:4px 12px max(4px,env(safe-area-inset-bottom));gap:0 12px;font-size:.65rem}.auth-app.entry-page .auth-footer-brand{display:none}}
+
+.entry-public-nav{display:flex;justify-content:center;flex-wrap:wrap;gap:8px 24px;flex-shrink:0;padding:0 16px 12px;border-bottom:1px solid var(--line)}.entry-public-nav a{display:flex;align-items:center;min-height:44px;font-size:.82rem;font-weight:650;color:var(--muted)}.entry-public-nav a:hover{color:var(--primary)}

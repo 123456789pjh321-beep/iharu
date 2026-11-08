@@ -132,7 +132,7 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .conversation-stickers-heading>div{display:flex;gap:4px;margin-left:auto}
 .conversation-stickers-heading button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);cursor:pointer}
 .conversation-stickers-heading .icon{width:16px;height:16px}
-.conversation-sticker-tray{display:grid;grid-template-rows:repeat(2,90px);grid-auto-flow:column;grid-auto-columns:90px;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-snap-type:x proximity;padding:2px 2px 5px}
+.conversation-sticker-tray{display:grid;grid-template-rows:repeat(2,90px);grid-auto-flow:column;grid-auto-columns:90px;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;scroll-snap-type:x proximity;padding:2px 2px 5px}
 .conversation-sticker-tray>button{min-width:0;min-height:0;padding:2px;border:1px solid var(--line);border-radius:15px;background:var(--surface);cursor:pointer;scroll-snap-align:start;overflow:hidden}
 .conversation-sticker-tray>button[aria-pressed=true]{border:2px solid var(--primary);padding:1px;background:var(--mint);box-shadow:0 0 0 1px var(--primary)}
 .conversation-sticker-tray>button:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
@@ -169,3 +169,13 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
  .workspace-page .conversation-sticker-tray{grid-template-rows:64px;grid-auto-columns:64px}
  .workspace-page .conversation-sticker-selection{min-height:32px;margin-bottom:4px}
 }
+
+/* Match calendar weekday/date hierarchy; the weekday band has no box borders. */
+.workspace-page .timetable-weekdays{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));flex-shrink:0;box-sizing:border-box;margin:0;padding:8px 12px 12px 56px;overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:thin;border:0;background:var(--surface);text-align:center;font-size:.7rem;color:var(--muted)}
+.workspace-page .timetable-weekdays>span{border:0;background:none}
+.workspace-page .timetable-weekdays>.holiday-date{color:var(--holiday-ink)}
+.workspace-page .timetable-weekdays>.saturday-date{color:var(--primary)}
+.workspace-page .timetable-week button{min-height:40px;padding-block:5px}
+@media(max-width:360px){.workspace-page .timetable-weekdays{padding-left:52px}}
+
+.conversation-sticker-tray::-webkit-scrollbar{display:none}

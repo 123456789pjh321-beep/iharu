@@ -13,7 +13,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
   const signup=await context.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId:'picture_child',name:'그림 아이',password,code:invite.code||invite.data?.code}});expect(signup.ok(),await signup.text()).toBe(true);
   await child.goto('/child/chat');
   const tray=child.getByRole('group',{name:'그림 메시지 선택'}),input=child.getByRole('textbox',{name:'가족에게 전할 말'}),send=child.getByRole('button',{name:'메시지 보내기'});
-  await expect(tray.getByRole('button')).toHaveCount(24);await expect(child.getByRole('button',{name:'이모티콘',exact:true})).toHaveCount(0);
+  await expect(tray.getByRole('button')).toHaveCount(24);expect(await tray.evaluate(el=>getComputedStyle(el).scrollbarWidth)).toBe('none');await expect(child.getByRole('button',{name:'이모티콘',exact:true})).toHaveCount(0);
   for(const label of ['안녕','어디야','학원','아빠','엄마','나 집이야']){
    const button=tray.getByRole('button',{name:label+' 그림 선택'});await expect(button.getByRole('img',{name:label,exact:true})).toHaveCount(1);
    const src=await button.locator('image').getAttribute('href');expect((await context.request.get(src!)).status()).toBe(200);
