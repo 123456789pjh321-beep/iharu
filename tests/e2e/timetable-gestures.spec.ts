@@ -48,7 +48,7 @@ test('timetable touch swipes work on cards and week buttons while vertical scrol
   await page.waitForTimeout(400);
   let c=await visibleCard();await touch({x:c.right,y:c.y},{x:c.right-30,y:c.y});await expect(date).toHaveValue('2026-12-31');await expect(page.getByRole('dialog')).toHaveCount(0);
   c=await visibleCard();await touch({x:c.right,y:c.y},{x:c.left,y:c.y},true);await expect(date).toHaveValue('2026-12-31');await expect(page.getByRole('dialog')).toHaveCount(0);
-  c=await visibleCard();await page.touchscreen.tap((c.left+c.right)/2,c.y);await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('매일 가족 일정');await page.getByRole('button',{name:'편집 닫기'}).click();
+  c=await visibleCard();await page.touchscreen.tap((c.left+c.right)/2,c.y);await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('매일 가족 일정');await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   const swipeRegion=async(region:Locator,left:boolean)=>{const b=(await region.boundingBox())!;await touch({x:b.x+(left?b.width-30:30),y:b.y+30},{x:b.x+(left?30:b.width-30),y:b.y+32});};
   await swipeRegion(page.locator('.timetable-week'),true);await expect(date).toHaveValue('2027-01-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button',{name:'2026-12-30 시간표',exact:true}).tap();await expect(date).toHaveValue('2026-12-30');await settled();await expect(card).toHaveCount(0);
