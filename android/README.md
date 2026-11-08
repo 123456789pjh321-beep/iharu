@@ -1,9 +1,9 @@
-# 아이하루 Android 1.0.0
+# 아이하루 Android 1.0.1
 
 - Application ID: `com.myiharu.app` (Play 최초 업로드 후 변경 불가)
-- versionCode: `1`, versionName: `1.0.0`
+- versionCode: `2`, versionName: `1.0.1`
 - Android 7.0(API 24) 이상 / target·compile SDK 36
-- Android Browser Helper 2.7.3의 Trusted Web Activity로 `https://myiharu.com/today` 실행
+- Android Browser Helper 2.7.4의 Trusted Web Activity로 `https://myiharu.com/today` 실행
 - 위치·연락처·사진·광고 ID·결제 SDK를 추가하지 않음. 웹의 인증과 가족 권한을 그대로 사용.
 - 지원 브라우저와 인터넷 연결 필요. 도메인 검증 실패 시 주소 표시줄이 있는 Custom Tab으로 열릴 수 있음.
 
@@ -34,3 +34,13 @@ CI의 **Android release kit** 워크플로도 같은 빌드를 수행한다. Git
 ## 출시 전 운영 확인
 
 계정 신원·전화·기기 확인, 개인 계정의 테스트 요건, 실제 지원 연락처·운영자 정보·개인정보처리방침·삭제 요청 경로, 자녀 포함 타겟층과 가족 정책, 데이터 보안 신고를 실제 운영 값으로 완료한다. 빌드 성공이나 AAB 생성은 Google Play 심사 승인을 의미하지 않는다.
+
+## 1.0.1 실행·연결 오류 복구
+
+- 온라인 실행 중 누락된 `ManageDataLauncherActivity`로 강제 종료되던 오류를 수정합니다. 비공개 Activity와 고정된 사이트 관리 주소를 등록합니다.
+- 브라우저 QualityEnforcer의 의도적인 메인 스레드 종료 경로를 연결 안내로 대체합니다. 브라우저가 보낸 URL·오류 사유는 로그에 남기지 않습니다.
+- 인터넷이 없는 최초 실행에는 네이티브 연결 안내와 수동 재시도를 표시합니다. 자동 반복 재시도·백그라운드 작업은 없습니다.
+- 웹 서비스 워커는 네트워크 단절/서버 장애 시 정적 재시도 화면만 반환합니다. 인증 HTML·API·가족 데이터를 캐시하지 않습니다.
+- 앱 아이콘 실행의 빈 URI를 유지하여 기존 TWA 복귀와 딥링크 실행을 구분합니다.
+- 앱 버전 1.0.1 / versionCode 2. 1.0.0과 같은 업로드 키로 서명해야 제거 없이 업데이트됩니다.
+- Android 단위 회귀 검사와 API 28/36 에뮬레이터에서 오프라인 실행·재시도·종료·회전을 검사합니다. 삼성 실기기의 원본 오류 로그와 동일 원인인지는 별도 확인이 필요합니다.
