@@ -65,3 +65,5 @@
  .workspace-add-action>span{display:none}
 }
 @media(prefers-reduced-motion:reduce){.workspace-add-action{transition:none}}
+
+.timetable-week button>*{pointer-events:none}
