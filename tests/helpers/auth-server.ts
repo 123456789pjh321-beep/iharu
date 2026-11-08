@@ -1,4 +1,3 @@
-import {publicPaths} from '../../shared/public-content.js';
 // Isolated browser-test entry point. Never imported by the production server or API bundle.
 import { Hono } from 'hono';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -38,7 +37,8 @@ app.post('/__test__/reviewer',async c=>{const {email}=await c.req.json();if(type
 app.post('/__test__/system-admin',async c=>{const {email}=await c.req.json();if(typeof email!=='string'||!email.endsWith('@example.test'))return c.json({},400);await query(db,'INSERT INTO app_private.system_admins(member_id) SELECT m.id FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id WHERE u.email=$1 AND u."emailVerified" ON CONFLICT DO NOTHING',[email]);return c.json({ok:true});});
 app.get('/__test__/mail',c=>c.json(outbox));
 app.route('/',createApp({environment:'local',demoEnabled:false},()=>svc,async()=>family));
-for(const path of publicPaths)app.get(path,serveStatic({path:'./dist'+path+'.html'}));
+app.get('/service',serveStatic({path:'./dist/service.html'}));
+app.get('/guide',serveStatic({path:'./dist/guide.html'}));
 app.use('*',serveStatic({root:'./dist'}));
 app.get('*',serveStatic({path:'./dist/index.html'}));
 const server=serve({fetch:app.fetch,hostname:'127.0.0.1',port:4174});

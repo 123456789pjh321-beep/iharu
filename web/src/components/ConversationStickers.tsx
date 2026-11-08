@@ -7,7 +7,7 @@ export function ConversationStickerArt({sticker}:{sticker:ConversationSticker}){
   <rect x="1" y="1" width="98" height="98" rx="18" fill="var(--sticker-paper)"/>
   <circle cx="50" cy="36" r="29" fill="var(--sticker-wash)"/>
   <image href={sticker.src} x="25" y="11" width="50" height="50"/>
-  <text x="50" y="84" textAnchor="middle" fill="var(--sticker-ink)" fontSize="14" fontWeight="800" fontFamily="inherit">{sticker.label}</text>
+  <text x="50" y="84" textAnchor="middle" fill="var(--sticker-ink)" fontSize="15" fontWeight="800" fontFamily="inherit">{sticker.label}</text>
  </svg>;
 }
 
