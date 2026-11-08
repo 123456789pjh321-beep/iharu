@@ -7,7 +7,6 @@ import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {eventColor} from './scheduleColors';
 import {Icon} from './Icon';
 import {MemberFilter} from './MemberFilter';
-import {DateNavigator,WorkspaceToolbar} from './WorkspaceToolbar';
 import {useCalendarSlide} from './useCalendarSlide';
 import {useDaySwipe} from './useDaySwipe';
 
@@ -16,19 +15,13 @@ const minuteHeight=.8;
 const hourLabel=(hour:number)=>`${hour<12||hour===24?'오전':'오후'} ${hour%12||12}`;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
 export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
- const holidays=useHolidays(day.slice(0,7));
- const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef(''),week=useRef<HTMLDivElement>(null);
+ const holidays=useHolidays((embedded?day:koreaToday()).slice(0,7));
+ const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
  useEffect(()=>{if(member!=='all'&&!members.some(m=>m.id===member))setMember('all');},[members,member]);
- const today=koreaToday(),dates=embedded?[day]:timetableWeekDates(day),period=dates[0],lastDate=dates.at(-1)!;
- const weekLabel=`${Number(period.slice(5,7))}월 ${Number(period.slice(8))}일 – ${period.slice(0,7)===lastDate.slice(0,7)?'':Number(lastDate.slice(5,7))+'월 '}${Number(lastDate.slice(8))}일`;
- useCalendarSlide(page,period,embedded?'day':'week');
- const moveDay=(delta:number)=>setDay(addDays(day,delta*(embedded?1:7)));
- const daySwipe=useDaySwipe(page,moveDay),weekSwipe=useDaySwipe(week,moveDay,target=>{
-  const button=target instanceof Element?target.closest<HTMLButtonElement>('button[data-timetable-date]'):null;
-  if(!button||!week.current?.contains(button))return false;
-  setDay(button.dataset.timetableDate!);return true;
- });
+ const today=koreaToday(),dates=embedded?[day]:timetableWeekDates(today),period=dates[0],selectedDay=dates.includes(day)?day:today;
+ useCalendarSlide(page,period,'day',embedded);
+ const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),undefined,embedded);
  const sourceItems=items.filter(item=>item.kind===(embedded?'EVENT':'REPEAT'));
  const lanes=dates.map(date=>{const events=dailySchedules(sourceItems,date,member);return {date,events,allDay:events.filter(i=>i.data.allDay),layout:timetableLayout(events)};});
  const joined=timetableRuns(lanes),joinedKeys=new Set(joined.flatMap(run=>run.days.map(({date,item})=>date+':'+item.id)));
@@ -47,12 +40,12 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  const content=(item:WorkspaceItem)=><><strong className="timetable-title">{item.data.title}</strong><span className="timetable-range">{item.data.allDay?'종일':`${item.data.startTime} – ${item.data.endTime}`}</span></>;
  const label=(item:WorkspaceItem)=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${item.data.allDay?'종일':item.data.startTime+' – '+item.data.endTime} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':' timetable-weekly')} aria-label={embedded?'일간 일정':'주간 시간표'}>
-  {!embedded&&<><WorkspaceToolbar title="시간표" navigation={<DateNavigator type="date" value={day} inputLabel="시간표 날짜 선택" displayLabel={weekLabel} onChange={setDay}/>}/>
+  {!embedded&&<><header className="workspace-toolbar" aria-label="시간표"><h1 className="timetable-fixed-title">주간 시간표</h1></header>
   <MemberFilter className="timetable-filters" members={members} value={member} onChange={setMember} label="시간표 구성원 필터"/></>}
-  <div className="timetable-summary"><span>{loading?'불러오는 중':`${embedded?'':'일주일 · '}${events.length}개 일정`}{showToday&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span>
+  <div className="timetable-summary"><span>{loading?'불러오는 중':`${embedded?'':'매주 반복 · '}${events.length}개 일정`}{showToday&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span>
    {showToday&&!loading&&<div className={'timetable-current-summary'+(currentEvents.length?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
   </div>
-  {!embedded&&<div ref={week} className="timetable-weekdays timetable-day-headings" aria-label="요일 선택" {...weekSwipe}>{dates.map(date=>{const dow=new Date(date+'T12:00:00Z').getUTCDay(),holiday=holidays.name(date);return <button type="button" key={date} data-timetable-date={date} aria-label={`${date} ${weekday[dow]}요일 시간표${holiday?' · '+holiday:''}`} aria-pressed={date===day} aria-current={date===today?'date':undefined} className={(date===today?'is-today ':'')+(holiday||dow===0?'holiday-date':dow===6?'saturday-date':'')} onClick={()=>setDay(date)}><span>{weekday[dow]}</span>{holiday&&<small className="calendar-holiday" title={holiday}>{holiday}</small>}</button>;})}</div>}
+  {!embedded&&<div className="timetable-weekdays timetable-day-headings" aria-label="요일 선택">{dates.map(date=>{const dow=new Date(date+'T12:00:00Z').getUTCDay(),holiday=holidays.name(date);return <button type="button" key={date} data-timetable-date={date} aria-label={`${date} ${weekday[dow]}요일 시간표${holiday?' · '+holiday:''}`} aria-pressed={date===selectedDay} aria-current={date===today?'date':undefined} className={(date===today?'is-today ':'')+(holiday||dow===0?'holiday-date':dow===6?'saturday-date':'')} onClick={()=>setDay(date)}><span>{weekday[dow]}</span>{holiday&&<small className="calendar-holiday" title={holiday}>{holiday}</small>}</button>;})}</div>}
   {holidays.name(day)&&<p className={'timetable-holiday holiday-label'+(embedded?'':' sr-only')}>{holidays.name(day)}</p>}
   <div className="calendar-viewport timetable-viewport"><div ref={page} className="timetable-day" aria-busy={loading} {...daySwipe}>
    {lanes.some(lane=>lane.allDay.length>0)&&<div className="timetable-all-day"><span>종일</span><div className="timetable-all-day-columns" style={{gridTemplateColumns:`repeat(${dates.length},minmax(0,1fr))`}}>{lanes.map(lane=><div key={lane.date}>{lane.allDay.map(item=><button type="button" key={item.id} className="timetable-card timetable-all-day-card" style={{'--event-color':eventColor(item,members)} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} title={label(item)} data-timetable-item={item.id}>{content(item)}</button>)}</div>)}</div></div>}
@@ -63,7 +56,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
       {lanes.map(({date,layout})=><div key={date} className={'timetable-day-column'+(date===today?' today-column':'')} data-date={date}>
        <div className="timetable-slots" role="group" aria-label={`${date} 15분 단위 일정 등록`}>{Array.from({length:lastSlot-firstSlot+1},(_,offset)=>{
         const index=firstSlot+offset,minute=Math.max(startMinute,index*15),time=timeLabel(minute);
-        return <button type="button" key={time} data-slot={index} data-time={time} tabIndex={date===day&&activeSlot===index?0:-1} className="timetable-slot" aria-label={`${date} ${time} 일정 등록`} style={{top:(minute-startMinute)*minuteHeight,height:(Math.min(endMinute,(index+1)*15)-minute)*minuteHeight}} onFocus={()=>setSlot(index)} onClick={()=>create(date,time)} onKeyDown={e=>{
+        return <button type="button" key={time} data-slot={index} data-time={time} tabIndex={date===selectedDay&&activeSlot===index?0:-1} className="timetable-slot" aria-label={`${date} ${time} 일정 등록`} style={{top:(minute-startMinute)*minuteHeight,height:(Math.min(endMinute,(index+1)*15)-minute)*minuteHeight}} onFocus={()=>setSlot(index)} onClick={()=>create(date,time)} onKeyDown={e=>{
          const target=e.key==='ArrowDown'?Math.min(lastSlot,index+1):e.key==='ArrowUp'?Math.max(firstSlot,index-1):e.key==='Home'?firstSlot:e.key==='End'?lastSlot:null;
          if(target!==null){e.preventDefault();setSlot(target);e.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[data-slot="${target}"]`)?.focus();}
          const lane=e.key==='ArrowRight'?dates.indexOf(date)+1:e.key==='ArrowLeft'?dates.indexOf(date)-1:-1;
@@ -76,7 +69,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
        })}
        {date===today&&timeMinutes(now)>=startMinute&&timeMinutes(now)<endMinute&&<div className="timetable-now" style={{top:(timeMinutes(now)-startMinute)*minuteHeight}} aria-label={'현재 시간 '+now}><span/><strong>현재 {now}</strong></div>}
       </div>)}
-      {joined.map(run=>{const item=run.days[0].item,duration=run.end-run.start;return <button type="button" key={run.key} className={'timetable-card timetable-event timetable-joined '+(run.days.some(d=>schedulePhase(d.item,d.date,today,now)==='current')?'current-event ':'')+(duration<30?'short-event ':duration<60?'compact-event ':'')} data-dates={run.days.map(d=>d.date).join(' ')} data-span={run.days.length} data-timetable-item={item.id} style={{'--event-color':eventColor(item,members),top:(run.start-startMinute)*minuteHeight,height:duration*minuteHeight,left:`calc(${run.firstColumn/dates.length*100}% + 2px)`,width:`calc(${run.days.length/dates.length*100}% - 4px)`} as CSSProperties} aria-label={label(item)+' · '+run.days[0].date+' ~ '+run.days.at(-1)!.date} title={label(item)+' · 날짜별 영역을 누르면 해당 일정이 열려요'} onClick={event=>{const bounds=event.currentTarget.getBoundingClientRect(),index=event.detail===0?Math.max(0,run.days.findIndex(d=>d.date===day)):Math.min(run.days.length-1,Math.max(0,Math.floor((event.clientX-bounds.left)/bounds.width*run.days.length)));edit(run.days[index].item);}}>{content(item)}</button>;})}
+      {joined.map(run=>{const item=run.days[0].item,duration=run.end-run.start;return <button type="button" key={run.key} className={'timetable-card timetable-event timetable-joined '+(run.days.some(d=>schedulePhase(d.item,d.date,today,now)==='current')?'current-event ':'')+(duration<30?'short-event ':duration<60?'compact-event ':'')} data-dates={run.days.map(d=>d.date).join(' ')} data-span={run.days.length} data-timetable-item={item.id} style={{'--event-color':eventColor(item,members),top:(run.start-startMinute)*minuteHeight,height:duration*minuteHeight,left:`calc(${run.firstColumn/dates.length*100}% + 2px)`,width:`calc(${run.days.length/dates.length*100}% - 4px)`} as CSSProperties} aria-label={label(item)+' · '+run.days[0].date+' ~ '+run.days.at(-1)!.date} title={label(item)+' · 날짜별 영역을 누르면 해당 일정이 열려요'} onClick={event=>{const bounds=event.currentTarget.getBoundingClientRect(),index=event.detail===0?Math.max(0,run.days.findIndex(d=>d.date===selectedDay)):Math.min(run.days.length-1,Math.max(0,Math.floor((event.clientX-bounds.left)/bounds.width*run.days.length)));edit(run.days[index].item);}}>{content(item)}</button>;})}
      </div>
     </div>
    </div>

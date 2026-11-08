@@ -23,7 +23,7 @@ test('browser signup → mail proof → login → timetable → account → logo
   await page.reload();
   await expect(page.locator('.personal-timetable')).toBeVisible();
   await expect(page.getByText('서준',{exact:true})).toHaveCount(0);
-  for(const path of ['/login','/signup','/']) {
+  for(const path of ['/login','/signup','/','/today','/today/timetable']) {
     await page.goto(path);await expect(page).toHaveURL(/\/timetable$/);
     await expect(page.locator('.personal-timetable')).toBeVisible();
   }

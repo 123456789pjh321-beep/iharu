@@ -217,3 +217,33 @@ it('rejects invalid calendar recurrence, but allows all four repeat choices with
  for(const extra of [{calendarFrequency:'HOURLY'},{calendarFrequency:'WEEKLY',weekdays:[]},{calendarFrequency:'WEEKLY',weekdays:[1,1]},{calendarFrequency:'DAILY',untilDate:'2026-01-01'}])expect((await a.req(api+'items.create',{...input,data:{...input.data,...extra}})).status).toBe(400);
  expect((await a.req(api+'items.create',{...payload('시간표','REPEAT'),data:{...payload('시간표','REPEAT').data,calendarFrequency:'MONTHLY'}})).status).toBe(400);
 });
+
+it('saves fixed weekly school schedules without date limits, validates weekdays clearly and preserves family authorization',async()=>{
+ const a=await parent('fixed-a'),b=await parent('fixed-b'),outside=await parent('fixed-outside');
+ const invitation=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invitation.code});
+ const target=(await b.ok('me')).id,child=new Browser(),childInvite=await a.ok('invite.issue',{consent:true});
+ await child.ok('child.signup',{loginId:'fixed_child',name:'가상 자녀',password:'child-fixture-2026',code:childInvite.code});
+ const data={title:'유치원',date:'2026-11-02',assigneeId:(await child.ok('me')).id,weekdays:[1,2,3,4,5],startTime:'09:00',endTime:'16:20',place:'',note:'',paid:false};
+ const created=await a.ok('items.create',{kind:'REPEAT',data});
+ expect((await a.ok('items.get',{id:created.id})).data.untilDate).toBeUndefined();
+ for(const month of ['2020-01','2026-12','2030-01']){
+  const list=await b.ok('items.list',{kind:'REPEAT',from:month+'-01',to:month+'-28'});
+  expect(list.items.map((i:{id:string})=>i.id)).toContain(created.id);expect(list.updateReceipt.menu).toBe('timetable');
+ }
+ expect((await b.ok('items.list',{...listing,kind:'EVENT'})).items).toHaveLength(0);
+ expect((await outside.ok('items.list',{...listing,kind:'REPEAT'})).items).toHaveLength(0);
+ expect((await b.req(api+'items.update',{kind:'REPEAT',data,id:created.id,version:1})).status).toBe(403);
+ for(const weekdays of [[],[1,1],[8]]){
+  const bad=await a.req(api+'items.create',{kind:'REPEAT',data:{...data,weekdays}});expect(bad.status).toBe(400);expect((await bad.json()).error.message).toContain('반복 요일');
+ }
+ const badTime=await a.req(api+'items.create',{kind:'REPEAT',data:{...data,endTime:'08:00'}});expect(badTime.status).toBe(400);expect((await badTime.json()).error.message).toContain('종료 시간');
+ // Legacy rows keep their stored metadata but no longer disappear at their old end date.
+ await query(database.db,"UPDATE app_private.workspace_items SET data=data||'{\"untilDate\":\"2026-12-31\"}'::jsonb WHERE id=$1",[created.id]);
+ expect((await a.ok('items.list',{kind:'REPEAT',from:'2031-01-01',to:'2031-01-31'})).items.map((i:{id:string})=>i.id)).toContain(created.id);
+ expect((await a.ok('items.get',{id:created.id})).data.untilDate).toBe('2026-12-31');
+ await a.ok('items.update',{kind:'REPEAT',data:{...data,weekdays:[2,4]},id:created.id,version:1});
+ const updated=await a.ok('items.get',{id:created.id});expect(updated.data.weekdays).toEqual([2,4]);expect(updated.data.untilDate).toBeUndefined();
+ const family=(await a.ok('me')).family;await a.ok('family.remove',{familyId:family.id,profileId:target,version:1});
+ expect((await b.ok('items.list',{...listing,kind:'REPEAT'})).items).toHaveLength(0);
+ await a.ok('items.delete',{id:created.id,version:2});expect((await a.ok('items.list',{...listing,kind:'REPEAT'})).items).toHaveLength(0);
+});

@@ -49,13 +49,13 @@ test('labeled registration actions, modal entry/exit, dirty cancellation, save a
  expect(await page.evaluate(()=>(window as any).dialogMotions)).toEqual([]);await page.keyboard.press('Escape');await expect(editor).toHaveCount(0);await expect(trigger).toBeFocused();
 });
 
-test('three adjacent dates and aligned composer with emoji choices above input',async({page,request})=>{
+test('fixed seven-day timetable and aligned composer with emoji choices above input',async({page,request})=>{
  await login(page,request,'dates-chat');
  for(const [date,title,startTime,endTime,color] of [['2027-01-02','팀 회의','09:00','10:00',0],['2027-01-02','프로젝트 작업','10:00','12:00',1],['2027-01-02','주간 계획','14:00','16:30',2],['2027-01-03','집중 작업','09:00','11:30',1],['2027-01-03','검토 시간','13:30','15:00',0],['2027-01-04','학습 시간','09:00','11:00',2],['2027-01-04','집중 작업','13:00','16:30',1]])expect((await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'EVENT',data:{date,title,startTime,endTime,color}}})).ok()).toBe(true);
  for(const width of [320,820,1440]){
-  await page.setViewportSize({width,height:900});await page.goto('/timetable');await page.getByLabel('시간표 날짜 선택').fill('2026-12-31');
-  const dates=page.locator('[data-timetable-date]');await expect(dates).toHaveCount(3);expect(await dates.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-timetable-date')))).toEqual(['2026-12-31','2027-01-01','2027-01-02']);await expect(dates.nth(0)).toHaveAttribute('aria-pressed','true');
-  await dates.nth(2).click();await expect(page.getByLabel('시간표 날짜 선택')).toHaveValue('2027-01-02');await expect(dates.nth(0)).toHaveAttribute('data-timetable-date','2026-12-27');await expect(page.locator('.timetable-weekdays button>span')).toHaveText(['일','월','화','수','목','금','토']);await expect(page.locator('.timetable-day-column')).toHaveCount(7);await expect(page.locator('.timetable-week')).toHaveCount(0);await expect(page.locator('.timetable-card-top,.timetable-place')).toHaveCount(0);
+  await page.setViewportSize({width,height:900});await page.clock.setFixedTime(new Date('2026-12-31T12:00:00+09:00'));await page.goto('/timetable');await expect(page.getByLabel('시간표 날짜 선택')).toHaveCount(0);
+  const dates=page.locator('[data-timetable-date]');await expect(dates).toHaveCount(7);expect(await dates.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-timetable-date')))).toEqual(['2026-12-27','2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-02']);await expect(dates.nth(4)).toHaveAttribute('aria-pressed','true');
+  await dates.nth(2).click();await expect(dates.nth(2)).toHaveAttribute('aria-pressed','true');await expect(dates.nth(0)).toHaveAttribute('data-timetable-date','2026-12-27');await expect(page.locator('.timetable-weekdays button>span')).toHaveText(['일','월','화','수','목','금','토']);await expect(page.locator('.timetable-day-column')).toHaveCount(7);await expect(page.locator('.timetable-week')).toHaveCount(0);await expect(page.locator('.timetable-card-top,.timetable-place')).toHaveCount(0);
   await page.screenshot({path:`test-results/ui97-timetable-${width}.png`,animations:'disabled'});
   await page.goto('/chat');const input=page.getByRole('textbox',{name:'가족에게 전할 말'}),send=page.getByRole('button',{name:'메시지 보내기'}),emoji=page.getByRole('button',{name:'이모티콘',exact:true});
   await expect(send).toHaveText('');await expect(send).toBeDisabled();await expect(emoji).toHaveCount(0);

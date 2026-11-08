@@ -8,7 +8,7 @@ import type {AuthService} from '../auth/service.js';
 import type {FamilyService,FamilyActor} from '../family/service.js';
 import {childPasswordHash,childPasswordMatches} from '../child-accounts/routes.js';
 import {workspaceMenus} from '../../shared/workspace-updates.js';
-import {workspaceItemInput,workspaceKind} from '../../shared/workspace.js';
+import {workspaceItemInput,workspaceKind,workspaceValidationMessage} from '../../shared/workspace.js';
 const errors:Record<string,string>={LEGAL_ACCEPTANCE_REQUIRED:'개인정보 관리에서 게시된 이용약관과 개인정보처리방침을 먼저 확인해 주세요.',FEE_PARENT_REQUIRED:'학원비는 부모만 이용할 수 있어요.',FEE_PAYER_INVALID:'현재 연결된 부모를 결제자로 선택해 주세요.',FEE_PAYER_ONLY:'작성자 또는 지정된 결제자만 납부 상태를 바꿀 수 있어요.',ASSIGNEE_INVALID:'현재 연결된 가족 구성원을 선택해 주세요.',AUTH_REQUIRED:'먼저 로그인해 주세요.',PARENT_REQUIRED:'부모·보호자만 승인번호를 발급할 수 있어요.',HOST_ONLY:'이 가족의 호스트만 번호 발급과 구성원 제외를 할 수 있어요.',HOST_HAS_MEMBERS:'먼저 연결된 구성원을 제외한 뒤 가족을 나갈 수 있어요.',OWN_CODE:'내가 발급한 번호로 내 가족에 참여할 수 없어요.',ALREADY_LINKED:'이미 다른 가족에 연결되어 있어요. 현재 가족을 나온 뒤 새 번호를 입력해 주세요.',INVITE_INVALID:'승인번호가 만료되었거나 이미 사용됐어요. 부모 호스트에게 새 번호를 받아 주세요.',ID_TAKEN:'이미 사용 중인 자녀 ID예요. 다른 ID를 사용하거나 로그인해 주세요.',LOGIN_INVALID:'자녀 ID 또는 비밀번호가 맞지 않아요.',ROLE_CONFLICT:'보호자가 로그인한 기기예요. 자녀 기기에서 가입·로그인해 주세요.',AUTHOR_ONLY:'작성한 사람만 수정·삭제할 수 있어요. 호스트도 다른 사람의 자료를 변경할 수 없어요.',VERSION_CONFLICT:'자료가 먼저 변경됐어요. 새로고침 후 다시 확인해 주세요.',NOT_FOUND:'자료가 없거나 가족 공유가 해제되었어요.',INVALID_INPUT:'입력한 날짜·시간·금액과 항목을 확인해 주세요.',RATE_LIMITED:'시도 횟수가 많아요. 잠시 후 다시 이용해 주세요.'};
 export function workspaceRoutes(auth:()=>AuthService|null,runtime:()=>Promise<FamilyService|null>){
  const app=new Hono<{Variables:{requestId:string}}>();app.use('/api/v1/workspace/*',bodyLimit({maxSize:16384,onError:c=>c.json({error:{code:'INVALID_INPUT',message:errors.INVALID_INPUT}},413)}));
@@ -17,7 +17,7 @@ export function workspaceRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Fa
  for(const op of Object.keys(specs))app.post('/api/v1/workspace/'+op,async c=>{
   const fail=(key:string,status:400|401|403|404|409|429|503=400)=>c.json({error:{code:key,message:errors[key]||'자료를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.'},requestId:c.get('requestId')},status);
   const svc=auth();if(!svc)return fail(op.startsWith('child.')?'UNAVAILABLE':'AUTH_REQUIRED',op.startsWith('child.')?503:401);if(c.req.header('Origin')!==svc.settings.origin)return fail('INVALID_INPUT',403);
-  const parsed=specs[op].safeParse(await c.req.json().catch(()=>null));if(!parsed.success)return fail('INVALID_INPUT');const input=parsed.data as Record<string,unknown>;
+  const parsed=specs[op].safeParse(await c.req.json().catch(()=>null));if(!parsed.success)return op==='items.create'||op==='items.update'?c.json({error:{code:'INVALID_INPUT',message:workspaceValidationMessage(parsed.error.issues)},requestId:c.get('requestId')},400):fail('INVALID_INPUT');const input=parsed.data as Record<string,unknown>;
   try{
    const session=await currentSession(svc,c.req.raw),childAuth=op==='child.signup'||op==='child.login';
    if(childAuth&&session)return fail('ROLE_CONFLICT',403);

@@ -3,11 +3,11 @@ import {useEffect,useLayoutEffect,useRef,type HTMLAttributes,type RefObject} fro
 type Gesture={id:number;x:number;y:number;axis:'x'|'y'|null};
 
 /** Reserve horizontal gestures for day navigation; vertical scrolling stays native. */
-export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:number)=>void,onTap?:(target:EventTarget)=>boolean):HTMLAttributes<HTMLDivElement>{
+export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:number)=>void,onTap?:(target:EventTarget)=>boolean,enabled=true):HTMLAttributes<HTMLDivElement>{
  const gesture=useRef<Gesture|null>(null),suppressClick=useRef(0),move=useRef(onMove),tap=useRef(onTap);
  useLayoutEffect(()=>{move.current=onMove;tap.current=onTap;},[onMove,onTap]);
  useEffect(()=>{
-  const node=target.current;if(!node)return;
+  const node=target.current;if(!enabled||!node)return;
   let distance=0,last=0,changed=false;
   const wheel=(event:WheelEvent)=>{
    if(event.ctrlKey||event.metaKey||gesture.current)return;
@@ -24,7 +24,8 @@ export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:
   };
   node.addEventListener('wheel',wheel,{passive:false});
   return()=>node.removeEventListener('wheel',wheel);
- },[target]);
+ },[target,enabled]);
+ if(!enabled)return {};
  return {
   onDragStart:event=>event.preventDefault(),
   onPointerDown:event=>{
