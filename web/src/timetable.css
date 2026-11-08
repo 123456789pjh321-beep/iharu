@@ -79,3 +79,6 @@
 @media(max-width:360px){.calendar-month-picker.calendar-daily-date{font-size:.75rem;min-width:106px}}
 
 .member-filters{min-width:0;max-width:100%;box-sizing:border-box}.member-filters button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}.fee-member-filters,.home-member-filters{padding:4px 2px 16px;margin-bottom:4px}
+/* Touch-action must reach the inner scrolling element, not only its wrapper. */
+.timetable-day,.timetable-scroll,.timetable-week{touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain}
+.timetable-week{user-select:none;-webkit-user-select:none}

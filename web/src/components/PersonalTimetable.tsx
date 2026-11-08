@@ -7,15 +7,18 @@ import {Icon} from './Icon';
 import {MemberFilter} from './MemberFilter';
 import {DateNavigator,WorkspaceToolbar} from './WorkspaceToolbar';
 import {useCalendarSlide} from './useCalendarSlide';
+import {useDaySwipe} from './useDaySwipe';
 
 const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=1.2;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
 export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
- const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef(''),gesture=useRef<{x:number;y:number;dragging:boolean}|null>(null),suppressClick=useRef(0);
+ const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef(''),week=useRef<HTMLDivElement>(null);
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
  useEffect(()=>{if(member!=='all'&&!members.some(m=>m.id===member))setMember('all');},[members,member]);
  useCalendarSlide(page,day,'day');
+ const moveDay=(delta:number)=>setDay(addDays(day,delta));
+ const daySwipe=useDaySwipe(page,moveDay),weekSwipe=useDaySwipe(week,moveDay);
  const today=koreaToday(),weekStart=addDays(day,-new Date(day+'T12:00:00Z').getUTCDay()),dates=Array.from({length:7},(_,n)=>addDays(weekStart,n)),events=dailySchedules(items,day,member),allDay=events.filter(i=>i.data.allDay),layout=timetableLayout(events),next=layout.find(({item})=>schedulePhase(item,day,today,now)==='upcoming')?.start;
  const currentEvents=events.filter(i=>!i.data.allDay&&schedulePhase(i,day,today,now)==='current');
  const scrollToNow=()=>{const node=scroller.current;if(node)node.scrollTop=Math.max(0,timeMinutes(koreaTime())*minuteHeight-node.clientHeight*.3);};
@@ -35,10 +38,10 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
    <button type="button" className="button primary" onClick={()=>create(day)}><Icon name="plus"/>일정 등록</button>
   </WorkspaceToolbar>
   <MemberFilter className="timetable-filters" members={members} value={member} onChange={setMember} label="시간표 구성원 필터"/>
-  <div className="timetable-week" aria-label="날짜 선택">{dates.map((date,n)=><button type="button" key={date} aria-label={`${date} 시간표`} aria-pressed={date===day} className={date===today?'is-today':''} onClick={()=>setDay(date)}><span>{weekday[n]}</span><strong>{Number(date.slice(8))}</strong><i className={items.some(i=>visibleOn(i,date))?'has-events':''} aria-hidden="true"/></button>)}</div></>}
+  <div ref={week} className="timetable-week" aria-label="날짜 선택" {...weekSwipe}>{dates.map((date,n)=><button type="button" key={date} aria-label={`${date} 시간표`} aria-pressed={date===day} className={date===today?'is-today':''} onClick={()=>setDay(date)}><span>{weekday[n]}</span><strong>{Number(date.slice(8))}</strong><i className={items.some(i=>visibleOn(i,date))?'has-events':''} aria-hidden="true"/></button>)}</div></>}
   <div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}{day===today&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span></div>
   {day===today&&!loading&&<div className="timetable-current-summary" aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
-  <div className="calendar-viewport timetable-viewport"><div ref={page} className="timetable-day" aria-busy={loading} onDragStart={e=>e.preventDefault()} onPointerDown={e=>{if(e.button===0&&e.isPrimary)gesture.current={x:e.clientX,y:e.clientY,dragging:false};}} onPointerMove={e=>{const g=gesture.current;if(g&&Math.abs(e.clientX-g.x)>20&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5){g.dragging=true;e.preventDefault();e.currentTarget.setPointerCapture(e.pointerId);}}} onPointerCancel={()=>{gesture.current=null;}} onPointerUp={e=>{const g=gesture.current;gesture.current=null;if(g?.dragging){suppressClick.current=Date.now()+350;if(Math.abs(e.clientX-g.x)>60&&Math.abs(e.clientX-g.x)>Math.abs(e.clientY-g.y)*1.5)setDay(addDays(day,e.clientX<g.x?1:-1));}}} onClickCapture={e=>{if(Date.now()<suppressClick.current){e.preventDefault();e.stopPropagation();}}}>
+  <div className="calendar-viewport timetable-viewport"><div ref={page} className="timetable-day" aria-busy={loading} {...daySwipe}>
    {allDay.length>0&&<div className="timetable-all-day"><span>종일</span><div>{allDay.map(item=><button type="button" key={item.id} className="timetable-card timetable-all-day-card" style={{'--event-color':eventColor(item,members)} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} data-timetable-item={item.id}>{content(item)}</button>)}</div></div>}
    <div className="timetable-scroll" ref={scroller} data-calendar-scroll aria-label="하루 시간 눈금">
     <div className="timetable-grid" style={{height:1440*minuteHeight}}>
