@@ -60,12 +60,6 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 }
 @media(max-height:500px){:root{--workspace-nav-height:56px}.workspace-mobile-nav a,.workspace-mobile-nav>button{gap:2px;font-size:.65rem}.workspace-mobile-nav .rail-icon .icon{width:18px;height:18px}.workspace-page .auth-header{height:52px;min-height:52px}.entry-editor-header{min-height:52px}.calendar-day-sheet{max-height:96dvh}.day-sheet-empty{min-height:80px}}
 
-/* One compact action shape across creation entry points and editor submission. */
-.workspace-page .plus-action{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;gap:0;border-radius:50%}
-.workspace-page .plus-action>.icon{width:24px;height:24px}
-.workspace-page .workspace-add-action.plus-action{width:56px;height:56px;min-width:56px;min-height:56px;padding:0;border-radius:50%}
-.workspace-page .calendar-day-sheet>footer{display:flex;justify-content:flex-end}
-.workspace-page .calendar-day-sheet footer .plus-action{width:48px;height:48px;min-width:48px;min-height:48px}
 .direct-editor[data-closing],.calendar-day-sheet[data-closing]{pointer-events:none}
 
 /* Emoji choices precede the composer; all controls share a 44px starting height. */
@@ -125,6 +119,31 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .auth-app.workspace-page.public-document-page .auth-main.auth-wide{margin-bottom:0}
 .auth-app.workspace-page.public-document-page .auth-footer{display:flex;flex-wrap:wrap;gap:12px;position:static;padding:20px 16px max(20px,env(safe-area-inset-bottom))}
 
+/* Labeled actions reuse the home card's compact button style. */
+.workspace-page .registration-action{width:auto;height:auto;min-width:64px;min-height:40px;padding:8px 14px;gap:6px;border-radius:10px}
+.workspace-page .workspace-add-action.registration-action{width:auto;height:auto;min-width:72px;min-height:44px;padding:10px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:.8rem;font-weight:650}
+.workspace-page .calendar-day-sheet footer .registration-action{width:auto;min-width:72px}
+
+/* A permanent picture vocabulary sits immediately above the input. */
+.conversation-sticker-art{--sticker-paper:#fffdf8;--sticker-wash:#f2eedf;--sticker-ink:#28483f;display:block;width:100%;height:auto;aspect-ratio:1}
+.conversation-stickers{min-width:0;margin-bottom:8px}
+.conversation-stickers-heading{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.75rem;margin-bottom:5px}
+.conversation-stickers-heading>span{color:var(--muted);font-size:.68rem}
+.conversation-stickers-heading>div{display:flex;gap:4px;margin-left:auto}
+.conversation-stickers-heading button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);cursor:pointer}
+.conversation-stickers-heading .icon{width:16px;height:16px}
+.conversation-sticker-tray{display:grid;grid-template-rows:repeat(2,90px);grid-auto-flow:column;grid-auto-columns:90px;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scroll-snap-type:x proximity;padding:2px 2px 5px}
+.conversation-sticker-tray>button{min-width:0;min-height:0;padding:2px;border:1px solid var(--line);border-radius:15px;background:var(--surface);cursor:pointer;scroll-snap-align:start;overflow:hidden}
+.conversation-sticker-tray>button[aria-pressed=true]{border:2px solid var(--primary);padding:1px;background:var(--mint);box-shadow:0 0 0 1px var(--primary)}
+.conversation-sticker-tray>button:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.conversation-sticker-selection{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;margin-bottom:6px;padding:0 8px;border-radius:10px;background:var(--mint);font-size:.75rem;color:var(--ink)}
+.conversation-sticker-selection .icon-button{width:36px;min-width:36px;height:36px;min-height:36px;padding:6px}
+.group-chat .chat-bubble.picture-bubble{width:132px;padding:4px;border-radius:20px;line-height:1}
+.workspace-page .group-chat .chat-new-message{position:static;align-self:center;margin:4px 0;flex-shrink:0}
+html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticker-wash:#2c443b;--sticker-ink:#f0f7ef}
+@media(min-width:761px){.conversation-sticker-tray{grid-template-rows:repeat(2,96px);grid-auto-columns:96px}}
+@media(max-height:600px){.conversation-sticker-tray{grid-template-rows:76px}.conversation-stickers-heading{margin-bottom:2px}.conversation-stickers-heading>span{display:none}}
+
 /* Reserve identical scrollbar space in the date header and timed rows. */
 .workspace-page .timetable-week,.workspace-page .timetable-all-day,.workspace-page .timetable-scroll{scrollbar-gutter:stable;scrollbar-width:thin}
 .workspace-page .timetable-week,.workspace-page .timetable-all-day{overflow:hidden}
@@ -141,3 +160,12 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .workspace-page .timetable-card .timetable-range{font-size:.65rem;font-weight:400}
 .workspace-page .timetable-card:hover{box-shadow:none;filter:brightness(.96)}
 @media(max-width:760px){.workspace-page .timetable-card{border-left-width:2px;padding-inline:4px}.workspace-page .timetable-card .timetable-title{font-size:.65rem}.workspace-page .timetable-card .timetable-range{font-size:.6rem}}
+
+/* Keep the picture tray and send control reachable in a short landscape viewport. */
+.workspace-page .group-chat .chat-send{margin:0}
+@media(max-height:500px){
+ .workspace-page .group-chat .chat-room-header{padding-block:4px;min-height:44px;flex-shrink:0}
+ .workspace-page .group-chat-history{padding-block:0}
+ .workspace-page .conversation-sticker-tray{grid-template-rows:64px;grid-auto-columns:64px}
+ .workspace-page .conversation-sticker-selection{min-height:32px;margin-bottom:4px}
+}
