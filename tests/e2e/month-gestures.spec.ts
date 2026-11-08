@@ -19,7 +19,7 @@ test('tuition and notes swipe across months while filters, taps, scrolling and r
   for(const [date,title] of [['2026-12-15','12월 메모'],['2027-01-15','1월 메모']])await api('items.create',{kind:'NOTE',data:{title,date,assigneeId:me.id,note:'가족 준비물을 확인해요.'}});
   for(let n=1;n<=10;n++)await api('items.create',{kind:'NOTE',data:{title:'12월 기록 '+n,date:'2026-12-16',assigneeId:me.id,note:'확인할 내용'}});
   const cdp=await context.newCDPSession(page),month=page.getByLabel('조회 월',{exact:true}),area=page.locator('.month-swipe-area');
-  const settled=async()=>{await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);};
+  const settled=async()=>{await expect.poll(()=>area.evaluate(node=>node.getAnimations().length)).toBe(0);};
   const touch=async(from:{x:number;y:number},to:{x:number;y:number},cancel=false)=>{
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...from,id:1}]});
    for(let n=1;n<=10;n++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*n/10,y:from.y+(to.y-from.y)*n/10,id:1}]});await page.waitForTimeout(16);}
