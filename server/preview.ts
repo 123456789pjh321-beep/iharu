@@ -1,3 +1,4 @@
+import {publicPaths} from '../shared/public-content.js';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -5,8 +6,7 @@ import { createApp } from './app.js';
 const app = new Hono();
 app.all('/api', c => createApp().fetch(c.req.raw));
 app.all('/api/*', c => createApp().fetch(c.req.raw));
-app.get('/service', serveStatic({ path:'./dist/service.html' }));
-app.get('/guide', serveStatic({ path:'./dist/guide.html' }));
+for(const path of publicPaths)app.get(path,serveStatic({path:'./dist'+path+'.html'}));
 app.use('*', serveStatic({ root:'./dist' }));
 app.get('/assets/*', c => c.text('Not found', 404));
 app.get('*', serveStatic({ path:'./dist/index.html' }));
