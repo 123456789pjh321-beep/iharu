@@ -42,7 +42,7 @@
 .timetable-week button>strong{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;font-size:1rem}
 .timetable-week button[aria-pressed=true]{background:var(--mint);color:var(--primary)}
 .timetable-week button[aria-pressed=true]>span{color:var(--primary)}
-.timetable-week button[aria-pressed=true]>strong{background:var(--primary);color:#fff}
+.timetable-week button[aria-pressed=true]>strong{background:var(--primary);color:var(--surface)}
 .timetable-week button.is-today{box-shadow:none}.timetable-week button.is-today:not([aria-pressed=true])>strong{box-shadow:inset 0 0 0 1px var(--primary);color:var(--primary)}
 .personal-timetable>.timetable-summary{padding-top:10px;padding-bottom:12px}
 .workspace-page .calendar-weekdays{padding-top:5px;padding-bottom:10px}
