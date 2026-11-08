@@ -10,7 +10,7 @@ test('system administrator manages family-grouped members, sessions, roles and a
  try{
   await signup(other,'console-parent@example.test','운영 보호자');expect((await api(other,'admin/access')).allowed).toBe(false);
   const invite=await api(page.request,'workspace/invite.issue',{consent:true});await api(other,'workspace/family.join',{code:invite.code});const next=await api(page.request,'workspace/invite.issue',{consent:true});await api(child,'workspace/child.signup',{loginId:'console_child',name:'가상 서준',password,code:next.code});
-  await page.goto('/admin');await expect(page.getByRole('heading',{name:'시스템 관리 최고관리자'})).toBeVisible();await expect(page.getByRole('navigation',{name:'주 메뉴'}).getByRole('link',{name:'관리',exact:true})).toBeVisible();
+  await page.goto('/admin');await expect(page.getByRole('heading',{name:'시스템 관리 최고관리자'})).toBeVisible();await page.getByRole('button',{name:'더보기',exact:true}).click();await expect(page.getByRole('dialog',{name:'전체 메뉴'}).getByRole('link',{name:'관리',exact:true})).toBeVisible();await page.getByRole('button',{name:'전체 메뉴 닫기'}).click();
   await page.getByRole('button',{name:'회원관리',exact:true}).click();await page.getByLabel('회원 검색').fill('운영관리자');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-family')).toHaveCount(1);await expect(page.locator('.admin-member-row')).toHaveCount(3);await expect(page.locator('.admin-member-row').first()).toContainText('가족 호스트');
   await page.screenshot({path:'test-results/ui83-admin-members-desktop.png',animations:'disabled'});
   let releaseMember!:()=>void;const memberHold=new Promise<void>(resolve=>{releaseMember=resolve;});await page.route('**/api/v1/admin/member',async route=>{await memberHold;await route.continue();},{times:1});

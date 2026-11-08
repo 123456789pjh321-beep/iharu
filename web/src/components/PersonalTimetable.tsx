@@ -1,3 +1,4 @@
+import {useHolidays} from './useHolidays';
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
 import {addDays,koreaToday} from '../../../shared/schedules';
 import {dailySchedules,scheduleAssignee,schedulePhase,timetableLayout,timeLabel,timeMinutes,visibleOn} from '../../../shared/workspace-schedules';
@@ -13,6 +14,7 @@ const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=1.2;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
 export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
+ const holidays=useHolidays(day.slice(0,7));
  const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef(''),week=useRef<HTMLDivElement>(null);
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
  useEffect(()=>{if(member!=='all'&&!members.some(m=>m.id===member))setMember('all');},[members,member]);
@@ -40,8 +42,9 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  return <section className={'personal-timetable'+(embedded?' calendar-daily':'')} aria-label={embedded?'일간 일정':'일별 시간표'}>
   {!embedded&&<><WorkspaceToolbar title="시간표" createLabel="일정 등록" onCreate={()=>create(day)} navigation={<DateNavigator type="date" value={day} inputLabel="시간표 날짜 선택" onChange={setDay}/>}/>
   <MemberFilter className="timetable-filters" members={members} value={member} onChange={setMember} label="시간표 구성원 필터"/>
-  <div ref={week} className="timetable-week" aria-label="날짜 선택" {...weekSwipe}>{dates.map((date,n)=><button type="button" key={date} data-timetable-date={date} aria-label={`${date} 시간표`} aria-pressed={date===day} className={date===today?'is-today':''} onClick={()=>setDay(date)}><span>{weekday[n]}</span><strong>{Number(date.slice(8))}</strong><i className={items.some(i=>visibleOn(i,date))?'has-events':''} aria-hidden="true"/></button>)}</div></>}
+  <div ref={week} className="timetable-week" aria-label="날짜 선택" {...weekSwipe}>{dates.map((date,n)=><button type="button" key={date} data-timetable-date={date} aria-label={`${date} 시간표${holidays.name(date)?' · '+holidays.name(date):''}`} aria-pressed={date===day} className={(date===today?'is-today ':'')+(holidays.name(date)||n===0?'holiday-date':n===6?'saturday-date':'')} onClick={()=>setDay(date)}><span>{weekday[n]}</span><strong>{Number(date.slice(8))}</strong><i className={items.some(i=>visibleOn(i,date))?'has-events':''} aria-hidden="true"/></button>)}</div></>}
   <div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}{day===today&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span></div>
+  {holidays.name(day)&&<p className="timetable-holiday holiday-label">{holidays.name(day)}</p>}
   {day===today&&!loading&&<div className="timetable-current-summary" aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
   <div className="calendar-viewport timetable-viewport"><div ref={page} className="timetable-day" aria-busy={loading} {...daySwipe}>
    {allDay.length>0&&<div className="timetable-all-day"><span>종일</span><div>{allDay.map(item=><button type="button" key={item.id} className="timetable-card timetable-all-day-card" style={{'--event-color':eventColor(item,members)} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} data-timetable-item={item.id}>{content(item)}</button>)}</div></div>}

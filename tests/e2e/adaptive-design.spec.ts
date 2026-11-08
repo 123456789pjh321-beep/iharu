@@ -7,7 +7,7 @@ for(const [width,height] of [[320,740],[390,844],[600,960],[768,1024],[820,1180]
   for(const route of pages){
    await page.goto('/test/'+route);
    await expect(page.locator('main h1')).toBeVisible();
-   const nav=page.locator(width<=760?'.workspace-mobile-nav':'.workspace-rail');
+   const nav=page.locator('.workspace-mobile-nav');
    await expect(nav).toBeVisible();
    const bounds=await nav.boundingBox();expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.y).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width+1);expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(height+1);
    expect(await page.evaluate(()=>({x:document.documentElement.scrollWidth>innerWidth,y:document.documentElement.scrollHeight>innerHeight}))).toEqual({x:false,y:false});

@@ -1,3 +1,4 @@
+import {holidayCalendarRoutes} from './schedules/holiday-calendar.js';
 import {legalRoutes} from './legal/routes.js';
 import {workspaceRoutes} from './workspace/routes.js';
 import {adminRoutes} from './admin/routes.js';
@@ -54,6 +55,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
     if (!parsed.success) return c.json({ error:{ code:'INVALID_QUERY', message:'조회할 아이와 월을 다시 확인해 주세요.' }, requestId:c.get('requestId') }, 400);
     return c.json(envelope(dashboardSchema).parse({ data:getDemoDashboard(parsed.data.child, parsed.data.month), meta:meta(c.get('requestId'), 'demo') }));
   });
+  app.route('/', holidayCalendarRoutes());
   app.route('/', accountRoutes(authRuntime));
   app.route('/', legalRoutes(authRuntime,familyRuntime));
   app.route('/', adminRoutes(authRuntime,familyRuntime));

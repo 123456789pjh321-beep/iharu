@@ -1,0 +1,61 @@
+/* Shared viewport contract: navigation never switches to a side rail. */
+:root{--workspace-nav-height:72px;--holiday-ink:#b23b50}
+html[data-theme=dark]{--holiday-ink:#ffa9b5}
+.workspace-rail{display:none!important}
+.workspace-mobile-nav{position:fixed;inset:auto 0 0;z-index:50;display:flex;align-items:stretch;justify-content:space-around;gap:2px;height:calc(var(--workspace-nav-height) + env(safe-area-inset-bottom));box-sizing:border-box;padding:6px max(6px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));overflow:visible;border-top:1px solid var(--line);background:var(--surface);box-shadow:0 -2px 12px #19395708}
+.workspace-mobile-nav a,.workspace-mobile-nav>button{position:relative;display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;max-width:160px;min-height:0;padding:4px 2px;border:0;border-radius:12px;background:transparent;color:var(--muted);font:inherit;font-size:.72rem;line-height:1.3;font-weight:650;cursor:pointer}
+.workspace-mobile-nav a.active,.workspace-mobile-nav>button.active{background:var(--mint);color:var(--primary)}
+.workspace-mobile-nav .rail-icon .icon{width:22px;height:22px}.workspace-mobile-nav .rail-active-dot{display:none}
+.auth-app.workspace-page .auth-main.auth-wide{padding:0;margin:0 0 calc(var(--workspace-nav-height) + env(safe-area-inset-bottom));width:100%;max-width:none}
+.app:has(.workspace-mobile-nav) .main,.test-workspace .test-main{padding-right:16px;padding-left:16px;padding-bottom:24px;margin-bottom:calc(var(--workspace-nav-height) + env(safe-area-inset-bottom))}
+.app:has(.workspace-mobile-nav) .page-footer{display:none}
+.workspace-page .workspace-add-action{right:max(16px,env(safe-area-inset-right));bottom:calc(var(--workspace-nav-height) + env(safe-area-inset-bottom) + 16px)}
+.workspace-menu-dialog{width:min(720px,calc(100vw - 24px));max-height:calc(100dvh - 24px);box-sizing:border-box}
+.workspace-toolbar{padding-top:8px}.workspace-page .auth-header{min-height:60px;height:60px}
+.workspace-page .workspace-brand{font-size:1.15rem}.workspace-page .workspace-brand .brandmark{width:34px;height:34px}
+.workspace-page .theme-toggle button{min-height:36px}
+.calendar-legend{padding-bottom:84px}
+.calendar-holiday{display:block;color:var(--holiday-ink);font-size:.7rem;font-weight:650;line-height:1.45;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.holiday-date .calendar-day-target>span,.timetable-week .holiday-date:not([aria-pressed=true])>strong{color:var(--holiday-ink)}
+.saturday-date .calendar-day-target>span,.timetable-week .saturday-date:not([aria-pressed=true])>strong{color:var(--primary)}
+.is-today .calendar-day-target>span{color:var(--surface)}
+.holiday-label{color:var(--holiday-ink);font-weight:650}.holiday-status{margin:0;padding:8px 16px;font-size:.75rem;color:var(--muted)}
+.timetable-holiday{margin:0;padding:0 16px 10px;font-size:.8rem;flex-shrink:0}
+/* A date opens its agenda before an editor; overflow exposes every event. */
+.calendar-day-sheet{width:min(800px,calc(100vw - 24px));max-width:none;max-height:90dvh;padding:0;border:1px solid var(--line);border-radius:20px;background:var(--surface);color:var(--ink);overflow:hidden;box-shadow:var(--shadow-raised)}
+.calendar-day-sheet[open]{display:flex;flex-direction:column}.calendar-day-sheet::backdrop,.direct-editor::backdrop{background:#10283c66}
+.calendar-day-sheet>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--line);flex-shrink:0}
+.calendar-day-sheet h2{margin:0;font-size:1.2rem}.calendar-day-sheet header p{margin:6px 0 0;font-size:.85rem}
+.calendar-day-sheet-body{min-height:160px;overflow:auto;padding:0 20px;overscroll-behavior:contain}
+.day-sheet-event{display:flex;align-items:center;gap:16px;width:100%;min-height:76px;padding:16px 4px;border:0;border-bottom:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.day-sheet-event>span{font-size:.8rem;color:var(--muted);flex:0 0 86px}.day-sheet-event>div{flex:1;min-width:0;border-left:4px solid var(--event-color);padding-left:12px}.day-sheet-event strong,.day-sheet-event small{display:block;overflow-wrap:anywhere}.day-sheet-event small{font-size:.78rem;color:var(--muted);margin-top:5px}.day-sheet-event>.icon{flex-shrink:0;width:18px}
+.day-sheet-empty{display:grid;place-items:center;min-height:150px;margin:0;color:var(--muted)}
+.calendar-day-sheet>footer{padding:16px 20px max(16px,env(safe-area-inset-bottom));border-top:1px solid var(--line);flex-shrink:0}.calendar-day-sheet footer .button{width:100%}
+/* Full-screen entry surface with always reachable Back / Save controls. */
+.workspace-page .personal-editor.direct-editor{position:fixed;inset:0;width:100%;height:100dvh;max-width:none;max-height:100dvh;margin:0;padding:0;border:0;border-radius:0;background:var(--surface);color:var(--ink);box-sizing:border-box;overflow:hidden}
+.workspace-page .direct-editor[open]{display:flex;flex-direction:column}
+.workspace-page .direct-editor .entry-editor-header{position:relative;display:flex;align-items:center;gap:12px;flex-shrink:0;min-height:64px;margin:0;padding:8px max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--surface);box-sizing:border-box}
+.entry-editor-header h2{flex:1;margin:0;font-size:1rem}.entry-editor-header .icon-button{flex-shrink:0}.entry-editor-header .button{min-width:72px;min-height:44px}
+.entry-editor-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px max(16px,env(safe-area-inset-right)) max(32px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.entry-editor-body>*{max-width:1040px;margin-inline:auto}
+.workspace-page .direct-editor .auth-form fieldset{display:grid;gap:0;min-width:0;padding:0;margin:0;border:0}
+.entry-editor-body .form-field{display:grid;grid-template-columns:120px minmax(0,1fr);align-items:center;gap:12px;margin:0;padding:10px 0;border-bottom:1px solid var(--line)}
+.entry-editor-body .form-field label{font-size:.85rem;margin:0;color:var(--muted)}
+.entry-editor-body .form-field:first-of-type:has(#personal-title){display:block;padding:8px 0 16px}
+.entry-editor-body .form-field:has(#personal-title)>label{display:block;margin-bottom:6px}
+.workspace-page .direct-editor #personal-title{border:0;border-radius:0;font-size:1.5rem;font-weight:750;padding:8px 0;min-height:52px;background:transparent;box-shadow:none}
+.entry-editor-body :is(input,select,textarea){min-width:0;max-width:100%;font:inherit}
+.entry-editor-body .check-option{padding:14px 0;border-bottom:1px solid var(--line);min-height:48px}
+.entry-editor-body .personal-form-columns{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.entry-editor-body .personal-form-columns .form-field{grid-template-columns:90px minmax(0,1fr)}
+.entry-editor-body .event-color-options{padding:16px 0;border-bottom:1px solid var(--line)}
+.entry-editor-body .personal-week-options{padding:12px 0}
+.entry-editor-body .editor-actions{position:static;padding-top:16px;margin-top:16px;border:0}.entry-editor-body .editor-actions:empty{display:none}
+.entry-editor-body .account-caption{font-size:.78rem;margin-block:12px;color:var(--muted)}
+@media(max-width:760px){
+ .workspace-date-navigation{flex:1 1 150px}.workspace-toolbar-actions{flex:0 0 auto}.calendar-view-switch button{padding-inline:9px;font-size:.72rem}.workspace-date-picker{font-size:1.15rem}
+ .calendar-holiday{font-size:.62rem}.calendar-day-sheet{margin:auto 0 0;width:100%;max-height:90dvh;border-radius:20px 20px 0 0}.calendar-day-sheet-body{padding-inline:16px}
+ .entry-editor-body .form-field{grid-template-columns:92px minmax(0,1fr);gap:8px}.entry-editor-body .personal-form-columns{gap:12px}.entry-editor-body .personal-form-columns .form-field{grid-template-columns:1fr;gap:6px}
+ .workspace-page .direct-editor #personal-title{font-size:1.3rem}
+}
+@media(max-height:500px){:root{--workspace-nav-height:56px}.workspace-mobile-nav a,.workspace-mobile-nav>button{gap:2px;font-size:.65rem}.workspace-mobile-nav .rail-icon .icon{width:18px;height:18px}.workspace-page .auth-header{height:52px;min-height:52px}.entry-editor-header{min-height:52px}.calendar-day-sheet{max-height:96dvh}.day-sheet-empty{min-height:80px}}
