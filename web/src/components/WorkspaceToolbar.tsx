@@ -11,14 +11,14 @@ export function WorkspaceToolbar({title,navigation,createLabel,onCreate,children
  </header><button type="button" className="button primary workspace-add-action" aria-label={createLabel} title={createLabel} onClick={onCreate}><Icon name="plus"/><span>{createLabel}</span></button></>;
 }
 
-export function DateNavigator({type,value,inputLabel,previousLabel,nextLabel,onChange,onMove,onToday}:{
- type:'date'|'month';value:string;inputLabel:string;previousLabel:string;nextLabel:string;
- onChange:(value:string)=>void;onMove:(delta:number)=>void;onToday:()=>void;
+export function DateNavigator({type,value,inputLabel,onChange}:{
+ type:'date'|'month';value:string;inputLabel:string;
+ onChange:(value:string)=>void;
 }){
  const label=type==='month'
   ? `${Number(value.slice(0,4))}년 ${Number(value.slice(5,7))}월`
   : `${Number(value.slice(5,7))}월 ${Number(value.slice(8))}일 (${weekdays[new Date(value+'T12:00:00Z').getUTCDay()]})`;
- return <div className="workspace-date-navigation" role="group" aria-label="날짜 이동">
+ return <div className="workspace-date-navigation" role="group" aria-label="날짜 선택">
   <label className="workspace-date-picker" title={value}>
    <span aria-hidden="true">{label}</span><Icon name="chevron"/>
    <input type={type} aria-label={inputLabel} value={value} onClick={e=>{try{e.currentTarget.showPicker?.();}catch{/* Native input remains available without picker support. */}}} onChange={e=>{
@@ -26,8 +26,5 @@ export function DateNavigator({type,value,inputLabel,previousLabel,nextLabel,onC
     if((type==='month'?/^\d{4}-\d{2}$/:/^\d{4}-\d{2}-\d{2}$/).test(next))onChange(next);
    }}/>
   </label>
-  <button type="button" className="workspace-date-arrow" aria-label={previousLabel} onClick={()=>onMove(-1)}><Icon name="chevron" className="flip"/></button>
-  <button type="button" className="workspace-date-today" onClick={onToday}>오늘</button>
-  <button type="button" className="workspace-date-arrow" aria-label={nextLabel} onClick={()=>onMove(1)}><Icon name="chevron"/></button>
  </div>;
 }

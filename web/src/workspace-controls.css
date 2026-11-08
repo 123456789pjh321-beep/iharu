@@ -1,11 +1,8 @@
 /* A clear date title, compact controls, and a persistent creation action. */
 .workspace-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;padding:12px 16px 4px;min-width:0;flex-shrink:0;background:var(--surface)}
-.workspace-date-navigation{display:flex;align-items:center;gap:4px;flex:1 1 300px;max-width:540px;min-width:0}
-.workspace-date-navigation button,.workspace-date-picker{height:44px;min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--ink);font:inherit;box-sizing:border-box}
-.workspace-date-navigation button{display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer;flex-shrink:0}
-.workspace-date-arrow{width:44px}.workspace-date-arrow .icon{width:20px;height:20px}
-.workspace-date-navigation .workspace-date-today{min-width:48px;padding-inline:10px;border:1px solid var(--line);font-size:.82rem;font-weight:700}
-.workspace-date-picker{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:6px;flex:1;min-width:0;padding:0;cursor:pointer;font-size:1.25rem}
+.workspace-date-navigation{display:flex;align-items:center;flex:1 1 160px;min-width:0}
+.workspace-date-picker{height:44px;min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--ink);font:inherit;box-sizing:border-box}
+.workspace-date-picker{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:6px;flex:0 1 auto;min-width:0;padding:0;cursor:pointer;font-size:1.25rem}
 .workspace-date-picker>span{font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .workspace-date-picker>.icon{width:15px;height:15px;flex-shrink:0;color:var(--muted);transform:rotate(90deg)}
 .workspace-date-picker input{position:absolute;inset:0;width:100%;height:100%;min-width:0;padding:0;border:0;opacity:0;cursor:pointer}
@@ -13,7 +10,6 @@
 .calendar-view-switch{display:flex;gap:2px;padding:3px;border-radius:11px;background:var(--surface-sub);border:1px solid var(--line)}
 .calendar-view-switch button{min-height:36px;padding:5px 14px;border:0;border-radius:8px;background:transparent;color:var(--muted);font:inherit;font-size:.8rem;font-weight:650;cursor:pointer}
 .calendar-view-switch button[aria-pressed=true]{background:var(--surface);color:var(--primary);font-weight:800;box-shadow:0 1px 4px #102c4b12}
-.workspace-date-navigation button:hover{background:var(--surface-sub)}
 .workspace-date-picker:focus-within,.workspace-toolbar button:focus-visible,.workspace-add-action:focus-visible,.member-filter-expand:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .workspace-page .workspace-add-action{position:fixed;right:136px;bottom:24px;z-index:25;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:56px;min-height:56px;margin:0;padding:0 20px;border:0;border-radius:28px;background:var(--primary);color:#fff;box-shadow:0 4px 16px #102c4b26;font-size:.9rem;font-weight:750;cursor:pointer}
 .workspace-add-action .icon{width:24px;height:24px;flex-shrink:0}

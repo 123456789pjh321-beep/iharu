@@ -41,26 +41,29 @@ test('parent B joins while signed in and group conversation has shared history, 
 test('calendar slides in the chosen direction, survives fast navigation and respects reduced motion',async({page,request})=>{
  await page.setViewportSize({width:390,height:844});await login(page,request,'calendar-motion@example.test');await page.goto('/today/calendar');await expect(page.locator('.calendar-grid')).toBeVisible();
  const initial=await page.getByLabel('달력 월 선택').inputValue();
- async function turn(label:string){return page.evaluate(label=>new Promise<{start:number;end:number;hidden:boolean;inert:boolean}>(resolve=>{
+ async function turn(delta:number){return page.evaluate(delta=>new Promise<{start:number;end:number;hidden:boolean;inert:boolean}>(resolve=>{
   const viewport=document.querySelector('.calendar-viewport')!;
   const observer=new MutationObserver(()=>{
    const snapshot=viewport.querySelector<HTMLElement>('.calendar-motion-snapshot'),grid=viewport.querySelector('.calendar-grid');if(!snapshot||!grid)return;
    const animation=grid.getAnimations()[0];if(!animation)return;
    const frames=(animation.effect as KeyframeEffect).getKeyframes(),translation=(v:unknown)=>Number(String(v).match(/translateX\((-?[\d.]+)/)?.[1]);observer.disconnect();resolve({start:translation(frames[0].transform),end:translation(frames.at(-1)!.transform),hidden:snapshot.getAttribute('aria-hidden')==='true',inert:snapshot.inert});
   });observer.observe(viewport,{childList:true});
-  (document.querySelector(`button[aria-label="${label}"]`) as HTMLButtonElement).click();
- }),label);}
- expect(await turn('다음 기간')).toEqual({start:100,end:0,hidden:true,inert:true});
- expect(await turn('이전 기간')).toEqual({start:-100,end:0,hidden:true,inert:true});
+  const grid=document.querySelector('.calendar-grid')!;
+  grid.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,isPrimary:true,clientX:200,clientY:100}));
+  grid.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,button:0,isPrimary:true,clientX:200-delta*100,clientY:100}));
+ }),delta);}
+ async function swipe(delta:number){await page.locator('.calendar-grid').dispatchEvent('pointerdown',{button:0,isPrimary:true,clientX:200,clientY:100});await page.locator('.calendar-grid').dispatchEvent('pointerup',{button:0,isPrimary:true,clientX:200-delta*100,clientY:100});}
+ expect(await turn(1)).toEqual({start:100,end:0,hidden:true,inert:true});
+ expect(await turn(-1)).toEqual({start:-100,end:0,hidden:true,inert:true});
  await expect(page.getByLabel('달력 월 선택')).toHaveValue(initial);
  // Reversing during a transition must clean up the previous visual page.
- await page.getByRole('button',{name:'다음 기간'}).click();await page.getByRole('button',{name:'이전 기간'}).click();
+ await swipe(1);await swipe(-1);
  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(page.getByLabel('달력 월 선택')).toHaveValue(initial);await expect(page.getByRole('dialog')).toHaveCount(0);
  expect(await page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
- await page.emulateMedia({reducedMotion:'reduce'});await page.getByRole('button',{name:'다음 기간'}).click();await expect(page.getByLabel('달력 월 선택')).not.toHaveValue(initial);
+ await page.emulateMedia({reducedMotion:'reduce'});await swipe(1);await expect(page.getByLabel('달력 월 선택')).not.toHaveValue(initial);
  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
- await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await page.getByRole('button',{name:'다음 기간'}).click();await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
- await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await expect(page.locator('.calendar-grid')).toBeVisible();await page.getByRole('button',{name:'다음 기간'}).click();
+ await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await swipe(1);await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await expect(page.locator('.calendar-grid')).toBeVisible();await swipe(1);
  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
 });
 
@@ -125,10 +128,10 @@ for(const width of [320,768,1440])test(`all functional canvases and calendar edi
   await page.goto(path);await expect(page.locator('.auth-panel')).toBeVisible();await expect(page.locator('.auth-panel')).toHaveCSS('padding','0px');await expect(page.locator('.loading-state')).toHaveCount(0);
   await expect.poll(()=>page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
   if(['/timetable','/today/calendar','/tuition','/records'].includes(path)){
-   const toolbar=page.locator('.workspace-toolbar'),navigation=toolbar.getByRole('group',{name:'날짜 이동',exact:true});
+   const toolbar=page.locator('.workspace-toolbar'),navigation=toolbar.getByRole('group',{name:'날짜 선택',exact:true});
    await expect(toolbar).toHaveCount(1);
    const controls=await navigation.locator('button,.workspace-date-picker').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,height:r.height};}));
-   expect(controls).toHaveLength(4);
+   expect(controls).toHaveLength(1);await expect(navigation.getByRole('button')).toHaveCount(0);
    for(let i=0;i<controls.length;i++){expect(controls[i].height).toBeGreaterThanOrEqual(44);if(i){expect(controls[i].x).toBeGreaterThanOrEqual(controls[i-1].right);expect(controls[i].y).toBe(controls[0].y);}}
    const toolbarBox=(await toolbar.boundingBox())!,action=page.locator('.workspace-add-action'),actionBox=(await action.boundingBox())!;
    await expect(action).toHaveCount(1);expect(actionBox.width).toBeGreaterThanOrEqual(56);expect(actionBox.height).toBeGreaterThanOrEqual(56);
@@ -143,13 +146,13 @@ for(const width of [320,768,1440])test(`all functional canvases and calendar edi
    }
    const input=navigation.locator('input'),daily=path==='/timetable';
    await input.fill(daily?'2026-12-31':'2026-12');
-   await navigation.getByRole('button',{name:/^다음/}).click();await expect(input).toHaveValue(daily?'2027-01-01':'2027-01');
-   await navigation.getByRole('button',{name:/^이전/}).click();await expect(input).toHaveValue(daily?'2026-12-31':'2026-12');
+   await input.fill(daily?'2027-01-01':'2027-01');await expect(input).toHaveValue(daily?'2027-01-01':'2027-01');
+   await input.fill(daily?'2026-12-31':'2026-12');await expect(input).toHaveValue(daily?'2026-12-31':'2026-12');
    await action.click();await expect(page.getByRole('dialog')).toBeVisible();
    await expect(page.locator('#personal-date')).toHaveValue(daily?'2026-12-31':'2026-12-01');await page.getByRole('button',{name:'편집 닫기'}).click();
-   await navigation.getByRole('button',{name:'오늘',exact:true}).click();await expect(input).toHaveValue(daily?koreaToday():koreaToday().slice(0,7));
-   await page.screenshot({path:`test-results/ui90-${path.replaceAll('/','-')}-${width}.png`,animations:'disabled'});
-   if(width===320){await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:`test-results/ui90-${path.replaceAll('/','-')}-dark.png`,animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();}
+   await input.fill(daily?koreaToday():koreaToday().slice(0,7));await expect(input).toHaveValue(daily?koreaToday():koreaToday().slice(0,7));
+   await page.screenshot({path:`test-results/ui91-${path.replaceAll('/','-')}-${width}.png`,animations:'disabled'});
+   if(width===320){await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:`test-results/ui91-${path.replaceAll('/','-')}-dark.png`,animations:'disabled'});await page.getByRole('button',{name:'밝게',exact:true}).click();}
   }
   if(['/tuition','/family','/account'].includes(path))await page.screenshot({path:`test-results/ui78-${path.slice(1)}-${width}.png`});
   await expect(page.locator('.workspace-tabs,.personal-context')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -181,7 +184,7 @@ test('daily timetable shares calendar CRUD, all-family assignment, time order an
   const contrast=await page.locator('.timetable-event').first().evaluate(el=>{const canvas=document.createElement('canvas');canvas.width=canvas.height=1;const ctx=canvas.getContext('2d')!;const luminance=(color:string)=>{ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);const [r,g,b]=Array.from(ctx.getImageData(0,0,1,1).data).slice(0,3).map(n=>{const v=n/255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return .2126*r+.7152*g+.0722*b;};const fg=luminance(getComputedStyle(el.querySelector('.timetable-title')!).color),bg=luminance(getComputedStyle(el).backgroundColor);return (Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05);});expect(contrast).toBeGreaterThanOrEqual(4.5);
  await page.getByRole('button',{name:'밝게',exact:true}).click();
   const box=await page.locator('.timetable-day').boundingBox();await page.mouse.move(box!.x+box!.width-15,box!.y+40);await page.mouse.down();await page.mouse.move(box!.x+15,box!.y+42,{steps:8});await page.mouse.up();await expect(page.getByLabel('시간표 날짜 선택')).not.toHaveValue(today);await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
-  await page.getByRole('button',{name:'오늘',exact:true}).click();await expect(page.getByLabel('시간표 날짜 선택')).toHaveValue(today);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'test-results/ui81-timetable-desktop.png'});
+  await page.getByLabel('시간표 날짜 선택').fill(today);await expect(page.getByLabel('시간표 날짜 선택')).toHaveValue(today);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'test-results/ui81-timetable-desktop.png'});
   await page.goto('/today/calendar');await page.getByRole('button',{name:today+' 일정 등록',exact:true}).click({position:{x:12,y:12}});await expect(page.locator('.editor-day-events')).not.toContainText('함께 저녁');
  }finally{await ctx.close();}
 });
