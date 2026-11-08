@@ -13,3 +13,9 @@
 추가: PlusButton.tsx, useSlidingDialog.ts, compact-actions.spec.ts, 본 문서.
 수정: WorkspaceToolbar.tsx, CalendarDaySheet.tsx, PersonalWorkspace.tsx, PersonalFees.tsx, PersonalChat.tsx, PersonalTimetable.tsx, compact-workspace.css, calendar-holidays-layout.spec.ts, timetable-gestures.spec.ts, direct-workspace.spec.ts, daily-calendar.spec.ts.
 삭제: 없음.
+
+## UI98 — 달력 동일 일정 연결 표시
+- 월간·주간에서 제목, 대상, 시간, 장소, 메모, 색상, 작성자가 같은 연속 날짜를 한 막대로 표시합니다. 주 경계와 일정이 없는 날에는 나눕니다.
+- 같은 날의 동일 항목은 한 표시로 묶되 `N건`을 표시하고 날짜 상세에서 각 원본을 확인합니다. 데이터 병합·삭제나 권한 변경은 없습니다.
+- 막대를 누른 날짜의 원본 일정이 열리고, 날짜 숫자·더 보기에서는 모든 일정을 개별로 확인할 수 있습니다.
+- 추가: `shared/calendar-layout.ts`, `web/src/components/CalendarWeekRow.tsx`, `tests/calendar-layout.test.ts`, `tests/e2e/calendar-merged-events.spec.ts`. 수정: `PersonalCalendar.tsx`, `compact-workspace.css`, 관련 회귀 검사. 삭제 없음.

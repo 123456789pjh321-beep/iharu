@@ -106,3 +106,19 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .workspace-page .timetable-all-day-card .timetable-range{display:none}
 .workspace-page .timetable-now>strong{font-size:.6rem;padding:3px 4px;margin-right:0;white-space:nowrap}
 @media(max-width:360px){.workspace-page .timetable-week{padding-left:52px}.workspace-page .timetable-all-day{grid-template-columns:52px minmax(0,1fr)}.workspace-page .timetable-card{padding-inline:3px}.workspace-page .timetable-card .timetable-title{font-size:.7rem}.workspace-page .timetable-card .timetable-range{font-size:.6rem}.workspace-page .timetable-summary{font-size:.7rem}.workspace-page .timetable-current-summary{max-width:35%}}
+
+/* Repeated adjacent occurrences share one bar, with original dates kept underneath. */
+.direct-calendar .calendar-grid{display:flex;flex-direction:column;gap:0;background:var(--surface)}
+.calendar-week-row{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));--calendar-week-header:36px;min-height:calc(var(--calendar-week-header) + var(--calendar-event-rows)*32px + 32px);flex:1;border-bottom:1px solid var(--line)}
+.calendar-week-row:last-child{border-bottom:0}.calendar-week-row.has-holiday{--calendar-week-header:56px}
+.calendar-week-row>.calendar-cell{padding:0;min-height:inherit;border-right:1px solid var(--line)}
+.calendar-week-row>.calendar-cell:nth-child(7){border-right:0}
+.calendar-week-row .calendar-holiday{position:absolute;top:34px;left:4px;right:3px;z-index:1;pointer-events:none}
+.calendar-week-row .calendar-overflow{position:absolute;left:3px;bottom:2px;z-index:2}
+.calendar-week-events{position:absolute;left:0;right:0;top:var(--calendar-week-header);display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:28px;row-gap:4px;pointer-events:none;z-index:2}
+.calendar-week-events>.calendar-event{height:28px;min-height:28px;margin-inline:2px;overflow:hidden;white-space:nowrap;padding-block:3px}
+.calendar-week-events>.calendar-event[data-continues-before]{border-top-left-radius:0;border-bottom-left-radius:0}
+.calendar-week-events>.calendar-event[data-continues-after]{border-top-right-radius:0;border-bottom-right-radius:0}
+.calendar-duplicate-count{flex-shrink:0;margin-left:auto;font-size:.6rem;color:var(--muted)}
+.direct-calendar .calendar-grid.week-view .calendar-cell{min-height:inherit}
+.direct-calendar .calendar-grid.week-view .calendar-week-row{min-height:max(300px,calc(var(--calendar-week-header) + var(--calendar-event-rows)*32px + 32px))}

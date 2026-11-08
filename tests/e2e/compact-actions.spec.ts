@@ -35,7 +35,7 @@ test('plus actions, modal entry/exit, dirty cancellation, save and reduced motio
   const motions=await page.evaluate(()=>(window as any).dialogMotions);
   expect(motions[0].frames[0].transform).toBe('translateY(900px)');expect(motions[0].frames[1].transform).toBe('translateY(0)');expect(motions.at(-1).frames[1].transform).toBe('translateY(900px)');
  }
- await page.goto('/today/calendar');const day=page.locator('.calendar-cell.is-today .calendar-day-target');await day.click();
+ await page.goto('/today/calendar');const day=page.locator('.calendar-cell.is-today .calendar-day-target>span');await day.click();
  const agenda=page.locator('.calendar-day-sheet'),add=agenda.getByRole('button',{name:'이 날짜에 일정 추가'});await expect(add).toHaveText('');await add.click();await expect(agenda).toHaveCount(0);
  const editor=page.locator('.personal-editor');await page.locator('#personal-title').fill('미저장 내용');
  page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.locator('#personal-title')).toHaveValue('미저장 내용');await expect(editor).not.toHaveAttribute('data-closing');
