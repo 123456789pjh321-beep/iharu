@@ -25,6 +25,7 @@ test('login copy is concise and location is absent from production navigation an
   }
  }
 
+ await page.setViewportSize({width:390,height:844});
  await signup(page.request,'ui84-location@example.test');let maps=0;page.on('request',r=>{if(/dapi.kakao.com.*maps/.test(r.url()))maps++;});await page.goto('/today');await expect(page.locator('[data-home-section="schedule"]')).toBeVisible();await expect(page.locator('[data-home-section="location"]')).toHaveCount(0);await page.getByRole('button',{name:'더보기',exact:true}).click();await expect(page.getByRole('dialog').getByRole('link',{name:'위치',exact:true})).toHaveCount(0);await expect(page.getByRole('dialog').getByRole('link',{name:'개인정보 관리',exact:true})).toBeVisible();await page.goto('/location');await expect(page).toHaveURL(/\/today$/);expect(maps).toBe(0);
 });
 test('monthly family filters keep their full height and remain clickable on short and narrow screens',async({page,playwright})=>{
