@@ -153,6 +153,7 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 .workspace-page .timetable-event-area{border-left:0}
 .workspace-page .timetable-day-column{background-color:var(--surface);background-position-y:var(--timetable-line-offset,0px);box-shadow:inset 0 1px 0 var(--line)}
 .workspace-page .timetable-day-column:first-child{border-left:1px solid var(--line)}
+.workspace-page .timetable-time-axis>span{white-space:nowrap}
 .workspace-page .timetable-time-axis>span:first-child{transform:none;padding-top:3px}
 .workspace-page .timetable-card{border:0;border-left:3px solid var(--event-color);border-radius:4px;background:color-mix(in srgb,var(--event-color) 14%,var(--surface));gap:3px}
 .workspace-page .timetable-card .timetable-title{font-size:.75rem;font-weight:650;line-height:1.35}
