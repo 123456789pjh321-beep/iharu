@@ -87,7 +87,7 @@ export function accountRoutes(resolve: () => AuthService | null = getAuthRuntime
       // Only fixed, first-party landing routes are accepted, even if a provider supports arbitrary redirects.
       for (const field of ['callbackURL','newUserCallbackURL','errorCallbackURL','redirectTo']) {
         if (body[field] !== undefined) {
-          const allowed = field === 'redirectTo' ? ['/reset-password'] : field === 'errorCallbackURL' ? ['/login'] : path === '/sign-up/email' || path === '/send-verification-email' ? ['/login?verified=1'] : path === '/sign-in/social' ? ['/today','/account'] : ['/account'];
+          const allowed = field === 'redirectTo' ? ['/reset-password'] : field === 'errorCallbackURL' ? ['/login'] : path === '/sign-up/email' || path === '/send-verification-email' ? ['/login?verified=1'] : path === '/sign-in/social' ? ['/timetable','/today','/account'] : ['/account'];
           let destination: string;
           try { destination = new URL(String(body[field]), svc.settings.origin).href; }
           catch { policyError('INVALID_CALLBACK', 'BAD_REQUEST'); }

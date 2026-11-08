@@ -4,7 +4,7 @@
   "short_name": "아이하루",
   "description": "가족의 일정, 시간표와 학원비를 한곳에서 관리해요.",
   "lang": "ko-KR",
-  "start_url": "/today",
+  "start_url": "/timetable",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",

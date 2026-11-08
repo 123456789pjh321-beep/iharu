@@ -26,7 +26,7 @@ function FamilySetup(){
  if(setup.loading)return <Loading label="연결 상태를 확인하고 있어요"/>;
  if(setup.errorCode==='AUTH_REQUIRED')return <Navigate to="/login" replace/>;
  if(setup.errorCode==='ACCESS_NOT_READY')return <Navigate to="/account" replace/>;
- if(setup.error)return <section className="family-welcome"><h2>연결 상태를 확인하지 못했어요</h2><p>통신 오류가 발생했어요. 아이 등록이나 인증 결과가 변경된 것은 아니에요.</p><ErrorState message={setup.error} retry={setup.retry}/><Link to="/today" className="button">오늘 화면으로</Link></section>;
+ if(setup.error)return <section className="family-welcome"><h2>연결 상태를 확인하지 못했어요</h2><p>통신 오류가 발생했어요. 아이 등록이나 인증 결과가 변경된 것은 아니에요.</p><ErrorState message={setup.error} retry={setup.retry}/><Link to="/timetable" className="button">시간표로</Link></section>;
  const status=setup.data!;
  return <><p><Link className="button primary" to="/family/verification">보호자 확인 신청·결과 보기</Link></p>{((!status.accountReady&&!status.canCreateFamily)||!status.databaseReady)&&<section className="family-welcome" aria-label="가족 이용 준비 상태">
  <span className="badge amber">가족 이용 전 확인</span><h2>{!status.databaseReady?'가족 서비스에 연결하지 못했어요':!status.emailVerified?'이메일 확인이 필요해요':'보호자 확인을 신청해 주세요'}</h2>
@@ -36,7 +36,7 @@ function FamilySetup(){
  <li><span>2</span><div><strong>가족 이용 자격 · {status.accountReady?'확인 완료':'확인 대기'}</strong><p>보호자 확인 화면에서 신청하고 심사 결과를 확인해 주세요. 이메일 확인만으로 관계 확인이 완료되지는 않아요.</p></div></li>
  <li><span>3</span><div><strong>가족 서비스 연결 · {status.databaseReady?'정상':'확인 필요'}</strong><p>{status.databaseReady?'서비스 연결을 확인했어요. 실제 아이 등록 기능은 아직 열리지 않았어요.':'현재 가족 정보를 불러올 수 없어요. 잠시 후 연결 상태를 다시 확인해 주세요.'}</p></div></li>
  </ol><p>아이 등록이 열리기 전에는 가족 대화와 아이 기기 연결을 완료할 수 없어요.</p>
- <div className="card-actions"><button className="button primary" onClick={setup.retry}>연결 상태 다시 확인</button><Link className="button" to="/today">오늘 화면으로</Link></div>
+ <div className="card-actions"><button className="button primary" onClick={setup.retry}>연결 상태 다시 확인</button><Link className="button" to="/timetable">시간표로</Link></div>
  </section>}{status.databaseReady&&(status.accountReady||status.canCreateFamily)&&<><ol className="family-steps" aria-label="가족 연결 순서"><li><span>1</span><div><strong>가족 만들기</strong><p>승인된 보호자가 가족을 만들어요.</p></div></li><li><span>2</span><div><strong>아이 등록과 동의</strong><p>관계 확인 결과를 연결하고 공유 목적을 선택해요.</p></div></li><li><span>3</span><div><strong>보호자 초대와 공유</strong><p>참여 승인 후 아이별 공유 범위를 정해요.</p></div></li></ol>{!status.realChildRegistrationEnabled&&<p className="auth-notice" role="status">아이 정보 삭제 기능을 준비하고 있어요. 가족 생성과 보호자 초대는 이용할 수 있으며, 준비가 끝나면 아이 등록을 이어갈 수 있어요.</p>}{status.accountReady?<FamilyWorkspace registrationEnabled={status.realChildRegistrationEnabled}/>:<FirstFamily ready={setup.retry}/>}</>}</>;
 }
 

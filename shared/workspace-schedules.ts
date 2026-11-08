@@ -7,7 +7,7 @@ export function timetableWeekDates(date:string){
  return Array.from({length:7},(_,offset)=>addDays(sunday,offset));
 }
 
-/** Calendar and timetable are views of the same stored event, never copied records. */
+/** Expand occurrences after the caller chooses calendar EVENT or timetable REPEAT records. */
 export function visibleOn(item:WorkspaceItem,date:string){
  return item.kind==='EVENT'?item.data.date===date:item.kind==='REPEAT'&&date>=item.data.date&&date<=(item.data.untilDate||'')&&item.data.weekdays.includes(new Date(date+'T12:00:00Z').getUTCDay());
 }
@@ -28,6 +28,11 @@ export function chronologicalSchedules(items:WorkspaceItem[]){return [...items].
 
 export function timeMinutes(time:string){const [hours,minutes]=time.split(':').map(Number);return hours*60+minutes;}
 export function timeLabel(minutes:number){return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
+/** One hour of context around the week's timed schedules, bounded by the day. */
+export function timetableBounds(rows:ReadonlyArray<{start:number;end:number}>){
+ if(!rows.length)return {start:540,end:1080};
+ return {start:Math.max(0,Math.min(...rows.map(row=>row.start))-60),end:Math.min(1440,Math.max(...rows.map(row=>row.end))+60)};
+}
 /** Greedy interval packing: simultaneous events get separate columns in one time grid. */
 export function timetableLayout(items:WorkspaceItem[]){
  const rows=items.filter(i=>!i.data.allDay&&i.data.startTime&&i.data.endTime&&i.data.endTime>i.data.startTime).sort(compareScheduleTime).map(item=>({item,start:timeMinutes(item.data.startTime!),end:timeMinutes(item.data.endTime!),column:0,columns:1}));

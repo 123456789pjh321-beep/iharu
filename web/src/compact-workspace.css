@@ -184,10 +184,6 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 
 .conversation-sticker-tray::-webkit-scrollbar{display:none}
 
-.timetable-week-navigation{display:flex;align-items:center;gap:2px}
-.timetable-week-navigation button{display:grid;place-items:center;min-width:36px;min-height:44px;padding:6px;border:0;background:transparent;color:var(--ink);font:inherit;font-size:.75rem;border-radius:8px;cursor:pointer}
-.timetable-week-navigation button:hover{background:var(--mint)}
-.timetable-week-navigation .icon{width:18px;height:18px}
 @media(max-width:760px){
  .timetable-weekly .workspace-date-picker{font-size:clamp(.8rem,3.4vw,1.15rem)}
  .timetable-weekly .workspace-date-navigation{flex-basis:0}
@@ -199,3 +195,16 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 /* Holiday names remain readable within seven narrow date columns. */
 .workspace-page .timetable-week .calendar-holiday{white-space:normal;overflow-wrap:anywhere;font-size:.58rem;line-height:1.3;max-width:100%}
 .workspace-page .timetable-week button{min-width:0}
+
+/* One axis and one edge convention keep header, columns and spanning cards aligned. */
+.workspace-page .personal-timetable{--timetable-axis-width:56px}
+.workspace-page .timetable-week,.workspace-page .timetable-weekdays{padding-left:var(--timetable-axis-width)}
+.workspace-page .timetable-event-area{left:var(--timetable-axis-width)}
+.workspace-page .timetable-all-day{grid-template-columns:var(--timetable-axis-width) minmax(0,1fr)}
+.workspace-page .timetable-time-axis{width:var(--timetable-axis-width);z-index:3}
+.workspace-page .timetable-week button,.workspace-page .timetable-day-column{position:relative;border:0}
+.workspace-page .timetable-week button.is-today{box-shadow:none}
+.workspace-page .timetable-week button:not(:last-child)::after,.workspace-page .timetable-day-column:not(:last-of-type)::after{content:"";position:absolute;inset:0 0 0 auto;width:1px;background:var(--line);pointer-events:none}
+.workspace-page .timetable-time-axis>span{right:6px;max-width:calc(100% - 6px);padding:3px 4px;background:var(--surface);box-sizing:border-box;z-index:1}
+.workspace-page .timetable-weekly .timetable-day,.workspace-page .timetable-weekly .timetable-scroll{min-height:0}
+@media(max-width:360px){.workspace-page .personal-timetable{--timetable-axis-width:52px}}

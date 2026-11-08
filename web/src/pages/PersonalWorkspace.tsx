@@ -40,7 +40,7 @@ export function PersonalWorkspace({mode='home'}:{mode?:PersonalMode}){
  if(unauth)return <Navigate to="/login" replace/>;
  if(loading&&!me)return <AuthLayout wide><Loading label="나의 하루를 불러오고 있어요"/></AuthLayout>;
  if(!me)return <AuthLayout wide><FormNotice error={error}/><button className="button" onClick={refresh}>다시 확인</button></AuthLayout>;
- if(mode==='fees'&&me.role==='CHILD')return <Navigate to="/today" replace/>;
+ if(mode==='fees'&&me.role==='CHILD')return <Navigate to="/timetable" replace/>;
  const shown=loadedKey===resource?items:[],events=shown.filter(i=>['EVENT','REPEAT'].includes(i.kind));
  const members=me.family?.members||[{id:me.id,name:me.name,kind:me.role,host:false,version:1}];
  const open=(type:WorkspaceKind,date=day,time?:string)=>setEditor({kind:type,date,time}),edit=(item:WorkspaceItem)=>setEditor({kind:item.kind,item,date:item.data.date});

@@ -36,7 +36,7 @@ export default function AdminConsole(){
  const refresh=()=>setRevision(n=>n+1);
  if(gate.session.loading||gate.adminLoading)return <Loading label="관리 권한을 확인하고 있습니다"/>;
  if(gate.adminError)return <ErrorState message={gate.adminError} retry={gate.refreshAdmin}/>;
- if(!gate.adminAllowed)return <section className="account-card admin-denied"><Icon name="shield"/><h1>관리 권한이 필요합니다</h1><p>이 화면은 최고관리자 전용입니다.</p><Link className="button" to="/today">오늘로 돌아가기</Link></section>;
+ if(!gate.adminAllowed)return <section className="account-card admin-denied"><Icon name="shield"/><h1>관리 권한이 필요합니다</h1><p>이 화면은 최고관리자 전용입니다.</p><Link className="button" to="/timetable">시간표로 돌아가기</Link></section>;
  return <div className="admin-console"><header className="admin-heading"><div><span className="admin-eyebrow">아이하루 운영센터</span><h1>시스템 관리 <span className="admin-tag elevated">최고관리자</span></h1><p>회원과 가족의 연결 상태, 권한과 운영 이력을 한곳에서 확인합니다.</p></div><button className="button compact" onClick={refresh}><Icon name="repeat"/>새로고침</button></header>
  <nav className="admin-tabs" aria-label="시스템 관리 메뉴">{tabs.map(([id,label,icon])=><button key={id} type="button" aria-current={tab===id?'page':undefined} onClick={()=>{setSearch({section:id});setNotice('');}}><Icon name={icon}/>{label}</button>)}</nav>
  <FormNotice message={notice}/>
