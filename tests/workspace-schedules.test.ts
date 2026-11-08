@@ -1,5 +1,5 @@
 import {expect,it} from 'vitest';
-import {chronologicalSchedules,dailySchedules,matchesMember,scheduleAssignee,schedulePhase,timetableLayout,timeLabel,timeMinutes} from '../shared/workspace-schedules';
+import {chronologicalSchedules,dailySchedules,matchesMember,scheduleAssignee,schedulePhase,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../shared/workspace-schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../shared/workspace';
 const members:WorkspaceMember[]=[{id:'parent',name:'부모',kind:'PARENT',host:true,version:1},{id:'child',name:'서준',kind:'CHILD',host:false,version:1}];
 function event(id:string,startTime:string,extra:Partial<WorkspaceItem['data']>={}):WorkspaceItem{return {id,kind:'EVENT',data:{title:id,date:'2026-11-08',startTime,endTime:'18:00',weekdays:[],place:'',note:'',paid:false,...extra},ownerId:'parent',ownerName:'부모',mine:true,version:1};}
@@ -26,4 +26,11 @@ it('positions event intervals by minutes and packs overlaps into separate column
  expect(rows.map(({start,end,column,columns})=>({start,end,column,columns}))).toEqual([{start:540,end:820,column:0,columns:3},{start:600,end:660,column:1,columns:3},{start:630,end:720,column:2,columns:3},{start:855,end:900,column:0,columns:1}]);
  expect(timetableLayout([event('first','09:00',{endTime:'10:00'}),event('second','10:00',{endTime:'11:00'})]).map(r=>r.columns)).toEqual([1,1]);
  expect(timeMinutes('14:15')).toBe(855);expect(timeLabel(855)).toBe('14:15');expect(timeLabel(1440)).toBe('24:00');
+});
+
+it('keeps every selected weekday in the same Sunday–Saturday week',()=>{
+ const expected=['2026-11-08','2026-11-09','2026-11-10','2026-11-11','2026-11-12','2026-11-13','2026-11-14'];
+ for(const date of expected)expect(timetableWeekDates(date)).toEqual(expected);
+ expect(timetableWeekDates('2027-01-01')).toEqual(['2026-12-27','2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-02']);
+ expect(timetableWeekDates('2028-02-29')).toEqual(['2028-02-27','2028-02-28','2028-02-29','2028-03-01','2028-03-02','2028-03-03','2028-03-04']);
 });

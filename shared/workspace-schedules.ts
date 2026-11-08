@@ -1,4 +1,11 @@
 import type {WorkspaceItem,WorkspaceMember} from './workspace.js';
+import {addDays} from './schedules.js';
+
+/** The selected date stays inside a Sunday–Saturday week, including month/year edges. */
+export function timetableWeekDates(date:string){
+ const sunday=addDays(date,-new Date(date+'T12:00:00Z').getUTCDay());
+ return Array.from({length:7},(_,offset)=>addDays(sunday,offset));
+}
 
 /** Calendar and timetable are views of the same stored event, never copied records. */
 export function visibleOn(item:WorkspaceItem,date:string){

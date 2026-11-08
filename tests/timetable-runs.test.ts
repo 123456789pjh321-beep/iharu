@@ -1,9 +1,16 @@
 import {expect,it} from 'vitest';
 import {timetableRuns} from '../shared/timetable-runs';
-import {timetableLayout} from '../shared/workspace-schedules';
+import {timetableLayout,timetableWeekDates} from '../shared/workspace-schedules';
 import type {WorkspaceItem} from '../shared/workspace';
 function item(id:string,date:string,extra:Partial<WorkspaceItem['data']>={}):WorkspaceItem{return {id,kind:'EVENT',data:{title:'학교',date,startTime:'09:00',endTime:'13:50',place:'',note:'',weekdays:[],paid:false,...extra},ownerId:'parent',ownerName:'부모',mine:true,version:1};}
 const lanes=(days:string[],items:WorkspaceItem[])=>days.map(date=>({date,layout:timetableLayout(items.filter(i=>i.data.date===date))}));
 it('joins adjacent equal events while retaining the exact source for each date',()=>{const a=item('a','2027-04-12'),b=item('b','2027-04-13'),c=item('c','2027-04-14'),runs=timetableRuns(lanes([a.data.date,b.data.date,c.data.date],[a,b,c]));expect(runs).toHaveLength(1);expect(runs[0]).toMatchObject({firstColumn:0,lastColumn:2,start:540,end:830});expect(runs[0].days.map(d=>d.item)).toEqual([a,b,c]);});
 it('keeps different owners, recipients, details, durations and non-adjacent dates separate',()=>{const a=item('a','2027-04-12');for(const changes of [{endTime:'14:00'},{assigneeId:'other'},{note:'다른 안내'},{color:3}])expect(timetableRuns(lanes(['2027-04-12','2027-04-13'],[a,item('b','2027-04-13',changes)]))).toEqual([]);expect(timetableRuns(lanes(['2027-04-12','2027-04-13'],[a,{...item('b','2027-04-13'),ownerId:'another'}]))).toEqual([]);expect(timetableRuns(lanes(['2027-04-12','2027-04-14'],[a,item('b','2027-04-14')]))).toEqual([]);});
 it('never extends a merged block over another parallel event',()=>{const a=item('a','2027-04-12'),b=item('b','2027-04-13'),other=item('c','2027-04-13',{title:'상담',startTime:'10:00',endTime:'11:00'});expect(timetableRuns(lanes(['2027-04-12','2027-04-13'],[a,b,other]))).toEqual([]);});
+
+it('joins all seven columns across a year boundary and retains each source date',()=>{
+ const dates=timetableWeekDates('2027-01-01'),items=dates.map((date,i)=>item(String(i),date));
+ const result=timetableRuns(lanes(dates,items));
+ expect(result).toHaveLength(1);expect(result[0]).toMatchObject({firstColumn:0,lastColumn:6});
+ expect(result[0].days.map(day=>day.item)).toEqual(items);
+});

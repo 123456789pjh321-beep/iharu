@@ -137,3 +137,18 @@ it('stores all-family schedules once, preserves author permissions and rejects m
  const am=await a.ok('me'),input=payload('잘못된 대상');expect((await a.req(api+'items.create',{...input,data:{...input.data,allMembers:true,assigneeId:am.id}})).status).toBe(400);
  for(const kind of ['FEE','NOTE','CHAT']){const input=payload('잘못된 전체 '+kind,kind);expect((await a.req(api+'items.create',{...input,data:{...input.data,allMembers:true}})).status).toBe(400);}
 });
+
+it('keeps calendar events and timetable repeats separate without copying or changing existing records',async()=>{
+ const a=await parent('schedule-separation');
+ const repeatInput=payload('학교 반복','REPEAT'),eventInput=payload('가족 기념일');
+ const repeat=await a.ok('items.create',repeatInput),event=await a.ok('items.create',eventInput);
+ const {serverNow:beforeTime,...original}=await a.ok('items.get',{id:repeat.id});
+ expect((await a.ok('items.list',{...listing,kind:'REPEAT'})).items.map((item:{id:string})=>item.id)).toEqual([repeat.id]);
+ expect((await a.ok('items.list',{...listing,kind:'EVENT'})).items.map((item:{id:string})=>item.id)).toEqual([event.id]);
+ await a.ok('items.delete',{id:event.id,version:1});
+ expect((await a.ok('items.list',{...listing,kind:'EVENT'})).items).toEqual([]);
+ const {serverNow:afterTime,...preserved}=await a.ok('items.get',{id:repeat.id});expect(preserved).toEqual(original);
+ await a.ok('items.update',{...repeatInput,id:repeat.id,version:1,data:{...repeatInput.data,title:'변경된 학교 시간표'}});
+ expect((await a.ok('items.list',{...listing,kind:'EVENT'})).items).toEqual([]);
+ expect((await a.ok('items.list',{...listing,kind:'REPEAT'})).items).toHaveLength(1);
+});
