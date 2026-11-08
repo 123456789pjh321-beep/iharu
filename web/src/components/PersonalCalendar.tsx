@@ -24,7 +24,7 @@ export function PersonalCalendar({month,day,items,members,loading=false,setMonth
  const move=(delta:number)=>{if(view!=='month'){selectDay(addDays(day,delta*(view==='week'?7:1)));}else{const date=new Date(Number(month.slice(0,4)),Number(month.slice(5))-1+delta,1),m=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');setMonth(m);setDay(m+'-01');}};
  moveRef.current=move;
  return <section className="direct-calendar" aria-label="일정 달력">
- <WorkspaceToolbar title="달력" createLabel="일정 등록" onCreate={()=>create(day)} navigation={<DateNavigator type={view==='day'?'date':'month'} value={view==='day'?day:month} inputLabel={view==='day'?'달력 날짜 선택':'달력 월 선택'} previousLabel="이전 기간" nextLabel="다음 기간" onMove={move} onToday={()=>selectDay(today)} onChange={value=>selectDay(view==='day'?value:value+'-01')}/> }>
+ <WorkspaceToolbar title="달력" createLabel="일정 등록" onCreate={()=>create(day)} navigation={<DateNavigator type={view==='day'?'date':'month'} value={view==='day'?day:month} inputLabel={view==='day'?'달력 날짜 선택':'달력 월 선택'} onChange={value=>selectDay(view==='day'?value:value+'-01')}/> }>
   <div className="calendar-view-switch" role="group" aria-label="달력 보기">{([['month','월간'],['week','주간'],['day','일간']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</div>
  </WorkspaceToolbar>
  <MemberFilter members={members} value={member} onChange={setMember} label="달력 구성원 필터"/>
