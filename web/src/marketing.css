@@ -44,3 +44,8 @@ html[data-motion=reduced] .marketing-site{scroll-behavior:auto}html[data-motion=
 .demo-timetable .demo-event{padding:5px 3px}
 .demo-timetable .demo-event strong{font-size:9px;white-space:normal;overflow-wrap:anywhere}
 .demo-timetable .demo-event small{display:none}
+
+.market-update-guide{display:grid;grid-template-columns:1fr 1fr;gap:64px;padding-block:70px;border-block:1px solid var(--market-line)}
+.market-update-guide p{font-size:15px;line-height:1.9;color:var(--market-muted);margin-top:18px}.market-update-example{position:relative;display:inline-flex;align-items:center;gap:14px;font-size:13px;color:var(--market-blue);font-weight:700}.market-update-example>.icon{width:28px;height:28px}.market-update-example i{position:absolute;left:23px;top:-2px;width:7px;height:7px;border-radius:50%;background:#0786f9;box-shadow:0 0 0 2px white}.market-update-guide .market-text-link{margin-top:20px}
+.demo-timetable .demo-days{height:32px}.demo-timetable .demo-days strong{background:transparent;border:0!important}.demo-timetable .demo-days strong:nth-child(2){color:var(--market-blue)}
+@media(max-width:760px){.market-update-guide{grid-template-columns:1fr;gap:24px;padding-block:48px}.market-update-guide p{font-size:13px}}

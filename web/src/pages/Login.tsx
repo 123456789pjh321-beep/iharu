@@ -12,39 +12,47 @@ export function LoginPage() {
   // Public login methods and the entry frame belong to the page, not to a role tab.
   const providers=useLoginProviders();
   const entry=['/login','/signup'].includes(pathname);
-  const child=entry&&new URLSearchParams(search).get('role')==='child';
+  const role=new URLSearchParams(search).get('role'),child=entry&&role==='child',chooseRole=pathname==='/signup'&&!['parent','child'].includes(role||'');
   const reauthenticate=!child&&new URLSearchParams(search).get('reauth')==='1';
   return <AuthEntryFrame>
-    {((pathname==='/login'&&!reauthenticate)||(pathname==='/signup'&&child))&&<LoginRoleTabs child={child}/>}
-    {entry&&!reauthenticate?<LoginEntry child={child} providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
+    {((pathname==='/login'&&!reauthenticate)||(pathname==='/signup'&&!chooseRole))&&<LoginRoleTabs child={child} signup={pathname==='/signup'}/>}
+    {entry&&!reauthenticate?<LoginEntry child={child} chooseRole={chooseRole} providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
   </AuthEntryFrame>;
 }
 function useLoginProviders(){return useApi('/api/account/providers',providersSchema);}
-function LoginEntry({child,providers}:{child:boolean;providers:ReturnType<typeof useLoginProviders>}) {
+function LoginEntry({child,chooseRole,providers}:{child:boolean;chooseRole:boolean;providers:ReturnType<typeof useLoginProviders>}) {
   const session=useApi('/api/account/session',sessionSchema);
   useEffect(()=>{const refresh=()=>session.refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[session.refresh]);
   if(child)return <ChildAccountPage/>;
   if(session.loading)return <Loading label="로그인 상태를 확인하고 있어요"/>;
   if(session.error)return <ErrorState message={session.error} retry={session.retry}/>;
   if(session.data?.authenticated)return <Navigate to={session.data.assurance==='LOW'?'/account':'/timetable'} replace/>;
-  return <LoginForm providers={providers}/>;
+  return chooseRole?<SignupChoice/>:<LoginForm providers={providers}/>;
 }
+function SignupChoice(){return <section className="signup-choice" aria-labelledby="signup-choice-title">
+ <div className="auth-title"><h1 id="signup-choice-title">회원가입</h1><p>누가 사용할 계정인가요?<br/>가입할 대상을 먼저 선택해 주세요.</p></div>
+ <div className="signup-role-options">
+  <Link className="signup-role-option" to="/signup?role=parent" aria-label="학부모로 회원가입"><span className="signup-role-icon"><Icon name="shield"/></span><span><strong>학부모</strong><small>이메일로 가입하고 가족을 연결해요.</small></span><Icon name="arrow"/></Link>
+  <Link className="signup-role-option" to="/signup?role=child" aria-label="자녀로 회원가입"><span className="signup-role-icon"><Icon name="sun"/></span><span><strong>자녀</strong><small>부모 승인번호로 우리 가족에 연결해요.</small></span><Icon name="arrow"/></Link>
+ </div><p className="signup-choice-note">자녀 계정은 학부모가 먼저 가입한 뒤 발급한<br/>6자리 부모 승인번호가 필요해요.</p>
+ <Link className="auth-back" to="/login">이미 가입했어요 · 로그인 <Icon name="arrow"/></Link>
+ </section>;}
 function LoginForm({providers,reauthenticate=false}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean}) {
   const { pathname, search } = useLocation(); const navigate = useNavigate();
   const [busy,setBusy] = useState(false); const [error,setError] = useState(''); const [message,setMessage] = useState('');
   const [token] = useState(() => new URLSearchParams(search).get('token') || '');
   useEffect(()=>{ if (token) window.history.replaceState(null,'',pathname); },[token,pathname]);
   const mode = pathname === '/signup' ? 'signup' : pathname === '/forgot-password' ? 'forgot' : pathname === '/verify-email' ? 'verify' : pathname === '/reset-password' ? 'reset' : 'login';
-  const titles = { login:'로그인', signup:'아이하루 시작하기', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
-  const subtitles = { login:'', signup:'보호자 계정을 만들어요. 자녀 회원가입은 자녀 탭에서 진행해요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
+  const titles = { login:'로그인', signup:'학부모 회원가입', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
+  const subtitles = { login:'', signup:'이메일로 학부모 계정을 만들어요. 이메일 확인 후 가족 관리에서 부모 승인번호를 발급할 수 있어요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
   const accountNotLinked = mode === 'login' && new URLSearchParams(search).get('error') === 'account_not_linked';
   const enabled = providers.data?.providers.find(p=>p.id==='email')?.enabled === true;
   const waiting = providers.data?.providers.every(p=>!p.enabled) === true;
   const loginOrigin=providers.data?.loginOrigin;
   const canonicalLogin=(mode==='login'||mode==='signup') && loginOrigin && new URL(loginOrigin).origin!==window.location.origin;
   useEffect(()=>{
-    if(canonicalLogin)window.location.replace(new URL(`${pathname}${reauthenticate?'?reauth=1':''}`,loginOrigin).href);
-  },[canonicalLogin,loginOrigin,pathname,reauthenticate]);
+    if(canonicalLogin)window.location.replace(new URL(`${pathname}${mode==='signup'?'?role=parent':reauthenticate?'?reauth=1':''}`,loginOrigin).href);
+  },[canonicalLogin,loginOrigin,pathname,reauthenticate,mode]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = new FormData(event.currentTarget); setBusy(true);setError('');setMessage('');
@@ -58,7 +66,7 @@ function LoginForm({providers,reauthenticate=false}:{providers:ReturnType<typeof
     } catch (e) {setError(e instanceof Error?e.message:'연결을 확인해 주세요.');} finally {setBusy(false);}
   }
   async function social(id:string) { setBusy(true);setError('');try {await startSocial(id,false,reauthenticate);}catch(e){setError((e as Error).message);setBusy(false);} }
-  if(canonicalLogin)return <AuthLayout><Loading label="안전한 로그인 화면으로 이동하고 있어요"/><a className="button primary full" href={new URL(`${pathname}${reauthenticate?'?reauth=1':''}`,loginOrigin).href}>운영 로그인 화면 열기</a></AuthLayout>;
+  if(canonicalLogin)return <AuthLayout><Loading label="안전한 로그인 화면으로 이동하고 있어요"/><a className="button primary full" href={new URL(`${pathname}${mode==='signup'?'?role=parent':reauthenticate?'?reauth=1':''}`,loginOrigin).href}>운영 로그인 화면 열기</a></AuthLayout>;
   return <AuthLayout>{mode!=='login'&&<div className="auth-title"><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>}
     {providers.loading?<Loading label="로그인 방법을 확인하고 있어요"/>:providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:<>
       {waiting&&<div className="auth-notice setup-notice"><Icon name="clock"/><div><strong>로그인 연결을 준비하고 있어요</strong><p>준비가 끝나면 여기서 가족의 하루를 시작할 수 있어요.</p></div></div>}

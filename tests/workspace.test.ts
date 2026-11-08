@@ -11,6 +11,7 @@ const mail:{to:string;url:string}[]=[];
 class Browser{cookies=new Map<string,string>();async req(path:string,data:object={},headers:Record<string,string>={}){const r=await app.request(origin+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:[...this.cookies].map(([k,v])=>`${k}=${v}`).join('; '),...headers},body:JSON.stringify(data)});for(const cookie of r.headers.getSetCookie()){const [value]=cookie.split(';'),n=value.indexOf('=');if(value.slice(n+1))this.cookies.set(value.slice(0,n),value.slice(n+1));else this.cookies.delete(value.slice(0,n));}return r;}async ok(op:string,data:object={}){const r=await this.req(api+op,data);expect(r.status,await r.clone().text()).toBeLessThan(300);return r.json();}}
 async function parent(name:string){const b=new Browser(),email=name+'@example.test';const signup=await b.req('/api/auth/sign-up/email',{email,name,password:'parent-fixture-password',callbackURL:'/login?verified=1'});expect(signup.ok).toBe(true);await app.request(mail.find(m=>m.to===email)!.url);expect((await b.req('/api/auth/sign-in/email',{email,password:'parent-fixture-password'})).ok).toBe(true);return b;}
 const payload=(title:string,kind='EVENT')=>({kind,data:{title,date:'2026-11-07',weekdays:[],startTime:'16:00',endTime:'17:00',place:'',note:'내 자료',paid:false,...(kind==='FEE'?{amount:150000}:{}),...(kind==='REPEAT'?{untilDate:'2026-12-07',weekdays:[1,3,5]}:{})}});
+async function readUpdates(b:Browser,menu:string,revision:number){return b.ok('updates.read',{profileId:(await b.ok('me')).id,menu,revision});}
 const listing={from:'2026-11-01',to:'2026-11-30'};
 beforeAll(async()=>{database=await testDatabase();for(const file of (await readdir('db/migrations')).filter(n=>/^\d+_[a-z0-9_]+\.sql$/.test(n)).sort())await database.engine.exec(await readFile('db/migrations/'+file,'utf8'));},30000);
 beforeEach(async()=>{await database.engine.exec('TRUNCATE app.families,iharu_auth."user",iharu_auth.verification,iharu_auth.rate_buckets CASCADE');mail.length=0;const svc=createAuthService({origin,secret,databaseUrl:'unused',mail:{key:'fixture',from:'test@example.test'},sms:null,social:{}},database.db,{sendMail:async m=>{mail.push(m);},sendSms:async()=>{}});app=createApp({environment:'local',demoEnabled:false},()=>svc,async()=>new FamilyService(database.db,secret,'app_runtime'));});
@@ -151,4 +152,68 @@ it('keeps calendar events and timetable repeats separate without copying or chan
  await a.ok('items.update',{...repeatInput,id:repeat.id,version:1,data:{...repeatInput.data,title:'변경된 학교 시간표'}});
  expect((await a.ok('items.list',{...listing,kind:'EVENT'})).items).toEqual([]);
  expect((await a.ok('items.list',{...listing,kind:'REPEAT'})).items).toHaveLength(1);
+});
+
+it('persists per-account menu dots and only acknowledges the content revision actually loaded',async()=>{
+ const a=await parent('updates-host'),b=await parent('updates-member'),outsider=await parent('updates-outsider');
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ expect((await a.ok('updates.status')).updates.family).toMatchObject({revision:1,seen:0});
+ const first=await b.ok('chat.send',{text:'첫 소식',clientMessageId:crypto.randomUUID()});
+ const loaded=await a.ok('chat.list');expect(loaded.updateReceipt).toMatchObject({menu:'chat',revision:1});
+ expect((await a.ok('updates.status')).updates.chat).toEqual({revision:1,seen:0});
+ await b.ok('chat.send',{text:'확인 중 도착한 소식',clientMessageId:crypto.randomUUID()});
+ const read=await readUpdates(a,'chat',loaded.updateReceipt.revision);expect(read.updates.chat).toEqual({revision:2,seen:1});
+ await readUpdates(a,'chat',2);await readUpdates(a,'chat',1);
+ expect((await a.ok('updates.status')).updates.chat).toEqual({revision:2,seen:2});
+ expect((await b.ok('updates.status')).updates.chat).toBeUndefined();expect((await outsider.ok('updates.status')).updates).toEqual({});
+ const device=new Browser();expect((await device.req('/api/auth/sign-in/email',{email:'updates-host@example.test',password:'parent-fixture-password'})).ok).toBe(true);expect((await device.ok('updates.status')).updates.chat).toEqual({revision:2,seen:2});
+ expect((await a.req(api+'updates.read',{profileId:(await a.ok('me')).id,menu:'chat',revision:999})).status).toBe(400);
+ expect((await a.req(api+'updates.read',{menu:'chat',revision:2,profileId:(await b.ok('me')).id})).status).toBe(401);
+ expect((await a.ok('chat.list',{query:'첫 소식'})).updateReceipt).toBeUndefined();
+ await b.ok('items.delete',{id:first.id,version:1});expect((await a.ok('updates.status')).updates.chat).toEqual({revision:3,seen:2});
+});
+it('maps new records to their menus, excludes own writes and never notifies children about tuition',async()=>{
+ const a=await parent('dot-parent-a'),b=await parent('dot-parent-b'),child=new Browser();let invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});invite=await a.ok('invite.issue',{consent:true});await child.ok('child.signup',{loginId:'dot_child',name:'알림 자녀',password:'child-fixture-password',code:invite.code});
+ for(const [kind,menu] of [['EVENT','calendar'],['REPEAT','timetable'],['FEE','fees'],['NOTE','records']] as const){
+  await a.ok('items.create',payload('새 항목 '+kind,kind));
+  expect((await b.ok('updates.status')).updates[menu]).toEqual({revision:1,seen:0});
+  expect((await a.ok('updates.status')).updates[menu]).toBeUndefined();
+  const page=await b.ok('items.list',{...listing,kind});expect(page.updateReceipt).toMatchObject({menu,revision:1});
+  await readUpdates(b,menu,page.updateReceipt.revision);
+  expect((await b.ok('updates.status')).updates[menu]).toEqual({revision:1,seen:1});
+ }
+ expect((await child.ok('updates.status')).updates.fees).toBeUndefined();expect((await child.req(api+'updates.read',{profileId:(await child.ok('me')).id,menu:'fees',revision:0})).status).toBe(403);
+ const host=await a.ok('me'),member=await b.ok('me');await a.ok('family.remove',{familyId:host.family.id,profileId:member.id,version:1});const before=(await b.ok('updates.status')).updates;
+ await a.ok('items.create',payload('연결 해제 후'));expect((await b.ok('updates.status')).updates).toEqual(before);
+ expect((await new Browser().req(api+'updates.status')).status).toBe(401);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,'SELECT * FROM app_private.workspace_menu_updates');})).rejects.toMatchObject({code:'42501'});
+});
+it('payment changes notify the author but not the payer, and duplicate message retries do not add updates',async()=>{
+ const a=await parent('dot-author'),b=await parent('dot-payer'),bm=await b.ok('me');const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ const item=await a.ok('items.create',{...payload('납부 알림','FEE'),data:{...payload('납부 알림','FEE').data,feePayerId:bm.id}});
+ await readUpdates(b,'fees',1);await b.ok('fees.payment',{id:item.id,version:1,month:'2026-11',paid:true});
+ expect((await a.ok('updates.status')).updates.fees).toEqual({revision:1,seen:0});expect((await b.ok('updates.status')).updates.fees).toEqual({revision:1,seen:1});
+ const input={text:'중복 전송 확인',clientMessageId:crypto.randomUUID()};await a.ok('chat.send',input);await a.ok('chat.send',input);expect((await b.ok('updates.status')).updates.chat).toEqual({revision:1,seen:0});
+});
+
+it('persists calendar recurrence across months/years while preserving family, author and timetable boundaries',async()=>{
+ const a=await parent('calendar-repeat-a'),b=await parent('calendar-repeat-b'),x=await parent('calendar-repeat-x');const code=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:code.code});
+ const input={kind:'EVENT',data:{...payload('생일').data,date:'2024-02-29',calendarFrequency:'YEARLY',allDay:true}};
+ const made=await a.ok('items.create',input),future={from:'2027-02-01',to:'2027-02-28',kind:'EVENT'};
+ expect((await b.ok('items.list',future)).items.map((i:{id:string})=>i.id)).toEqual([made.id]);
+ expect((await b.ok('items.list',{...future,kind:'REPEAT'})).items).toEqual([]);expect((await x.ok('items.list',future)).items).toEqual([]);
+ expect((await b.ok('updates.status')).updates.calendar).toEqual({revision:1,seen:0});expect((await b.ok('items.list',future)).updateReceipt).toMatchObject({menu:'calendar',revision:1});
+ expect((await b.req(api+'items.update',{...input,id:made.id,version:1})).status).toBe(403);
+ await a.ok('items.update',{...input,id:made.id,version:1,data:{...input.data,calendarFrequency:'DAILY',untilDate:'2024-03-03'}});
+ expect((await a.ok('items.get',{id:made.id})).data.calendarFrequency).toBe('DAILY');expect((await a.ok('items.list',future)).items).toEqual([]);
+ expect((await a.ok('items.list',{kind:'EVENT',from:'2024-03-01',to:'2024-03-03'})).items).toHaveLength(1);
+ await a.ok('items.update',{...input,id:made.id,version:2,data:{...input.data,calendarFrequency:'ONCE'}});
+ expect((await a.ok('items.list',{kind:'EVENT',from:'2024-03-01',to:'2024-03-31'})).items).toEqual([]);
+ await a.ok('items.delete',{id:made.id,version:3});expect((await a.ok('items.list',{kind:'EVENT',from:'2024-02-01',to:'2024-02-29'})).items).toEqual([]);
+});
+it('rejects invalid calendar recurrence, but allows all four repeat choices with an optional end',async()=>{
+ const a=await parent('calendar-repeat-validation'),input=payload('정기 모임');
+ for(const calendarFrequency of ['DAILY','WEEKLY','MONTHLY','YEARLY'])await a.ok('items.create',{...input,data:{...input.data,calendarFrequency,weekdays:calendarFrequency==='WEEKLY'?[1,3]:[]}});
+ for(const extra of [{calendarFrequency:'HOURLY'},{calendarFrequency:'WEEKLY',weekdays:[]},{calendarFrequency:'WEEKLY',weekdays:[1,1]},{calendarFrequency:'DAILY',untilDate:'2026-01-01'}])expect((await a.req(api+'items.create',{...input,data:{...input.data,...extra}})).status).toBe(400);
+ expect((await a.req(api+'items.create',{...payload('시간표','REPEAT'),data:{...payload('시간표','REPEAT').data,calendarFrequency:'MONTHLY'}})).status).toBe(400);
 });

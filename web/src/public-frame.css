@@ -1,0 +1,14 @@
+/* One viewport shell for service, stories, login and signup. Only its middle scrolls. */
+.public-frame{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:#fff}
+.public-frame>.market-header{position:relative;top:auto}
+.public-content{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;scrollbar-gutter:stable;scroll-behavior:smooth}
+.public-content>.marketing-site{height:auto;min-height:100%;overflow:visible}
+.public-content>.auth-app.entry-page{min-height:100%;height:auto;overflow:visible}
+.public-content .auth-app.entry-page .auth-main{overflow:visible;scrollbar-gutter:auto}
+.public-footer{display:flex;flex-shrink:0;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;min-height:58px;padding:10px 24px max(10px,env(safe-area-inset-bottom));border-top:1px solid #dce6ee;background:#fff;color:#617789;color-scheme:light;font-family:'Noto Sans KR Variable',sans-serif;font-size:11px;line-height:1.7}
+.public-footer nav{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 14px}
+.public-footer a{padding-block:5px;text-decoration:underline;text-underline-offset:3px}
+.public-footer a:hover{color:#0878d1}
+.public-footer a:focus-visible{outline:2px solid #0878d1;outline-offset:3px}
+@media(max-width:760px){.public-footer{min-height:58px;padding:6px 12px max(6px,env(safe-area-inset-bottom));font-size:10px}.public-footer>span{display:none}.public-footer nav{gap:0 12px}.public-footer a{padding-block:4px}.public-content{scrollbar-width:thin}}
+@media(prefers-reduced-motion:reduce){.public-content{scroll-behavior:auto}}
