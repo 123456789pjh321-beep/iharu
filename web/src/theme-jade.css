@@ -1,0 +1,42 @@
+/* iHaru jade: neutral surfaces, restrained emerald actions, independent family colors. */
+:root{
+ --surface:#ffffff;--surface-sub:#f5f7f5;--canvas:#f7f9f6;
+ --ink:#273b32;--muted:#64756b;--line:#e1e8e2;
+ --primary:#147d64;--primary-hover:#10634f;--on-primary:#ffffff;
+ --mint:#e9f5ee;--accent-soft:#eff7f2;--navy:#234d3e;--focus:#147d64;
+ --shadow:0 2px 6px #213b2e06;--shadow-raised:0 8px 28px #213b2e12;
+ --holiday-ink:#ae485a;--weekend-ink:#537895;
+}
+html[data-theme=dark]{
+ --surface:#19251f;--surface-sub:#1f2e26;--canvas:#111a16;
+ --ink:#e4ede6;--muted:#a4b6a9;--line:#35483d;
+ --primary:#9edbbd;--primary-hover:#b8e9cf;--on-primary:#143d2e;
+ --mint:#263f32;--accent-soft:#24392e;--navy:#c2e3ce;--focus:#9edbbd;
+ --shadow:0 2px 6px #0002;--shadow-raised:0 10px 30px #0004;
+ --holiday-ink:#efaab5;--weekend-ink:#a5c1d5;
+}
+.workspace-page .auth-header,.workspace-mobile-nav{box-shadow:0 1px 8px #253e2f05}
+.workspace-nav-update{background:var(--primary)}
+.brandmark{background:linear-gradient(145deg,#3b9d7d,#27664f)}
+.art-family-badge,.art-message-icon{background:var(--mint);color:var(--primary)}
+.art-spark{color:var(--primary)}
+.button:hover,.workspace-metric:hover,.workspace-rail nav a.active{border-color:color-mix(in srgb,var(--primary) 40%,var(--line))}
+.child-talk{background:linear-gradient(110deg,#234d3e,#147d64)}
+html[data-theme=dark] .art-family-badge{background:var(--mint);color:var(--primary)}
+.art-calendar-days .selected{color:var(--on-primary)}
+.workspace-page .tuition-month-summary{background:linear-gradient(115deg,var(--surface-sub),var(--surface));border-color:var(--line)}
+.workspace-page .workspace-mobile-nav a.active,.workspace-page .workspace-mobile-nav>button.active{background:var(--mint);color:var(--primary)}
+.calendar-weekdays>span:last-child,.tuition-weekdays>span:last-child,.calendar-cell.saturday .calendar-date,.timetable-day-headings .saturday-date{color:var(--weekend-ink)}
+.calendar-day-sheet::backdrop,.direct-editor::backdrop,.workspace-guide-dialog::backdrop,.member-filter-dialog::backdrop{background:#15261d66}
+.entry-redesign .entry-editor-header .registration-action,.entry-redesign .entry-weekdays input:checked+span,.entry-redesign .entry-picker-grid .is-selected,.tuition-date[aria-current=date]>span,.is-today .calendar-day-target>span,.group-chat .chat-send{color:var(--on-primary)}
+html[data-theme=dark] :is(.button.primary,.calendar-day.selected,.chat-groups button.active){color:var(--on-primary)}
+html[data-theme=dark] .timetable-week button[aria-pressed=true]>span{color:var(--on-primary)}
+
+/* Visual-only outgoing pages retain their own layout (grid OR timetable OR fee list). */
+.calendar-viewport{background:var(--surface);overscroll-behavior-x:contain;touch-action:pan-y pinch-zoom}
+.calendar-viewport>.calendar-motion-snapshot{position:absolute;inset:0;width:100%;height:100%;margin:0;flex:none;pointer-events:none;user-select:none;z-index:2;overflow:hidden;will-change:transform}
+.calendar-viewport>.calendar-motion-snapshot:not(.calendar-grid){display:block;border:0;background:var(--surface)}
+.calendar-grid,.month-swipe-area,.timetable-day{touch-action:pan-y pinch-zoom;backface-visibility:hidden}
+.calendar-grid button{touch-action:pan-y pinch-zoom}
+[data-paging=dragging],[data-paging=settling]{cursor:grabbing}
+@media(prefers-reduced-motion:reduce){.calendar-motion-snapshot{display:none!important}}

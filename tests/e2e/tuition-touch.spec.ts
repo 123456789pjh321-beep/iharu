@@ -29,7 +29,7 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
    await page.locator('.tuition-date[data-date="2026-11-02"]').tap();await expect(sheet).toContainText('이 날짜에 등록된 학원비가 없어요.');
    await sheet.getByRole('button',{name:'이 날짜에 학원비 추가',exact:true}).tap();await expect(page.getByRole('dialog',{name:'학원비 등록',exact:true})).toBeVisible();await expect(page.getByLabel('첫 납부일',{exact:true})).toHaveValue('2026-11-02');
    await page.getByRole('button',{name:'편집 닫기'}).tap();await expect(page.getByRole('dialog')).toHaveCount(0);
-   const cdp=await context.newCDPSession(page),grid=page.locator('.tuition-date-grid'),area=page.locator('.month-swipe-area');
+   const cdp=await context.newCDPSession(page),grid=page.locator('.tuition-date-grid'),area=page.locator('.month-swipe-area:not(.calendar-motion-snapshot)');
    const box=(await grid.boundingBox())!,start={x:box.x+box.width-20,y:box.y+30},end={x:box.x+20,y:box.y+32};
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:1}]});
    for(let n=1;n<=10;n++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+(end.x-start.x)*n/10,y:start.y+(end.y-start.y)*n/10,id:1}]});

@@ -1,41 +1,41 @@
 /* Shared public shell. Scoped so signed-in family screens retain their theme. */
 .public-frame {
   --public-font: 'Pretendard Variable', 'Noto Sans KR Variable', sans-serif;
-  --public-ink: #13274c;
-  --public-blue: #245ccc;
-  --public-line: #d8e3f3;
+  --public-ink: #273b32;
+  --public-blue: #147d64;
+  --public-line: #e1e8e2;
   color: var(--public-ink);
   font-family: var(--public-font);
-  background: #f4f7fd;
+  background: #f7f9f6;
   -webkit-font-smoothing: antialiased;
 }
 .public-frame .market-header {
   --market-blue: var(--public-blue);
   --market-ink: var(--public-ink);
   font-family: var(--public-font);
-  background: linear-gradient(110deg, #fff 30%, #f4f8ff);
+  background: linear-gradient(110deg, #fff 30%, #f5f9f7);
   border-color: var(--public-line);
 }
 .public-frame .market-header::after {
   content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, #007f9880 18%, #245ccc80 52%, #ad388b60 83%, transparent);
+  background: linear-gradient(90deg, transparent, #507d6b80 18%, #147d6480 52%, #ad388b60 83%, transparent);
   pointer-events: none;
 }
-.public-frame .market-brand > span {background: linear-gradient(145deg, #008fac, #2460cf); box-shadow: inset 0 1px 0 #ffffff55, 0 5px 14px #245ccc14;}
+.public-frame .market-brand > span {background: linear-gradient(145deg, #239467, #2b7256); box-shadow: inset 0 1px 0 #ffffff55, 0 5px 14px #147d6414;}
 .public-frame .market-brand strong {font-weight: 800; letter-spacing: -.055em;}
 .public-frame .market-nav {gap: 8px;}
 .public-frame .market-nav a {padding: 11px 15px; border-radius: 9px; transition: color .18s, background .18s;}
-.public-frame .market-nav a:hover {background: #eff4fc;}
-.public-frame .market-nav a[aria-current] {background: #eaf1ff; color: #1d55bc;}
-.public-frame .market-signup {background: linear-gradient(115deg, #245ccc, #087cba); box-shadow: inset 0 1px 0 #ffffff35, 0 4px 12px #245ccc18;}
-.public-frame .public-footer {font-family: var(--public-font); border-color: var(--public-line); color: #53698e; background: #fcfdff; font-size: 11px; gap: 6px 18px;}
+.public-frame .market-nav a:hover {background: #eff5f3;}
+.public-frame .market-nav a[aria-current] {background: #ebf2ef; color: #24664c;}
+.public-frame .market-signup {background: linear-gradient(115deg, #147d64, #22855e); box-shadow: inset 0 1px 0 #ffffff35, 0 4px 12px #147d6418;}
+.public-frame .public-footer {font-family: var(--public-font); border-color: var(--public-line); color: #64756b; background: #fcfdfd; font-size: 11px; gap: 6px 18px;}
 .public-frame .public-footer a {text-decoration: none; transition: color .18s;}
-.public-frame .public-footer a:hover {text-decoration: underline; text-underline-offset: 4px; color: #245ccc;}
-.public-motion {font: inherit; color: #53698e; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; padding: 6px 9px; min-height: 32px; width: 100px; border: 1px solid #d8e3f3; border-radius: 7px; background: #f4f7fc; cursor: pointer;}
-.public-motion i {width: 5px; height: 5px; border-radius: 50%; background: #97a5b9;}
-.public-motion[aria-pressed=true] i {background: #007f98; box-shadow: 0 0 0 3px #007f9810;}
+.public-frame .public-footer a:hover {text-decoration: underline; text-underline-offset: 4px; color: #147d64;}
+.public-motion {font: inherit; color: #64756b; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; padding: 6px 9px; min-height: 32px; width: 100px; border: 1px solid #e1e8e2; border-radius: 7px; background: #f4f8f6; cursor: pointer;}
+.public-motion i {width: 5px; height: 5px; border-radius: 50%; background: #90a99f;}
+.public-motion[aria-pressed=true] i {background: #507d6b; box-shadow: 0 0 0 3px #507d6b10;}
 .public-motion:disabled {cursor: default;}
-.public-motion:focus-visible {outline: 2px solid #007f98; outline-offset: 3px;}
+.public-motion:focus-visible {outline: 2px solid #507d6b; outline-offset: 3px;}
 .public-frame .auth-app {font-family: var(--public-font);}
 .public-frame .auth-app :is(input, button, select, textarea) {font-family: inherit;}
 @media (max-width: 1050px) {.public-frame .market-nav {gap: 0;} .public-frame .market-nav a {padding-inline: 10px;}}

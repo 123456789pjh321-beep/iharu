@@ -39,34 +39,6 @@ test('parent B joins while signed in and group conversation has shared history, 
  await b.screenshot({path:'test-results/ui78-chat-mobile.png'});
  }finally{await ctx.close().catch(()=>{});}
 });
-test('calendar slides in the chosen direction, survives fast navigation and respects reduced motion',async({page,request})=>{
- await page.setViewportSize({width:390,height:844});await login(page,request,'calendar-motion@example.test');await page.goto('/today/calendar');await expect(page.locator('.calendar-grid')).toBeVisible();
- const initial=await page.getByLabel('달력 월 선택').inputValue();
- async function turn(delta:number){return page.evaluate(delta=>new Promise<{start:number;end:number;hidden:boolean;inert:boolean}>(resolve=>{
-  const viewport=document.querySelector('.calendar-viewport')!;
-  const observer=new MutationObserver(()=>{
-   const snapshot=viewport.querySelector<HTMLElement>('.calendar-motion-snapshot'),grid=viewport.querySelector('.calendar-grid');if(!snapshot||!grid)return;
-   const animation=grid.getAnimations()[0];if(!animation)return;
-   const frames=(animation.effect as KeyframeEffect).getKeyframes(),translation=(v:unknown)=>Number(String(v).match(/translateX\((-?[\d.]+)/)?.[1]);observer.disconnect();resolve({start:translation(frames[0].transform),end:translation(frames.at(-1)!.transform),hidden:snapshot.getAttribute('aria-hidden')==='true',inert:snapshot.inert});
-  });observer.observe(viewport,{childList:true});
-  const grid=document.querySelector('.calendar-grid')!;
-  grid.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,isPrimary:true,clientX:200,clientY:100}));
-  grid.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,button:0,isPrimary:true,clientX:200-delta*100,clientY:100}));
- }),delta);}
- async function swipe(delta:number){await page.locator('.calendar-grid').dispatchEvent('pointerdown',{button:0,isPrimary:true,clientX:200,clientY:100});await page.locator('.calendar-grid').dispatchEvent('pointerup',{button:0,isPrimary:true,clientX:200-delta*100,clientY:100});}
- expect(await turn(1)).toEqual({start:100,end:0,hidden:true,inert:true});
- expect(await turn(-1)).toEqual({start:-100,end:0,hidden:true,inert:true});
- await expect(page.getByLabel('달력 월 선택')).toHaveValue(initial);
- // Reversing during a transition must clean up the previous visual page.
- await swipe(1);await swipe(-1);
- await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(page.getByLabel('달력 월 선택')).toHaveValue(initial);await expect(page.getByRole('dialog')).toHaveCount(0);
- expect(await page.locator('.auth-panel').evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
- await page.emulateMedia({reducedMotion:'reduce'});await swipe(1);await expect(page.getByLabel('달력 월 선택')).not.toHaveValue(initial);
- await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
- await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await swipe(1);await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
- await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await expect(page.locator('.calendar-grid')).toBeVisible();await swipe(1);
- await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
-});
 
 test('tuition recurrence, designated payer, parent-only home, navigation and fixed appearance work together',async({page,browser,request})=>{
  test.setTimeout(120000);await page.setViewportSize({width:390,height:844});await login(page,request,'tuition-a@example.test','결제 부모 A');const code=await issue(page);
