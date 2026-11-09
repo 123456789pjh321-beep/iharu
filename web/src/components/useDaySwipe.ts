@@ -4,7 +4,8 @@ type Gesture={id:number;x:number;y:number;axis:'x'|'y'|null};
 
 /** Reserve horizontal gestures for day navigation; vertical scrolling stays native. */
 export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:number)=>void,onTap?:(target:EventTarget)=>boolean,enabled=true):HTMLAttributes<HTMLDivElement>{
- const gesture=useRef<Gesture|null>(null),suppressClick=useRef(0),move=useRef(onMove),tap=useRef(onTap);
+ const gesture=useRef<Gesture|null>(null),suppressClick=useRef(0),move=useRef(onMove),tap=useRef(onTap),pendingTap=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const cancelTap=()=>{if(pendingTap.current!==null){clearTimeout(pendingTap.current);pendingTap.current=null;}};
  useLayoutEffect(()=>{move.current=onMove;tap.current=onTap;},[onMove,onTap]);
  useEffect(()=>{
   const node=target.current;if(!enabled||!node)return;
@@ -13,7 +14,7 @@ export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:
    if(event.ctrlKey||event.metaKey||gesture.current)return;
    if(Math.abs(event.deltaX)<=Math.abs(event.deltaY)*1.4){distance=0;return;}
    // A non-passive listener keeps the browser's horizontal history gesture out.
-   event.preventDefault();
+   event.preventDefault();cancelTap();
    const now=performance.now();
    if(now-last>260){distance=0;changed=false;}
    last=now;
@@ -23,12 +24,13 @@ export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:
    if(Math.abs(distance)>=80){changed=true;move.current(distance>0?1:-1);}
   };
   node.addEventListener('wheel',wheel,{passive:false});
-  return()=>node.removeEventListener('wheel',wheel);
+  return()=>{node.removeEventListener('wheel',wheel);cancelTap();};
  },[target,enabled]);
  if(!enabled)return {};
  return {
   onDragStart:event=>event.preventDefault(),
   onPointerDown:event=>{
+   cancelTap();
    if(!event.isPrimary){gesture.current=null;return;}
    if(event.button!==0)return;
    suppressClick.current=0;
@@ -48,17 +50,23 @@ export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:
    gesture.current=null;
    const x=event.clientX-current.x,y=event.clientY-current.y;
    if(current.axis!=='x'){
-    // Some touch browsers omit the compatibility click immediately after a swipe.
-    if(!current.axis&&event.pointerType==='touch'&&Math.hypot(x,y)<12&&tap.current?.(event.target))suppressClick.current=Date.now()+400;
+    // Native click gets first chance. Activating during pointerup opens a modal
+    // before the compatibility click, which then dismisses its backdrop.
+    // Chromium can omit that click after a swipe; recover only when none arrives.
+    if(!current.axis&&event.pointerType==='touch'&&Math.hypot(x,y)<12&&tap.current){
+     const touched=event.target;
+     pendingTap.current=setTimeout(()=>{pendingTap.current=null;tap.current?.(touched);},400);
+    }
     return;
    }
    suppressClick.current=Date.now()+400;
    if(Math.abs(x)>=56&&Math.abs(x)>Math.abs(y)*1.25)move.current(x<0?1:-1);
   },
-  onPointerCancel:()=>{gesture.current=null;},
+  onPointerCancel:()=>{gesture.current=null;cancelTap();},
   onLostPointerCapture:event=>{if(event.target===event.currentTarget)gesture.current=null;},
   onPointerLeave:event=>{if(!event.currentTarget.hasPointerCapture(event.pointerId))gesture.current=null;},
   onClickCapture:event=>{
+   cancelTap();
    // Keyboard activation is unaffected; a new intentional pointer-down resets this.
    if(event.detail>0&&Date.now()<suppressClick.current){event.preventDefault();event.stopPropagation();}
   }
