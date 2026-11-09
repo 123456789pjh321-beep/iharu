@@ -6,8 +6,16 @@ async function parent(page:import('@playwright/test').Page,email:string){
 }
 test('first-use tutorial is visible, can be completed and replayed from the renamed menu',async({page})=>{
  await parent(page,'usability-guide@example.test');await page.goto('/timetable');await page.getByRole('button',{name:'사용 안내 시작',exact:true}).click();const guide=page.getByRole('dialog',{name:'우리 가족부터 연결해요',exact:true});await expect(guide).toBeVisible();await expect(guide.getByRole('heading')).toBeFocused();
+ for(const width of [320,820,1440]){await page.setViewportSize({width,height:900});expect(await guide.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);await page.screenshot({path:`test-results/ui114-guide-${width}.png`,animations:'disabled'});}
  for(let n=0;n<4;n++)await page.getByRole('dialog').getByRole('button',{name:'다음',exact:true}).click();await expect(page.getByRole('dialog').getByRole('heading')).toHaveText('학원비는 달력과 가계부로');await page.getByRole('button',{name:'사용 안내 완료'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await page.reload();await expect(page.getByRole('button',{name:'사용 안내 시작',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'사용 안내',exact:true})).toBeVisible();
  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await expect(nav.getByRole('button',{name:'더보기',exact:true})).toHaveCount(0);await nav.getByRole('button',{name:'전체메뉴',exact:true}).click();await page.getByRole('link',{name:'사용 안내 다시 보기'}).click();await expect(page.getByRole('dialog').getByRole('heading')).toHaveText('우리 가족부터 연결해요');await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page).not.toHaveURL(/guide=1/);
+});
+test('child tutorial ends at chat and does not expose the parent tuition menu',async({page,browser})=>{
+ await parent(page,'usability-child-parent@example.test');const invite=await(await page.request.post('/api/v1/workspace/invite.issue',{headers:{Origin:origin},data:{consent:true}})).json();
+ const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844}}),child=await context.newPage();try{
+  expect((await context.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId:'usability_child',name:'안내 자녀',password,code:invite.code}})).ok()).toBe(true);await child.goto('/timetable');await child.getByRole('button',{name:'사용 안내 시작',exact:true}).click();await expect(child.getByRole('dialog')).toContainText('1/4');
+  for(let n=0;n<3;n++)await child.getByRole('dialog').getByRole('button',{name:'다음',exact:true}).click();await expect(child.getByRole('dialog').getByRole('heading')).toHaveText('가족에게 짧게 전해요');await child.getByRole('button',{name:'사용 안내 완료'}).click();await child.getByRole('button',{name:'전체메뉴',exact:true}).click();await expect(child.getByRole('dialog').getByRole('link',{name:'학원비',exact:true})).toHaveCount(0);
+ }finally{await context.close();}
 });
 test('tuition starts with a monthly calendar, filters daily ledger, preserves month-end amounts and opens registration on the selected day',async({page})=>{
  await parent(page,'usability-fees@example.test');const call=async(op:string,data:object)=>{const r=await page.request.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();};
