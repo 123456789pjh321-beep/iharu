@@ -3,9 +3,9 @@ import {useEffect,useLayoutEffect,useRef,type HTMLAttributes,type RefObject} fro
 type Gesture={id:number;x:number;y:number;axis:'x'|'y'|null};
 
 /** Reserve horizontal gestures for day navigation; vertical scrolling stays native. */
-export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:number)=>void,onTap?:(target:EventTarget)=>boolean,enabled=true):HTMLAttributes<HTMLDivElement>{
- const gesture=useRef<Gesture|null>(null),suppressClick=useRef(0),move=useRef(onMove),tap=useRef(onTap);
- useLayoutEffect(()=>{move.current=onMove;tap.current=onTap;},[onMove,onTap]);
+export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:number)=>void,enabled=true):HTMLAttributes<HTMLDivElement>{
+ const gesture=useRef<Gesture|null>(null),suppressClick=useRef(0),move=useRef(onMove);
+ useLayoutEffect(()=>{move.current=onMove;},[onMove]);
  useEffect(()=>{
   const node=target.current;if(!enabled||!node)return;
   let distance=0,last=0,changed=false;
@@ -47,11 +47,9 @@ export function useDaySwipe(target:RefObject<HTMLDivElement|null>,onMove:(delta:
    const current=gesture.current;if(!current||current.id!==event.pointerId)return;
    gesture.current=null;
    const x=event.clientX-current.x,y=event.clientY-current.y;
-   if(current.axis!=='x'){
-    // Some touch browsers omit the compatibility click immediately after a swipe.
-    if(!current.axis&&event.pointerType==='touch'&&Math.hypot(x,y)<12&&tap.current?.(event.target))suppressClick.current=Date.now()+400;
-    return;
-   }
+   // Buttons handle taps through their native click. Opening a modal during
+   // pointerup redirects the following touch click to its backdrop and closes it.
+   if(current.axis!=='x')return;
    suppressClick.current=Date.now()+400;
    if(Math.abs(x)>=56&&Math.abs(x)>Math.abs(y)*1.25)move.current(x<0?1:-1);
   },

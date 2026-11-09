@@ -23,7 +23,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  const memberKey=embedded?'all':[...selection.memberIds].sort().join(',');
  const today=koreaToday(),dates=embedded?[day]:timetableWeekDates(today),period=dates[0],selectedDay=dates.includes(day)?day:today;
  useCalendarSlide(page,period,'day',embedded);
- const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),undefined,embedded);
+ const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),embedded);
  const sourceItems=items.filter(item=>item.kind===(embedded?'EVENT':'REPEAT'));
  const lanes=dates.map(date=>{const events=dailySchedules(sourceItems,date,member);return {date,events,allDay:events.filter(i=>i.data.allDay),layout:timetableLayout(events,embedded?undefined:timetableRange,date)};});
  const joined=timetableRuns(lanes),joinedKeys=new Set(joined.flatMap(run=>run.days.map(({date,item})=>date+':'+item.id)));
