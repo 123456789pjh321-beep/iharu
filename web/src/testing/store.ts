@@ -155,8 +155,8 @@ export function seedTestState(now = new Date()): TestState {
     at = now.toISOString();
   return {
     version: 1,
-    familyName: "우리 가족 · 테스트",
-    profileName: "테스트 보호자",
+    familyName: "우리 그룹 · 테스트",
+    profileName: "테스트 일반사용자",
     children: [
       {
         id: "test-child-1",
@@ -230,7 +230,7 @@ export function seedTestState(now = new Date()): TestState {
     members: [
       {
         id: "test-member-1",
-        name: "함께하는 보호자",
+        name: "함께하는 일반사용자",
         status: "active",
         daily: true,
         chat: true,
@@ -259,7 +259,7 @@ export function seedTestState(now = new Date()): TestState {
     logs: [
       {
         id: "test-log-1",
-        text: "테스트 가족과 예시 일정을 준비했어요.",
+        text: "테스트 그룹과 예시 일정을 준비했어요.",
         at,
         kind: "account",
       },
@@ -420,7 +420,7 @@ export function sendMessage(
     }),
   );
   s.messages = s.messages.slice(-500);
-  audit(s, "새 가족 대화를 남겼어요.", "chat");
+  audit(s, "새 단체 대화를 남겼어요.", "chat");
 }
 export function saveFee(s: TestState, input: TestFee) {
   const f = feeSchema.parse(input);

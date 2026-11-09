@@ -45,7 +45,7 @@ function AuthenticatedWorkspace() {
     window.addEventListener('focus',refresh);
     return()=>window.removeEventListener('focus',refresh);
   },[session.refresh]);
-  if(session.loading)return <AuthLayout wide><Loading label="가족의 하루를 열고 있어요"/></AuthLayout>;
+  if(session.loading)return <AuthLayout wide><Loading label="그룹의 하루를 열고 있어요"/></AuthLayout>;
   if(session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;
   if(!session.data?.authenticated)return <Navigate to="/login" replace/>;
   if(session.data.assurance==='LOW')return <Navigate to="/account" replace/>;
@@ -55,17 +55,17 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
   const {pathname}=useLocation(); const isChild=demo&&pathname.startsWith('/child');
   const [child,setChild]=useState<ChildFilter>('all');
   const [dialog,setDialog]=useState<string|null>(null);
-  useEffect(()=> { document.title=`${isChild?'내 하루':'가족의 하루'} · 아이하루`; document.getElementById('main')?.scrollTo(0,0); document.getElementById('main')?.focus({preventScroll:true}); },[pathname,isChild]);
+  useEffect(()=> { document.title=`${isChild?'내 하루':'그룹의 하루'} · 아이하루`; document.getElementById('main')?.scrollTo(0,0); document.getElementById('main')?.focus({preventScroll:true}); },[pathname,isChild]);
   return <div className={`app ${isChild?'child-mode':''}`}>
     <a className="skip-link" href="#main">본문 바로가기</a>
     <WorkspaceNavigation childMode={isChild}/>
-    <div className="app-content"><header className="topbar"><WorkspaceBrand/><div className="workspace-header-context"><span className="header-divider"/><span>우리 가족의 하루</span></div>
-      <div className="top-actions"><DisplaySettings/>{!isChild&&<><Link className="icon-button" to="/notifications" aria-label="알림함"><Icon name="bell"/></Link><Link className="profile-button" to="/settings" aria-label="가족 설정">가</Link></>}</div></header>
-      {demo && <div className="demo-bar"><span><span className="demo-dot"/>{copy.demo}</span><div className="preview-toggle" aria-label="미리보기 화면 선택"><Link to="/today" aria-current={!isChild?'page':undefined}>보호자 화면</Link><Link to="/child" aria-current={isChild?'page':undefined}>아이 화면</Link></div></div>}
+    <div className="app-content"><header className="topbar"><WorkspaceBrand/><div className="workspace-header-context"><span className="header-divider"/><span>우리 그룹의 하루</span></div>
+      <div className="top-actions"><DisplaySettings/>{!isChild&&<><Link className="icon-button" to="/notifications" aria-label="알림함"><Icon name="bell"/></Link><Link className="profile-button" to="/settings" aria-label="그룹 설정">가</Link></>}</div></header>
+      {demo && <div className="demo-bar"><span><span className="demo-dot"/>{copy.demo}</span><div className="preview-toggle" aria-label="미리보기 화면 선택"><Link to="/today" aria-current={!isChild?'page':undefined}>일반사용자 화면</Link><Link to="/child" aria-current={isChild?'page':undefined}>어린이 화면</Link></div></div>}
       <main id="main" tabIndex={-1} className="main">
-        <Entrance key={pathname}>{pathname==='/'?<Navigate to="/today" replace/>:!demo?(pathname==='/today'?<Home session={session}/>:pathname==='/records'?<><div className="page-heading"><div><p className="eyebrow">하루하루 쌓이는 가족의 기록</p><h1>우리 아이의 기록</h1><p className="page-subtitle">등하원부터 작은 배움까지, 지난 하루를 돌아보세요.</p></div></div>{session.accessReady?<DailyWorkspace records/>:<section className="card"><h2>가족 연결 후 기록을 볼 수 있어요</h2><Link className="button primary" to="/family">가족 연결 확인</Link></section>}</>:<Upcoming/>):['/today','/calendar','/tuition'].includes(pathname)?<Guardian child={child} setChild={setChild} onPreview={setDialog}/>:pathname==='/child'?<ChildHome onPreview={setDialog}/>:<Upcoming/>}
+        <Entrance key={pathname}>{pathname==='/'?<Navigate to="/today" replace/>:!demo?(pathname==='/today'?<Home session={session}/>:pathname==='/records'?<><div className="page-heading"><div><p className="eyebrow">하루하루 쌓이는 그룹의 기록</p><h1>우리 아이의 기록</h1><p className="page-subtitle">등하원부터 작은 배움까지, 지난 하루를 돌아보세요.</p></div></div>{session.accessReady?<DailyWorkspace records/>:<section className="card"><h2>그룹 연결 후 기록을 볼 수 있어요</h2><Link className="button primary" to="/family">그룹 연결 확인</Link></section>}</>:<Upcoming/>):['/today','/calendar','/tuition'].includes(pathname)?<Guardian child={child} setChild={setChild} onPreview={setDialog}/>:pathname==='/child'?<ChildHome onPreview={setDialog}/>:<Upcoming/>}
         </Entrance>
-      </main><footer className="page-footer">아이하루 · 가족의 하루를 잇다<span>{demo?'화면 미리보기 · 실제 전송 및 저장 없음':'가족의 정보는 정해진 공유 범위 안에서'}</span></footer>
+      </main><footer className="page-footer">아이하루 · 그룹의 하루를 잇다<span>{demo?'화면 미리보기 · 실제 전송 및 저장 없음':'그룹의 정보는 정해진 공유 범위 안에서'}</span></footer>
     </div>{dialog&&<PreviewDialog title={dialog} onClose={()=>setDialog(null)}/>}
   </div>;
 }
@@ -100,7 +100,7 @@ function ScheduleAlias({repeats=false}:{repeats?:boolean}){const {health}=useWor
 
 
 
-function WorkspaceEntry({mode}:{mode:PersonalMode}){const {search}=useLocation(),{health,session}=useWorkspaceGate();if(health.loading||session.loading)return <AuthLayout wide><Loading/></AuthLayout>;const legacy=new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled;if(!legacy&&session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;if(!legacy&&session.data?.authenticated&&session.data.assurance==='LOW')return <Navigate to="/account" replace/>;if(!legacy&&session.data?.authenticated&&!session.data.emailVerified)return <AuthLayout wide><section className="account-card"><span className="badge green">로그인 완료</span><h1>{mode==='home'?'오늘의 일정':'이메일 확인'}</h1><p>개인 자료와 가족 공유를 사용하려면 이메일을 연결하고 확인해 주세요.</p><Link className="button primary" to="/account/email">이메일 연결</Link></section></AuthLayout>;if(!legacy)return <PersonalWorkspace mode={mode}/>;return mode==='family'?<FamilyPage/>:mode==='calendar'||mode==='repeats'?<SchedulePage mode={mode==='calendar'?'calendar':'repeats'}/>:mode==='chat'?<Suspense fallback={<Loading/>}><ChatPage childMode={location.pathname.startsWith('/child')}/></Suspense>:<Shell/>;}
+function WorkspaceEntry({mode}:{mode:PersonalMode}){const {search}=useLocation(),{health,session}=useWorkspaceGate();if(health.loading||session.loading)return <AuthLayout wide><Loading/></AuthLayout>;const legacy=new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled;if(!legacy&&session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;if(!legacy&&session.data?.authenticated&&session.data.assurance==='LOW')return <Navigate to="/account" replace/>;if(!legacy&&session.data?.authenticated&&!session.data.emailVerified)return <AuthLayout wide><section className="account-card"><span className="badge green">로그인 완료</span><h1>{mode==='home'?'오늘의 일정':'이메일 확인'}</h1><p>개인 자료와 그룹 공유를 사용하려면 이메일을 연결하고 확인해 주세요.</p><Link className="button primary" to="/account/email">이메일 연결</Link></section></AuthLayout>;if(!legacy)return <PersonalWorkspace mode={mode}/>;return mode==='family'?<FamilyPage/>:mode==='calendar'||mode==='repeats'?<SchedulePage mode={mode==='calendar'?'calendar':'repeats'}/>:mode==='chat'?<Suspense fallback={<Loading/>}><ChatPage childMode={location.pathname.startsWith('/child')}/></Suspense>:<Shell/>;}
 function AccountEntry(){const {session:s}=useWorkspaceGate();if(s.loading)return <AuthLayout wide><Loading/></AuthLayout>;return s.data?.authenticated?<AccountPage/>:<PersonalWorkspace mode="account"/>;}
 
 // Local demo fixtures are unavailable in production, including direct /test URLs.

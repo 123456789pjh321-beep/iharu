@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='usability-fixture-password-2026';test.use({baseURL:origin,reducedMotion:'reduce'});
 async function parent(page:import('@playwright/test').Page,email:string){
- expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'사용 안내 부모',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'사용 안내 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await page.request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
 }
 test('more, settings and public menu guides replace the top bar without duplicate primary menus',async({page,browser})=>{
@@ -12,13 +12,13 @@ test('more, settings and public menu guides replace the top bar without duplicat
  await more.getByRole('link',{name:'설정',exact:true}).click();await page.getByRole('button',{name:'어둡게',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-theme','dark');await page.getByRole('switch',{name:'움직임 줄이기'}).click();await page.reload();await expect(page.getByRole('switch',{name:'움직임 줄이기'})).toHaveAttribute('aria-checked','true');await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  await page.setViewportSize({width:320,height:844});await page.screenshot({path:'test-results/ui123-settings-dark.png',animations:'disabled'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.getByRole('link',{name:'더보기로 돌아가기'}).click();await page.getByRole('navigation',{name:'더보기 메뉴'}).getByRole('link',{name:'사용 가이드',exact:true}).click();await expect(page).toHaveURL(/\/help$/);await expect(page.getByRole('navigation',{name:'사용 가이드 목차'})).toBeVisible();
- const guest=await browser.newContext({baseURL:origin});try{const guide=await guest.newPage();await guide.goto('/guide');for(const label of ['시간표','달력','대화','학원비','가족 관리','알림설정','내 계정'])await expect(guide.locator('.user-guide-section').getByRole('heading',{name:label,exact:true})).toBeVisible();await guide.screenshot({path:'test-results/ui123-public-guide.png',animations:'disabled'});}finally{await guest.close();}
+ const guest=await browser.newContext({baseURL:origin});try{const guide=await guest.newPage();await guide.goto('/guide');for(const label of ['시간표','달력','대화','학원비','그룹 관리','알림설정','내 계정'])await expect(guide.locator('.user-guide-section').getByRole('heading',{name:label,exact:true})).toBeVisible();await guide.screenshot({path:'test-results/ui123-public-guide.png',animations:'disabled'});}finally{await guest.close();}
 });
 test('child more page and settings do not expose parent-only controls',async({page,browser})=>{
  await parent(page,'usability-child-parent@example.test');const invite=await(await page.request.post('/api/v1/workspace/invite.issue',{headers:{Origin:origin},data:{consent:true}})).json();
  const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844}}),child=await context.newPage();try{
-  expect((await context.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId:'usability_child',name:'안내 자녀',password,code:invite.code}})).ok()).toBe(true);
-  await child.goto('/more');await expect(child.locator('.more-account')).toContainText('안내 자녀');await expect(child.getByRole('link',{name:'학원비',exact:true})).toHaveCount(0);await expect(child.getByRole('link',{name:'시스템 관리',exact:true})).toHaveCount(0);await child.getByRole('link',{name:'설정',exact:true}).click();await child.getByRole('button',{name:'어둡게',exact:true}).click();await child.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'대화',exact:true}).click();await expect(child).toHaveURL(/\/child\/chat$/);await expect(child.locator('.auth-header')).toHaveCount(0);
+  expect((await context.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId:'usability_child',name:'안내 어린이',password,code:invite.code}})).ok()).toBe(true);
+  await child.goto('/more');await expect(child.locator('.more-account')).toContainText('안내 어린이');await expect(child.getByRole('link',{name:'학원비',exact:true})).toHaveCount(0);await expect(child.getByRole('link',{name:'시스템 관리',exact:true})).toHaveCount(0);await child.getByRole('link',{name:'설정',exact:true}).click();await child.getByRole('button',{name:'어둡게',exact:true}).click();await child.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'대화',exact:true}).click();await expect(child).toHaveURL(/\/child\/chat$/);await expect(child.locator('.auth-header')).toHaveCount(0);
  }finally{await context.close();}
 });
 test('tuition dates open a day list before registration and the monthly ledger stays in its own tab',async({page})=>{

@@ -3,13 +3,13 @@ import { test, expect } from '@playwright/test';
 test('built SPA opens by direct URL, filters data and reloads without console errors', async ({ page, request }) => {
   const errors:string[]=[]; page.on('pageerror', error=>errors.push(error.message));
   await page.goto('/today');
-  await expect(page.getByRole('heading',{name:'가족의 오늘을 한눈에'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'그룹의 오늘을 한눈에'})).toBeVisible();
   await page.getByRole('button',{name:'서하',exact:true}).click();
   await expect(page.locator('.attendance-content')).toHaveCount(0);
   await expect(page.locator('.fee-total')).toHaveText('금액 미등록');
   await page.getByRole('link',{name:'월간 일정',exact:true}).click();
   await page.reload();
-  await expect(page.getByRole('heading',{name:'함께 챙기는 가족 일정'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'함께 챙기는 그룹 일정'})).toBeVisible();
   const response=await request.get('/api/not-found');
   expect(response.status()).toBe(404);
   expect(response.headers()['content-type']).toContain('application/json');
@@ -37,7 +37,7 @@ test('child actions show a truthful dialog, close with Escape and return focus',
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(button).toBeFocused();
-  await page.getByRole('link',{name:'가족에게 말하기 그림으로 쉽게 보내요'}).click();
+  await page.getByRole('link',{name:'그룹에게 말하기 그림으로 쉽게 보내요'}).click();
   await expect(page).toHaveURL(/\/login\?role=child$/);
   await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
 });

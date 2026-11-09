@@ -4,8 +4,8 @@ test.use({baseURL:'http://127.0.0.1:4174'});
 test('browser signup → mail proof → login → timetable → account → logout persists through the real API and SQL',async({page,request})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.setViewportSize({width:390,height:844});
-  await page.goto('/signup');await page.getByRole('link',{name:'학부모로 회원가입',exact:true}).click();
-  await page.getByLabel('이름',{exact:true}).fill('테스트 보호자');
+  await page.goto('/signup');await page.getByRole('link',{name:'일반사용자로 회원가입',exact:true}).click();
+  await page.getByLabel('이름',{exact:true}).fill('테스트 일반사용자');
   await page.getByLabel('아이디',{exact:true}).fill('browser-parent@example.test');
   await page.getByLabel('암호',{exact:true}).fill('browser-parent-password-2026');
   await page.getByRole('button',{name:'인증 메일 보내기',exact:true}).click();

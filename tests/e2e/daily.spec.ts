@@ -5,10 +5,10 @@ const origin='http://127.0.0.1:4174';
 async function fixture(page:Page){
  const email=`schedule-${crypto.randomUUID()}@example.test`,password='schedule-browser-fixture-password';
  async function post(path:string,data:object){const r=await page.request.post(path,{headers:{Origin:origin,'Idempotency-Key':crypto.randomUUID()},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
- await post('/api/auth/sign-up/email',{email,password,name:'가상 보호자',callbackURL:'/login?verified=1'});
+ await post('/api/auth/sign-up/email',{email,password,name:'가상 일반사용자',callbackURL:'/login?verified=1'});
  const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);
  await post('/api/auth/sign-in/email',{email,password});await post('/__test__/ready',{email});
- const family=await post('/api/v1/families',{name:'일정 테스트 가족'}),draft=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});
+ const family=await post('/api/v1/families',{name:'일정 테스트 그룹'}),draft=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});
  await post('/__test__/verify-draft',{draftId:draft.id});const proof=await post(`/api/v1/child-registration-drafts/${draft.id}/consent-proofs`,{general:true,location:false,policyVersion:'6.1'});
  const child=await post(`/api/v1/families/${family.id}/children`,{draftId:draft.id,proofId:proof.proofId,nickname:'가상 하늘',birthDate:'2018-03-02'});
  return {familyId:family.id as string,childId:child.id as string,email,password,post};
@@ -19,7 +19,7 @@ test('P05 guardian and child share checkins, tasks, learning and pickup with per
  await expect(page.getByRole('heading',{name:'오늘의 등하원',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'할 일 추가',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.getByLabel('할 일 이름').fill('그림책 읽기');await dialog.getByLabel('자세한 내용').fill('좋아하는 장면을 골라요');await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(dialog.getByLabel('자세한 내용')).toHaveValue('좋아하는 장면을 골라요');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByRole('heading',{name:'그림책 읽기',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'메모 추가',exact:true}).click();await dialog.getByLabel('과목 · 선택').fill('읽기');await dialog.getByLabel('학습 메모',{exact:true}).fill('장면을 보고 이야기를 만들어 봤어요.');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();
- await page.getByRole('button',{name:'픽업 요청',exact:true}).click();await dialog.getByLabel('담당 가족').selectOption({label:'가상 보호자'});await dialog.getByLabel('만날 장소').fill('정문');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();await page.getByRole('button',{name:'제가 맡을게요',exact:true}).click();await dialog.getByRole('button',{name:'픽업 맡기',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByText('픽업 약속됨',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'픽업 요청',exact:true}).click();await dialog.getByLabel('담당 그룹').selectOption({label:'가상 일반사용자'});await dialog.getByLabel('만날 장소').fill('정문');await dialog.getByRole('button',{name:'저장하기',exact:true}).click();await expect(dialog).not.toBeVisible();await page.getByRole('button',{name:'제가 맡을게요',exact:true}).click();await dialog.getByRole('button',{name:'픽업 맡기',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(page.getByText('픽업 약속됨',{exact:true})).toBeVisible();
  const context=await browser.newContext({viewport:{width:390,height:844}}),child=await context.newPage();child.on('pageerror',e=>errors.push(e.message));
  const pair=await(await context.request.post(origin+'/api/v1/device-pairings',{headers:{Origin:origin},data:{label:'P05 가상 기기'}})).json();await post(`/api/v1/device-pairings/${pair.id}/approve`,{childId,expectedVersion:1});
  expect((await context.request.post(origin+`/api/v1/device-pairings/${pair.id}/exchange`,{headers:{Origin:origin},data:{exchangeKey:crypto.randomUUID()}})).ok()).toBe(true);

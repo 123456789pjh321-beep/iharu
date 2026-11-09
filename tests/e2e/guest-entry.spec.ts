@@ -5,7 +5,7 @@ test.use({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce'}
 async function ready(page:Page){await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});}
 async function parent(playwright:typeof import('playwright-core'),name:string){
  const client=await playwright.request.newContext({baseURL:origin}),email=`ui129-${name}@example.test`;
- expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'보호자 '+name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'일반사용자 '+name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await client.get('/__test__/mail')).json();await client.get(mails.find((mail:{to:string})=>mail.to===email).url);
  expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
  return {client,email};
@@ -30,7 +30,7 @@ test('a timetable slot opens a sheet, reports an invalid password, then resumes 
  await sheet.getByLabel('아이디',{exact:true}).fill(user.email);await sheet.getByLabel('암호',{exact:true}).fill('wrong-password-2026');await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(sheet.getByRole('alert')).toBeVisible();await expect(sheet).toBeVisible();
  await page.screenshot({path:'test-results/ui129-login-sheet-mobile.png',animations:'disabled'});await signInSheet(page,user.email);
  await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await expect(page.locator('input[name=startTime]')).toHaveValue('16:30');expect(creates).toBe(0);await expect(page.locator('[data-guest-workspace]')).toHaveCount(0);
- await page.getByRole('button',{name:'편집 닫기'}).click();await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await expect(page.locator('.more-account')).toContainText('보호자 timetable');
+ await page.getByRole('button',{name:'편집 닫기'}).click();await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await expect(page.locator('.more-account')).toContainText('일반사용자 timetable');
 });
 
 test('calendar cancellation and browser Back preserve the viewed month and remove the pending action',async({page})=>{
@@ -64,12 +64,12 @@ test('account-dependent deep links open the same login sheet without mounting pr
 });
 
 test('child login resumes the timetable and retains child-only account and fee restrictions',async({page,playwright})=>{
- const user=await parent(playwright,'child-parent');await command(user.client,'items.create',{kind:'FEE',data:{title:'학부모 전용 비용',date:'2026-11-10',amount:100000}});const invite=await command(user.client,'invite.issue',{consent:true}),child=await playwright.request.newContext({baseURL:origin});
- await command(child,'child.signup',{loginId:'ui129_child',name:'검증 자녀',password,code:invite.code});await child.dispose();await user.client.dispose();
- await page.goto('/timetable');await ready(page);await page.locator('.timetable-day-column').first().locator('[data-time="10:00"]').click();const sheet=page.getByRole('dialog');await sheet.getByRole('button',{name:'자녀',exact:true}).click();await sheet.getByLabel('아이디',{exact:true}).fill('ui129_child');await sheet.getByLabel('암호',{exact:true}).fill(password);await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await expect(page.locator('input[name=startTime]')).toHaveValue('10:00');await page.getByRole('button',{name:'편집 닫기'}).click();
+ const user=await parent(playwright,'child-parent');await command(user.client,'items.create',{kind:'FEE',data:{title:'일반사용자 전용 비용',date:'2026-11-10',amount:100000}});const invite=await command(user.client,'invite.issue',{consent:true}),child=await playwright.request.newContext({baseURL:origin});
+ await command(child,'child.signup',{loginId:'ui129_child',name:'검증 어린이',password,code:invite.code});await child.dispose();await user.client.dispose();
+ await page.goto('/timetable');await ready(page);await page.locator('.timetable-day-column').first().locator('[data-time="10:00"]').click();const sheet=page.getByRole('dialog');await sheet.getByRole('button',{name:'어린이',exact:true}).click();await sheet.getByLabel('아이디',{exact:true}).fill('ui129_child');await sheet.getByLabel('암호',{exact:true}).fill(password);await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await expect(page.locator('input[name=startTime]')).toHaveValue('10:00');await page.getByRole('button',{name:'편집 닫기'}).click();
  await expect(page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'학원비',exact:true})).toHaveCount(0);await page.goto('/tuition');await ready(page);await expect(page).toHaveURL(/\/timetable$/);
  const hidden=await command(page.request,'items.list',{from:'2026-11-01',to:'2026-11-30',kind:'FEE'});expect(hidden.items).toEqual([]);
- const denied=await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'FEE',data:{title:'자녀 등록 차단',date:'2026-11-10',amount:100000}}});expect(denied.status()).toBe(403);
+ const denied=await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'FEE',data:{title:'어린이 등록 차단',date:'2026-11-10',amount:100000}}});expect(denied.status()).toBe(403);
 });
 
 test('Google button reaches the real auth router with a contextual calendar return',async({page,playwright})=>{
@@ -92,7 +92,7 @@ test('anonymous API calls remain unauthorized and desktop dark reduced-motion lo
 
 test('sample menus can be browsed and every write starts login without contacting private APIs',async({page})=>{
  const privateRequests:string[]=[];page.on('request',request=>{if(/\/api\/v1\/workspace\/(items\.|chat\.|invite\.|member-filter\.|fees\.)/.test(request.url()))privateRequests.push(request.url());});
- for(const [path,action] of [['/chat','메시지 보내기'],['/tuition','학원비 추가'],['/records','메모 추가'],['/family','우리 가족 연결하기']]){
+ for(const [path,action] of [['/chat','메시지 보내기'],['/tuition','학원비 추가'],['/records','메모 추가'],['/family','우리 그룹 연결하기']]){
   await page.goto(path);await ready(page);await expect(page.locator('.guest-sample-badge')).toHaveText('샘플 데이터');await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('.guest-entry-header')).toHaveCount(0);await page.getByRole('button',{name:action,exact:true}).click();await expect(page.locator('.entry-login-sheet')).toBeVisible();await page.getByRole('button',{name:'로그인 창 닫기'}).click();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();
  }
  expect(privateRequests).toEqual([]);

@@ -4,7 +4,7 @@ test.use({baseURL:origin});
 test('child picture messages persist, reach the parent, retry once, and remain above the input',async({page,browser,request})=>{
  test.setTimeout(90000);
  const email='picture-parent@example.test',password='picture-fixture-2026';
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'그림 부모',password,callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'그림 일반사용자',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);
  await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
  const invite=await(await page.request.post('/api/v1/workspace/invite.issue',{headers:{Origin:origin},data:{consent:true}})).json();
@@ -12,7 +12,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
  try{
   const signup=await context.request.post('/api/v1/workspace/child.signup',{headers:{Origin:origin},data:{loginId:'picture_child',name:'그림 아이',password,code:invite.code||invite.data?.code}});expect(signup.ok(),await signup.text()).toBe(true);
   await child.goto('/child/chat');await expect(child.getByRole('group',{name:'그림 메시지 선택'})).toBeHidden();await child.getByRole('button',{name:'그림 메시지',exact:true}).click();
-  const tray=child.getByRole('group',{name:'그림 메시지 선택'}),input=child.getByRole('textbox',{name:'가족에게 전할 말'}),send=child.getByRole('button',{name:'메시지 보내기'});
+  const tray=child.getByRole('group',{name:'그림 메시지 선택'}),input=child.getByRole('textbox',{name:'참여자에게 전할 말'}),send=child.getByRole('button',{name:'메시지 보내기'});
   await expect(tray.getByRole('button')).toHaveCount(24);expect(await tray.evaluate(el=>getComputedStyle(el).scrollbarWidth)).toBe('none');await expect(child.getByRole('button',{name:'이모티콘',exact:true})).toHaveCount(0);
   for(const label of ['안녕','어디야','학원','아빠','엄마','나 집이야']){
    const button=tray.getByRole('button',{name:label+' 그림 선택'});await expect(button.getByRole('img',{name:label,exact:true})).toHaveCount(1);
@@ -46,7 +46,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
 
 test('timetable, tuition and calendar creation open their matching editors without a floating action',async({page,request})=>{
  const email='registration-parent@example.test',password='registration-fixture-2026';
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'등록 부모',password,callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'등록 일반사용자',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
  await page.goto('/timetable');await page.locator('.timetable-slot[data-time="09:00"]').first().click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
  await page.goto('/tuition');await page.getByRole('button',{name:'학원비 추가',exact:true}).click();await expect(page.getByRole('dialog',{name:'학원비 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();

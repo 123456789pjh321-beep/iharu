@@ -12,7 +12,7 @@ import {forgetEntry} from '../entry-session';
 export function InlineLogin({returnTo,onAuthenticated,onBusy}:{returnTo:string;onAuthenticated:()=>Promise<void>;onBusy:(busy:boolean)=>void}){
  const providers=useLoginProviders(),[child,setChild]=useState(false),[busy,setBusy]=useState(false);
  const reportBusy=(value:boolean)=>{setBusy(value);onBusy(value);};
- return <AuthEntryFrame inline><div className="auth-role-tabs" role="group" aria-label="로그인 대상"><button type="button" aria-pressed={!child} disabled={busy} onClick={()=>setChild(false)}><Icon name="shield"/>학부모</button><button type="button" aria-pressed={child} disabled={busy} onClick={()=>setChild(true)}><Icon name="sun"/>자녀</button></div>{child?<ChildAccountPage inline returnTo={returnTo} onAuthenticated={onAuthenticated} onBusy={reportBusy}/>:<LoginForm providers={providers} inline returnTo={returnTo} onAuthenticated={onAuthenticated} onBusy={reportBusy}/>}</AuthEntryFrame>;
+ return <AuthEntryFrame inline><div className="auth-role-tabs" role="group" aria-label="로그인 대상"><button type="button" aria-pressed={!child} disabled={busy} onClick={()=>setChild(false)}><Icon name="shield"/>일반사용자</button><button type="button" aria-pressed={child} disabled={busy} onClick={()=>setChild(true)}><Icon name="sun"/>어린이</button></div>{child?<ChildAccountPage inline returnTo={returnTo} onAuthenticated={onAuthenticated} onBusy={reportBusy}/>:<LoginForm providers={providers} inline returnTo={returnTo} onAuthenticated={onAuthenticated} onBusy={reportBusy}/>}</AuthEntryFrame>;
 }
 
 export function LoginPage() {
@@ -42,9 +42,9 @@ function LoginEntry({child,chooseRole,providers}:{child:boolean;chooseRole:boole
 function SignupChoice(){const next=entryReturnPath(new URLSearchParams(useLocation().search).get('next'));return <section className="signup-choice" aria-labelledby="signup-choice-title">
  <div className="auth-title"><h1 id="signup-choice-title">회원가입</h1><p>누가 사용할 계정인가요?<br/>가입할 대상을 먼저 선택해 주세요.</p></div>
  <div className="signup-role-options">
-  <Link className="signup-role-option" to={'/signup?role=parent&next='+encodeURIComponent(next)} aria-label="학부모로 회원가입"><span className="signup-role-icon"><Icon name="shield"/></span><span><strong>학부모</strong><small>이메일로 가입하고 가족을 연결해요.</small></span><Icon name="arrow"/></Link>
-  <Link className="signup-role-option" to={'/signup?role=child&next='+encodeURIComponent(next)} aria-label="자녀로 회원가입"><span className="signup-role-icon"><Icon name="sun"/></span><span><strong>자녀</strong><small>부모 승인번호로 우리 가족에 연결해요.</small></span><Icon name="arrow"/></Link>
- </div><p className="signup-choice-note">자녀 계정은 학부모가 먼저 가입한 뒤 발급한<br/>6자리 부모 승인번호가 필요해요.</p>
+  <Link className="signup-role-option" to={'/signup?role=parent&next='+encodeURIComponent(next)} aria-label="일반사용자로 회원가입"><span className="signup-role-icon"><Icon name="shield"/></span><span><strong>일반사용자</strong><small>이메일로 가입하고 그룹을 연결해요.</small></span><Icon name="arrow"/></Link>
+  <Link className="signup-role-option" to={'/signup?role=child&next='+encodeURIComponent(next)} aria-label="어린이로 회원가입"><span className="signup-role-icon"><Icon name="sun"/></span><span><strong>어린이</strong><small>일반사용자 승인번호로 우리 그룹에 연결해요.</small></span><Icon name="arrow"/></Link>
+ </div><p className="signup-choice-note">어린이 계정은 일반사용자가 먼저 가입한 뒤 발급한<br/>6자리 일반사용자 승인번호가 필요해요.</p>
  <Link className="auth-back" to={'/login?next='+encodeURIComponent(next)}>이미 가입했어요 · 로그인 <Icon name="arrow"/></Link>
  </section>;}
 function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthenticated,onBusy}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean;inline?:boolean;returnTo?:string;onAuthenticated?:()=>Promise<void>;onBusy?:(busy:boolean)=>void}) {
@@ -62,8 +62,8 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
   const mode = inline?'login':pathname === '/signup' ? 'signup' : pathname === '/forgot-password' ? 'forgot' : pathname === '/verify-email' ? 'verify' : pathname === '/reset-password' ? 'reset' : 'login';
   const next=entryReturnPath(returnTo||new URLSearchParams(search).get('next'));
   const callback='/login?verified=1&next='+encodeURIComponent(next);
-  const titles = { login:'로그인', signup:'학부모 회원가입', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
-  const subtitles = { login:'', signup:'이메일로 학부모 계정을 만들어요. 이메일 확인 후 가족 관리에서 부모 승인번호를 발급할 수 있어요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
+  const titles = { login:'로그인', signup:'일반사용자 회원가입', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
+  const subtitles = { login:'', signup:'이메일로 일반사용자 계정을 만들어요. 이메일 확인 후 그룹 관리에서 일반사용자 승인번호를 발급할 수 있어요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
   const accountNotLinked = mode === 'login' && new URLSearchParams(search).get('error') === 'account_not_linked';
   const enabled = providers.data?.providers.find(p=>p.id==='email')?.enabled === true;
   const waiting = providers.data?.providers.every(p=>!p.enabled) === true;
@@ -89,7 +89,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
   if(canonicalLogin)return <AuthLayout><Loading label="안전한 로그인 화면으로 이동하고 있어요"/><a className="button primary full" href={new URL(canonicalPath,loginOrigin).href}>운영 로그인 화면 열기</a></AuthLayout>;
   return <AuthLayout>{mode!=='login'&&<div className="auth-title"><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>}
     {providers.loading?<Loading label="로그인 방법을 확인하고 있어요"/>:providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:<>
-      {waiting&&<div className="auth-notice setup-notice"><Icon name="clock"/><div><strong>로그인 연결을 준비하고 있어요</strong><p>준비가 끝나면 여기서 가족의 하루를 시작할 수 있어요.</p></div></div>}
+      {waiting&&<div className="auth-notice setup-notice"><Icon name="clock"/><div><strong>로그인 연결을 준비하고 있어요</strong><p>준비가 끝나면 여기서 그룹의 하루를 시작할 수 있어요.</p></div></div>}
       {mode==='login'&&new URLSearchParams(search).has('verified')&&!new URLSearchParams(search).has('error')&&<FormNotice message="이메일 확인을 마쳤어요. 로그인해 주세요."/>}
       {mode==='login'&&!accountNotLinked&&new URLSearchParams(search).has('error')&&<FormNotice error={socialErrorMessage(new URLSearchParams(search).get('error'))}/>}
       {accountNotLinked&&<section className="auth-notice account-link-guide" role="status" aria-labelledby="account-link-title">
@@ -127,7 +127,7 @@ export function PhonePage() {
   useEffect(()=>{if(seconds<=0)return; const timer=window.setTimeout(()=>setSeconds(s=>s-1),1000);return()=>clearTimeout(timer);},[seconds]);
   async function send(){setBusy(true);setError('');try{await authPost('/api/auth/phone-number/send-otp',{phoneNumber:phone});setSent(true);setSeconds(60);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   async function verify(event:FormEvent){event.preventDefault();setBusy(true);setError('');try{await authPost('/api/auth/phone-number/verify',{phoneNumber:phone,code,...(link?{updatePhoneNumber:true}:{})});navigate(link?'/account':'/timetable',{replace:true});}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  return <AuthLayout><div className="auth-title"><span className="eyebrow">휴대폰 인증</span><h2>{link?'휴대폰 연결하기':'번호로 간편하게 시작해요'}</h2><p>휴대폰 번호 확인 후, 보호자 본인확인을 별도로 진행해요.</p></div><FormNotice error={error}/>
+  return <AuthLayout><div className="auth-title"><span className="eyebrow">휴대폰 인증</span><h2>{link?'휴대폰 연결하기':'번호로 간편하게 시작해요'}</h2><p>휴대폰 번호 확인 후, 일반사용자 본인확인을 별도로 진행해요.</p></div><FormNotice error={error}/>
     {providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:providers.loading?<Loading label="휴대폰 인증을 확인하고 있어요"/>:<>
       {!enabled&&<FormNotice message="휴대폰 인증은 준비 중이에요. 다른 로그인 방법을 이용해 주세요."/>}
       <form className="auth-form" onSubmit={verify}><fieldset disabled={!enabled||busy}><legend className="sr-only">휴대폰 인증</legend><div className="form-field"><label htmlFor="phone">휴대폰 번호</label><input id="phone" autoComplete="tel" type="tel" inputMode="tel" required value={phone} onChange={e=>{setPhone(e.target.value);setSent(false);setCode('');}} placeholder="010 1234 5678" maxLength={18}/></div><button className="button full" type="button" disabled={seconds>0||!phone} onClick={send}>{seconds>0?`${seconds}초 후 다시 받기`:sent?'인증번호 다시 받기':'인증번호 받기'}</button>

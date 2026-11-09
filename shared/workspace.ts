@@ -27,11 +27,13 @@ export type WorkspaceMe={memberFilterPreferences?:Partial<Record<MemberFilterSco
 
 export type ChatCursor={createdAt:string;id:string};
 export type ChatPage={updateReceipt?:MenuReceipt;items:WorkspaceItem[];hasMore:boolean;nextCursor:ChatCursor|null};
+export type ChatRoom={id:string;name:string;kind:'DIRECT'|'GROUP';members:(Pick<WorkspaceMember,'id'|'name'|'kind'>&{active:boolean})[];canSend:boolean;updatedAt:string;lastMessage:string|null};
+export const chatRoomInput=z.object({memberIds:z.array(z.uuid()).min(1).max(99).refine(ids=>new Set(ids).size===ids.length),name:z.string().trim().max(60).default(''),clientRequestId:z.uuid()}).strict();
 
 /** Validation messages name the field without echoing user input or internal schema details. */
 export function workspaceValidationMessage(issues:z.ZodError['issues']){
  const custom=issues.find(issue=>issue.code==='custom');if(custom)return custom.message;
- const labels:Record<string,string>={title:'제목',date:'시작일',endDate:'종료일',untilDate:'반복 종료일',assigneeId:'가족 구성원',weekdays:'반복 요일',startTime:'시작 시간',endTime:'종료 시간',amount:'금액',note:'메모',place:'장소'};
+ const labels:Record<string,string>={title:'제목',date:'시작일',endDate:'종료일',untilDate:'반복 종료일',assigneeId:'그룹 구성원',weekdays:'반복 요일',startTime:'시작 시간',endTime:'종료 시간',amount:'금액',note:'메모',place:'장소'};
  const field=issues[0]?.path[1],label=typeof field==='string'?labels[field]:undefined;
  return label?`${label} 항목을 확인해 주세요.`:'입력한 항목을 확인해 주세요.';
 }

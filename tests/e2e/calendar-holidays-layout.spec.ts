@@ -3,7 +3,7 @@ const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 test('holidays, day agenda and full-screen editors use a bottom navigation at every size',async({page,request})=>{
  test.setTimeout(120000);
  const email='holiday-layout@example.test',password='holiday-layout-fixture-2026';
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'달력 보호자',password,callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'달력 일반사용자',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();await page.goto(mails.find((m:{to:string})=>m.to===email).url);
  await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill(password);await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.personal-timetable')).toBeVisible();
  for(let i=0;i<5;i++)expect((await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'EVENT',data:{title:'연휴 일정 '+(i+1),date:'2027-02-09',allDay:true}}})).ok()).toBe(true);

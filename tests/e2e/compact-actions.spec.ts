@@ -3,7 +3,7 @@ const origin='http://127.0.0.1:4174';
 test.use({baseURL:origin});
 async function login(page:Page,request:APIRequestContext,key:string){
  const email=`compact-${key}@example.test`,password='compact-ui-fixture-2026';
- expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'화면 확인 보호자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'화면 확인 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);
  expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
 }
@@ -57,7 +57,7 @@ test('fixed seven-day timetable and aligned composer with emoji choices above in
   const dates=page.locator('[data-timetable-date]');await expect(dates).toHaveCount(7);expect(await dates.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-timetable-date')))).toEqual(['2026-12-27','2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-02']);await expect(dates.nth(4)).toHaveAttribute('aria-pressed','true');
   await dates.nth(2).click();await expect(dates.nth(2)).toHaveAttribute('aria-pressed','true');await expect(dates.nth(0)).toHaveAttribute('data-timetable-date','2026-12-27');await expect(page.locator('.timetable-weekdays button>span')).toHaveText(['일','월','화','수','목','금','토']);await expect(page.locator('.timetable-day-column')).toHaveCount(7);await expect(page.locator('.timetable-week')).toHaveCount(0);await expect(page.locator('.timetable-card-top,.timetable-place')).toHaveCount(0);
   await page.screenshot({path:`test-results/ui97-timetable-${width}.png`,animations:'disabled'});
-  await page.goto('/chat');const input=page.getByRole('textbox',{name:'가족에게 전할 말'}),send=page.getByRole('button',{name:'메시지 보내기'}),emoji=page.getByRole('button',{name:'이모티콘',exact:true});
+  await page.goto('/chat');const input=page.getByRole('textbox',{name:'참여자에게 전할 말'}),send=page.getByRole('button',{name:'메시지 보내기'}),emoji=page.getByRole('button',{name:'이모티콘',exact:true});
   await expect(send).toHaveText('');await expect(send).toBeDisabled();await expect(emoji).toHaveCount(0);
   const tray=(await page.locator('.conversation-sticker-tray').boundingBox())!,i=(await input.boundingBox())!,s=(await send.boundingBox())!;
   expect(tray.y+tray.height).toBeLessThanOrEqual(i.y);expect(i.height).toBe(44);expect(s.height).toBe(44);expect(i.y).toBe(s.y);

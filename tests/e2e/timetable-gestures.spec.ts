@@ -9,13 +9,13 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
  try{
   await page.clock.setFixedTime(new Date('2026-11-02T12:00:00+09:00'));
   const email='timetable-gestures@example.test',password='timetable-gestures-fixture-2026';
-  expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'고정 시간표 부모',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+  expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'고정 시간표 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
   const mails=await(await request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);
   expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
   await page.goto('/today');await expect(page).toHaveURL(/\/timetable$/);await expect(page.getByLabel('시간표 날짜 선택')).toHaveCount(0);
   await page.getByRole('button',{name:'2026-11-02 09:00 일정 등록',exact:true}).click();
   const editor=page.getByRole('dialog',{name:'반복 일정 등록',exact:true});await expect(editor).toBeVisible();
-  await expect(editor.locator('input[type=date]')).toHaveCount(0);await expect(editor.getByRole('radiogroup',{name:'가족 구성원'}).getByRole('combobox')).toHaveCount(0);await expect(editor.getByRole('region',{name:'일정 시간'}).getByRole('combobox')).toHaveCount(6);
+  await expect(editor.locator('input[type=date]')).toHaveCount(0);await expect(editor.getByRole('radiogroup',{name:'그룹 구성원'}).getByRole('combobox')).toHaveCount(0);await expect(editor.getByRole('region',{name:'일정 시간'}).getByRole('combobox')).toHaveCount(6);
   await editor.getByLabel('제목',{exact:true}).fill('유치원');await setEntryTime(editor,'종료 시간','16:20');
   await editor.getByRole('radio',{name:'전체',exact:true}).check();await expect(editor.getByRole('radio',{name:'전체',exact:true})).toBeChecked();
   const weekdays=editor.getByRole('group',{name:'반복 요일',exact:true});await weekdays.getByLabel('월',{exact:true}).uncheck();await editor.getByRole('button',{name:'저장',exact:true}).click();

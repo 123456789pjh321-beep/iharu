@@ -8,7 +8,7 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
   const page=await context.newPage(),errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   try{
    const email=`tuition-touch-${width}-${reducedMotion}@example.test`;
-   expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'터치 확인 부모',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+   expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'터치 확인 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
    const mails=await(await context.request.get('/__test__/mail')).json();await context.request.get(mails.find((mail:{to:string})=>mail.to===email).url);
    expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
    expect((await context.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'FEE',data:{title:'터치 피아노',amount:180000,date:'2026-11-01',feeFrequency:'MONTHLY'}}})).ok()).toBe(true);
