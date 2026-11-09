@@ -40,8 +40,10 @@ test('workspace launch waits for initial data and does not repeat when switching
  await ready(page);await expect(page.locator('.personal-timetable')).toBeVisible();
  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();
  await expect(page.getByRole('heading',{name:'더보기',exact:true})).toBeVisible();await expect(page.locator('#app-launch')).toHaveCount(0);
+ await page.screenshot({path:'test-results/ui127-more-navigation-mobile.png',animations:'disabled'});
+ // The standard mobile workspace has no header logo; check the shared brand in the legacy shell where it is rendered.
+ await page.goto('/timetable?legacy=1');await ready(page);
  await expect(page.locator('.workspace-wordmark .iharu-wordmark path')).toHaveAttribute('d',wordmarkPath);
- await page.screenshot({path:'test-results/ui127-more-wordmark-mobile.png',animations:'disabled'});
 });
 
 test('public navigation, login, and narrow screens share the wordmark without replaying launch',async({page})=>{

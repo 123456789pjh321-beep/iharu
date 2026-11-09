@@ -39,7 +39,7 @@ test('app guides, notices and blog keep list, search, article and return navigat
 for(const width of [390,820])test(`month rows, holiday colors and all dates stay stable after repeated real touch swipes at ${width}px`,async({browser})=>{
  const context=await browser.newContext({baseURL:origin,viewport:{width,height:900},isMobile:true,hasTouch:true}),page=await context.newPage();
  try{
-  await signIn(context,`calendar-size-${width}@example.test`);await page.goto('/today/calendar');const month=page.getByLabel('달력 월 선택',{exact:true});await month.fill('2026-11');
+  await signIn(context,`calendar-size-${width}@example.test`);await page.goto('/today/calendar');await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});const month=page.getByLabel('달력 월 선택',{exact:true});await month.fill('2026-11');
   const cdp=await context.newCDPSession(page),current=page.locator('[data-pager-current]'),track=page.locator('.calendar-page-track');
   async function inspect(){
    await expect.poll(()=>track.evaluate(el=>el.getAnimations().length)).toBe(0);

@@ -1,4 +1,4 @@
-import {test,expect,type APIRequestContext} from '@playwright/test';
+import {test,expect,type APIRequestContext,type Page} from '@playwright/test';
 import {legalInitialDraft,serviceIntroDefault} from '../../shared/legal';
 const origin='http://127.0.0.1:4175',password='legal-save-fixture-2026';
 test.use({baseURL:origin});
@@ -11,9 +11,10 @@ async function signup(client:APIRequestContext,email:string,admin=false){
  if(admin)expect((await client.post('/__test__/system-admin',{data:{email}})).ok()).toBe(true);
 }
 async function legal(client:APIRequestContext,op:string,data:object={}){const response=await client.post('/api/v1/legal/'+op,{headers:{Origin:origin},data});expect(response.ok(),await response.text()).toBe(true);return response.json();}
+async function launchReady(page:Page){await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});}
 test('long Korean draft saves once, survives reload, and shows field-specific publication gaps',async({page})=>{
  await signup(page.request,'ui126-large@example.test',true);let saves=0;page.on('request',request=>{if(request.url().endsWith('/legal/admin.save'))saves++;});
- await page.goto('/admin?section=legal');await expect(page.getByLabel('운영자명 (개인 또는 법인)',{exact:true})).toBeVisible();
+ await page.goto('/admin?section=legal');await launchReady(page);await expect(page.getByLabel('운영자명 (개인 또는 법인)',{exact:true})).toBeVisible();
  await page.getByLabel('운영자명 (개인 또는 법인)',{exact:true}).fill('한글 문서 저장 관리자');
  for(const title of ['이용약관','개인정보처리방침']){await page.locator('summary').filter({hasText:new RegExp('^'+title)}).click();await page.getByLabel(title,{exact:true}).fill('가'.repeat(30000));}
  await page.getByLabel('저장·게시 사유',{exact:true}).fill('긴 한글 문서 저장 확인');
@@ -22,7 +23,7 @@ test('long Korean draft saves once, survives reload, and shows field-specific pu
  const stored=await legal(page.request,'admin.read');expect(stored.draft.terms).toHaveLength(30000);expect(stored.draft.privacy).toHaveLength(30000);
  await expect(page.getByRole('button',{name:'저장한 초안 게시',exact:true})).toBeDisabled();
  await expect(page.getByLabel('게시 전 확인 항목')).toContainText('처리 위탁');
- await page.reload();await expect(page.getByLabel('운영자명 (개인 또는 법인)',{exact:true})).toHaveValue('한글 문서 저장 관리자');
+ await page.reload();await launchReady(page);await expect(page.getByLabel('운영자명 (개인 또는 법인)',{exact:true})).toHaveValue('한글 문서 저장 관리자');
  await page.locator('summary').filter({hasText:/^이용약관/}).click();await expect(page.getByLabel('이용약관',{exact:true})).toHaveValue('가'.repeat(30000));
  expect((await(await page.request.get('/api/v1/legal/public')).json()).publication).toBeNull();
 });
@@ -32,7 +33,7 @@ test('request failures and request responses preserve unsaved edits; stale versi
  try{
   await signup(requester,'ui126-requester@example.test');await legal(requester,'request.create',{kind:'ACCESS',detail:'정보 열람을 요청합니다.'});
   await page.route('**/api/v1/legal/admin.requests',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'요청 목록 테스트 실패'}})}));
-  await page.goto('/admin?section=legal');await expect(page.getByLabel('운영자명 (개인 또는 법인)',{exact:true})).toBeVisible();
+  await page.goto('/admin?section=legal');await launchReady(page);await expect(page.getByLabel('운영자명 (개인 또는 법인)',{exact:true})).toBeVisible();
   await expect(page.getByText('요청 목록 테스트 실패',{exact:true})).toBeVisible();
   await page.getByLabel('운영자명 (개인 또는 법인)',{exact:true}).fill('아직 저장하지 않은 내 입력');
   await page.unroute('**/api/v1/legal/admin.requests');await page.getByRole('button',{name:'요청 목록 다시 불러오기'}).click();
@@ -57,7 +58,7 @@ test('request failures and request responses preserve unsaved edits; stale versi
  }finally{await requester.dispose();}
 });
 test('publishes service introduction to public and app readers, while incomplete legal drafts remain private',async({page,browser})=>{
- await signup(page.request,'ui126-publish@example.test',true);await page.goto('/admin?section=legal');
+ await signup(page.request,'ui126-publish@example.test',true);await page.goto('/admin?section=legal');await launchReady(page);
  await page.getByLabel('서비스 소개 제목',{exact:true}).fill('가족을 위한 서비스 안내');
  const body=serviceIntroDefault.body+'\n<script>window.injected=true</script>';
  await page.getByLabel('서비스 소개 본문',{exact:true}).fill(body);await page.getByLabel('서비스 소개 저장·게시 사유',{exact:true}).fill('실제 기능 소개 게시');

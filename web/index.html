@@ -58,7 +58,7 @@
           root.inert=false;root.removeAttribute('aria-hidden');html.classList.remove('app-launch-active');html.dataset.launchState='ready';boot.remove();
         }
         function reveal(immediate){
-          if(closed||leaving)return;leaving=true;clearTimeout(settle);clearTimeout(watchdog);observer.disconnect();root.inert=false;root.removeAttribute('aria-hidden');html.classList.remove('app-launch-active');html.dataset.launchState='leaving';boot.dataset.state='leaving';boot.setAttribute('aria-hidden','true');
+          if(closed||leaving)return;leaving=true;clearTimeout(settle);clearTimeout(watchdog);observer.disconnect();html.dataset.launchState='leaving';boot.dataset.state='leaving';boot.setAttribute('aria-hidden','true');
           if(immediate||reduced()){remove();return;}setTimeout(remove,300);
         }
         function ready(){return root.childElementCount>0&&!root.querySelector('.loading-state,[data-app-loading]');}
