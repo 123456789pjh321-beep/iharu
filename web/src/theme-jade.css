@@ -29,7 +29,7 @@ html[data-theme=dark] .art-family-badge{background:var(--mint);color:var(--prima
 .calendar-weekdays>span:last-child,.tuition-weekdays>span:last-child,.calendar-cell.saturday .calendar-date,.timetable-day-headings .saturday-date{color:var(--weekend-ink)}
 .calendar-day-sheet::backdrop,.direct-editor::backdrop,.workspace-guide-dialog::backdrop,.member-filter-dialog::backdrop{background:#15261d66}
 .entry-redesign .entry-editor-header .registration-action,.entry-redesign .entry-weekdays input:checked+span,.entry-redesign .entry-picker-grid .is-selected,.tuition-date[aria-current=date]>span,.is-today .calendar-day-target>span,.group-chat .chat-send{color:var(--on-primary)}
-html[data-theme=dark] :is(.button.primary,.workspace-add-action,.calendar-day.selected,.chat-groups button.active){color:var(--on-primary)}
+html[data-theme=dark] :is(.button.primary,.calendar-day.selected,.chat-groups button.active){color:var(--on-primary)}
 html[data-theme=dark] .timetable-week button[aria-pressed=true]>span{color:var(--on-primary)}
 
 /* Visual-only outgoing pages retain their own layout (grid OR timetable OR fee list). */
