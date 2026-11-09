@@ -1,3 +1,4 @@
+import {TuitionDaySheet} from './TuitionDaySheet';
 import {useState} from 'react';
 import {MonthSwipeArea} from './MonthSwipeArea';
 import {MemberPreferenceFilter,useMemberPreference,type MemberPreferenceProps} from './MemberPreferenceFilter';
@@ -13,7 +14,7 @@ export function PersonalFees({viewerId,defaultMemberIds,saveDefaultMembers,items
  const selected=selection.memberIds;
  const summary=tuitionMonth(items,month,selected),fees=summary.fees;
  const date=selectedDate?.startsWith(month+'-')?selectedDate:null;
- const sorted=view==='calendar'&&date&&!compact?summary.days.get(date)?.items||[]:fees;
+ const sorted=fees;
  const total=won(summary.total);
  const summaryLabel=Number(month.slice(5))+'월 '+(selected.length===members.length?'합계':members.filter(m=>selected.includes(m.id)).map(m=>m.name).join(' · ')+' 합계');
  const filter=<MemberPreferenceFilter className="fee-member-filters" members={members} selection={selection} label={compact?'오늘 학원비 구성원 필터':'학원비 구성원 필터'}/>;
@@ -31,10 +32,10 @@ export function PersonalFees({viewerId,defaultMemberIds,saveDefaultMembers,items
   <div className="tuition-view-switch" role="group" aria-label="학원비 보기"><button type="button" aria-pressed={view==='calendar'} onClick={()=>setView('calendar')}><Icon name="calendar"/>달력</button><button type="button" aria-pressed={view==='ledger'} onClick={()=>setView('ledger')}><Icon name="book"/>내역</button></div>
   {view==='calendar'&&<section className="tuition-calendar" aria-label={`${Number(month.slice(0,4))}년 ${Number(month.slice(5))}월 납부 달력`}>
    <div className="tuition-weekdays" aria-hidden="true">{['일','월','화','수','목','금','토'].map(label=><span key={label}>{label}</span>)}</div>
-   <div className="tuition-date-grid">{Array.from({length:offset},(_,n)=><span className="tuition-date-empty" key={'empty-'+n}/>)}{Array.from({length:count},(_,n)=>{const key=month+'-'+String(n+1).padStart(2,'0'),day=summary.days.get(key);return <button type="button" className={'tuition-date'+(day?' has-fees':'')} key={key} data-date={key} aria-label={`${key} · 학원비 ${day?.items.length||0}건 · ${won(day?.total||0)}`} aria-pressed={date===key} aria-current={key===today?'date':undefined} onClick={()=>{setSelectedDate(key);create(key);}}><span>{n+1}</span>{day&&<><strong title={won(day.total)}>{calendarAmount(day.total)}</strong><small>{day.items.length}건</small></>}</button>;})}</div>
-   <p className="tuition-calendar-hint">날짜를 누르면 해당 납부일로 학원비를 등록해요. 금액 단위: 원</p>
+   <div className="tuition-date-grid">{Array.from({length:offset},(_,n)=><span className="tuition-date-empty" key={'empty-'+n}/>)}{Array.from({length:count},(_,n)=>{const key=month+'-'+String(n+1).padStart(2,'0'),day=summary.days.get(key);return <button type="button" className={'tuition-date'+(day?' has-fees':'')} key={key} data-date={key} aria-label={`${key} · 학원비 ${day?.items.length||0}건 · ${won(day?.total||0)}`} aria-pressed={date===key} aria-current={key===today?'date':undefined} onClick={()=>setSelectedDate(key)}><span>{n+1}</span>{day&&<><strong title={won(day.total)}>{calendarAmount(day.total)}</strong><small>{day.items.length}건</small></>}</button>;})}</div>
+   <p className="tuition-calendar-hint">날짜를 누르면 납부 내역을 확인하고 학원비를 등록할 수 있어요. 금액 단위: 원</p>
   </section>}
-  <section className="tuition-ledger" aria-label="학원비 가계부"><header><div><h2>{view==='calendar'&&date?`${Number(date.slice(5,7))}월 ${Number(date.slice(8))}일 납부 내역`:'이달 전체 내역'}</h2><span>{won(sorted.reduce((sum,item)=>sum+(item.data.amount||0),0))} · {sorted.length}건</span></div>{view==='calendar'&&date&&<button type="button" className="button compact quiet" onClick={()=>setSelectedDate(null)}>전체 내역</button>}<button type="button" className="button compact" onClick={()=>create(date||undefined)}><Icon name="plus"/>추가</button></header>{list}</section>
+  {view==='ledger'&&<section className="tuition-ledger" aria-label="학원비 가계부"><header><div><h2>이달 전체 내역</h2><span>{total} · {fees.length}건</span></div><button type="button" className="button compact" onClick={()=>create()}><Icon name="plus"/>추가</button></header>{list}</section>}
  </div>;
- return <div className="personal-fees-full">{filter}{onMonthChange?<MonthSwipeArea month={month} onChange={onMonthChange}>{content}</MonthSwipeArea>:content}</div>;
+ return <div className="personal-fees-full">{filter}{onMonthChange?<MonthSwipeArea month={month} onChange={onMonthChange}>{content}</MonthSwipeArea>:content}{view==='calendar'&&date&&<TuitionDaySheet date={date} items={summary.days.get(date)?.items||[]} members={members} close={()=>setSelectedDate(null)} create={()=>{setSelectedDate(null);create(date);}} edit={item=>{setSelectedDate(null);edit(item);}}/>}</div>;
 }

@@ -142,7 +142,7 @@ for(const width of [320,768,1440])test(`all functional canvases and calendar edi
    expect(await navigation.locator('.workspace-date-picker').evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(18);
    if(path==='/today/calendar')await expect(page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button')).toHaveText(['월간','주간','일간']);
    if(path!=='/records'){
-    const filter=page.locator('.member-filters'),filterBox=(await filter.boundingBox())!;
+    const filter=page.locator('.member-filters:visible'),filterBox=(await filter.boundingBox())!;
     expect(filterBox.y).toBeGreaterThanOrEqual(toolbarBox.y+toolbarBox.height-1);
     for(const button of await filter.getByRole('button').all()){const r=(await button.boundingBox())!;expect(r.y).toBeGreaterThanOrEqual(filterBox.y);expect(r.y+r.height).toBeLessThanOrEqual(filterBox.y+filterBox.height);}
    }
