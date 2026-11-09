@@ -2,9 +2,10 @@
 
 ## 변경
 
-- 월 이동 영역에서 `pointerup` 시 실행하던 강제 `button.click()`을 제거합니다. 날짜 카드·내역 항목의 기본 `click`이 목록·편집창을 한 번만 엽니다.
+- 월 이동 영역에서 `pointerup` 시 즉시 실행하던 강제 `button.click()`을 제거합니다. 날짜 카드·내역 항목의 기본 `click`이 목록·편집창을 한 번만 엽니다. 기본 클릭이 도착하면 보완 타이머를 취소합니다.
+- 월 이동 직후 Chromium이 기본 클릭을 누락하는 경우에만 400ms 뒤 클릭을 보완합니다. 새 터치·취소·가로 휠·화면 해제 시 대기를 취소합니다.
 - 가로 드래그 후 발생하는 클릭 차단은 유지하고, 새 터치 시작 시 차단을 해제합니다. 월 이동과 세로 스크롤은 기존 방식으로 동작합니다.
-- 공통 제스처 훅의 사용하지 않는 탭 콜백을 제거하고, 일간 달력의 활성화 인자도 맞춥니다. 고정 시간표의 가로 이동은 계속 비활성입니다.
+- 고정 시간표의 가로 이동은 계속 비활성입니다.
 
 ## 검증
 
@@ -14,5 +15,5 @@
 - DB/API 및 저장된 학원비 데이터 변경 없음.
 
 추가: 이 문서, `tests/e2e/tuition-touch.spec.ts`.
-수정: `MonthSwipeArea.tsx`, `useDaySwipe.ts`, `PersonalTimetable.tsx`, `.github/workflows/usability.yml`.
+수정: `useDaySwipe.ts`, `.github/workflows/usability.yml`.
 삭제: 없음.

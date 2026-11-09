@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {writeFile} from 'node:fs/promises';
 
 const origin='http://127.0.0.1:4174',password='tuition-touch-fixture-2026';
 for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference'] as const){
@@ -15,7 +16,7 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
    await expect(page.locator('.tuition-month-summary strong')).toHaveText('180,000원');
    await page.evaluate(()=>{
     const events:object[]=[];(window as unknown as {touchTrace:object[]}).touchTrace=events;
-    for(const type of ['pointerup','click'])document.addEventListener(type,event=>{const target=event.target as Element;events.push({type,target:target.className||target.tagName,detail:(event as MouseEvent).detail,openDialogs:document.querySelectorAll('dialog[open]').length});},true);
+    for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,event=>{const target=event.target as Element;events.push({type,target:target.className||target.tagName,detail:(event as MouseEvent).detail,openDialogs:document.querySelectorAll('dialog[open]').length});},true);
    });
    const day=page.locator('.tuition-date[data-date="2026-11-01"]'),sheet=page.locator('.tuition-day-sheet');
    await day.locator('strong').tap();
@@ -39,7 +40,9 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
    await sheet.getByRole('button',{name:'날짜 학원비 닫기'}).tap();await expect(sheet).toHaveCount(0);
    await page.getByRole('group',{name:'학원비 보기'}).getByRole('button',{name:'내역',exact:true}).tap();await expect(page.locator('.tuition-ledger')).toBeVisible();await page.getByRole('button',{name:'터치 피아노 수정',exact:true}).tap();await expect(editor).toBeVisible();expect(errors).toEqual([]);
   }finally{
-   if(!page.isClosed())await test.info().attach('touch-event-order',{body:JSON.stringify(await page.evaluate(()=>(window as unknown as {touchTrace?:object[]}).touchTrace||[])),contentType:'application/json'});
+   if(!page.isClosed()){
+    const path=test.info().outputPath('touch-event-order.json');await writeFile(path,JSON.stringify(await page.evaluate(()=>(window as unknown as {touchTrace?:object[]}).touchTrace||[]),null,2));await test.info().attach('touch-event-order',{path,contentType:'application/json'});
+   }
    await context.close();
   }
  });

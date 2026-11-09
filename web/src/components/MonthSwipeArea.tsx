@@ -9,6 +9,10 @@ export function MonthSwipeArea({month,onChange,children}:{month:string;onChange:
   const date=new Date(month+'-01T12:00:00Z');
   date.setUTCMonth(date.getUTCMonth()+delta);
   if(date.getUTCFullYear()>=1&&date.getUTCFullYear()<=9999)onChange(date.toISOString().slice(0,7));
+ },target=>{
+  const button=target instanceof Element?target.closest<HTMLButtonElement>('button'):null;
+  if(!button||button.disabled||!page.current?.contains(button))return false;
+  button.click();return true;
  });
  useLayoutEffect(()=>{
   const before=previous.current;previous.current=month;
