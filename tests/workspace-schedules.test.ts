@@ -35,16 +35,16 @@ it('keeps every selected weekday in the same Sunday–Saturday week',()=>{
  expect(timetableWeekDates('2028-02-29')).toEqual(['2028-02-27','2028-02-28','2028-02-29','2028-03-01','2028-03-02','2028-03-03','2028-03-04']);
 });
 
-it('clips weekly events at 06:00 without moving or mutating their original times',()=>{
- const before=event('before','05:00',{endTime:'06:00'}),crossing=event('crossing','05:30',{endTime:'06:30'}),morning=event('morning','06:15',{endTime:'07:00'}),late=event('late','23:30',{endTime:'23:59'});
+it('clips weekly events at 08:00 and 22:00 without moving or mutating their original times',()=>{
+ const before=event('before','07:00',{endTime:'08:00'}),crossing=event('crossing','07:30',{endTime:'08:30'}),morning=event('morning','08:15',{endTime:'09:00'}),late=event('late','21:30',{endTime:'23:00'});
  const rows=timetableLayout([before,crossing,morning,late],timetableRange);
  expect(rows.map(({item,start,end,column,columns})=>({id:item.id,start,end,column,columns}))).toEqual([
-  {id:'crossing',start:360,end:390,column:0,columns:2},{id:'morning',start:375,end:420,column:1,columns:2},{id:'late',start:1410,end:1439,column:0,columns:1}
+  {id:'crossing',start:480,end:510,column:0,columns:2},{id:'morning',start:495,end:540,column:1,columns:2},{id:'late',start:1290,end:1320,column:0,columns:1}
  ]);
- expect(crossing.data.startTime).toBe('05:30');expect(timetableLayout([before,crossing])[0].start).toBe(300);
+ expect(crossing.data.startTime).toBe('07:30');expect(timetableLayout([before,crossing])[0].start).toBe(420);
 });
 it('keeps empty, filtered and all-day-only timetables within the same fixed range',()=>{
- expect(timetableRange).toEqual({start:360,end:1440});
+ expect(timetableRange).toEqual({start:480,end:1320});
  expect(timetableLayout([],timetableRange)).toEqual([]);
  expect(timetableLayout([event('anniversary','00:00',{allDay:true})],timetableRange)).toEqual([]);
  expect(timetableLayout([event('early','00:05',{endTime:'00:35'})],timetableRange)).toEqual([]);

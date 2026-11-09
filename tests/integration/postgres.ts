@@ -415,6 +415,14 @@ try{
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_v112('workspace.me','{}')"),{code:'42501'});
   await family1.command(a,'workspace.timetable.preference.save',{memberIds:[am.id]});
  });
+ await check('UI115 screen filters preserve concurrent different-scope saves and reject forged members',async()=>{
+  const am=await family1.command<{id:string}>(a,'workspace.me'),bm=await family2.command<{id:string}>(b,'workspace.me');
+  await Promise.all([family1.command(a,'workspace.member-filter.preference.save',{scope:'calendar',memberIds:[am.id,bm.id]}),family2.command(a,'workspace.member-filter.preference.save',{scope:'fees',memberIds:[bm.id]})]);
+  const value=await family2.command<{memberFilterPreferences:Record<string,string[]>}>(a,'workspace.me');assert.deepEqual(value.memberFilterPreferences.calendar,[am.id,bm.id]);assert.deepEqual(value.memberFilterPreferences.fees,[bm.id]);
+  await assert.rejects(family1.command(a,'workspace.member-filter.preference.save',{scope:'calendar',memberIds:[am.id,'00000000-0000-0000-0000-000000000001']}),{message:'ASSIGNEE_INVALID'});
+  assert.deepEqual((await family2.command<{memberFilterPreferences:Record<string,string[]>}>(a,'workspace.me')).memberFilterPreferences.calendar,[am.id,bm.id]);
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_v113('workspace.me','{}')"),{code:'42501'});
+ });
  await check('UI83 administrator APIs are inaccessible through runtime tables, helper functions or forged member context',async()=>{
   await assert.rejects(family1.command(a,'admin.overview'),{message:'ADMIN_REQUIRED'});
   await admin.query('INSERT INTO app_private.system_admins(member_id) VALUES($1)',[a.memberId]);

@@ -21,7 +21,9 @@ export type WorkspaceData=z.infer<typeof workspaceData>;
 export type WorkspaceKind=z.infer<typeof workspaceKind>;
 export type WorkspaceItem={id:string;kind:WorkspaceKind;data:WorkspaceData;ownerId:string;ownerName:string;mine:boolean;version:number;createdAt?:string;updatedAt?:string;fee?:{month:string;dueDate:string;paid:boolean;payerId:string;payerName:string;canMarkPaid:boolean}};
 export type WorkspaceMember={id:string;name:string;kind:'PARENT'|'CHILD';host:boolean;version:number};
-export type WorkspaceMe={timetableMemberIds?:string[];timetableMemberId?:string;updateReceipt?:MenuReceipt;id:string;name:string;role:'PARENT'|'CHILD';loginId:string|null;family:null|{id:string;name:string;hostId:string;isHost:boolean;members:WorkspaceMember[]}};
+export const memberFilterScopes=['timetable','calendar','fees','home','homeFees'] as const;
+export type MemberFilterScope=typeof memberFilterScopes[number];
+export type WorkspaceMe={memberFilterPreferences?:Partial<Record<MemberFilterScope,string[]>>;timetableMemberIds?:string[];timetableMemberId?:string;updateReceipt?:MenuReceipt;id:string;name:string;role:'PARENT'|'CHILD';loginId:string|null;family:null|{id:string;name:string;hostId:string;isHost:boolean;members:WorkspaceMember[]}};
 
 export type ChatCursor={createdAt:string;id:string};
 export type ChatPage={updateReceipt?:MenuReceipt;items:WorkspaceItem[];hasMore:boolean;nextCursor:ChatCursor|null};
