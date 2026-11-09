@@ -105,7 +105,7 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .direct-calendar .calendar-grid{display:flex;flex-direction:column;gap:0;background:var(--surface)}
 .calendar-week-row{position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));--calendar-week-header:36px;min-height:calc(var(--calendar-week-header) + var(--calendar-event-rows)*32px + 32px);flex:1;border-bottom:1px solid var(--line)}
 .calendar-week-row:last-child{border-bottom:0}.calendar-week-row.has-holiday{--calendar-week-header:56px}
-.calendar-week-row>.calendar-cell{padding:0;min-height:inherit;border-right:1px solid var(--line)}
+.calendar-week-row>.calendar-cell{padding:0;min-height:0;border-right:1px solid var(--line)}
 .calendar-week-row>.calendar-cell:nth-child(7){border-right:0}
 .calendar-week-row .calendar-holiday{position:absolute;top:34px;left:4px;right:3px;z-index:1;pointer-events:none}
 .calendar-week-row .calendar-overflow{position:absolute;left:3px;bottom:2px;z-index:2}
@@ -114,7 +114,7 @@ html[data-theme=dark]{--holiday-ink:#ffa9b5}
 .calendar-week-events>.calendar-event[data-continues-before]{border-top-left-radius:0;border-bottom-left-radius:0}
 .calendar-week-events>.calendar-event[data-continues-after]{border-top-right-radius:0;border-bottom-right-radius:0}
 .calendar-duplicate-count{flex-shrink:0;margin-left:auto;font-size:.6rem;color:var(--muted)}
-.direct-calendar .calendar-grid.week-view .calendar-cell{min-height:inherit}
+.direct-calendar .calendar-grid.week-view .calendar-cell{min-height:0}
 .direct-calendar .calendar-grid.week-view .calendar-week-row{min-height:max(300px,calc(var(--calendar-week-header) + var(--calendar-event-rows)*32px + 32px))}
 .auth-app.workspace-page.public-document-page .auth-main.auth-wide{margin-bottom:0}
 .auth-app.workspace-page.public-document-page .auth-footer{display:flex;flex-wrap:wrap;gap:12px;position:static;padding:20px 16px max(20px,env(safe-area-inset-bottom))}
@@ -238,3 +238,7 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 
 .schedule-week-label{margin:0;font-size:.85rem;font-weight:650;color:var(--muted)}
 .schedule-week-label small{margin-left:8px;font-weight:400}
+
+/* Paint the separator above cell backgrounds, including taller holiday rows. */
+.calendar-week-row{border-bottom:0}
+.calendar-week-row::after{content:"";position:absolute;inset:auto 0 0;height:1px;background:var(--line);z-index:3;pointer-events:none}
