@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="app-launch-active">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -9,7 +9,80 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>아이하루 · 가족의 하루를 잇다</title>
+    <style>
+      html.app-launch-active{overflow:hidden}
+      #app-launch{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;box-sizing:border-box;min-height:100dvh;padding:28px;background:#fff;color:#176b56;opacity:1;transition:opacity .28s ease,transform .28s ease;font-family:system-ui,sans-serif}
+      #app-launch .launch-art{display:flex;flex-direction:column;align-items:center;gap:28px;max-width:100%;animation:iharu-launch-in .6s cubic-bezier(.22,1,.36,1) both}
+      #app-launch .launch-logo{display:block;width:clamp(220px,48vw,420px);max-width:78vw;height:auto;overflow:visible}
+      #app-launch .launch-track{width:52px;height:2px;overflow:hidden;border-radius:2px;background:#176b5619}
+      #app-launch .launch-track:after{content:"";display:block;width:40%;height:100%;background:currentColor;border-radius:inherit;animation:iharu-launch-line 1.4s ease-in-out infinite}
+      #app-launch .launch-message{margin:0;color:#6e8078;font-size:13px;font-weight:450;letter-spacing:.025em;text-align:center;line-height:1.8}
+      #app-launch .launch-recovery{max-width:300px;text-align:center}
+      #app-launch [hidden]{display:none!important}
+      #app-launch button{min-height:44px;margin-top:16px;padding:10px 24px;border:1px solid #176b5630;border-radius:12px;color:inherit;background:transparent;font:600 14px system-ui;cursor:pointer}
+      #app-launch button:focus-visible{outline:2px solid currentColor;outline-offset:4px}
+      #app-launch[data-state=leaving]{opacity:0;transform:scale(1.015);pointer-events:none}
+      #app-launch[data-state=error] .launch-track{display:none}
+      html[data-theme=dark] #app-launch{background:#10231e;color:#b3d7c4}
+      html[data-theme=dark] #app-launch .launch-message{color:#a0b6ab}
+      #app-launch[data-motion=reduced] .launch-art,#app-launch[data-motion=reduced] .launch-track:after{animation:none}
+      #app-launch[data-motion=reduced]{transition:none}
+      @keyframes iharu-launch-in{from{opacity:0;transform:translateY(10px) scale(.94)}to{opacity:1;transform:none}}
+      @keyframes iharu-launch-line{from{transform:translateX(-110%)}to{transform:translateX(360%)}}
+      @media(prefers-reduced-motion:reduce){#app-launch,#app-launch .launch-art,#app-launch .launch-track:after{animation:none;transition:none}}
+    </style>
   </head>
-  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
+  <body>
+    <div id="app-launch" role="status" aria-label="iHaru 시작" data-state="loading">
+      <div class="launch-art">
+        <!-- iharu-wordmark:start --><svg class="launch-logo" viewBox="0 0 5033 1532.5" fill="currentColor" aria-hidden="true" focusable="false"><path d="M180.0 232.0V20.0H405.0V232.0ZM180 1482.5V402.5H405V1482.5ZM671 1482.5V42.5H896V656.0H1597.0V42.5H1822V1482.5H1597V867.5H896V1482.5ZM2371.5 1512.5Q2253 1512.5 2171.875 1468.125Q2090.75 1423.75 2049.375 1349.875Q2008.0 1276.0 2008 1187.5Q2008 1107.5 2035.625 1045.375Q2063.25 983.25 2118.625 938.625Q2174.0 894.0 2258.5 866.0Q2327.0 844.75 2416.125 828.375Q2505.25 812.0 2606.75 797.875Q2708.25 783.75 2814.0 768.0L2733 813.5Q2734.25 693.75 2681.125 636.625Q2628 579.5 2500 579.5Q2421 579.5 2351.625 616.375Q2282.25 653.25 2254.5 740.0L2047 675.5Q2086.75 537.5 2199.375 455.0Q2312 372.5 2501 372.5Q2645.75 372.5 2754.0 420.75Q2862.25 469.0 2914.0 576.0Q2941.5 631.0 2947.5 690.25Q2953.5 749.5 2953.5 818.5V1482.5H2755.5V1242.0L2791.0 1277.0Q2721.0 1397.25 2620.375 1454.875Q2519.75 1512.5 2371.5 1512.5ZM2414.0 1331.0Q2499.5 1331.0 2560.5 1300.625Q2621.5 1270.25 2658.25 1224.875Q2695 1179.5 2707 1134.5Q2724.75 1087.5 2727.375 1027.625Q2730.0 967.75 2730 931.5L2801.0 955.0Q2697.0 971.25 2617.375 983.5Q2537.75 995.75 2477.25 1007.375Q2416.75 1019.0 2369.5 1034.0Q2327.25 1049.0 2295.875 1069.375Q2264.5 1089.75 2247.0 1118.0Q2229.5 1146.25 2229.5 1185.0Q2229.5 1225.75 2249.875 1258.875Q2270.25 1292.0 2311.125 1311.5Q2352.0 1331.0 2414.0 1331.0ZM3180 1482.5V402.5H3379.5V665.0L3353.5 631.0Q3373.5 578.0 3406.25 534.0Q3439.0 490.0 3483.5 461.5Q3523.75 432.75 3573.375 417.0Q3623.0 401.25 3675.0 397.75Q3727.0 394.25 3775.5 402.5V613.0Q3725.0 598.75 3661.625 604.5Q3598.25 610.25 3546 642.5Q3495.75 672.25 3465.125 716.875Q3434.5 761.5 3420.5 817.0Q3406.5 872.5 3406.5 935.5V1482.5ZM4338 1512.5Q4222.25 1512.5 4145.125 1474.5Q4068 1436.5 4021.25 1376.125Q3974.5 1315.75 3951.0 1246.375Q3927.5 1177.0 3919.75 1112.625Q3912.0 1048.25 3912.0 1004.0V402.5H4140V928.0Q4140 984.5 4148.875 1048.875Q4157.75 1113.25 4185.0 1170.625Q4212.25 1228.0 4264.25 1264.0Q4316.25 1300.0 4402.5 1300.0Q4453.5 1300.0 4500.875 1283.125Q4548.25 1266.25 4585.25 1227.625Q4622.25 1189.0 4644.125 1123.375Q4666.0 1057.75 4666.0 961.0L4802.5 1016.0Q4802.5 1158.25 4748.25 1270.625Q4694.0 1383.0 4590.5 1447.75Q4487 1512.5 4338 1512.5ZM4693 1482.5V1159.0H4666.0V402.5H4892.5V1482.5Z"/></svg><!-- iharu-wordmark:end -->
+        <span class="launch-track" aria-hidden="true"></span>
+        <p class="launch-message" id="launch-message">나의 하루를 준비하고 있어요</p>
+        <div class="launch-recovery" id="launch-recovery" hidden><p class="launch-message">연결 상태를 확인한 후 다시 시도해 주세요.</p><button type="button" id="launch-retry">다시 시도</button></div>
+      </div>
+    </div>
+    <div id="root" inert aria-hidden="true"></div>
+    <script>
+      // One launch per document, before the app bundle, route chunks, or APIs load.
+      (function(){
+        var boot=document.getElementById('app-launch'),root=document.getElementById('root'),html=document.documentElement;
+        if(!boot||!root)return;
+        var started=performance.now(),closed=false,leaving=false,settle=0,watchdog=0,frame=0;
+        var media=window.matchMedia('(prefers-reduced-motion: reduce)'),quiet=false;
+        try{var pref=JSON.parse(localStorage.getItem('iharu:appearance')||'null');if(pref&&pref.theme==='dark')html.dataset.theme='dark';quiet=!!(pref&&pref.quiet);if(/^\/(service|guide|notices|blog|login|signup)(\/|$)/.test(location.pathname)&&localStorage.getItem('iharu-public-motion')==='off')quiet=true;}catch(e){}
+        function reduced(){return quiet||media.matches;}
+        function motion(){boot.dataset.motion=reduced()?'reduced':'full';}
+        motion();
+        function remove(){
+          if(closed)return;closed=true;clearTimeout(settle);clearTimeout(watchdog);cancelAnimationFrame(frame);observer.disconnect();media.removeEventListener('change',motion);window.removeEventListener('error',bundleError,true);window.removeEventListener('pagehide',pageHide);
+          root.inert=false;root.removeAttribute('aria-hidden');html.classList.remove('app-launch-active');html.dataset.launchState='ready';boot.remove();
+        }
+        function reveal(immediate){
+          if(closed||leaving)return;leaving=true;clearTimeout(settle);clearTimeout(watchdog);observer.disconnect();root.inert=false;root.removeAttribute('aria-hidden');html.classList.remove('app-launch-active');html.dataset.launchState='leaving';boot.dataset.state='leaving';boot.setAttribute('aria-hidden','true');
+          if(immediate||reduced()){remove();return;}setTimeout(remove,300);
+        }
+        function ready(){return root.childElementCount>0&&!root.querySelector('.loading-state,[data-app-loading]');}
+        function check(){
+          if(closed||leaving)return;clearTimeout(settle);
+          if(!ready())return;
+          settle=setTimeout(function(){if(ready())reveal(false);},Math.max(reduced()?0:Math.max(0,720-(performance.now()-started)),100));
+        }
+        function queue(){cancelAnimationFrame(frame);frame=requestAnimationFrame(check);}
+        function recovery(){
+          if(closed||leaving)return;boot.dataset.state='error';document.getElementById('launch-message').textContent='화면을 불러오지 못했어요';document.getElementById('launch-recovery').hidden=false;
+        }
+        function bundleError(event){if(event.target instanceof HTMLScriptElement&&event.target.type==='module'&&!root.childElementCount)recovery();}
+        function pageHide(){reveal(true);}
+        var observer=new MutationObserver(queue);observer.observe(root,{childList:true,subtree:true});
+        media.addEventListener('change',motion);window.addEventListener('error',bundleError,true);window.addEventListener('pagehide',pageHide);
+        document.getElementById('launch-retry').addEventListener('click',function(){location.reload();});
+        // A slow API yields to the app's own loading/error UI; a missing bundle has a retry screen.
+        watchdog=setTimeout(function(){if(root.childElementCount)reveal(false);else recovery();},8000);
+        html.dataset.launchState='loading';queue();
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+    <noscript><style>html.app-launch-active{overflow:auto}#app-launch{display:none}</style><p>아이하루를 사용하려면 브라우저에서 자바스크립트를 켜 주세요.</p></noscript>
+  </body>
 </html>
 

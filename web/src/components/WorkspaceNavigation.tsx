@@ -3,6 +3,7 @@ import {useEffect,useId,useRef} from 'react';
 import {Link,useLocation} from 'react-router-dom';
 import {useOptionalWorkspaceGate} from './WorkspaceGate';
 import {Icon,type IconName} from './Icon';
+import {BrandWordmark} from './BrandWordmark';
 const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/timetable',label:'시간표',icon:'clock'},
  {to:'/today/calendar',label:'달력',icon:'calendar'},
@@ -15,7 +16,7 @@ const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/privacy',label:'개인정보 관리',icon:'shield'},
  {to:'/legal/privacy',label:'개인정보처리방침',icon:'book'},
 ];
-export function WorkspaceBrand({testMode=false,iconOnly=false}:{testMode?:boolean;iconOnly?:boolean}){return <Link to={testMode?'/test/today':'/timetable'} className={"brand workspace-brand"+(iconOnly?" workspace-wordmark":"")} aria-label="아이하루">{iconOnly?<><svg className="iharu-symbol" viewBox="0 0 32 32" aria-hidden="true"><circle cx="23" cy="7" r="3.5" className="iharu-symbol-sun"/><path d="M4 25V15a8 8 0 0 1 16 0v10M12 25v-7a8 8 0 0 1 16 0v7" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"/><path d="M4 26h24" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round"/></svg><span className="iharu-wordmark" aria-hidden="true">iHaru</span></>:<><span className="brandmark"><Icon name="sun"/></span><span>아이하루<small>FAMILY WORKSPACE</small></span></>}</Link>;}
+export function WorkspaceBrand({testMode=false,iconOnly=false}:{testMode?:boolean;iconOnly?:boolean}){return <Link to={testMode?'/test/today':'/timetable'} className={'brand workspace-brand workspace-wordmark'+(iconOnly?' compact-wordmark':'')} aria-label="아이하루"><BrandWordmark/></Link>;}
 export function WorkspaceNavigation({childMode=false,testMode=false,personalChild=false}:{childMode?:boolean;testMode?:boolean;personalChild?:boolean}){
  const {pathname}=useLocation(),gate=useOptionalWorkspaceGate();
  personalChild=personalChild||gate?.workspaceRole==='CHILD';
