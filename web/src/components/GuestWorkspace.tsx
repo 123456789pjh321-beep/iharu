@@ -49,9 +49,9 @@ export function GuestWorkspace({mode}:{mode:PersonalMode}){
  const today=koreaToday(),[day,setDay]=useState(today),[month,setMonth]=useState(today.slice(0,7)),{pathname}=useLocation(),{requestLogin}=useEntryAccess();
  const samples=guestSamples(month,today),preview={preview:true,members:sampleMembers,defaultMemberIds:sampleChildIds};
  const create=(kind:'EVENT'|'REPEAT'|'FEE'|'NOTE',date:string,time?:string)=>{
-  const paths={EVENT:'/today/calendar',REPEAT:'/timetable',FEE:'/tuition',NOTE:'/records'},names={EVENT:'일정',REPEAT:'시간표',FEE:'학원비',NOTE:'메모'};
+  const paths={EVENT:'/today/calendar',REPEAT:'/timetable',FEE:'/tuition',NOTE:'/records'},names={EVENT:'일정을',REPEAT:'시간표를',FEE:'학원비를',NOTE:'메모를'};
   const intent:EntryIntent={type:'create',kind,path:paths[kind],date,...(time?{time}:{})};
-  requestLogin({intent,title:names[kind]+'를 입력하려면 로그인해 주세요',description:time?`${date} ${time}부터 내 계정에서 이어서 입력해요.`:`${date}에 내 계정으로 새 내용을 입력해요.`});
+  requestLogin({intent,title:names[kind]+' 입력하려면 로그인해 주세요',description:time?`${date} ${time}부터 내 계정에서 이어서 입력해요.`:`${date}에 내 계정으로 새 내용을 입력해요.`});
  };
  // Only the input position continues after login. Sample titles, people and amounts never do.
  const edit=(item:WorkspaceItem)=>{if(item.kind==='EVENT'||item.kind==='REPEAT'||item.kind==='FEE'||item.kind==='NOTE')create(item.kind,item.data.date,item.data.startTime);};
