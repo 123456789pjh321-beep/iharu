@@ -9,7 +9,7 @@ async function signIn(context:BrowserContext,email:string){
 }
 async function noMarketing(page:Page){
  await expect(page.locator('.workspace-reader')).toBeVisible();
- await expect(page.locator('.public-header,.public-footer,.guide-hero,.story-art,.market-closing')).toHaveCount(0);
+ await expect(page.locator('.market-header,.public-footer,.guide-hero,.story-art,.market-closing')).toHaveCount(0);
  for(const name of ['로그인','시작하기','회원가입'])await expect(page.getByRole('link',{name,exact:true})).toHaveCount(0);
  await expect(page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true})).toHaveAttribute('aria-current','page');
 }
@@ -32,7 +32,7 @@ test('app guides, notices and blog keep list, search, article and return navigat
   }
   for(const width of [320,820,1440]){await page.setViewportSize({width,height:900});await page.getByRole('navigation',{name:'더보기 메뉴'}).getByRole('link',{name:'사용 가이드',exact:true}).click();await noMarketing(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/ui124-guide-${width}.png`,animations:'disabled'});await page.getByRole('link',{name:'더보기로 돌아가기',exact:true}).click();}
   // Public entry points still serve the standalone introduction to visitors.
-  await page.goto('/guide');await expect(page.locator('.public-header')).toBeVisible();await expect(page.getByRole('navigation',{name:'사용 가이드 목차'})).toBeVisible();
+  await page.goto('/guide');await expect(page.locator('.market-header')).toBeVisible();await expect(page.getByRole('navigation',{name:'사용 가이드 목차'})).toBeVisible();
  }finally{await context.close();}
 });
 
@@ -65,11 +65,11 @@ for(const width of [390,820])test(`month rows, holiday colors and all dates stay
   const first=await inspect();let value='2026-11';
   for(const direction of [1,1,1,1,1,1,-1,-1,-1,-1,-1,-1]){
    const date=new Date(value+'-01T12:00:00Z');date.setUTCMonth(date.getUTCMonth()+direction);value=date.toISOString().slice(0,7);
-   await swipe(direction);await expect(month).toHaveValue(value);await inspect();
+   await swipe(direction);await expect(month).toHaveValue(value);await inspect();if(direction===1&&['2027-01','2027-02','2027-05'].includes(value))await page.screenshot({path:`test-results/ui124-${value}-${width}.png`,animations:'disabled'});
   }
   const last=await inspect();expect(last.rowHeights).toEqual(first.rowHeights);await page.screenshot({path:`test-results/ui124-month-rows-${width}.png`,animations:'disabled'});
   for(let index=0;index<4;index++)expect((await context.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'EVENT',data:{title:'밀집 일정 '+index,date:'2027-05-03',allDay:true}}})).ok()).toBe(true);
   // A four-row February and a dense six-row month must remain scrollable when resized.
-  for(const value of ['2026-02','2027-05']){await month.fill(value);await inspect();await page.setViewportSize({width,height:640});await inspect();await page.setViewportSize({width,height:900});}
+  for(const value of ['2026-02','2027-05']){await month.fill(value);await inspect();await page.setViewportSize({width,height:640});await inspect();await page.screenshot({path:`test-results/ui124-${value}-short-${width}.png`,animations:'disabled'});await page.setViewportSize({width,height:900});}
  }finally{await context.close();}
 });
