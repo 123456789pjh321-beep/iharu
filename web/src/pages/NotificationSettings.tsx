@@ -1,3 +1,4 @@
+import {WorkspaceTutorial} from '../components/WorkspaceTutorial';
 import {useCallback,useEffect,useState} from 'react';
 import {Link} from 'react-router-dom';
 import {AuthLayout} from '../components/AuthLayout';
@@ -35,7 +36,7 @@ export function NotificationSettings(){
  }
 
  const enabled=settings?.deviceEnabled&&permission==='granted';
- return <AuthLayout wide><div className="notification-settings"><div className="workspace-page-heading"><div><p className="eyebrow">필요한 소식만, 놓치지 않도록</p><h1>알림설정</h1><p>가족 달력과 대화의 새 소식을 받아보세요.</p></div><span className="notification-heading-icon"><Icon name="bell"/></span></div>
+ return <AuthLayout wide>{settings&&<WorkspaceTutorial profileId={settings.profileId}/>}<div className="notification-settings"><div className="workspace-page-heading"><div><p className="eyebrow">필요한 소식만, 놓치지 않도록</p><h1>알림설정</h1><p>가족 달력과 대화의 새 소식을 받아보세요.</p></div><span className="notification-heading-icon"><Icon name="bell"/></span></div>
  {error&&<div role="alert" className="notification-notice error">{error}</div>}{message&&<div role="status" className="notification-notice">{message}</div>}
  {loading?<Loading label="알림설정을 불러오고 있어요"/>:!settings?<section className="account-card"><p>로그인한 뒤 알림을 설정할 수 있어요.</p><Link className="button primary" to="/login">로그인</Link><button className="button" onClick={()=>void load()}>다시 확인</button></section>:<>
  <section className="notification-device account-card" aria-labelledby="device-push-title"><div className="notification-section-heading"><Icon name="bell"/><div><h2 id="device-push-title">이 기기 알림</h2><p>{enabled?'기기 알림이 연결되어 있어요.':'기기마다 한 번씩 알림을 연결해 주세요.'}</p></div><span className={'notification-state '+(enabled?'on':'')}>{enabled?'연결됨':'연결 안 됨'}</span></div>
