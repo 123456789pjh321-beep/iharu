@@ -42,7 +42,7 @@ for(const width of [390,820])test(`finger-follow, snap-back, cancellation and to
   // The same controller handles calendar day paging, but never the fixed weekly timetable.
   await page.getByRole('group',{name:'달력 보기'}).getByRole('button',{name:'일간',exact:true}).tap();await page.getByLabel('달력 날짜 선택').fill('2026-12-31');
   await page.locator('.timetable-scroll').hover();await page.mouse.wheel(300,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');await settled(page);
-  await page.goto('/timetable');const days=await page.locator('[data-timetable-date]').evaluateAll(els=>els.map(el=>el.getAttribute('data-timetable-date')));
+  await page.goto('/timetable');await expect(page.locator('[data-timetable-date]')).toHaveCount(7);const days=await page.locator('[data-timetable-date]').evaluateAll(els=>els.map(el=>el.getAttribute('data-timetable-date')));
   await page.locator('.timetable-scroll').hover();await page.mouse.wheel(300,0);await settled(page);expect(await page.locator('[data-timetable-date]').evaluateAll(els=>els.map(el=>el.getAttribute('data-timetable-date')))).toEqual(days);
   expect(errors).toEqual([]);
  }finally{await context.close();}
@@ -69,5 +69,35 @@ test('jade palette remains readable and aligned in light and dark at phone, tabl
    }
   }
   for(const route of ['service','blog']){await page.goto('/'+route);await expect(page.locator('.marketing-site h1')).toBeVisible();await page.screenshot({path:`test-results/ui122-${route}.png`,animations:'disabled'});}
+ }finally{await context.close();}
+});
+
+test('calendar slides in the chosen direction, survives fast navigation and respects reduced motion',async({browser})=>{
+ const context=await browser.newContext({baseURL:origin}),page=await context.newPage();
+ try{
+ await page.setViewportSize({width:390,height:844});await signIn(context,'calendar-motion@example.test');await page.goto('/today/calendar');
+ const month=page.getByLabel('달력 월 선택');await month.fill('2026-11');
+ async function swipe(delta:number){
+  const bounds=(await page.locator('.calendar-viewport').boundingBox())!,x=bounds.x+bounds.width*(delta>0?.8:.2),y=bounds.y+40;
+  await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-delta*bounds.width*.6,y,{steps:8});await page.mouse.up();
+ }
+ await page.evaluate(()=>{
+  const viewport=document.querySelector('.calendar-viewport')!;
+  const observations:object[]=[];(window as unknown as {pageTransitions:object[]}).pageTransitions=observations;
+  new MutationObserver(()=>{
+   const snapshot=viewport.querySelector<HTMLElement>('.calendar-motion-snapshot'),grid=viewport.querySelector('.calendar-grid');if(!snapshot||!grid)return;
+   const animation=grid.getAnimations()[0];if(!animation)return;
+   const frames=(animation.effect as KeyframeEffect).getKeyframes();observations.push({direction:Math.sign(new DOMMatrix(String(frames[0].transform)).m41),hidden:snapshot.getAttribute('aria-hidden')==='true',inert:snapshot.inert});
+  }).observe(viewport,{childList:true});
+ });
+ await swipe(1);await expect(month).toHaveValue('2026-12');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
+ await swipe(-1);await expect(month).toHaveValue('2026-11');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
+ expect(await page.evaluate(()=>(window as unknown as {pageTransitions:object[]}).pageTransitions)).toEqual([{direction:1,hidden:true,inert:true},{direction:-1,hidden:true,inert:true}]);
+ await swipe(1);await swipe(-1);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(month).toHaveValue('2026-11');await expect(page.getByRole('dialog')).toHaveCount(0);
+ await page.emulateMedia({reducedMotion:'reduce'});await swipe(1);await expect(month).toHaveValue('2026-12');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
+ expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
+ await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await swipe(1);await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await month.fill('2026-11');await swipe(1);await expect(month).toHaveValue('2026-12');
+ await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
  }finally{await context.close();}
 });

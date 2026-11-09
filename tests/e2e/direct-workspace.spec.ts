@@ -39,32 +39,6 @@ test('parent B joins while signed in and group conversation has shared history, 
  await b.screenshot({path:'test-results/ui78-chat-mobile.png'});
  }finally{await ctx.close().catch(()=>{});}
 });
-test('calendar slides in the chosen direction, survives fast navigation and respects reduced motion',async({page,request})=>{
- await page.setViewportSize({width:390,height:844});await login(page,request,'calendar-motion@example.test');await page.goto('/today/calendar');
- const month=page.getByLabel('달력 월 선택');await month.fill('2026-11');
- async function swipe(delta:number){
-  const bounds=(await page.locator('.calendar-viewport').boundingBox())!,x=bounds.x+bounds.width*(delta>0?.8:.2),y=bounds.y+40;
-  await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-delta*bounds.width*.6,y,{steps:8});await page.mouse.up();
- }
- await page.evaluate(()=>{
-  const viewport=document.querySelector('.calendar-viewport')!;
-  const observations:object[]=[];(window as unknown as {pageTransitions:object[]}).pageTransitions=observations;
-  new MutationObserver(()=>{
-   const snapshot=viewport.querySelector<HTMLElement>('.calendar-motion-snapshot'),grid=viewport.querySelector('.calendar-grid');if(!snapshot||!grid)return;
-   const animation=grid.getAnimations()[0];if(!animation)return;
-   const frames=(animation.effect as KeyframeEffect).getKeyframes();observations.push({direction:Math.sign(new DOMMatrix(String(frames[0].transform)).m41),hidden:snapshot.getAttribute('aria-hidden')==='true',inert:snapshot.inert});
-  }).observe(viewport,{childList:true});
- });
- await swipe(1);await expect(month).toHaveValue('2026-12');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
- await swipe(-1);await expect(month).toHaveValue('2026-11');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
- expect(await page.evaluate(()=>(window as unknown as {pageTransitions:object[]}).pageTransitions)).toEqual([{direction:1,hidden:true,inert:true},{direction:-1,hidden:true,inert:true}]);
- await swipe(1);await swipe(-1);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(month).toHaveValue('2026-11');await expect(page.getByRole('dialog')).toHaveCount(0);
- await page.emulateMedia({reducedMotion:'reduce'});await swipe(1);await expect(month).toHaveValue('2026-12');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
- expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
- await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await swipe(1);await expect(page.locator('.calendar-grid .calendar-cell')).toHaveCount(7);
- await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await month.fill('2026-11');await swipe(1);await expect(month).toHaveValue('2026-12');
- await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-grid').evaluate(el=>el.getAnimations().length)).toBe(0);
-});
 
 test('tuition recurrence, designated payer, parent-only home, navigation and fixed appearance work together',async({page,browser,request})=>{
  test.setTimeout(120000);await page.setViewportSize({width:390,height:844});await login(page,request,'tuition-a@example.test','결제 부모 A');const code=await issue(page);
