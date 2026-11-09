@@ -18,6 +18,7 @@ import './workspace-controls.css';
 import './compact-workspace.css';
 import './entry-input.css';
 import './usability.css';
+import './theme-jade.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><ExperienceProvider><App/></ExperienceProvider></StrictMode>);
 
 

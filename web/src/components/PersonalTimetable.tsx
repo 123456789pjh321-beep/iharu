@@ -7,8 +7,7 @@ import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {eventColor} from './scheduleColors';
 import {Icon} from './Icon';
 import {MemberPreferenceFilter,useMemberPreference} from './MemberPreferenceFilter';
-import {useCalendarSlide} from './useCalendarSlide';
-import {useDaySwipe} from './useDaySwipe';
+import {useCalendarPager} from './useCalendarPager';
 import {WorkspaceHeaderAction} from './WorkspaceHeaderAction';
 
 const weekday=['일','월','화','수','목','금','토'];
@@ -22,8 +21,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  const member=embedded?'all':selection.memberIds;
  const memberKey=embedded?'all':[...selection.memberIds].sort().join(',');
  const today=koreaToday(),dates=embedded?[day]:timetableWeekDates(today),period=dates[0],selectedDay=dates.includes(day)?day:today;
- useCalendarSlide(page,period,'day',embedded);
- const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),undefined,embedded);
+ const daySwipe=useCalendarPager(page,period,'day',delta=>setDay(addDays(day,delta)),embedded);
  const sourceItems=items.filter(item=>item.kind===(embedded?'EVENT':'REPEAT'));
  const lanes=dates.map(date=>{const events=dailySchedules(sourceItems,date,member);return {date,events,allDay:events.filter(i=>i.data.allDay),layout:timetableLayout(events,embedded?undefined:timetableRange,date)};});
  const joined=timetableRuns(lanes),joinedKeys=new Set(joined.flatMap(run=>run.days.map(({date,item})=>date+':'+item.id)));
