@@ -29,7 +29,7 @@ function useGateState(){
   const identity=s.email||'';if(adminIdentity.current!==identity){adminIdentity.current=identity;setAdminAllowed(false);setAdminLoading(true);}setAdminError('');
   adminRequest<{allowed:boolean}>('access').then(r=>{if(active)setAdminAllowed(r.allowed);}).catch(e=>{if(active){setAdminAllowed(false);setAdminError((e as Error).message);}}).finally(()=>{if(active)setAdminLoading(false);});return()=>{active=false;};
  },[session.data,session.loading,adminRevision]);
- return {...menuUpdates,health,session,access,refreshAccess,workspaceRole,setWorkspaceRole,adminAllowed,adminLoading,adminError,refreshAdmin:()=>setAdminRevision(n=>n+1)};
+ return {...menuUpdates,health,session,access,refreshAccess,workspaceRole,setWorkspaceRole,adminAllowed:adminAllowed&&access.status==='member'&&access.identity?.role==='PARENT',adminLoading,adminError,refreshAdmin:()=>setAdminRevision(n=>n+1)};
 }
 const GateContext=createContext<ReturnType<typeof useGateState>|null>(null);
 export function WorkspaceGateProvider({children}:{children:ReactNode}){return <GateContext.Provider value={useGateState()}>{children}</GateContext.Provider>;}

@@ -56,11 +56,12 @@ test('account-dependent deep links open the same login sheet without mounting pr
 });
 
 test('child login resumes the timetable and retains child-only account and fee restrictions',async({page,playwright})=>{
- const user=await parent(playwright,'child-parent'),invite=await command(user.client,'invite.issue',{consent:true}),child=await playwright.request.newContext({baseURL:origin});
+ const user=await parent(playwright,'child-parent');await command(user.client,'items.create',{kind:'FEE',data:{title:'학부모 전용 비용',date:'2026-11-10',amount:100000}});const invite=await command(user.client,'invite.issue',{consent:true}),child=await playwright.request.newContext({baseURL:origin});
  await command(child,'child.signup',{loginId:'ui128_child',name:'검증 자녀',password,code:invite.code});await child.dispose();await user.client.dispose();
  await page.goto('/timetable');await ready(page);await page.locator('.timetable-day-column').first().locator('[data-time="10:00"]').click();const sheet=page.getByRole('dialog');await sheet.getByRole('button',{name:'자녀',exact:true}).click();await sheet.getByLabel('아이디',{exact:true}).fill('ui128_child');await sheet.getByLabel('암호',{exact:true}).fill(password);await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await expect(page.locator('input[name=startTime]')).toHaveValue('10:00');await page.getByRole('button',{name:'편집 닫기'}).click();
  await expect(page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'학원비',exact:true})).toHaveCount(0);await page.goto('/tuition');await ready(page);await expect(page).toHaveURL(/\/timetable$/);
- const denied=await page.request.post('/api/v1/workspace/items.list',{headers:{Origin:origin},data:{from:'2026-11-01',to:'2026-11-30',kind:'FEE'}});expect(denied.status()).toBe(403);
+ const hidden=await command(page.request,'items.list',{from:'2026-11-01',to:'2026-11-30',kind:'FEE'});expect(hidden.items).toEqual([]);
+ const denied=await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'FEE',data:{title:'자녀 등록 차단',date:'2026-11-10',amount:100000}}});expect(denied.status()).toBe(403);
 });
 
 test('social login keeps an allowlisted return and resumes after the provider callback',async({page,playwright})=>{
