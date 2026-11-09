@@ -1,29 +1,29 @@
-import {useEffect,useState} from 'react';
+import {useState} from 'react';
 import {MonthSwipeArea} from './MonthSwipeArea';
-import {MemberFilter} from './MemberFilter';
+import {MemberPreferenceFilter,useMemberPreference,type MemberPreferenceProps} from './MemberPreferenceFilter';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {Icon} from './Icon';
 import {tuitionMonth} from '../../../shared/tuition-calendar';
 import {koreaToday} from '../../../shared/schedules';
 const won=(n:number)=>new Intl.NumberFormat('ko-KR').format(n)+'원';
 const calendarAmount=(n:number)=>n>=100000000?new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(n/100000000)+'억':n>=10000?new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(n/10000)+'만':new Intl.NumberFormat('ko-KR').format(n);
-export function PersonalFees({items,members,month,compact=false,edit,create,onMonthChange}:{items:WorkspaceItem[];members:WorkspaceMember[];month:string;compact?:boolean;edit:(item:WorkspaceItem)=>void;create:(date?:string)=>void;onMonthChange?:(month:string)=>void}){
- const [member,setMember]=useState('all'),[view,setView]=useState<'calendar'|'ledger'>('calendar'),[selectedDate,setSelectedDate]=useState<string|null>(null);
- useEffect(()=>{if(member!=='all'&&!members.some(m=>m.id===member))setMember('all');},[member,members]);
- const selected=member;
+export function PersonalFees({viewerId,defaultMemberIds,saveDefaultMembers,items,members,month,compact=false,edit,create,onMonthChange}:MemberPreferenceProps&{items:WorkspaceItem[];members:WorkspaceMember[];month:string;compact?:boolean;edit:(item:WorkspaceItem)=>void;create:(date?:string)=>void;onMonthChange?:(month:string)=>void}){
+ const selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers});
+ const [view,setView]=useState<'calendar'|'ledger'>('calendar'),[selectedDate,setSelectedDate]=useState<string|null>(null);
+ const selected=selection.memberIds;
  const summary=tuitionMonth(items,month,selected),fees=summary.fees;
  const date=selectedDate?.startsWith(month+'-')?selectedDate:null;
  const sorted=view==='calendar'&&date&&!compact?summary.days.get(date)?.items||[]:fees;
  const total=won(summary.total);
- const summaryLabel=Number(month.slice(5))+'월 '+(selected==='all'?'합계':members.find(m=>m.id===selected)?.name+' 합계');
- const filter=<MemberFilter className="fee-member-filters" members={members} value={member} onChange={setMember} label={compact?'오늘 학원비 구성원 필터':'학원비 구성원 필터'}/>;
+ const summaryLabel=Number(month.slice(5))+'월 '+(selected.length===members.length?'합계':members.filter(m=>selected.includes(m.id)).map(m=>m.name).join(' · ')+' 합계');
+ const filter=<MemberPreferenceFilter className="fee-member-filters" members={members} selection={selection} label={compact?'오늘 학원비 구성원 필터':'학원비 구성원 필터'}/>;
  const list=sorted.length?<div className="personal-item-list">{sorted.map(item=><article className="personal-item personal-tuition-item" key={item.id+item.fee!.month} data-item-id={item.id}>
   <button type="button" className="personal-item-main direct-item" onClick={()=>edit(item)} aria-label={item.data.title+' '+(item.mine?'수정':'상세')}>
    <span className="personal-item-category">{item.fee!.dueDate} · {item.data.feeFrequency==='MONTHLY'?'매월 납부':'한 번 납부'}</span><h3>{item.data.title}</h3>
    <p>{members.find(m=>m.id===(item.data.assigneeId||item.ownerId))?.name||'연결 해제된 구성원'} · 결제자 {item.fee!.payerName}</p>
    {!compact&&item.data.note&&<p className="personal-note-text">{item.data.note}</p>}
   </button><div className="personal-fee-value"><strong>{won(item.data.amount||0)}</strong></div>
- </article>)}</div>:<button type="button" className="personal-empty direct-empty" aria-label="학원비 등록" title="학원비 등록" onClick={()=>create(date||undefined)}><Icon name="plus"/>{date?<span>이날 등록한 학원비가 없어요. 눌러서 추가해 보세요.</span>:selected!=='all'&&<span>{members.find(m=>m.id===selected)?.name}의 이번 달 학원비가 없어요.</span>}</button>;
+ </article>)}</div>:<button type="button" className="personal-empty direct-empty" aria-label="학원비 등록" title="학원비 등록" onClick={()=>create(date||undefined)}><Icon name="plus"/>{date?<span>이날 등록한 학원비가 없어요. 눌러서 추가해 보세요.</span>:<span>선택한 구성원의 이번 달 학원비가 없어요.</span>}</button>;
  if(compact)return <>{filter}<details className="personal-fee-disclosure" key={month}><summary className="personal-fee-summary"><span>{summaryLabel}</span><strong aria-live="polite" aria-atomic="true">{total}</strong><span className="fee-disclosure-label">상세 보기<Icon name="chevron"/></span></summary>{list}</details></>;
  const first=month+'-01',offset=new Date(first+'T12:00:00Z').getUTCDay(),count=new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5)),0)).getUTCDate(),today=koreaToday();
  const content=<div className="personal-fees-content">

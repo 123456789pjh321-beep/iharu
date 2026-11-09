@@ -6,7 +6,7 @@ import {dailySchedules,scheduleTimeCaption,scheduleAssignee,schedulePhase,timeta
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {eventColor} from './scheduleColors';
 import {Icon} from './Icon';
-import {MemberFilter} from './MemberFilter';
+import {MemberPreferenceFilter,useMemberPreference} from './MemberPreferenceFilter';
 import {useCalendarSlide} from './useCalendarSlide';
 import {useDaySwipe} from './useDaySwipe';
 
@@ -16,29 +16,10 @@ const hourLabel=(hour:number)=>hour===24?'밤 12':`${hour>=21?'밤':hour<12?'오
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
 export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit,viewerId,defaultMemberIds,saveDefaultMembers}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays((embedded?day:koreaToday()).slice(0,7));
- const [selectedMembers,setMembers]=useState<string[]|null>(null),[savingDefault,setSavingDefault]=useState(false),[preferenceError,setPreferenceError]=useState(''),[preferenceNotice,setPreferenceNotice]=useState(''),preferenceLock=useRef(false); const [now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
+ const selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}); const [now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
- const fallbackMember=members.some(m=>m.id===viewerId)?viewerId!:members[0]?.id||'';
- const availableIds=new Set(members.map(m=>m.id));
- const savedIds=(defaultMemberIds||[]).filter(id=>availableIds.has(id));
- const savedMembers=members.filter(m=>(savedIds.length?savedIds:[fallbackMember]).includes(m.id)).map(m=>m.id);
- const temporaryIds=selectedMembers?.filter(id=>availableIds.has(id));
- const memberIds=temporaryIds?.length?temporaryIds:savedMembers;
- const member=embedded?'all':memberIds;
- const memberKey=embedded?'all':[...memberIds].sort().join(',');
- const isSaved=memberIds.length===savedMembers.length&&memberIds.every(id=>savedMembers.includes(id));
- const savedName=members.filter(m=>savedMembers.includes(m.id)).map(m=>m.name).join(' · ')||'나';
- useEffect(()=>{if(selectedMembers){const valid=selectedMembers.filter(id=>members.some(m=>m.id===id));if(valid.length!==selectedMembers.length)setMembers(valid.length?valid:null);}},[members,selectedMembers]);
- function toggleMember(id:string){
-  setPreferenceError('');setPreferenceNotice('');
-  if(memberIds.includes(id)&&memberIds.length===1){setPreferenceNotice('한 명 이상 선택해 주세요.');return;}
-  setMembers(memberIds.includes(id)?memberIds.filter(value=>value!==id):[...memberIds,id]);
- }
- async function savePreference(){
-  if(preferenceLock.current||!saveDefaultMembers||!memberIds.length||isSaved)return;
-  preferenceLock.current=true;setSavingDefault(true);setPreferenceError('');setPreferenceNotice('');
-  try{await saveDefaultMembers(memberIds);setPreferenceNotice('첫 화면에 표시할 사람들을 저장했어요.');}catch(error){setPreferenceError((error as Error).message);}finally{preferenceLock.current=false;setSavingDefault(false);}
- }
+ const member=embedded?'all':selection.memberIds;
+ const memberKey=embedded?'all':[...selection.memberIds].sort().join(',');
  const today=koreaToday(),dates=embedded?[day]:timetableWeekDates(today),period=dates[0],selectedDay=dates.includes(day)?day:today;
  useCalendarSlide(page,period,'day',embedded);
  const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),undefined,embedded);
@@ -61,9 +42,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  const label=(item:WorkspaceItem,interval?:{start:number;end:number})=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':' timetable-weekly')} aria-label={embedded?'일간 일정':'주간 시간표'}>
   {!embedded&&<><header className="workspace-toolbar" aria-label="시간표"><h1 className="timetable-fixed-title">주간 시간표</h1><span className="timetable-filter-hint">여러 명 선택 가능</span></header>
-  <MemberFilter className="timetable-filters" members={members} value={member} showAll={false} disabled={savingDefault} onChange={toggleMember} label="시간표 구성원 필터"/>
-  <div className="timetable-preference"><span>첫 화면 <strong>{savedName}</strong></span><button type="button" className="button compact" aria-busy={savingDefault} disabled={savingDefault||isSaved||!saveDefaultMembers} onClick={()=>void savePreference()}>{savingDefault?'저장 중':isSaved?<><Icon name="check"/>첫 화면으로 설정됨</>:'첫 화면으로 저장'}</button></div>
-  {preferenceError&&<p className="timetable-preference-message error" role="alert">{preferenceError}</p>}{preferenceNotice&&<p className="timetable-preference-message" role="status">{preferenceNotice}</p>}</>}
+  <MemberPreferenceFilter members={members} selection={selection} className="timetable-filters" label="시간표 구성원 필터"/></>}
   <div className="timetable-summary"><span>{loading?'불러오는 중':`${embedded?'':'매주 반복 · '}${events.length}개 일정`}{showToday&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span>
    {showToday&&!loading&&<div className={'timetable-current-summary'+(currentEvents.length?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
   </div>

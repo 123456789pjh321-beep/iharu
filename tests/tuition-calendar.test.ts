@@ -10,6 +10,6 @@ describe('tuition calendar and ledger',()=>{
  });
  it('keeps member totals, zero amounts and non-fee records consistent between calendar and ledger',()=>{
   const a=fee('내 수업',0,'2028-02-29','parent'),b=fee('아이 수업',120000,'2028-02-29'),note={...b,id:'메모',kind:'NOTE' as const};
-  expect(tuitionMonth([a,b,note],'2028-02').total).toBe(120000);const own=tuitionMonth([a,b,note],'2028-02','parent');expect(own.fees.map(i=>i.id)).toEqual(['내 수업']);expect(own.days.get('2028-02-29')?.total).toBe(0);expect(tuitionMonth([a,b],'2028-03').days.size).toBe(0);
+  expect(tuitionMonth([a,b,note],'2028-02').total).toBe(120000);const own=tuitionMonth([a,b,note],'2028-02','parent');expect(own.fees.map(i=>i.id)).toEqual(['내 수업']);expect(own.days.get('2028-02-29')?.total).toBe(0);expect(tuitionMonth([a,b],'2028-03').days.size).toBe(0);expect(tuitionMonth([a,b,note],'2028-02',['parent','child']).total).toBe(120000);expect(tuitionMonth([a,b],'2028-02',[]).fees).toEqual([]);
  });
 });

@@ -1,0 +1,27 @@
+import {useEffect,useRef,useState} from 'react';
+import type {WorkspaceMember} from '../../../shared/workspace';
+import {MemberFilter} from './MemberFilter';
+import {Icon} from './Icon';
+
+export type MemberPreferenceProps={viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>};
+export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultMemberIds,saveDefaultMembers}:MemberPreferenceProps){
+ const [selected,setSelected]=useState<string[]|null>(null),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),lock=useRef(false);
+ useEffect(()=>{setSelected(null);setError('');setNotice('');},[viewerId]);
+ const available=new Set(members.map(m=>m.id)),fallback=available.has(viewerId||'')?viewerId!:members[0]?.id||'';
+ const validSaved=(defaultMemberIds||[]).filter(id=>available.has(id)),saved=members.filter(m=>(validSaved.length?validSaved:[fallback]).includes(m.id)).map(m=>m.id);
+ const validSelected=selected?.filter(id=>available.has(id)),memberIds=validSelected?.length?validSelected:saved;
+ const isSaved=memberIds.length===saved.length&&memberIds.every(id=>saved.includes(id));
+ useEffect(()=>{if(selected){const valid=selected.filter(id=>members.some(m=>m.id===id));if(valid.length!==selected.length)setSelected(valid.length?valid:null);}},[members,selected]);
+ const toggle=(id:string)=>{if(lock.current)return;setError('');setNotice('');if(memberIds.includes(id)&&memberIds.length===1){setNotice('한 명 이상 선택해 주세요.');return;}setSelected(memberIds.includes(id)?memberIds.filter(value=>value!==id):[...memberIds,id]);};
+ const save=async()=>{if(lock.current||!saveDefaultMembers||!memberIds.length||isSaved)return;lock.current=true;setSaving(true);setError('');setNotice('');try{await saveDefaultMembers([...memberIds]);setNotice('첫 화면에 표시할 사람들을 저장했어요.');}catch(e){setError((e as Error).message);}finally{lock.current=false;setSaving(false);}};
+ return {memberIds,saved,isSaved,saving,error,notice,toggle,save,canSave:!!saveDefaultMembers};
+}
+export function MemberPreferenceFilter({members,selection,label,className=''}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string}){
+ const {memberIds,saved,isSaved,saving,error,notice,toggle,save,canSave}=selection;
+ const name=members.filter(m=>saved.includes(m.id)).map(m=>m.name).join(' · ')||'나';
+ return <section className="member-preference" aria-label={label+' 설정'}>
+  <MemberFilter className={className} members={members} value={memberIds} showAll={false} disabled={saving} onChange={toggle} label={label}/>
+  <div className="timetable-preference"><span>첫 화면 <strong>{name}</strong></span><button type="button" className="button compact" aria-busy={saving} disabled={saving||isSaved||!canSave} onClick={()=>void save()}>{saving?'저장 중':isSaved?<><Icon name="check"/>첫 화면으로 설정됨</>:'첫 화면으로 저장'}</button></div>
+  {error&&<p className="timetable-preference-message error" role="alert">{error}</p>}{notice&&<p className="timetable-preference-message" role="status">{notice}</p>}
+ </section>;
+}

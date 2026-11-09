@@ -29,7 +29,7 @@
 - `tests/e2e/{adaptive-design,app,auth-flow,calendar-holidays-layout,direct-workspace,navigation-updates,notification-calendar,privacy-operations,system-admin}.spec.ts`: 전체메뉴 명칭 검사 갱신.
 - `tests/e2e/{conversation-stickers,timetable-now,timetable-visible-hours}.spec.ts`: 접히는 그림 선택창·축소 크기·08~22시 범위 검사 갱신.
 
-삭제 파일 없음. DB 스키마 변경 없음.
+삭제 파일 없음. 이어진 UI115 요청의 화면별 필터 저장용 DB 확장은 UI115 문서에 기록한다.
 
 ## 검증
 

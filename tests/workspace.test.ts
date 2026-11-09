@@ -310,6 +310,22 @@ it('stores multiple timetable members per account and rejects an invalid combina
  await a.ok('timetable.preference.save',{memberId:bm.id});expect((await a.ok('me')).timetableMemberIds).toEqual([bm.id]);
  await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v112('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
 });
+it('saves calendar and fee member combinations independently with account isolation and atomic validation',async()=>{
+ const a=await parent('filter-a'),b=await parent('filter-b'),x=await parent('filter-x'),am=await a.ok('me'),bm=await b.ok('me'),xm=await x.ok('me');
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ await a.ok('member-filter.preference.save',{scope:'calendar',memberIds:[am.id,bm.id]});await a.ok('member-filter.preference.save',{scope:'fees',memberIds:[bm.id]});
+ expect((await a.ok('me')).memberFilterPreferences).toMatchObject({calendar:[am.id,bm.id],fees:[bm.id],timetable:[am.id]});expect((await b.ok('me')).memberFilterPreferences.calendar).toEqual([bm.id]);
+ for(const data of [{scope:'calendar',memberIds:[]},{scope:'calendar',memberIds:[am.id,am.id]},{scope:'calendar',memberIds:[am.id,xm.id]},{scope:'calendar',memberIds:[am.id],profileId:bm.id},{scope:'unknown',memberIds:[am.id]}]){expect((await a.req(api+'member-filter.preference.save',data)).status).toBe(400);expect((await a.ok('me')).memberFilterPreferences.calendar).toEqual([am.id,bm.id]);}
+ await a.ok('member-filter.preference.save',{scope:'timetable',memberIds:[bm.id,am.id]});expect((await a.ok('me')).timetableMemberIds).toEqual([bm.id,am.id]);
+ const otherDevice=new Browser();await otherDevice.req('/api/auth/sign-in/email',{email:'filter-a@example.test',password:'parent-fixture-password'});expect((await otherDevice.ok('me')).memberFilterPreferences.fees).toEqual([bm.id]);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v113('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
+});
+it('restores child calendar combinations, excludes disconnected people and denies child fee preferences',async()=>{
+ const a=await parent('filter-child-parent'),c=new Browser(),invite=await a.ok('invite.issue',{consent:true});await c.ok('child.signup',{loginId:'filter_child',name:'필터 자녀',password:'child-fixture-password',code:invite.code});const am=await a.ok('me'),cm=await c.ok('me');
+ await c.ok('member-filter.preference.save',{scope:'calendar',memberIds:[am.id,cm.id]});expect((await c.ok('me')).memberFilterPreferences.calendar).toEqual([am.id,cm.id]);
+ expect((await c.req(api+'member-filter.preference.save',{scope:'fees',memberIds:[cm.id]})).status).toBe(403);expect((await c.ok('me')).memberFilterPreferences.fees).toBeUndefined();
+ await a.ok('family.remove',{familyId:am.family.id,profileId:cm.id,version:am.family.members.find((m:any)=>m.id===cm.id).version});expect((await c.ok('me')).memberFilterPreferences.calendar).toEqual([cm.id]);
+});
 it('keeps remaining selections after family disconnection and restores child combinations on a new login',async()=>{
  const a=await parent('multi-child-parent'),c=new Browser(),invite=await a.ok('invite.issue',{consent:true});
  await c.ok('child.signup',{loginId:'multi_child',name:'다중 자녀',password:'child-fixture-password',code:invite.code});const am=await a.ok('me'),cm=await c.ok('me');
