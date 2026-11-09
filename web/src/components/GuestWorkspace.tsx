@@ -59,7 +59,7 @@ export function GuestWorkspace({mode}:{mode:PersonalMode}){
  const login=()=>requestLogin({title:mode==='chat'?'가족에게 소식을 보내려면 로그인해 주세요':'우리 가족을 연결하려면 로그인해 주세요'});
  const readOnly=mode==='service'||mode==='guide'||mode==='notices'||mode==='blog';
  return <div className={'guest-workspace'+(['timetable','calendar','repeats'].includes(mode)?' guest-schedule':'')} data-guest-workspace>
-  {mode==='timetable'||mode==='repeats'?<PersonalTimetable {...preview} day={day} setDay={setDay} items={samples.repeats} loading={false} create={(date,time)=>create('REPEAT',date,time)} edit={edit}/>
+  {mode==='timetable'||mode==='repeats'?<PersonalTimetable {...preview} defaultMemberIds={[sampleChildIds[0]]} day={day} setDay={setDay} items={samples.repeats} loading={false} create={(date,time)=>create('REPEAT',date,time)} edit={edit}/>
   :mode==='calendar'?<PersonalCalendar {...preview} month={month} day={day} setMonth={setMonth} setDay={setDay} items={samples.events} create={(date,time)=>create('EVENT',date,time)} edit={edit} guestCreate/>
   :mode==='fees'?<><WorkspaceToolbar title="학원비" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} createLabel="학원비 추가" onCreate={()=>create('FEE',day)}/><section className="account-card fee-workspace"><PersonalFees {...preview} items={samples.fees} month={month} onMonthChange={selectMonth} edit={edit} create={date=>create('FEE',date||day)}/></section></>
   :mode==='records'?<><WorkspaceToolbar title="메모" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} createLabel="메모 추가" onCreate={()=>create('NOTE',day)}/><section className="account-card"><GuestNotesSample items={samples.notes} create={date=>create('NOTE',date)}/></section></>
