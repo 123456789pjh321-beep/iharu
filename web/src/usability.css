@@ -37,9 +37,9 @@
 .workspace-header-guide:focus-visible,.workspace-header-tools>.timetable-now-jump:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .workspace-page .member-filter-bar.wrapped .member-filters{flex-wrap:wrap;overflow:visible}
 .member-filter-bar.wrapped .member-filter-name{white-space:normal;overflow-wrap:anywhere}
-.timetable-weekly>.timetable-summary{justify-content:flex-end;padding-block:0 4px}
-.timetable-weekly>.timetable-summary:empty{display:none}
-.timetable-weekly .timetable-current-summary{padding-bottom:4px}
+.workspace-page .timetable-weekly>.timetable-summary{justify-content:flex-end;min-height:0;padding:0 12px 4px}
+.workspace-page .timetable-weekly>.timetable-summary:empty,.workspace-page .timetable-weekly>.timetable-summary:has(>.empty){display:none}
+.workspace-page .timetable-weekly .timetable-current-summary{max-width:100%;padding:0}
 @media(max-width:600px){
  .workspace-page .auth-header{padding-inline:10px;gap:8px}
  .workspace-header-tools{gap:5px}
@@ -47,6 +47,7 @@
  .workspace-header-guide{font-size:.7rem;padding-inline:7px}
  .workspace-page .auth-header .theme-toggle{gap:2px;padding:3px}
  .workspace-page .auth-header .theme-toggle button{width:32px;min-width:32px;padding:5px;justify-content:center}
+ .workspace-page .auth-header .theme-toggle .icon{display:block}
  .workspace-page .auth-header .theme-toggle button>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 }
 @media(max-width:360px){.workspace-header-guide>.icon{display:none}}
