@@ -17,7 +17,7 @@ test('long Korean draft saves once, survives reload, and shows field-specific pu
  await page.getByLabel('운영자명 (개인 또는 법인)',{exact:true}).fill('한글 문서 저장 관리자');
  for(const title of ['이용약관','개인정보처리방침']){await page.locator('summary').filter({hasText:new RegExp('^'+title)}).click();await page.getByLabel(title,{exact:true}).fill('가'.repeat(30000));}
  await page.getByLabel('저장·게시 사유',{exact:true}).fill('긴 한글 문서 저장 확인');
- await page.getByRole('button',{name:'초안 저장',exact:true}).evaluate(button=>{button.click();button.click();});
+ await page.getByRole('button',{name:'초안 저장',exact:true}).evaluate(button=>{(button as HTMLButtonElement).click();(button as HTMLButtonElement).click();});
  await expect(page.getByText('초안을 저장했습니다. 게시 전까지 외부에 공개되지 않습니다.',{exact:true})).toBeVisible();expect(saves).toBe(1);
  const stored=await legal(page.request,'admin.read');expect(stored.draft.terms).toHaveLength(30000);expect(stored.draft.privacy).toHaveLength(30000);
  await expect(page.getByRole('button',{name:'저장한 초안 게시',exact:true})).toBeDisabled();
