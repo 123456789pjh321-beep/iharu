@@ -242,3 +242,14 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 /* Paint the separator above cell backgrounds, including taller holiday rows. */
 .calendar-week-row{border-bottom:0}
 .calendar-week-row::after{content:"";position:absolute;inset:auto 0 0;height:1px;background:var(--line);z-index:3;pointer-events:none}
+
+/* Account-specific timetable start view; other member filters retain their all option. */
+.timetable-preference{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:0 12px 8px;color:var(--muted);font-size:.75rem}
+.timetable-preference>span{display:flex;gap:6px;min-width:0;align-items:center}
+.timetable-preference strong{color:var(--ink);overflow-wrap:anywhere}
+.timetable-preference .button{font-size:.75rem;min-height:34px;gap:5px;padding:6px 10px}
+.timetable-preference .button:disabled{opacity:1;color:var(--muted);background:var(--surface);cursor:default}
+.timetable-preference .icon{width:14px;height:14px}
+.timetable-preference-message{margin:0;padding:0 12px 8px;color:var(--primary);font-size:.75rem}
+.timetable-preference-message.error{color:#a3454b}
+html[data-theme=dark] .timetable-preference-message.error{color:#ffbdc5}
