@@ -14,7 +14,7 @@ export {visibleOn} from '../../../shared/workspace-schedules';
 import {PeriodPager,shiftMonth} from './PeriodPager';
 import {calendarWeekLayout} from '../../../shared/calendar-layout';
 const weekdays=['일','월','화','수','목','금','토'];
-export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,month,day,items,members,loading=false,setMonth,setDay,create,edit}:MemberPreferenceProps&{month:string;day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading?:boolean;setMonth:(v:string)=>void;setDay:(v:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
+export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,month,day,items,members,loading=false,setMonth,setDay,create,edit,guestCreate=false}:MemberPreferenceProps&{month:string;day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading?:boolean;guestCreate?:boolean;setMonth:(v:string)=>void;setDay:(v:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays(month),[detail,setDetail]=useState<string|null>(null);
  const [view,setView]=useState<'month'|'week'|'day'>('month'),selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}),member=selection.memberIds;
  const selectDay=(date:string)=>{setDay(date);setMonth(date.slice(0,7));};
@@ -33,14 +33,14 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,m
   const lanes=Math.max(...weeks.map(week=>week.layout.runs.length?week.layout.rows:0)),overflow=weeks.some(week=>week.layout.hidden.some(Boolean));
   const rowMinimum=Math.max(view==='week'?300:0,56+lanes*32+(overflow?32:4));
   return <div className="calendar-month-content" key={dates[0]}><div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div><div className={'calendar-grid '+(view==='week'?'week-view':'')} style={{gridTemplateRows:`repeat(${weeks.length},minmax(${rowMinimum}px,1fr))`}}>
-   {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={date=>{selectDay(date);setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
+   {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={date=>{selectDay(date);if(guestCreate)create(date);else setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
   </div></div>;
  };
  return <section className="direct-calendar" aria-label="일정 달력">
  <WorkspaceToolbar title="달력" navigation={<DateNavigator type={view==='day'?'date':'month'} value={view==='day'?day:month} inputLabel={view==='day'?'달력 날짜 선택':'달력 월 선택'} onChange={value=>selectDay(view==='day'?value:value+'-01')}/> }>
   <div className="calendar-view-switch" role="group" aria-label="달력 보기">{([['month','월간'],['week','주간'],['day','일간']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</div>
  </WorkspaceToolbar>
- <MemberPreferenceFilter members={members} selection={selection} label="달력 구성원 필터"/>
+ {!!members.length&&<MemberPreferenceFilter members={members} selection={selection} label="달력 구성원 필터"/>}
  <PeriodPager period={view==='month'?month:view==='week'?weekStart:day} view={view} onMove={move} renderPage={renderPage}/>
  <div className="calendar-legend">{members.map((m,n)=><span key={m.id}><i style={{background:calendarColors[n%calendarColors.length]}}/>{m.name}</span>)}</div>
  {holidays.unavailable&&<p className="holiday-status" role="status">이 연도의 공휴일 정보를 확인하지 못했어요.</p>}

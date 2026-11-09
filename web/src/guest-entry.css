@@ -1,0 +1,62 @@
+.guest-workspace{min-width:0;min-height:100%;background:var(--canvas)}
+.guest-entry-header{display:flex;align-items:center;gap:12px;min-height:54px;padding:8px 18px;box-sizing:border-box;border-bottom:1px solid var(--line);background:var(--surface);flex-shrink:0}
+.guest-entry-header>a{display:flex;align-items:center;min-height:38px;color:var(--primary)}
+.guest-entry-header .iharu-wordmark{width:86px;height:auto}
+.guest-entry-header>span{color:var(--muted);font-size:11px;margin-left:auto}
+.guest-entry-header .button{min-height:36px;padding:7px 16px;font-size:12px}
+.guest-entry-note{flex-shrink:0;margin:0;padding:9px 18px;font-size:11px;line-height:1.6;color:var(--muted);background:var(--surface)}
+.workspace-page .auth-wide>.auth-panel:has(>.guest-schedule){display:flex;flex-direction:column;min-height:0;height:100%;padding:0}
+.guest-schedule{display:flex;flex-direction:column;flex:1;min-height:0;height:100%}
+.guest-schedule>.personal-timetable,.guest-schedule>.direct-calendar{display:flex;flex-direction:column;flex:1;min-height:0;height:auto}
+.guest-schedule .timetable-viewport,.guest-schedule .timetable-day{display:flex;flex-direction:column;flex:1;min-height:0}
+.guest-schedule .timetable-scroll{flex:1;min-height:0;max-height:none}
+.guest-feature{padding:22px 20px;min-width:0}
+.guest-feature>h1{font-size:22px;margin:0 0 24px}
+.guest-feature-card{max-width:480px;margin:32px auto;text-align:center;padding:32px 24px;border:1px solid var(--line);border-radius:24px;background:var(--surface)}
+.guest-feature-icon{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:20px;background:var(--mint);color:var(--primary)}
+.guest-feature-icon>.icon{width:30px;height:30px}
+.guest-feature-card h2{font-size:23px;line-height:1.6;margin:22px 0 12px}
+.guest-feature-card p{font-size:14px;color:var(--muted);line-height:1.8;margin:0 0 24px}
+.guest-feature-card .button{width:100%;box-sizing:border-box}
+.guest-continue{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:12px;font-size:13px;color:var(--muted)}
+.guest-workspace>.more-screen,.guest-workspace>.settings-screen{margin-top:0}
+.entry-login-sheet{padding:0;border:1px solid var(--line);border-radius:26px;width:min(480px,calc(100vw - 40px));max-width:none;max-height:calc(100dvh - 48px);overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;background:var(--surface);color:var(--ink);box-shadow:0 24px 90px #102b2440;scrollbar-width:thin}
+.entry-login-sheet::backdrop{background:#10251f70;backdrop-filter:blur(3px)}
+.entry-login-sheet[open]{animation:entry-sheet-in .25s cubic-bezier(.22,1,.36,1) both}
+.entry-sheet-grip{display:none}
+.entry-login-heading{position:relative;display:flex;align-items:flex-start;gap:8px;padding:28px 28px 18px;background:var(--surface)}
+.entry-login-heading>div{flex:1;min-width:0}
+.entry-login-eyebrow{font-family:Manrope,system-ui,sans-serif;color:var(--primary);font-size:12px;font-weight:650}
+.entry-login-heading h2{font-size:22px;font-weight:750;line-height:1.5;letter-spacing:-.04em;margin:8px 0}
+.entry-login-heading p{font-size:13px;line-height:1.8;color:var(--muted);margin:0;word-break:keep-all}
+.entry-login-heading>.icon-button{flex-shrink:0;margin:-10px -12px 0 0;min-width:44px;min-height:44px}
+.entry-login-body{padding:0 28px 24px}
+.entry-login-body .auth-role-tabs{margin:0 0 20px}
+.entry-login-body .auth-role-tabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;flex:1;border:0;border-radius:11px;color:var(--muted);background:transparent;font:inherit;font-size:14px;font-weight:650;padding:10px;cursor:pointer}
+.entry-login-body .auth-role-tabs button[aria-pressed=true]{color:var(--primary);background:var(--surface);box-shadow:0 2px 8px #123c440b}
+.entry-login-body .auth-role-tabs button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.entry-login-body .form-field{margin-bottom:16px}
+.entry-login-body .auth-form{margin:0}
+.entry-login-body .auth-login-help{margin:14px 0}
+.entry-login-body .auth-divider{margin:20px 0 16px}
+.entry-login-body .button{min-height:46px}
+.entry-login-body .social-buttons{gap:10px}
+.entry-login-body .phone-login{margin-top:10px}
+.entry-login-note{text-align:center;color:var(--muted);font-size:11px;line-height:1.7;margin:18px 0 0}
+.auth-browse-link{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;margin-top:16px;font-size:13px;color:var(--muted)}
+@keyframes entry-sheet-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@media(max-width:760px){
+ .entry-login-sheet{width:100%;max-height:94dvh;margin:auto 0 0;border-radius:25px 25px 0 0;border-bottom:0;padding-bottom:env(safe-area-inset-bottom)}
+ .entry-login-sheet[open]{animation-name:entry-sheet-up}
+ .entry-sheet-grip{display:block;width:34px;height:4px;border-radius:4px;background:var(--line);margin:10px auto 0}
+ .entry-login-heading{padding:18px 24px}
+ .entry-login-heading h2{font-size:20px}
+ .entry-login-body{padding:0 24px 24px}
+ .guest-entry-header{padding:7px 14px;min-height:50px}
+ .guest-entry-note{padding:7px 14px;font-size:10px}
+ .guest-feature{padding:18px 16px}
+ .guest-feature-card{padding:28px 18px}
+}
+@keyframes entry-sheet-up{from{opacity:.65;transform:translateY(48px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.entry-login-sheet[open]{animation:none}}
+html[data-motion=reduced] .entry-login-sheet[open]{animation:none}

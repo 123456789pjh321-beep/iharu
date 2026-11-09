@@ -23,7 +23,7 @@ export function PublicHeader(){
    </nav>
    <div className="market-header-actions">
     <Link to="/login" className="market-login" aria-current={pathname==='/login'?'page':undefined} onClick={close}>로그인</Link>
-    <Link to="/signup" className="market-signup" aria-current={pathname==='/signup'?'page':undefined} onClick={close}>시작하기 <Icon name="arrow"/></Link>
+    <Link to="/timetable" className="market-signup" onClick={close}>둘러보기 <Icon name="arrow"/></Link>
     <button ref={toggle} type="button" className="market-menu-button" aria-label={open?'소개 메뉴 닫기':'소개 메뉴 열기'} aria-expanded={open} aria-controls={navId} onClick={()=>setOpenPath(open?null:pathname)}><Icon name={open?'close':'menu'}/></button>
    </div>
   </div>

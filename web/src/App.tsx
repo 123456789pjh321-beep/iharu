@@ -22,6 +22,7 @@ import {WorkspaceBrand,WorkspaceNavigation} from './components/WorkspaceNavigati
 import {DisplaySettings,Entrance} from './components/Experience';
 import { Icon } from './components/Icon';
 import { PreviewDialog, ErrorState, Loading } from './components/Common';
+import {RequireWorkspaceAccount} from './components/GuestWorkspace';
 import { Guardian } from './pages/Guardian';
 import { ChildHome } from './pages/ChildHome';
 import { Upcoming } from './pages/Upcoming';
@@ -74,22 +75,22 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
   </Route>
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
-  <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<Navigate to="/notification-settings" replace/>}/><Route path="/notification-settings" element={<NotificationSettings/>}/>
+  <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<Navigate to="/notification-settings" replace/>}/><Route path="/notification-settings" element={<RequireWorkspaceAccount><NotificationSettings/></RequireWorkspaceAccount>}/>
   <Route path="/more" element={<WorkspaceEntry mode="more"/>}/><Route path="/settings" element={<WorkspaceEntry mode="settings"/>}/>
   <Route path="/help" element={<WorkspaceEntry mode="guide"/>}/>
   <Route path="/more/service" element={<WorkspaceEntry mode="service"/>}/>
   {(['notices','blog'] as const).flatMap(mode=>[<Route key={mode} path={'/more/'+mode} element={<WorkspaceEntry mode={mode}/>}/>,<Route key={mode+'-post'} path={'/more/'+mode+'/:slug'} element={<WorkspaceEntry mode={mode}/>}/>])}
-  <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>
+  <Route path="/admin" element={<RequireWorkspaceAccount><Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense></RequireWorkspaceAccount>}/>
   <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
-  <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/legal/:section" element={<LegalPage/>}/><Route path="/privacy" element={<PrivacyPage/>}/><Route path="/location" element={<Navigate to="/timetable" replace/>}/><Route path="/today" element={<WorkspaceLanding/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
+  <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/legal/:section" element={<LegalPage/>}/><Route path="/privacy" element={<RequireWorkspaceAccount><PrivacyPage/></RequireWorkspaceAccount>}/><Route path="/location" element={<Navigate to="/timetable" replace/>}/><Route path="/today" element={<WorkspaceLanding/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
 
   <Route path="/calendar" element={<ScheduleAlias/>}/><Route path="/repeats" element={<ScheduleAlias repeats/>}/>
 
   <Route path="/family/verification" element={<GuardianVerificationPage/>}/><Route path="/family/verification/review" element={<GuardianVerificationPage review/>}/>
-  <Route path="/family" element={<WorkspaceEntry mode="family"/>}/><Route path="/family/invite" element={<FamilyInvitePage/>}/>
+  <Route path="/family" element={<WorkspaceEntry mode="family"/>}/><Route path="/family/invite" element={<RequireWorkspaceAccount><FamilyInvitePage/></RequireWorkspaceAccount>}/>
 
-  <Route path="/phone" element={<PhonePage/>}/><Route path="/account" element={<AccountEntry/>}/>
-  <Route path="/account/reauth" element={<ReauthPage/>}/><Route path="/account/email" element={<EmailLinkPage/>}/>
+  <Route path="/phone" element={<PhonePage/>}/><Route path="/account" element={<RequireWorkspaceAccount><AccountEntry/></RequireWorkspaceAccount>}/>
+  <Route path="/account/reauth" element={<RequireWorkspaceAccount><ReauthPage/></RequireWorkspaceAccount>}/><Route path="/account/email" element={<RequireWorkspaceAccount><EmailLinkPage/></RequireWorkspaceAccount>}/>
   </Route>
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/><Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="*" element={<Shell/>}/>
