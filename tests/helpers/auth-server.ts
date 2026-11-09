@@ -40,11 +40,16 @@ app.post('/__test__/verify-draft',async c=>{const {draftId,birthDate='2018-03-02
 app.post('/__test__/reviewer',async c=>{const {email}=await c.req.json();if(typeof email!=='string'||!email.endsWith('@example.test'))return c.json({},400);await query(db,'INSERT INTO app_private.guardian_reviewers(member_id) SELECT m.id FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id WHERE u.email=$1 ON CONFLICT DO NOTHING',[email]);return c.json({ok:true});});
 app.post('/__test__/system-admin',async c=>{const {email}=await c.req.json();if(typeof email!=='string'||!email.endsWith('@example.test'))return c.json({},400);await query(db,'INSERT INTO app_private.system_admins(member_id) SELECT m.id FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id WHERE u.email=$1 AND u."emailVerified" ON CONFLICT DO NOTHING',[email]);return c.json({ok:true});});
 app.get('/__test__/mail',c=>c.json(outbox));
+// An actual second origin lets bfcache tests navigate without browser request interception,
+// which disables the browser cache. The real auth router still issues OAuth state.
+const providerOrigin='http://127.0.0.1:'+(fixturePort+100);
+const providerServer=serve({hostname:'127.0.0.1',port:fixturePort+100,fetch:()=>new Response('<p>Isolated external authorization fixture</p>',{headers:{'Content-Type':'text/html; charset=utf-8'}})});
+app.use('/api/auth/sign-in/social',async(c,next)=>{await next();if(c.req.header('x-fixture-oauth-return')!=='1'||!c.res.ok)return;const result=await c.res.clone().json();if(typeof result.url!=='string')return;const headers=new Headers(c.res.headers);headers.delete('Content-Length');c.res=new Response(JSON.stringify({...result,url:providerOrigin+'/authorize'}),{status:c.res.status,headers});});
 app.route('/',createApp({environment:'local',demoEnabled:false},()=>svc,async()=>family));
 for(const path of publicPaths)app.get(path,serveStatic({path:'./dist'+path+'.html'}));
 app.use('*',serveStatic({root:'./dist'}));
 app.get('*',serveStatic({path:'./dist/index.html'}));
 const server=serve({fetch:app.fetch,hostname:'127.0.0.1',port:fixturePort});
-async function stop(){server.close();await db.destroy();process.exit(0);}
+async function stop(){server.close();providerServer.close();await db.destroy();process.exit(0);}
 process.on('SIGTERM',()=>{void stop();});process.on('SIGINT',()=>{void stop();});
 

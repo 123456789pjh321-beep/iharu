@@ -45,7 +45,7 @@
 |수정|`web/src/components/PersonalFees.tsx`|비회원 미리보기 속성 전달|
 |수정|`web/src/guest-entry.css`|상단바 제거, 샘플 배지·대화·가족 화면 스타일|
 |수정|`tests/auth.test.ts`|실제 인증 라우터·메일·서명된 Google 콜백 회귀 검사|
-|수정|`tests/helpers/auth-server.ts`|배포에 포함되지 않는 Google 브라우저 검사 설정|
+|수정|`tests/helpers/auth-server.ts`|배포에 포함되지 않는 Google 설정·별도 출처 인증 화면 대역|
 |수정|`tests/e2e/guest-entry.spec.ts`|샘플·로그인·계정 분리 및 실제 OAuth 시작 검사|
 |수정|`.github/workflows/guest-entry.yml`|인증 회귀 검사를 포함한 CI 실행 범위|
 

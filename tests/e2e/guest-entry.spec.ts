@@ -107,11 +107,10 @@ test('tapping a sample never imports it into the account after login',async({pag
 
 test('native Back from Google restores a cached login sheet that can retry or close',async({playwright})=>{
  // Playwright normally disables bfcache; enable it for this real browser lifecycle regression.
- const browser=await playwright.chromium.launch({channel:'chromium',ignoreDefaultArgs:['--disable-back-forward-cache']}),context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce'}),page=await context.newPage();
+ const browser=await playwright.chromium.launch({channel:'chromium',ignoreDefaultArgs:['--disable-back-forward-cache']}),context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce',extraHTTPHeaders:{'x-fixture-oauth-return':'1'}}),page=await context.newPage();
  try{
   await page.addInitScript(()=>window.addEventListener('pageshow',event=>{document.documentElement.dataset.restoredFromCache=String(event.persisted);}));
-  await page.route('https://accounts.google.com/**',route=>route.fulfill({contentType:'text/html',body:'<p>Isolated Google authorization fixture</p>'}));
-  await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await page.locator('.calendar-cell[data-date="2027-02-19"] .calendar-day-target').click();await page.getByRole('button',{name:'Google로 계속하기',exact:true}).click();await expect(page).toHaveURL(/^https:\/\/accounts\.google\.com\//);
+  await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await page.locator('.calendar-cell[data-date="2027-02-19"] .calendar-day-target').click();await page.getByRole('button',{name:'Google로 계속하기',exact:true}).click();await expect(page).toHaveURL('http://127.0.0.1:4274/authorize');await expect(page.getByText('Isolated external authorization fixture')).toBeVisible();
   await page.goBack();await expect(page.locator('html')).toHaveAttribute('data-restored-from-cache','true');
   const sheet=page.locator('.entry-login-sheet');await expect(sheet).toBeVisible();await expect(sheet.getByRole('button',{name:'Google로 계속하기',exact:true})).toBeEnabled();await expect(sheet.getByLabel('아이디',{exact:true})).toBeEnabled();await expect(page.getByRole('button',{name:'로그인 창 닫기'})).toBeEnabled();
   await page.getByRole('button',{name:'로그인 창 닫기'}).click();await expect(sheet).not.toBeVisible();await expect(page.getByLabel('달력 월 선택',{exact:true})).toHaveValue('2027-02');expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();
