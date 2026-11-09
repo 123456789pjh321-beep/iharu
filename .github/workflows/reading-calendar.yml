@@ -1,0 +1,23 @@
+name: App reading and calendar stability
+on:
+  pull_request:
+    paths: ['web/**', 'shared/calendar-layout.ts', 'tests/e2e/workspace-reading-calendar.spec.ts', '.github/workflows/reading-calendar.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reading-calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/e2e/workspace-reading-calendar.spec.ts --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: reading-calendar-results, path: test-results/, retention-days: 3}
