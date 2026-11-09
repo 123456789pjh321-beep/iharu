@@ -31,3 +31,7 @@
 .more-screen a:focus-visible,.setting-switch:focus-visible{outline:2px solid var(--primary);outline-offset:-3px}
 @media(prefers-reduced-motion:reduce){.workspace-page .chat-message,.workspace-page .personal-item{animation:none}}
 :root[data-motion=reduced] .workspace-page .chat-message,:root[data-motion=reduced] .workspace-page .personal-item{animation:none}
+
+.auth-app.workspace-page .auth-wide>.auth-panel:has(>.more-screen){background:var(--canvas)}
+.workspace-page .direct-calendar>.calendar-legend{padding:10px 14px;min-height:34px;box-sizing:border-box}
+.calendar-month-content{display:flex;flex-direction:column;flex:1;min-height:0;width:100%}.calendar-month-content>.calendar-weekdays{flex:none}.calendar-month-content>.calendar-grid{flex:1;min-height:0;width:100%}

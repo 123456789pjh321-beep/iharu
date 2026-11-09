@@ -26,16 +26,15 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,m
   if(view==='day')return <PersonalTimetable embedded day={addDays(day,offset)} items={shown} members={members} loading={loading} setDay={selectDay} create={create} edit={edit}/>;
   const first=pageMonth+'-01',count=new Date(Number(pageMonth.slice(0,4)),Number(pageMonth.slice(5)),0).getDate(),start=new Date(first+'T12:00:00Z').getUTCDay();
   const dates=view==='week'?Array.from({length:7},(_,n)=>addDays(weekStart,offset*7+n)):Array.from({length:Math.ceil((start+count)/7)*7},(_,n)=>addDays(first,n-start));
-  return <div className={'calendar-grid '+(view==='week'?'week-view':'')}>
+  return <div className="calendar-month-content"><div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div><div className={'calendar-grid '+(view==='week'?'week-view':'')}>
    {Array.from({length:dates.length/7},(_,index)=><CalendarWeekRow key={dates[index*7]} dates={dates.slice(index*7,index*7+7)} items={shown} members={members} month={pageMonth} day={day} today={today} weekView={view==='week'} holidayName={holidays.name} openDay={date=>{selectDay(date);setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
-  </div>;
+  </div></div>;
  };
  return <section className="direct-calendar" aria-label="일정 달력">
  <WorkspaceToolbar title="달력" navigation={<DateNavigator type={view==='day'?'date':'month'} value={view==='day'?day:month} inputLabel={view==='day'?'달력 날짜 선택':'달력 월 선택'} onChange={value=>selectDay(view==='day'?value:value+'-01')}/> }>
   <div className="calendar-view-switch" role="group" aria-label="달력 보기">{([['month','월간'],['week','주간'],['day','일간']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</div>
  </WorkspaceToolbar>
  <MemberPreferenceFilter members={members} selection={selection} label="달력 구성원 필터"/>
- {view!=='day'&&<div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div>}
  <PeriodPager period={view==='month'?month:view==='week'?weekStart:day} view={view} onMove={move} renderPage={renderPage}/>
  <div className="calendar-legend">{members.map((m,n)=><span key={m.id}><i style={{background:calendarColors[n%calendarColors.length]}}/>{m.name}</span>)}</div>
  {holidays.unavailable&&<p className="holiday-status" role="status">이 연도의 공휴일 정보를 확인하지 못했어요.</p>}
