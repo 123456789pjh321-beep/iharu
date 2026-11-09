@@ -15,7 +15,7 @@ const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/privacy',label:'개인정보 관리',icon:'shield'},
  {to:'/legal/privacy',label:'개인정보처리방침',icon:'book'},
 ];
-export function WorkspaceBrand({testMode=false}:{testMode?:boolean}){return <Link to={testMode?'/test/today':'/timetable'} className="brand workspace-brand" aria-label="아이하루"><span className="brandmark"><Icon name="sun"/></span><span>아이하루<small>FAMILY WORKSPACE</small></span></Link>;}
+export function WorkspaceBrand({testMode=false,iconOnly=false}:{testMode?:boolean;iconOnly?:boolean}){return <Link to={testMode?'/test/today':'/timetable'} className="brand workspace-brand" aria-label="아이하루"><span className="brandmark"><Icon name="sun"/></span>{!iconOnly&&<span>아이하루<small>FAMILY WORKSPACE</small></span>}</Link>;}
 export function WorkspaceNavigation({childMode=false,testMode=false,personalChild=false}:{childMode?:boolean;testMode?:boolean;personalChild?:boolean}){
  const {pathname}=useLocation(),gate=useOptionalWorkspaceGate();
  personalChild=personalChild||gate?.workspaceRole==='CHILD';

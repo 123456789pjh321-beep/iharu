@@ -1,6 +1,7 @@
 import {useEffect,useId,useRef,useState} from 'react';
 import {useLocation,useNavigate} from 'react-router-dom';
 import {Icon,type IconName} from './Icon';
+import {WorkspaceHeaderAction} from './WorkspaceHeaderAction';
 
 const steps:{title:string;icon:IconName;description:string;tips:string[]}[]=[
  {title:'우리 가족부터 연결해요',icon:'users',description:'전체메뉴 → 가족 관리에서 가족을 연결하면 서로의 하루를 함께 볼 수 있어요.',tips:['보호자는 가족 관리에서 6자리 승인번호를 발급해요.','자녀는 가입할 때 승인번호를 입력해요. 다른 보호자도 자신의 계정으로 가족에 합류할 수 있어요.']},
@@ -22,9 +23,7 @@ export function WorkspaceTutorial({profileId,child=false}:{profileId:string;chil
  function remember(){try{localStorage.setItem(storageKey,'done');}catch{/* Help remains available when browser storage is disabled. */}setWelcoming(false);}
  function close(completed=false){if(completed)remember();setOpen(false);if(requested){const params=new URLSearchParams(search);params.delete('guide');navigate({pathname,search:params.toString()},{replace:true});}requestAnimationFrame(()=>trigger.current?.focus({preventScroll:true}));}
  return <>
-  <aside className={'workspace-guide'+(welcoming?' welcome':'')} aria-label="사용 안내">
-   {welcoming?<><span className="workspace-guide-symbol"><Icon name="sun"/></span><div><strong>아이하루, 이렇게 시작해요</strong><p>시간표부터 가족 대화까지, 1분이면 익숙해져요.</p></div><button ref={trigger} type="button" className="button compact primary" onClick={()=>{setStep(0);setOpen(true);}}>사용 안내 시작</button><button type="button" className="icon-button" aria-label="사용 안내 나중에 보기" onClick={remember}><Icon name="close"/></button></>:<button ref={trigger} type="button" className="workspace-guide-replay" onClick={()=>{setStep(0);setOpen(true);}}><Icon name="book"/>사용 안내</button>}
-  </aside>
+  <WorkspaceHeaderAction><button ref={trigger} type="button" className="workspace-header-guide" data-new={welcoming||undefined} title={welcoming?'처음이라면 사용 안내를 확인해 보세요':'사용 안내'} onClick={()=>{setStep(0);setOpen(true);}}><Icon name="book"/>사용 안내</button></WorkspaceHeaderAction>
   {open&&<dialog ref={dialog} className="workspace-guide-dialog" aria-labelledby={id+'-title'} aria-describedby={id+'-description'} onCancel={event=>{event.preventDefault();close();}} onClick={event=>{if(event.target===event.currentTarget)close();}}>
    <header><span>아이하루 사용 안내 · {step+1}/{shown.length}</span><button type="button" className="icon-button" aria-label="사용 안내 닫기" onClick={()=>close()}><Icon name="close"/></button></header>
    <div className="guide-progress" aria-label={`안내 ${shown.length}단계 중 ${step+1}단계`}>{shown.map((s,index)=><span key={s.title} className={index<=step?'done':''}/>)}</div>
