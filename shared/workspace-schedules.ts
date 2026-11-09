@@ -58,8 +58,8 @@ export function visibleOn(item:WorkspaceItem,date:string){
 export function scheduleAssignee(item:WorkspaceItem,members:WorkspaceMember[]){
  return item.data.allMembers?'전체':members.find(m=>m.id===(item.data.assigneeId||item.ownerId))?.name||(item.data.assigneeId?'연결 해제된 구성원':item.ownerName);
 }
-export function matchesMember(item:WorkspaceItem,member:string){return member==='all'||item.data.allMembers===true||(item.data.assigneeId||item.ownerId)===member;}
-export function dailySchedules(items:WorkspaceItem[],date:string,member='all'){
+export function matchesMember(item:WorkspaceItem,member:string|readonly string[]){const selected=typeof member==='string'?[member]:member;return selected.includes('all')||(selected.length>0&&(item.data.allMembers===true||selected.includes(item.data.assigneeId||item.ownerId)));}
+export function dailySchedules(items:WorkspaceItem[],date:string,member:string|readonly string[]='all'){
  return items.filter(item=>visibleOn(item,date)&&matchesMember(item,member)).sort(compareScheduleTime);
 }
 export function schedulePhase(item:WorkspaceItem,date:string,today:string,time:string){

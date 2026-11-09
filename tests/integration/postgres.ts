@@ -404,6 +404,17 @@ try{
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_v111('workspace.me','{}')"),{code:'42501'});
   await family1.command(a,'workspace.timetable.preference.save',{memberId:am.id});
  });
+ await check('UI113 multiple timetable members persist across connections with atomic validation',async()=>{
+  const am=await family1.command<{id:string}>(a,'workspace.me'),bm=await family2.command<{id:string}>(b,'workspace.me');
+  await family1.command(a,'workspace.timetable.preference.save',{memberIds:[am.id,bm.id]});
+  assert.deepEqual((await family2.command<{timetableMemberIds:string[]}>(a,'workspace.me')).timetableMemberIds,[am.id,bm.id]);
+  for(const p of [{memberIds:[]},{memberIds:[am.id,am.id]},{memberIds:[am.id,null]},{memberIds:[am.id],memberId:am.id},{memberIds:[am.id],profileId:bm.id},{memberIds:'invalid'}])await assert.rejects(family1.command(a,'workspace.timetable.preference.save',p),{message:'INVALID_INPUT'});
+  await assert.rejects(family1.command(a,'workspace.timetable.preference.save',{memberIds:[am.id,'00000000-0000-0000-0000-000000000001']}),{message:'ASSIGNEE_INVALID'});
+  assert.deepEqual((await family2.command<{timetableMemberIds:string[]}>(a,'workspace.me')).timetableMemberIds,[am.id,bm.id]);
+  assert.deepEqual((await family2.command<{timetableMemberIds:string[]}>(b,'workspace.me')).timetableMemberIds,[bm.id]);
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_v112('workspace.me','{}')"),{code:'42501'});
+  await family1.command(a,'workspace.timetable.preference.save',{memberIds:[am.id]});
+ });
  await check('UI83 administrator APIs are inaccessible through runtime tables, helper functions or forged member context',async()=>{
   await assert.rejects(family1.command(a,'admin.overview'),{message:'ADMIN_REQUIRED'});
   await admin.query('INSERT INTO app_private.system_admins(member_id) VALUES($1)',[a.memberId]);
