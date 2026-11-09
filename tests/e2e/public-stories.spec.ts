@@ -1,6 +1,18 @@
 import {test,expect} from '@playwright/test';
 import {publicPaths,publicPosts} from '../../shared/public-content';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin,reducedMotion:'reduce'});
+test('article reading size persists and the outline follows the selected section',async({page})=>{
+ await page.goto('/blog/monthly-tuition-routine');
+ const controls=page.getByRole('group',{name:'본문 글자 크기'}),body=page.locator('.story-body');
+ const normal=await body.locator('p').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+ await controls.getByRole('button',{name:'크게',exact:true}).click();
+ await expect(page.locator('.story-detail')).toHaveAttribute('data-reading-size','large');
+ expect(await body.locator('p').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThan(normal);
+ await page.reload();await expect(controls.getByRole('button',{name:'크게',exact:true})).toHaveAttribute('aria-pressed','true');
+ const section=page.getByRole('navigation',{name:'글 목차'}).getByRole('link',{name:'대상과 결제자를 함께 기록해요',exact:true});
+ await section.click();await expect(section).toHaveAttribute('aria-current','location');await expect(page.locator('#part-1 h2')).toBeInViewport();
+ await controls.getByRole('button',{name:'기본',exact:true}).click();await expect(page.locator('.story-detail')).toHaveAttribute('data-reading-size','normal');
+});
 test('public notices and blogs support filtering, search, deep links and reading without login',async({page,request})=>{
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
  for(const section of ['notices','blog']){

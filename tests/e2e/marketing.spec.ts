@@ -41,6 +41,9 @@ test('public service and usage pages work across phone, tablet and desktop witho
 test('visitors can explore examples, use mobile navigation and reach signup/login/legal pages',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/service');
  const hero=page.locator('.market-hero'),preview=hero.locator('.market-preview');
+ await expect(preview.locator('.demo-hours span')).toHaveText(['오전 6','오전 9','오후 12','오후 3','오후 6','오후 9','밤 12']);
+ await expect(preview.locator('.demo-days strong')).toHaveText(['일','월','화','수','목','금','토']);
+ await expect(preview.locator('.preview-brief')).toContainText('06:00–24:00');
  await preview.getByRole('button',{name:'학원비',exact:true}).click();await expect(preview.locator('.demo-fee-total strong')).toHaveText('540,000원');
  await preview.getByRole('button',{name:'민서',exact:true}).click();await expect(preview.locator('.demo-fee-total strong')).toHaveText('370,000원');await expect(preview.locator('.demo-fee-row')).toHaveCount(2);
  await preview.getByRole('button',{name:'가족 달력',exact:true}).click();await expect(preview.locator('.calendar-school')).toBeVisible();
