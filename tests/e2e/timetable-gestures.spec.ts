@@ -40,6 +40,6 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
   const saved=await context.request.post('/api/v1/workspace/items.list',{headers:{Origin:origin},data:{kind:'REPEAT',from:'2030-01-01',to:'2030-01-31'}});const items=(await saved.json()).items;expect(items).toHaveLength(1);expect(items[0].data.untilDate).toBeUndefined();expect(items[0].data.weekdays).toEqual([1,2,3,4,5]);
   // The calendar retains its own day navigation and recurrence dates.
   await page.goto('/today/calendar');await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'일간',exact:true}).click();await page.getByLabel('달력 날짜 선택').fill('2026-12-31');
-  await page.locator('.timetable-scroll').hover();await page.mouse.wheel(400,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');expect(errors).toEqual([]);
+  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await page.locator('.timetable-scroll').hover();await page.mouse.wheel(400,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');expect(errors).toEqual([]);
  }finally{await context.close();}
 });
