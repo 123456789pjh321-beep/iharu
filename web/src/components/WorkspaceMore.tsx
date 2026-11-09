@@ -8,12 +8,12 @@ const shortcuts:{to:string;label:string;icon:IconName}[]=[
  {to:'/family',label:'가족 관리',icon:'users'},{to:'/notification-settings',label:'알림설정',icon:'bell'},{to:'/settings',label:'설정',icon:'settings'},
  {to:'/help',label:'사용 가이드',icon:'book'},{to:'/more/notices',label:'공지사항',icon:'calendar'},{to:'/more/blog',label:'블로그',icon:'sun'},
 ];
-export function WorkspaceMore({me}:{me:WorkspaceMe}){
+export function WorkspaceMore({me}:{me:WorkspaceMe|null}){
  const gate=useOptionalWorkspaceGate();
  return <section className="more-screen" aria-labelledby="more-title"><h1 id="more-title">더보기</h1>
   <Link className="more-guide-banner" to="/help"><span className="more-banner-art" aria-hidden="true"><Icon name="home"/><i/><i/></span><span><small>가족의 하루를 잇는 작은 습관</small><strong>함께 쓰면 더 편한 아이하루</strong><span>사용 가이드 살펴보기 <Icon name="arrow"/></span></span></Link>
   <nav className="more-shortcuts" aria-label="더보기 메뉴">{shortcuts.map(item=><Link key={item.to} to={item.to}><span><Icon name={item.icon}/>{hasMenuUpdate(gate?.updates||null,menuForPath(item.to))&&<i className="more-update-dot" aria-label="새 업데이트"/>}</span><strong>{item.label}</strong></Link>)}</nav>
-  <div className="more-section"><h2>계정과 가족</h2><div className="more-group"><Link to="/account" className="more-account"><span className="more-avatar"><Icon name="users"/></span><span><strong>{me.name}</strong><small>{me.role==='CHILD'?'자녀 계정':'보호자 계정'}{me.family?' · '+me.family.name:''}</small></span><Icon name="chevron"/></Link><Link to="/account" className="more-row">계정 관리<Icon name="chevron"/></Link><Link to="/privacy" className="more-row">개인정보 관리<Icon name="chevron"/></Link></div></div>
+  <div className="more-section"><h2>계정과 가족</h2><div className="more-group"><Link to="/account" className="more-account"><span className="more-avatar"><Icon name="users"/></span><span><strong>{me?.name||'로그인하고 우리 가족과 함께해요'}</strong><small>{me?(me.role==='CHILD'?'자녀 계정':'보호자 계정')+(me.family?' · '+me.family.name:''):'내 계정과 가족 정보는 로그인 후 확인해요.'}</small></span><Icon name="chevron"/></Link><Link to="/account" className="more-row">계정 관리<Icon name="chevron"/></Link><Link to="/privacy" className="more-row">개인정보 관리<Icon name="chevron"/></Link></div></div>
   <div className="more-section"><h2>아이하루 정보</h2><div className="more-group">{[{to:'/more/service',label:'서비스 소개'},{to:'/legal/terms',label:'이용약관'},{to:'/legal/privacy',label:'개인정보처리방침'},...(gate?.adminAllowed?[{to:'/admin',label:'시스템 관리'}]:[])].map(item=><Link key={item.to} to={item.to} className="more-row">{item.label}<Icon name="chevron"/></Link>)}</div></div>
   <p className="more-signature">iHaru · 가족의 하루를 잇다</p>
  </section>;

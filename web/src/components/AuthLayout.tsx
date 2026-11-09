@@ -6,24 +6,18 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import {WorkspaceNavigation} from './WorkspaceNavigation';
 import {FamilyArtwork,useExperience} from './Experience';
 import {WorkspaceGateProvider,useWorkspaceGate} from './WorkspaceGate';
-import {workspaceRequest} from '../workspace-api';
-import type {WorkspaceMe} from '../../../shared/workspace';
+import {EntryAccessProvider} from './EntryAccess';
+import {entryReturnPath} from '../../../shared/entry-intent';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
-export function AuthEntryFrame({children}:{children:ReactNode}){return <AuthLayout><FrameContext.Provider value>{children}</FrameContext.Provider></AuthLayout>;}
-export function WorkspaceFrame(){return <WorkspaceGateProvider><StableWorkspaceFrame/></WorkspaceGateProvider>;}
+export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
+export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><StableWorkspaceFrame/></EntryAccessProvider></WorkspaceGateProvider>;}
 function StableWorkspaceFrame(){
- const {pathname,search}=useLocation(),{health,session}=useWorkspaceGate();
- const publicDocument=pathname.startsWith('/legal/')||pathname==='/privacy';
- const [childSession,setChildSession]=useState<{source:unknown;authenticated:boolean}|null>(null);
- useEffect(()=>{
-  let active=true;setChildSession(null);
-  if(publicDocument&&!session.loading&&session.data?.authenticated===false){const source=session.data;void workspaceRequest<WorkspaceMe>('me').then(me=>{if(active)setChildSession({source,authenticated:me.role==='CHILD'});}).catch(()=>{});}
-  return()=>{active=false;};
- },[publicDocument,session.loading,session.data]);
- const childNavigation=childSession?.source===session.data&&childSession?.authenticated===true;
+ const {pathname,search}=useLocation(),{health,session,access}=useWorkspaceGate();
+ const publicDocument=pathname.startsWith('/legal/');
+ const childNavigation=access.identity?.role==='CHILD';
  if(new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled)return <Outlet/>;
  return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<Outlet/>}</FrameContext.Provider></AuthLayoutRoot>;
 }
@@ -42,8 +36,9 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
     </main>{!inPublicFrame&&<footer className="auth-footer"><span className="auth-footer-brand">아이하루 · 가족의 하루를 잇다</span> <Link to="/service">서비스 소개</Link><Link to="/guide">활용방법</Link><Link to="/notices">공지사항</Link><Link to="/blog">블로그</Link><Link to="/legal/terms">이용약관</Link><Link to="/legal/privacy">개인정보처리방침</Link><Link to="/privacy">개인정보 관리</Link></footer>}
   </div>;
 }
-export function LoginActions({busy=false,ready=true}:{busy?:boolean;ready?:boolean;child?:boolean}) {
-  return <div className="auth-login-actions"><button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!ready?'이메일 로그인 준비 중':'로그인'}</button><Link className="button full" to="/signup">회원가입</Link></div>;
+export function LoginActions({busy=false,ready=true,child=false,next}:{busy?:boolean;ready?:boolean;child?:boolean;next?:string}) {
+  const query=new URLSearchParams();if(child)query.set('role','child');if(next)query.set('next',entryReturnPath(next));
+  return <div className="auth-login-actions"><button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!ready?'이메일 로그인 준비 중':'로그인'}</button><Link className="button full" aria-disabled={busy||undefined} onClick={e=>{if(busy)e.preventDefault();}} to={'/signup'+(query.size?'?'+query:'')}>회원가입</Link></div>;
 }
 export function PasswordField({ label='암호', name='password', fresh=false,minimum }: { label?:string; name?:string; fresh?:boolean;minimum?:number }) {
   const [visible,setVisible] = useState(false);

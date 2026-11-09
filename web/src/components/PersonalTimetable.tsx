@@ -35,7 +35,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  const content=(item:WorkspaceItem,interval?:{start:number;end:number})=><><strong className="timetable-title">{item.data.title}</strong><span className="timetable-range">{embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)}</span></>;
  const label=(item:WorkspaceItem,interval?:{start:number;end:number})=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':' timetable-weekly')} aria-label={embedded?'일간 일정':'주간 시간표'}>
-  {!embedded&&<MemberPreferenceFilter members={members} selection={selection} className="timetable-filters" label="시간표 구성원 필터"/>}
+  {!embedded&&!!members.length&&<MemberPreferenceFilter members={members} selection={selection} className="timetable-filters" label="시간표 구성원 필터"/>}
   <div className="timetable-summary">{embedded&&<span>{loading?'불러오는 중':`${events.length}개 일정`}</span>}
    {showToday&&!loading&&<div className={'timetable-current-summary'+(currentEvents.length?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
   </div>
