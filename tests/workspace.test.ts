@@ -247,3 +247,21 @@ it('saves fixed weekly school schedules without date limits, validates weekdays 
  expect((await b.ok('items.list',{...listing,kind:'REPEAT'})).items).toHaveLength(0);
  await a.ok('items.delete',{id:created.id,version:2});expect((await a.ok('items.list',{...listing,kind:'REPEAT'})).items).toHaveLength(0);
 });
+
+it('persists calendar start/end dates and includes overlapping periods in lists without widening permissions',async()=>{
+ const a=await parent('range-owner'),b=await parent('range-family'),x=await parent('range-outsider');const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ const base=payload('연말 여행'),input={...base,data:{...base.data,date:'2026-12-31',endDate:'2027-01-02',startTime:'22:00',endTime:'04:00',calendarFrequency:'ONCE'}};
+ const created=await a.ok('items.create',input),window={from:'2027-01-01',to:'2027-01-31',kind:'EVENT'};
+ expect((await a.ok('items.list',window)).items.map((r:any)=>r.id)).toEqual([created.id]);
+ expect((await b.ok('items.list',window)).items[0]).toMatchObject({id:created.id,mine:false,data:{endDate:'2027-01-02'}});
+ expect((await x.ok('items.list',window)).items).toEqual([]);expect((await b.req(api+'items.update',{...input,id:created.id,version:1})).status).toBe(403);
+ expect((await a.ok('items.list',{from:'2027-01-03',to:'2027-01-31'})).items).toEqual([]);
+ for(const data of [{...input.data,endDate:'2026-12-30'},{...input.data,endDate:input.data.date},{...input.data,endDate:'2027-02-30'}])expect((await a.req(api+'items.create',{kind:'EVENT',data})).status).toBe(400);
+ expect((await a.req(api+'items.create',{kind:'REPEAT',data:{...input.data,calendarFrequency:undefined,weekdays:[0]}})).status).toBe(400);
+ await a.ok('items.update',{...input,id:created.id,version:1,data:{...input.data,endDate:'2027-01-04'}});expect((await a.ok('items.get',{id:created.id})).data.endDate).toBe('2027-01-04');
+ const old=await a.ok('items.create',base);expect((await a.ok('items.get',{id:old.id})).data.endDate).toBe(base.data.date);
+ const repeated=await a.ok('items.create',{kind:'EVENT',data:{...base.data,date:'2028-01-31',endDate:'2028-02-02',calendarFrequency:'MONTHLY',untilDate:'2028-02-29'}});
+ expect((await a.ok('items.list',{kind:'EVENT',from:'2028-03-01',to:'2028-03-02'})).items.map((r:any)=>r.id)).toEqual([repeated.id]);
+ expect((await a.ok('items.list',{kind:'EVENT',from:'2028-03-03',to:'2028-03-04'})).items).toEqual([]);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v110('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
+});

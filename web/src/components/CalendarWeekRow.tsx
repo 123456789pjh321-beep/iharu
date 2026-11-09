@@ -1,7 +1,7 @@
 import type {CSSProperties,MouseEvent} from 'react';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {calendarWeekLayout,type CalendarRun} from '../../../shared/calendar-layout';
-import {scheduleAssignee} from '../../../shared/workspace-schedules';
+import {scheduleAssignee,scheduleTimeCaption} from '../../../shared/workspace-schedules';
 import {eventColor} from './scheduleColors';
 
 export function CalendarWeekRow({dates,items,members,month,day,today,weekView,holidayName,openDay,edit}:{dates:string[];items:WorkspaceItem[];members:WorkspaceMember[];month:string;day:string;today:string;weekView:boolean;holidayName:(date:string)=>string;openDay:(date:string)=>void;edit:(item:WorkspaceItem,date:string)=>void}){
@@ -19,7 +19,7 @@ export function CalendarWeekRow({dates,items,members,month,day,today,weekView,ho
    {hidden[index]>0&&<button type="button" className="calendar-overflow" aria-label={`${date} 일정 ${hidden[index]}개 더 보기`} onClick={()=>openDay(date)}>+{hidden[index]}개</button>}
   </div>;})}
   <div className="calendar-week-events">
-   {runs.map(run=>{const item=run.days[0].items[0],range=run.days.length>1?`${run.days[0].date} ~ ${run.days.at(-1)!.date}`:run.days[0].date,duplicates=Math.max(...run.days.map(d=>d.items.length)),label=`${item.data.title} · ${item.data.allDay?'종일':item.data.startTime+'–'+item.data.endTime} · ${scheduleAssignee(item,members)} · ${range}${duplicates>1?' · 개별 일정 보기':item.mine?' · 수정':' · 상세'}`;return <button key={run.key} type="button" className="calendar-event" data-dates={run.days.map(d=>d.date).join(' ')} data-span={run.days.length} data-continues-before={run.continuesBefore||undefined} data-continues-after={run.continuesAfter||undefined} title={label} style={{gridColumn:`${run.start+1} / ${run.end+2}`,gridRow:run.lane+1,'--event-color':eventColor(item,members)} as CSSProperties} aria-label={label} onClick={event=>openRun(event,run)}><span className="event-time">{item.data.allDay?'종일':item.data.startTime}</span><strong>{item.data.allMembers&&<span className="calendar-all-members">전체 · </span>}{item.data.title}</strong>{duplicates>1&&<small className="calendar-duplicate-count">{duplicates}건</small>}</button>;})}
+   {runs.map(run=>{const item=run.days[0].items[0],range=run.days.length>1?`${run.days[0].date} ~ ${run.days.at(-1)!.date}`:run.days[0].date,duplicates=Math.max(...run.days.map(d=>d.items.length)),label=`${item.data.title} · ${scheduleTimeCaption(item,run.days[0].date)} · ${scheduleAssignee(item,members)} · ${range}${duplicates>1?' · 개별 일정 보기':item.mine?' · 수정':' · 상세'}`;return <button key={run.key} type="button" className="calendar-event" data-dates={run.days.map(d=>d.date).join(' ')} data-span={run.days.length} data-continues-before={run.continuesBefore||undefined} data-continues-after={run.continuesAfter||undefined} title={label} style={{gridColumn:`${run.start+1} / ${run.end+2}`,gridRow:run.lane+1,'--event-color':eventColor(item,members)} as CSSProperties} aria-label={label} onClick={event=>openRun(event,run)}><span className="event-time">{item.data.allDay?'종일':item.data.startTime}</span><strong>{item.data.allMembers&&<span className="calendar-all-members">전체 · </span>}{item.data.title}</strong>{duplicates>1&&<small className="calendar-duplicate-count">{duplicates}건</small>}</button>;})}
   </div>
  </div>;
 }

@@ -322,7 +322,7 @@ try{
  });
  await check('UI76 parent code has one concurrent winner and shared data remains author-only',async()=>{
   const aMe=await family1.command<{id:string}>(a,'workspace.me'),bMe=await family2.command<{id:string}>(b,'workspace.me');
-  const data={title:'개인 소유',date:'2026-11-07',weekdays:[]};
+  const data={title:'개인 소유',date:'2026-11-07',allDay:true,weekdays:[]};
   const own=await family2.command<{id:string}>(b,'workspace.items.create',{kind:'EVENT',data});
   const codeHash=family1.digest('workspace-code:'+randomBytes(12).toString('hex'));
   await family1.command(a,'workspace.invite.issue',{consent:true,codeHash});
@@ -382,6 +382,16 @@ try{
   await family1.command(a,'workspace.items.update',{id:created.id,version:1,kind:'EVENT',data:{...data,startTime:'15:00',endTime:'16:00'}});
   assert.equal((await family2.command<{data:{startTime:string}}>(b,'workspace.items.get',{id:created.id})).data.startTime,'15:00');
   await family1.command(a,'workspace.items.delete',{id:created.id,version:2});await assert.rejects(family2.command(b,'workspace.items.get',{id:created.id}),{message:'NOT_FOUND'});
+ });
+ await check('UI111 calendar ranges cross month boundaries while preserving read and write permissions',async()=>{
+  const data={title:'기간 일정',date:'2026-12-31',endDate:'2027-01-02',startTime:'22:00',endTime:'04:00',calendarFrequency:'ONCE',weekdays:[]};
+  const created=await family1.command<{id:string}>(a,'workspace.items.create',{kind:'EVENT',data});
+  for(const actor of [a,b]){const listed=await family1.command<{items:{id:string;data:{endDate:string}}[]}>(actor,'workspace.items.list',{kind:'EVENT',from:'2027-01-01',to:'2027-01-02'});assert.equal(listed.items.find(i=>i.id===created.id)?.data.endDate,'2027-01-02');}
+  const after=await family1.command<{items:{id:string}[]}>(a,'workspace.items.list',{kind:'EVENT',from:'2027-01-03',to:'2027-01-31'});assert.equal(after.items.some(i=>i.id===created.id),false);
+  await assert.rejects(family2.command(b,'workspace.items.update',{kind:'EVENT',id:created.id,version:1,data}),{message:'AUTHOR_ONLY'});
+  for(const endDate of ['2026-12-30','2026-12-31'])await assert.rejects(family1.command(a,'workspace.items.create',{kind:'EVENT',data:{...data,endDate}}),{message:'INVALID_INPUT'});
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_v110('workspace.me','{}')"),{code:'42501'});
+  await family1.command(a,'workspace.items.delete',{id:created.id,version:1});
  });
  await check('UI83 administrator APIs are inaccessible through runtime tables, helper functions or forged member context',async()=>{
   await assert.rejects(family1.command(a,'admin.overview'),{message:'ADMIN_REQUIRED'});
