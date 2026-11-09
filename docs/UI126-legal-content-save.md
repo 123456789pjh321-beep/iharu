@@ -61,14 +61,23 @@
 | 수정 | tests/legal.test.ts | 긴 한글, 게시 차단, 권한·버전·기존 문서 보존 검증 |
 | 수정 | tests/integration/postgres.ts | 실제 PostgreSQL 소개 동시 저장·권한·동의 독립성 |
 | 추가 | tests/e2e/legal-content-save.spec.ts | 관리자부터 공개 화면까지 브라우저 검증 |
+| 수정 | tests/e2e/workspace-reading-calendar.spec.ts | 0.00004px 수준의 브라우저 계산 오차 허용, 반복 스와이프 안정성 검증 유지 |
+| 수정 | tests/helpers/auth-server.ts | 게시 테스트 전용 임시 DB·인증 서버 분리 |
+| 수정 | playwright.config.ts | 고지 전용 검증과 기존 E2E 데이터 격리 |
 | 추가 | .github/workflows/legal-content.yml | 전용 브라우저 검증 실행 |
 | 추가 | docs/UI126-legal-content-save.md | 변경·근거·배포 및 검증 기록 |
 
-추가 7개, 수정 13개, 삭제 0개. ZIP은 이 파일들만 원래 폴더 구조로 포함합니다.
+추가 7개, 수정 16개, 삭제 0개. ZIP은 이 파일들만 원래 폴더 구조로 포함합니다.
 
 ## 배포·검증 기록
 
-검증 진행 중. 최종 결과와 실제 배포 식별자는 검증 완료 후 이 문서에 기록합니다.
+- 로컬 단위 테스트 28개 파일, 230개 테스트 통과. 제한된 로컬 CPU에서는 15초 테스트 제한으로 실행했으며 CI의 기본 제한에서도 230개가 통과했습니다.
+- 타입 검사·프로덕션 빌드 통과. 실제 PostgreSQL 동시성·권한 검증 단계 통과.
+- 전용 브라우저 시나리오 3개 통과: 긴 한글 저장·중복 제출·재접속, 요청 목록 실패/처리 중 입력 보존과 편집기별 충돌 비교, 소개 게시·앱 읽기·약관/처리방침 공개 반영·평문 출력.
+- 기존 입력 UI 8개, 알림/달력 3개 통과. 반복 스와이프 검증은 부동소수점 약 0.00004px 차이에 대한 잘못된 엄격 일치를 수정해 재검증합니다.
+- 운영 DB 마이그레이션 적용 완료: 법적 초안 버전 5 → 6, 기존 운영자/연락처 보존, 확인 필요 항목 표시, 공개 게시본·동의 기록 추가 없음. Supabase 보안 진단 지적 사항 0건.
+- 브라우저 검증 전용 명령: `IHARU_LEGAL_E2E=true npx playwright test tests/e2e/legal-content-save.spec.ts --workers=1`. 다른 테스트의 사용자·동의 기록에 영향을 주지 않는 별도 임시 DB를 사용합니다.
+- 배포 및 운영 화면 확인 대상: [myiharu.com](https://myiharu.com), [PR #57](https://github.com/123456789pjh321-beep/iharu/pull/57).
 
 기존 전체 E2E에는 이전 메뉴·상단바 선택자를 사용하는 알려진 실패가 있습니다. 이번 전용 검증과 기존 달력·사용성 검증 결과를 구분해 기록하며 전체 E2E 통과로 표현하지 않습니다.
 

@@ -1,6 +1,6 @@
 import {test,expect,type APIRequestContext} from '@playwright/test';
 import {legalInitialDraft,serviceIntroDefault} from '../../shared/legal';
-const origin='http://127.0.0.1:4174',password='legal-save-fixture-2026';
+const origin='http://127.0.0.1:4175',password='legal-save-fixture-2026';
 test.use({baseURL:origin});
 test.describe.configure({mode:'serial'});
 async function signup(client:APIRequestContext,email:string,admin=false){
@@ -65,7 +65,7 @@ test('publishes service introduction to public and app readers, while incomplete
  await page.request.post('/api/account/reauthenticate',{headers:{Origin:origin},data:{password}});
  await page.getByLabel('서비스 소개가 실제 제공 기능과 일치함을 확인했습니다.',{exact:true}).check();await page.getByRole('button',{name:'저장한 서비스 소개 게시',exact:true}).click();await expect(page.getByText('서비스 소개를 게시했습니다. 홈페이지와 앱에서 확인할 수 있습니다.',{exact:true})).toBeVisible();
  const visitor=await browser.newContext({baseURL:origin});try{const publicPage=await visitor.newPage();await publicPage.goto('/service');await expect(publicPage.getByRole('heading',{name:'가족을 위한 서비스 안내',exact:true})).toBeVisible();await expect(publicPage.getByLabel('서비스 소개 본문')).toContainText('<script>');expect(await publicPage.evaluate(()=>(window as any).injected)).toBeUndefined();}finally{await visitor.close();}
- await page.goto('/more');await page.getByRole('link',{name:'서비스 소개',exact:true}).click();await expect(page).toHaveURL(/\/more\/service$/);await expect(page.getByRole('heading',{name:'가족을 위한 서비스 안내',exact:true})).toBeVisible();await expect(page.locator('.public-header,.marketing-site')).toHaveCount(0);await expect(page.getByRole('link',{name:'로그인',exact:true})).toHaveCount(0);
+ await page.goto('/more');await page.getByRole('link',{name:'서비스 소개',exact:true}).click();await expect(page).toHaveURL(/\/more\/service$/);await expect(page.getByRole('heading',{name:'서비스 소개',exact:true})).toHaveCount(1);await expect(page.getByRole('heading',{name:'가족을 위한 서비스 안내',exact:true})).toBeVisible();await expect(page.locator('.public-header,.marketing-site')).toHaveCount(0);await expect(page.getByRole('link',{name:'로그인',exact:true})).toHaveCount(0);
  await page.setViewportSize({width:320,height:740});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/ui126-service-reader-mobile.png',fullPage:true,animations:'disabled'});
  const config=await legal(page.request,'admin.read');expect(config.publication).toBeNull();
  const verified={...legalInitialDraft,operatorName:'가상 운영자',privacyOfficer:'가상 책임자',contactEmail:'review@example.test',children:'가상 확인 절차와 어린이 문의 안내',processors:'검증용 위탁 계약 내용',transfers:'검증용 이전 국가와 근거',retention:'검증용 항목별 실제 보유 기준',reviewNotes:'PRIVATE-REVIEW-NOTES'};

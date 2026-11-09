@@ -18,6 +18,7 @@ jobs:
       - run: npm run check
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test tests/e2e/legal-content-save.spec.ts --workers=1
+        env: {IHARU_LEGAL_E2E: 'true'}
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: legal-content-results, path: test-results/, retention-days: 3}
