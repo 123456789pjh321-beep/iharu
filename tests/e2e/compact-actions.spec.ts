@@ -29,7 +29,7 @@ test('labeled registration actions, modal entry/exit, dirty cancellation, save a
   await expect.poll(async()=>Math.round((await editor.boundingBox())!.y)).toBe(0);
   const save=editor.getByRole('button',{name:'저장',exact:true});await expect(save).toHaveText('저장');await expect(save).toHaveAttribute('title','저장');
   await page.locator('#personal-title').fill(`아이콘 저장 ${path} ${width}`);
-  if(path==='/tuition')await page.getByLabel('금액',{exact:true}).fill('150000');
+  if(path==='/tuition')await page.getByLabel('납부 금액',{exact:true}).fill('150000');
   await page.screenshot({path:`test-results/ui97-editor-${path.replaceAll('/','-')}-${width}.png`,animations:'disabled'});
   await save.click();await expect(editor).toHaveCount(0);
   const motions=await page.evaluate(()=>(window as any).dialogMotions);

@@ -20,7 +20,9 @@ STAYCATION 예약 달력의 시작→종료→확정 흐름과 Airbnb의 날짜/
 
 추가: `shared/entry-input.ts`, `web/src/components/EntryDatePicker.tsx`, `EntryTimeRange.tsx`, `PersonalEditor.tsx`, `web/src/entry-input.css`, `tests/entry-input.test.ts`, `tests/e2e/entry-input.spec.ts`, `.github/workflows/entry-input.yml`, 본 문서.
 
-수정: `web/src/pages/PersonalWorkspace.tsx` (편집기 분리), `web/src/components/ScheduleMemberPicker.tsx` (비일정 항목의 전체 선택 제외).
+수정: `web/src/pages/PersonalWorkspace.tsx` (편집기 분리), `web/src/components/ScheduleMemberPicker.tsx` (비일정 항목의 전체 선택 제외), `web/src/main.tsx` (입력 스타일 연결), 기존 등록 관련 브라우저 검사 (새 선택 컨트롤에 맞춤).
+
+추가 검증 도우미: `tests/e2e/entry-controls.ts`.
 
 삭제: 없음.
 

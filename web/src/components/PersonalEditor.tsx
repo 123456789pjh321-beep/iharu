@@ -10,7 +10,6 @@ import {ScheduleMemberPicker} from './ScheduleMemberPicker';
 import {EntryDatePicker} from './EntryDatePicker';
 import {EntryTimeRange} from './EntryTimeRange';
 import {workspaceRequest} from '../workspace-api';
-import '../entry-input.css';
 export type Editor={kind:WorkspaceKind;item?:WorkspaceItem;draft?:WorkspaceItem;date:string;time?:string};
 const days=['일','월','화','수','목','금','토'];
 export function PersonalEditor({kind:initialKind,item,draft,date,time,scheduleKind,me,members,copy,close,saved}:Editor&{scheduleKind?:'EVENT'|'REPEAT';me:WorkspaceMe;members:WorkspaceMember[];copy:(item:WorkspaceItem)=>void;close:()=>void;saved:()=>Promise<void>}){

@@ -1,3 +1,4 @@
+import {setEntryTime} from './entry-controls';
 import {test,expect} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 
@@ -15,7 +16,7 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
   await page.getByRole('button',{name:'2026-11-02 09:00 일정 등록',exact:true}).click();
   const editor=page.getByRole('dialog',{name:'반복 일정 등록',exact:true});await expect(editor).toBeVisible();
   await expect(editor.locator('input[type=date]')).toHaveCount(0);await expect(editor.getByRole('combobox')).toHaveCount(0);
-  await editor.getByLabel('제목',{exact:true}).fill('유치원');await editor.getByLabel('종료 시간',{exact:true}).fill('16:20');
+  await editor.getByLabel('제목',{exact:true}).fill('유치원');await setEntryTime(editor,'종료 시간','16:20');
   await editor.getByRole('radio',{name:'전체',exact:true}).check();await expect(editor.getByRole('radio',{name:'전체',exact:true})).toBeChecked();
   const weekdays=editor.getByRole('group',{name:'반복 요일',exact:true});await weekdays.getByLabel('월',{exact:true}).uncheck();await editor.getByRole('button',{name:'저장',exact:true}).click();
   await expect(editor.getByRole('alert')).toContainText('반복 요일');await expect(editor.getByLabel('제목',{exact:true})).toHaveValue('유치원');

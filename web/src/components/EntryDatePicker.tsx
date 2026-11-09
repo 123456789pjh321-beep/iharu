@@ -20,7 +20,7 @@ export function EntryDatePicker({start,end='',range=false,startLabel='날짜',en
  return <section className="entry-section entry-date-section" aria-label={range?'날짜와 반복 기간':'날짜 선택'}>
   <div className="entry-section-heading"><h3><Icon name="calendar"/>{range?'날짜와 반복 기간':startLabel}</h3><button ref={trigger} type="button" className="entry-text-button" aria-expanded={open} aria-controls={id} onClick={()=>open?close():show('start')}><Icon name="calendar"/>{open?'달력 닫기':'달력에서 선택'}</button></div>
   <div className={`entry-date-pair ${range?'has-range':''}`}>
-   <label className="entry-date-card"><span>{startLabel}</span><input name="date" type="date" aria-label={startLabel} required readOnly={open} value={start} onChange={e=>onChange(e.target.value,end)}/><small>{start?dateCaption(start):'날짜를 선택해 주세요'}</small></label>
+   <label className="entry-date-card"><span>{startLabel}</span><input id="personal-date" name="date" type="date" aria-label={startLabel} required readOnly={open} value={start} onChange={e=>onChange(e.target.value,end)}/><small>{start?dateCaption(start):'날짜를 선택해 주세요'}</small></label>
    {range&&<><Icon name="arrow"/><label className="entry-date-card"><span>{endLabel}</span><input name="untilDate" type="date" aria-label={endLabel} min={start} readOnly={open} value={end} aria-invalid={invalid||undefined} onChange={e=>onChange(start,e.target.value)}/><small>{end?dateCaption(end):'종료일 없이 계속 반복'}</small></label></>}
   </div>
   {invalid&&<p className="entry-error" role="alert">종료일은 시작일과 같거나 이후 날짜로 선택해 주세요.</p>}
@@ -39,6 +39,6 @@ export function EntryDatePicker({start,end='',range=false,startLabel='날짜',en
    {range&&<div className="entry-quick-row" role="group" aria-label="반복 기간 빠른 선택">{[1,3,6].map(n=><button type="button" key={n} onClick={()=>{setDraftEnd(shiftMonth(draftStart,n));setActive('end');}}>+{n}개월</button>)}<button type="button" onClick={()=>{setDraftEnd(draftStart.slice(0,4)+'-12-31');setActive('end');}}>올해 말</button><button type="button" aria-pressed={!draftEnd} onClick={()=>{setDraftEnd('');setActive('end');}}>종료일 없음</button></div>}
    <div className="entry-picker-footer"><span aria-live="polite">{range?draftEnd?`${dateCaption(draftStart)} – ${dateCaption(draftEnd)} · ${periodDays(draftStart,draftEnd)}일간`:'종료일 없이 반복':dateCaption(draftStart)}</span><div><button type="button" className="button" onClick={close}>취소</button><button type="button" className="button primary" disabled={!dateValue(draftStart)||range&&!!draftEnd&&draftEnd<draftStart} onClick={()=>{onChange(draftStart,draftEnd);close();}}>선택 완료</button></div></div>
   </div>}
-  {range&&!invalid&&<p className="entry-summary"><Icon name="repeat"/>{end?`${dateCaption(start)}부터 ${dateCaption(end)}까지 반복`:'종료일 없이 계속 반복해요.'}</p>}
+  {range&&!open&&!invalid&&<p className="entry-summary"><Icon name="repeat"/>{end?`${dateCaption(start)}부터 ${dateCaption(end)}까지 반복`:'종료일 없이 계속 반복해요.'}</p>}
  </section>;
 }

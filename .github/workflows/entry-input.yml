@@ -1,7 +1,7 @@
 name: Entry date and time UI
 on:
   pull_request:
-    paths: ['web/**', 'shared/entry-input.ts', 'tests/e2e/entry-input.spec.ts', '.github/workflows/entry-input.yml']
+    paths: ['web/**', 'shared/entry-input.ts', 'tests/e2e/entry-input.spec.ts', 'tests/e2e/entry-controls.ts', '.github/workflows/entry-input.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,7 +17,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test tests/e2e/entry-input.spec.ts --workers=1
+      - run: npx playwright test tests/e2e/entry-input.spec.ts tests/e2e/timetable-gestures.spec.ts tests/e2e/timetable-visible-hours.spec.ts --workers=1
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: entry-input-ui, path: test-results/, retention-days: 3}
