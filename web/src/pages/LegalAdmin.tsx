@@ -14,6 +14,7 @@ type Target='legal'|'service';
 const fields:[keyof LegalDraft,string,number][]=[['operatorName','운영자명 (개인 또는 법인)',100],['privacyOfficer','개인정보 보호책임자',100],['contactEmail','공개 문의 이메일',254],['address','사업장 주소 (해당 시)',200],['businessNumber','사업자 등록번호 (해당 시)',40]];
 const documents:[keyof LegalDraft,string][]=[['terms','이용약관'],['privacy','개인정보처리방침'],['children','어린이를 위한 안내'],['processors','처리 위탁: 업체·업무·항목·감독 방식'],['transfers','국외 이전: 항목·국가·시기/방법·수령자/연락처·목적/기간·법적 근거·거부 방법/영향'],['retention','처리 항목별 목적·법적 근거·보유 기간·파기 방법·법정 보관 예외'],['reviewNotes','내부 검토 메모 (공개하지 않음)']];
 const cleanIntro=(value:ServiceIntro)=>({title:value.title.trim(),body:value.body.trim()});
+const scopeConfig=(previous:Config|null,next:Config,target:Target):Config=>!previous?next:target==='legal'?{...next,service:previous.service}:{...previous,service:next.service};
 const savedAt=(value:string)=>new Date(value).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
 
 export function LegalAdmin(){
@@ -33,13 +34,13 @@ export function LegalAdmin(){
   inFlight.current=true;setBusy(true);setError('');setMessage('');
   try{
    const result=await legalRequest<Saved>(op,data);if(!alive.current)return;
-   if(target){setConfig(result.config);if(target==='legal'){setDraft(normalizeLegalDraft(result.config.draft));setReviewed(false);}else{setIntro(result.config.service.draft);setIntroReviewed(false);}setConflict(null);}else setRequestRevision(n=>n+1);
+   if(target){setConfig(previous=>scopeConfig(previous,result.config,target));if(target==='legal'){setDraft(normalizeLegalDraft(result.config.draft));setReviewed(false);}else{setIntro(result.config.service.draft);setIntroReviewed(false);}setConflict(null);}else setRequestRevision(n=>n+1);
    setMessage(success);
   }catch(e){
    if(!alive.current)return;setError((e as Error).message);
    if((e as {code?:string}).code==='VERSION_CONFLICT'&&target){
     // Refresh the compare base without replacing either editor's unsaved input.
-    try{const latest=await legalRequest<Config>('admin.read');if(alive.current){setConfig(latest);setConflict(target);}}catch{/* Keep the original error and input. */}
+    try{const latest=await legalRequest<Config>('admin.read');if(alive.current){setConfig(previous=>scopeConfig(previous,latest,target));setConflict(target);}}catch{/* Keep the original error and input. */}
    }
   }finally{inFlight.current=false;if(alive.current)setBusy(false);}
  }

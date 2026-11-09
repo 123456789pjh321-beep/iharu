@@ -45,6 +45,14 @@ test('request failures and request responses preserve unsaved edits; stale versi
   await page.getByText('서버의 최신 저장본 보기',{exact:true}).click();await expect(page.getByRole('alert').filter({has:page.getByRole('heading',{name:'최신 저장본과 비교해 주세요'})})).toContainText('다른 화면의 최신 저장');
   await page.getByRole('button',{name:'내 입력 내용 유지',exact:true}).click();await page.getByRole('button',{name:'초안 저장',exact:true}).click();await expect(page.getByText('초안을 저장했습니다. 게시 전까지 외부에 공개되지 않습니다.',{exact:true})).toBeVisible();
   expect((await legal(page.request,'admin.read')).draft.operatorName).toBe('아직 저장하지 않은 내 입력');
+  // Saving one editor must not silently advance the other editor's optimistic lock.
+  await page.getByLabel('서비스 소개 제목',{exact:true}).fill('내가 편집 중인 소개');
+  const server=await legal(page.request,'admin.read');await legal(page.request,'admin.service.save',{version:server.service.version,draft:{...serviceIntroDefault,title:'다른 관리자가 저장한 소개'},reason:'다른 편집기의 동시 변경'});
+  await page.getByRole('button',{name:'초안 저장',exact:true}).click();await expect(page.getByText('초안을 저장했습니다. 게시 전까지 외부에 공개되지 않습니다.',{exact:true})).toBeVisible();
+  await page.getByLabel('서비스 소개 저장·게시 사유',{exact:true}).fill('편집기별 버전 충돌 검사');await page.getByRole('button',{name:'서비스 소개 초안 저장',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'최신 저장본과 비교해 주세요'})).toBeVisible();await expect(page.getByLabel('서비스 소개 제목',{exact:true})).toHaveValue('내가 편집 중인 소개');
+  await page.getByRole('button',{name:'최신 저장본으로 교체',exact:true}).click();await expect(page.getByLabel('서비스 소개 제목',{exact:true})).toHaveValue('다른 관리자가 저장한 소개');
+
   await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/ui126-admin-save-mobile.png',fullPage:true,animations:'disabled'});
  }finally{await requester.dispose();}
 });
