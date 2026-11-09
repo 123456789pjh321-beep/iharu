@@ -50,6 +50,9 @@ app.get('/__test__/mail',c=>c.json(outbox));
 const providerOrigin='https://127.0.0.1:'+(fixturePort+100),providerTls=mkdtempSync(join(tmpdir(),'iharu-oauth-fixture-'));
 execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',join(providerTls,'key.pem'),'-out',join(providerTls,'cert.pem'),'-subj','/CN=127.0.0.1','-addext','subjectAltName=IP:127.0.0.1','-days','1'],{stdio:'ignore'});
 const providerServer=serve({hostname:'127.0.0.1',port:fixturePort+100,createServer:createHttpsServer,serverOptions:{key:readFileSync(join(providerTls,'key.pem')),cert:readFileSync(join(providerTls,'cert.pem'))},fetch:()=>new Response('<p>Isolated external authorization fixture</p>',{headers:{'Content-Type':'text/html; charset=utf-8'}})});
+// Vercel serves the public SPA shell separately from private API responses. Match
+// that distinction for this cache test; all personal/auth API responses keep no-store.
+app.use('/today/calendar',async(c,next)=>{await next();if(c.req.header('x-fixture-oauth-return')==='1'&&c.res.headers.get('Content-Type')?.startsWith('text/html'))c.header('Cache-Control','private, max-age=0, must-revalidate');});
 app.use('/api/auth/sign-in/social',async(c,next)=>{await next();if(c.req.header('x-fixture-oauth-return')!=='1'||!c.res.ok)return;const result=await c.res.clone().json();if(typeof result.url!=='string')return;const headers=new Headers(c.res.headers);headers.delete('Content-Length');c.res=new Response(JSON.stringify({...result,url:providerOrigin+'/authorize'}),{status:c.res.status,headers});});
 app.route('/',createApp({environment:'local',demoEnabled:false},()=>svc,async()=>family));
 for(const path of publicPaths)app.get(path,serveStatic({path:'./dist'+path+'.html'}));
