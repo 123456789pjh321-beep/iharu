@@ -1,5 +1,8 @@
 /* Spectral light edition: shared colors, readable Korean type and gentle motion. */
 .public-frame .marketing-site {
+  /* Public pages keep their light palette even when the family workspace is dark. */
+  --surface:#fff; --surface-sub:#f5f7f5; --canvas:#f7f9f6; --ink:#273b32; --muted:#64756b; --line:#e1e8e2;
+  --primary:#147d64; --primary-hover:#10634f; --on-primary:#fff; --mint:#e9f5ee; --navy:#234d3e; color-scheme:light;
   --market-blue: #147d64; --market-ink: #273b32; --market-muted: #64756b; --market-line: #e1e8e2;
   font-family: var(--public-font); letter-spacing: -.02em;
   background: radial-gradient(ellipse 90% 700px at 80% 0, #e5eeea, transparent 75%), radial-gradient(ellipse 65% 600px at 0 380px, #f3f7f5, transparent 85%), #f7f9f6;

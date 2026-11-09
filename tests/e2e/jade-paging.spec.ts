@@ -68,7 +68,7 @@ test('jade palette remains readable and aligned in light and dark at phone, tabl
     await page.screenshot({path:`test-results/ui122-jade-${theme}-${width}.png`,animations:'disabled'});
    }
   }
-  for(const route of ['service','blog']){await page.goto('/'+route);await expect(page.locator('.marketing-site h1')).toBeVisible();await page.screenshot({path:`test-results/ui122-${route}.png`,animations:'disabled'});}
+  for(const route of ['service','blog']){await page.goto('/'+route);await expect(page.locator('.marketing-site h1')).toBeVisible();if(route==='blog'){await expect(page.getByRole('searchbox',{name:'글 검색'})).toHaveCSS('background-color','rgb(255, 255, 255)');}await page.screenshot({path:`test-results/ui122-${route}.png`,animations:'disabled'});}
  }finally{await context.close();}
 });
 
