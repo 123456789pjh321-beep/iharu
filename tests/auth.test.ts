@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, afterAll, describe, it, expect, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
+import {generateKeyPairSync,sign} from 'node:crypto';
 import { testDatabase } from './helpers/auth-db';
 import { createAuthService } from '../server/auth/service';
 import { createApp } from '../server/app';
@@ -236,6 +237,52 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
       if(provider==='google')expect(url.searchParams.get('code_challenge')).toBeTruthy();
       if(provider==='kakao')expect(url.searchParams.get('scope')?.split(' ')).toEqual(['profile_nickname']);
     }
+  });
+  it('accepts the exact contextual frontend payload through the real auth router',async()=>{
+    const b=new Browser();
+    for(const provider of ['google','kakao'])for(const next of ['/timetable','/today/calendar','/tuition']){
+      const response=await b.request('/api/auth/sign-in/social',{provider,callbackURL:next,errorCallbackURL:'/login?next='+encodeURIComponent(next)});
+      expect(response.status,await response.clone().text()).toBe(200);
+      const url=new URL((await response.json()).url);
+      expect(url.searchParams.get('redirect_uri')).toBe(`${origin}/api/auth/callback/${provider}`);
+      expect(url.searchParams.get('state')).toBeTruthy();
+      if(provider==='google')expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+    }
+    const denied=await b.request('/api/auth/sign-in/social',{provider:'google',callbackURL:'/timetable',errorCallbackURL:'/login?next=https%3A%2F%2Foutside.example'});
+    expect(denied.status).toBe(400);expect(await denied.json()).toMatchObject({code:'INVALID_CALLBACK'});
+  });
+  it('verifies contextual signup mail through the same return policy and allows subsequent login',async()=>{
+    const b=new Browser(),email='contextual@example.test',callbackURL='/login?verified=1&next=%2Ftoday%2Fcalendar';
+    const signup=await b.request('/api/auth/sign-up/email',{email,password,name:'가상 보호자',callbackURL});
+    expect(signup.status,await signup.clone().text()).toBe(200);
+    const link=mail.find(message=>message.to===email&&message.kind==='verify')!;
+    expect(link).toBeDefined();
+    const verification=await b.request(link.url);
+    expect(verification.status,await verification.clone().text()).toBe(302);
+    const target=new URL(verification.headers.get('location')!,origin);
+    expect(target.pathname).toBe('/login');expect(target.searchParams.get('verified')).toBe('1');expect(target.searchParams.get('next')).toBe('/today/calendar');
+    expect((await b.request('/api/auth/sign-in/email',{email,password})).status).toBe(200);
+  });
+  it('completes a signed Google OAuth callback, restores the calendar and rejects state replay',async()=>{
+    const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048}),kid='isolated-google-signing-key';
+    const header=Buffer.from(JSON.stringify({alg:'RS256',kid,typ:'JWT'})).toString('base64url');
+    const claims=Buffer.from(JSON.stringify({iss:'https://accounts.google.com',aud:'test',sub:'isolated-google-user',iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+300,email:'google-parent@example.test',email_verified:true,name:'구글 예시 보호자'})).toString('base64url');
+    const unsigned=header+'.'+claims,idToken=unsigned+'.'+sign('RSA-SHA256',Buffer.from(unsigned),privateKey).toString('base64url');
+    const fetchMock=vi.spyOn(globalThis,'fetch').mockImplementation(async input=>{
+      const url=String(input instanceof Request?input.url:input);
+      if(url==='https://oauth2.googleapis.com/token')return Response.json({access_token:'isolated-google-token',token_type:'Bearer',expires_in:3600,id_token:idToken});
+      if(url==='https://www.googleapis.com/oauth2/v3/certs')return Response.json({keys:[{...publicKey.export({format:'jwk'}),kid,alg:'RS256',use:'sig'}]});
+      throw new Error('Unexpected external request in isolated Google OAuth test');
+    });
+    try{
+      const b=new Browser(),start=await b.request('/api/auth/sign-in/social',{provider:'google',callbackURL:'/today/calendar',errorCallbackURL:'/login?next=%2Ftoday%2Fcalendar'});
+      expect(start.status).toBe(200);const authorization=new URL((await start.json()).url),state=authorization.searchParams.get('state')!;
+      expect(authorization.searchParams.get('code_challenge')).toBeTruthy();
+      const callback='/api/auth/callback/google?'+new URLSearchParams({code:'isolated-google-code',state}),response=await b.request(callback);
+      expect(response.status).toBe(302);expect(new URL(response.headers.get('location')!,origin).href).toBe(origin+'/today/calendar');expect(response.headers.get('set-cookie')).toContain('HttpOnly');
+      expect(await(await b.request('/api/account/session')).json()).toMatchObject({authenticated:true,email:'google-parent@example.test',emailVerified:true,assurance:'HIGH'});
+      const replay=new Browser();await replay.request(callback);expect(await(await replay.request('/api/account/session')).json()).toEqual({authenticated:false});
+    }finally{fetchMock.mockRestore();}
   });
   it('signs in Kakao users without email, preserves optional nicknames and keeps family access blocked',async()=>{
     let profile:{id:number;kakao_account?:{profile?:{nickname:string}}}={id:1001,kakao_account:{profile:{nickname:'테스트 보호자'}}};

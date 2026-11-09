@@ -2,7 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import type {WorkspaceMember} from '../../../shared/workspace';
 import {MemberFilter} from './MemberFilter';
 
-export type MemberPreferenceProps={viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>};
+export type MemberPreferenceProps={preview?:boolean;viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>};
 export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultMemberIds,saveDefaultMembers}:MemberPreferenceProps){
  const [selected,setSelected]=useState<string[]|null>(null),[saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),lock=useRef(false);
  useEffect(()=>{setSelected(null);setError('');setNotice('');},[viewerId]);
@@ -15,7 +15,7 @@ export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultM
  const save=async()=>{if(lock.current||!saveDefaultMembers||!memberIds.length||isSaved)return;lock.current=true;setSaving(true);setError('');setNotice('');try{await saveDefaultMembers([...memberIds]);setNotice('첫 화면에 표시할 사람들을 저장했어요.');}catch(e){setError((e as Error).message);}finally{lock.current=false;setSaving(false);}};
  return {memberIds,saved,isSaved,saving,error,notice,toggle,save,canSave:!!saveDefaultMembers};
 }
-export function MemberPreferenceFilter({members,selection,label,className=''}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string}){
+export function MemberPreferenceFilter({members,selection,label,className='',preview=false}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string;preview?:boolean}){
  const {memberIds,isSaved,saving,error,notice,toggle,save,canSave}=selection;
  const names=members.filter(m=>memberIds.includes(m.id)).map(m=>m.name);
  const name=names.join(' · ')||'나',summary=names.length>1?`${names[0]} 외 ${names.length-1}명`:name;
@@ -23,7 +23,7 @@ export function MemberPreferenceFilter({members,selection,label,className=''}:{m
  return <section className="member-preference" aria-label={label+' 설정'}>
   <div className="member-preference-row">
    <MemberFilter className={className} members={members} value={memberIds} showAll={false} compact disabled={saving} onChange={toggle} label={label}/>
-   <div className="timetable-preference"><button type="button" className="button compact" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} data-saved={isSaved} disabled={saving||isSaved||!canSave} onClick={()=>void save()}><strong className="preference-member-names">{summary}</strong><span className="preference-action-short" aria-hidden="true">{saving?'저장 중':isSaved?'설정됨':'저장'}</span></button></div>
+   {preview?<span className="guest-sample-badge" title="가상 예시이며 실제 가족 자료가 아닙니다">샘플 데이터</span>:<div className="timetable-preference"><button type="button" className="button compact" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} data-saved={isSaved} disabled={saving||isSaved||!canSave} onClick={()=>void save()}><strong className="preference-member-names">{summary}</strong><span className="preference-action-short" aria-hidden="true">{saving?'저장 중':isSaved?'설정됨':'저장'}</span></button></div>}
   </div>
   {error&&<p className="timetable-preference-message error" role="alert">{error}</p>}{notice&&<p className="timetable-preference-message" role="status">{notice}</p>}
  </section>;

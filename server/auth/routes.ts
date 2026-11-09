@@ -9,6 +9,7 @@ import type { AuthService } from './service.js';
 import { getAuthRuntime } from './runtime.js';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { databaseFailureReason } from '../adapters/database-errors.js';
+import {authRedirectAllowed,type AuthRedirectField} from '../../shared/auth-redirect.js';
 const checkedDatabases = new WeakSet<AuthService>();
 
 const names = { email: '이메일', google: 'Google', kakao: '카카오', naver: '네이버', phone: '휴대폰' };
@@ -73,7 +74,7 @@ export function accountRoutes(resolve: () => AuthService | null = getAuthRuntime
     if (mailPaths.has(path) && !svc.settings.mail) return c.json({ code: 'PROVIDER_NOT_READY' }, 503);
     if (c.req.method === 'GET' && ['/verify-email'].includes(path)) {
       const callback = c.req.query('callbackURL');
-      if (callback && new URL(callback, svc.settings.origin).href !== `${svc.settings.origin}/login?verified=1`) policyError('INVALID_CALLBACK', 'BAD_REQUEST');
+      if (callback && !authRedirectAllowed(callback,svc.settings.origin,path,'callbackURL')) policyError('INVALID_CALLBACK', 'BAD_REQUEST');
     }
     if (c.req.method === 'GET' && path.startsWith('/reset-password/')) {
       if (new URL(c.req.query('callbackURL') || '', svc.settings.origin).href !== `${svc.settings.origin}/reset-password`) policyError('INVALID_CALLBACK', 'BAD_REQUEST');
@@ -87,13 +88,9 @@ export function accountRoutes(resolve: () => AuthService | null = getAuthRuntime
         ...(typeof body.email === 'string' ? [{ key: `auth:email:${path}:${body.email.toLowerCase()}`, windowMs: 60_000, limit: path === '/sign-in/email' ? 10 : 2 }] : []),
       ]);
       // Only fixed, first-party landing routes are accepted, even if a provider supports arbitrary redirects.
-      for (const field of ['callbackURL','newUserCallbackURL','errorCallbackURL','redirectTo']) {
+      for (const field of ['callbackURL','newUserCallbackURL','errorCallbackURL','redirectTo'] as AuthRedirectField[]) {
         if (body[field] !== undefined) {
-          const allowed = field === 'redirectTo' ? ['/reset-password'] : field === 'errorCallbackURL' ? ['/login'] : path === '/sign-up/email' || path === '/send-verification-email' ? ['/login?verified=1'] : path === '/sign-in/social' ? ['/timetable','/today','/account'] : ['/account'];
-          let destination: string;
-          try { destination = new URL(String(body[field]), svc.settings.origin).href; }
-          catch { policyError('INVALID_CALLBACK', 'BAD_REQUEST'); }
-          if (!allowed.some(route => new URL(route, svc.settings.origin).href === destination)) policyError('INVALID_CALLBACK', 'BAD_REQUEST');
+          if(!authRedirectAllowed(body[field],svc.settings.origin,path,field))policyError('INVALID_CALLBACK', 'BAD_REQUEST');
         }
       }
       if (path === '/sign-in/social' || path === '/link-social') {
