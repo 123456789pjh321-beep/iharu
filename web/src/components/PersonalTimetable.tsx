@@ -11,7 +11,7 @@ const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=.8;
 const hourLabel=(hour:number)=>hour===24?'밤 12':`${hour>=21?'밤':hour<12?'오전':'오후'} ${hour%12||12}`;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
-export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit,viewerId,defaultMemberIds,saveDefaultMembers}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
+export function PersonalTimetable({day,items,members,loading,embedded=false,preview=false,setDay,create,edit,viewerId,defaultMemberIds,saveDefaultMembers}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;preview?:boolean;viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays((embedded?day:koreaToday()).slice(0,7));
  const selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}); const [now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
@@ -35,7 +35,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  const content=(item:WorkspaceItem,interval?:{start:number;end:number})=><><strong className="timetable-title">{item.data.title}</strong><span className="timetable-range">{embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)}</span></>;
  const label=(item:WorkspaceItem,interval?:{start:number;end:number})=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':' timetable-weekly')} aria-label={embedded?'일간 일정':'주간 시간표'}>
-  {!embedded&&!!members.length&&<MemberPreferenceFilter members={members} selection={selection} className="timetable-filters" label="시간표 구성원 필터"/>}
+  {!embedded&&!!members.length&&<MemberPreferenceFilter preview={preview} members={members} selection={selection} className="timetable-filters" label="시간표 구성원 필터"/>}
   <div className="timetable-summary">{embedded&&<span>{loading?'불러오는 중':`${events.length}개 일정`}</span>}
    {showToday&&!loading&&<div className={'timetable-current-summary'+(currentEvents.length?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
   </div>

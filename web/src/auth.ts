@@ -13,6 +13,7 @@ export const sessionsSchema = z.object({ sessions: z.array(z.object({ id: z.stri
 export const methodNames: Record<string, string> = { credential:'이메일 · 비밀번호', google:'Google', kakao:'카카오', naver:'네이버', phone:'휴대폰' };
 export const emailLinkSchema = z.object({pending:z.object({email:z.string(),expiresAt:z.string()}).nullable()});
 const messages: Record<string,string> = {
+  INVALID_CALLBACK:'로그인 후 돌아갈 화면을 확인하지 못했어요. 현재 화면을 새로 열고 다시 로그인해 주세요.',
   MAIL_DELIVERY_FAILED:'인증 메일을 보내지 못했어요. 1분 뒤 다시 입력해 주세요. 계속되면 서비스 연결 확인이 필요해요.',
   METHOD_ALREADY_LINKED:'이미 이메일 로그인이 연결되어 있어요. 내 계정에서 확인해 주세요.',
   AUTH_NOT_READY:'로그인 연결을 준비하고 있어요. 잠시 후 다시 방문해 주세요.',

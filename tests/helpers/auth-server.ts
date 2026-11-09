@@ -18,7 +18,7 @@ const { db,engine }=await testDatabase();
 for(const file of (await readdir('db/migrations')).filter(n=>/^\d+_[a-z0-9_]+\.sql$/.test(n)).sort())await engine.exec(await readFile(`db/migrations/${file}`,'utf8'));
 await query(db,"UPDATE app_private.family_release SET child_deletion_verified_at=now(),verification_reference='isolated-browser-fixture'");
 const outbox:{to:string;url:string;kind:string}[]=[];
-const svc=createAuthService({origin:fixtureOrigin,secret:'isolated-browser-fixture-never-use-in-production-001',databaseUrl:'unused',mail:{key:'fixture',from:'test@example.test'},sms:null,social:{}},db,{sendMail:async data=>{outbox.push(data);},sendSms:async()=>{throw new Error('NO_SMS_IN_BROWSER_FIXTURE');}});
+const svc=createAuthService({origin:fixtureOrigin,secret:'isolated-browser-fixture-never-use-in-production-001',databaseUrl:'unused',mail:{key:'fixture',from:'test@example.test'},sms:null,social:{google:{clientId:'isolated-browser-google',clientSecret:'isolated-browser-only'}}},db,{sendMail:async data=>{outbox.push(data);},sendSms:async()=>{throw new Error('NO_SMS_IN_BROWSER_FIXTURE');}});
 // Named fixture clients represent separate test devices' IP buckets. The production
 // policy and quotas stay intact; this entry point is never shipped in the API bundle.
 const fixtureClient=new AsyncLocalStorage<string>();

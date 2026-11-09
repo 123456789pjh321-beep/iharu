@@ -8,13 +8,13 @@ import {tuitionMonth} from '../../../shared/tuition-calendar';
 import {koreaToday} from '../../../shared/schedules';
 const won=(n:number)=>new Intl.NumberFormat('ko-KR').format(n)+'원';
 const calendarAmount=(n:number)=>n>=100000000?new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(n/100000000)+'억':n>=10000?new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(n/10000)+'만':new Intl.NumberFormat('ko-KR').format(n);
-export function PersonalFees({viewerId,defaultMemberIds,saveDefaultMembers,items,members,month,compact=false,loading=false,edit,create,onMonthChange}:MemberPreferenceProps&{items:WorkspaceItem[];members:WorkspaceMember[];month:string;compact?:boolean;loading?:boolean;edit:(item:WorkspaceItem)=>void;create:(date?:string)=>void;onMonthChange?:(month:string)=>void}){
+export function PersonalFees({viewerId,defaultMemberIds,saveDefaultMembers,preview=false,items,members,month,compact=false,loading=false,edit,create,onMonthChange}:MemberPreferenceProps&{items:WorkspaceItem[];members:WorkspaceMember[];month:string;compact?:boolean;loading?:boolean;edit:(item:WorkspaceItem)=>void;create:(date?:string)=>void;onMonthChange?:(month:string)=>void}){
  const selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers});
  const [view,setView]=useState<'calendar'|'ledger'>('calendar'),[selectedDate,setSelectedDate]=useState<string|null>(null);
  const selected=selection.memberIds;
  const summary=tuitionMonth(items,month,selected);
  const date=selectedDate?.startsWith(month+'-')?selectedDate:null;
- const filter=<MemberPreferenceFilter className="fee-member-filters" members={members} selection={selection} label={compact?'오늘 학원비 구성원 필터':'학원비 구성원 필터'}/>;
+ const filter=<MemberPreferenceFilter preview={preview} className="fee-member-filters" members={members} selection={selection} label={compact?'오늘 학원비 구성원 필터':'학원비 구성원 필터'}/>;
  const renderMonth=(month:string)=>{
  const summary=tuitionMonth(items,month,selected),fees=summary.fees;
  const sorted=fees;
