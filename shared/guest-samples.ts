@@ -1,9 +1,9 @@
 import {addDays} from './schedules.js';
 import type {WorkspaceItem,WorkspaceMember,WorkspaceData} from './workspace.js';
-export const sampleMembers:WorkspaceMember[]=[{id:'sample-minseo',name:'민서',kind:'CHILD',host:false,version:1},{id:'sample-hajun',name:'하준',kind:'CHILD',host:false,version:1},{id:'sample-parent',name:'일반사용자',kind:'PARENT',host:true,version:1}];
+export const sampleMembers:WorkspaceMember[]=[{id:'sample-minseo',name:'민서',kind:'CHILD',host:false,version:1},{id:'sample-hajun',name:'하준',kind:'CHILD',host:false,version:1},{id:'sample-parent',name:'지우',kind:'PARENT',host:true,version:1}];
 export const sampleChildIds=['sample-minseo','sample-hajun'];
 const data=(title:string,date:string,extra:Partial<WorkspaceData>={}):WorkspaceData=>({title,date,weekdays:[],place:'',note:'',paid:false,...extra});
-const item=(id:string,kind:WorkspaceItem['kind'],value:WorkspaceData):WorkspaceItem=>({id:'sample:'+id,kind,data:value,ownerId:'sample-parent',ownerName:'일반사용자',mine:false,version:1});
+const item=(id:string,kind:WorkspaceItem['kind'],value:WorkspaceData):WorkspaceItem=>({id:'sample:'+id,kind,data:value,ownerId:'sample-parent',ownerName:'지우',mine:false,version:1});
 /** Fictional in-memory examples. No ID is a real account ID; nothing is stored or fetched. */
 export function guestSamples(month:string,today:string){
  const anchor=addDays(today,-new Date(today+'T12:00:00Z').getUTCDay()),schoolStart=addDays(anchor,1);

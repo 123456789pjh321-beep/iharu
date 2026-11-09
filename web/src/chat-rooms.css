@@ -27,3 +27,5 @@
 .guest-chat-actions{display:flex;justify-content:flex-end;padding:0 16px 10px}
 @media(max-width:600px){.chat-rooms{padding-inline:12px}.chat-room-list>button{max-width:190px}.chat-rooms-heading{margin-bottom:2px}}
 @media(max-height:500px){.auth-app.workspace-page{padding-top:calc(env(safe-area-inset-top) + 12px)}.chat-rooms{padding-bottom:4px}.chat-room-list>button{min-height:40px;padding-block:4px}.chat-rooms-heading{min-height:36px}.chat-rooms-heading .button{min-height:32px}}
+/* In landscape, picture selection temporarily uses the room-list space. The active room title stays visible. */
+@media(max-height:500px){.chat-workspace:has(.chat-sticker-toggle[aria-expanded=true])>.chat-rooms{display:none}}
