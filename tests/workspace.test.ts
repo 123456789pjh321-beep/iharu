@@ -265,3 +265,29 @@ it('persists calendar start/end dates and includes overlapping periods in lists 
  expect((await a.ok('items.list',{kind:'EVENT',from:'2028-03-03',to:'2028-03-04'})).items).toEqual([]);
  await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v110('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
 });
+
+it('keeps timetable start-view preferences per authenticated account across new sessions',async()=>{
+ const a=await parent('pref-parent-a'),b=await parent('pref-parent-b'),x=await parent('pref-outsider'),am=await a.ok('me'),bm=await b.ok('me'),xm=await x.ok('me');
+ expect(am.timetableMemberId).toBe(am.id);expect(bm.timetableMemberId).toBe(bm.id);
+ expect((await new Browser().req(api+'timetable.preference.save',{memberId:am.id})).status).toBe(401);
+ expect((await a.req(api+'timetable.preference.save',{memberId:bm.id})).status).toBe(400);
+ const code=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:code.code});
+ expect(await a.ok('timetable.preference.save',{memberId:bm.id})).toMatchObject({memberId:bm.id});
+ await b.ok('timetable.preference.save',{memberId:am.id});
+ const device=new Browser();expect((await device.req('/api/auth/sign-in/email',{email:'pref-parent-a@example.test',password:'parent-fixture-password'})).ok).toBe(true);
+ expect((await device.ok('me')).timetableMemberId).toBe(bm.id);expect((await b.ok('me')).timetableMemberId).toBe(am.id);
+ for(const value of [{memberId:'all'},{memberId:xm.id},{memberId:crypto.randomUUID()},{memberId:am.id,profileId:bm.id}])expect((await a.req(api+'timetable.preference.save',value)).status).toBe(400);
+ expect((await a.ok('me')).timetableMemberId).toBe(bm.id);expect((await x.ok('me')).timetableMemberId).toBe(xm.id);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,'SELECT timetable_member_id FROM app_private.workspace_profiles');})).rejects.toMatchObject({code:'42501'});
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v111('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
+});
+it('supports child preferences and falls back to self when a saved family member disconnects',async()=>{
+ const a=await parent('pref-child-parent'),c=new Browser(),invite=await a.ok('invite.issue',{consent:true});
+ await c.ok('child.signup',{loginId:'pref_child',name:'선택 자녀',password:'child-fixture-password',code:invite.code});const am=await a.ok('me'),cm=await c.ok('me');expect(cm.timetableMemberId).toBe(cm.id);
+ await c.ok('timetable.preference.save',{memberId:am.id});await a.ok('timetable.preference.save',{memberId:cm.id});
+ await c.ok('logout');expect((await c.req(api+'timetable.preference.save',{memberId:cm.id})).status).toBe(401);
+ const device=new Browser();await device.ok('child.login',{loginId:'pref_child',password:'child-fixture-password'});expect((await device.ok('me')).timetableMemberId).toBe(am.id);
+ await a.ok('family.remove',{familyId:am.family.id,profileId:cm.id,version:am.family.members.find((m:any)=>m.id===cm.id).version});
+ expect((await a.ok('me')).timetableMemberId).toBe(am.id);expect((await device.ok('me')).timetableMemberId).toBe(cm.id);
+ expect((await a.req(api+'timetable.preference.save',{memberId:cm.id})).status).toBe(400);expect((await device.req(api+'timetable.preference.save',{memberId:am.id})).status).toBe(400);
+});

@@ -393,6 +393,17 @@ try{
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_v110('workspace.me','{}')"),{code:'42501'});
   await family1.command(a,'workspace.items.delete',{id:created.id,version:1});
  });
+ await check('UI112 timetable defaults belong only to the viewer and cannot name an unrelated profile',async()=>{
+  const am=await family1.command<{id:string;timetableMemberId:string}>(a,'workspace.me'),bm=await family2.command<{id:string;timetableMemberId:string}>(b,'workspace.me');
+  assert.equal(am.timetableMemberId,am.id);assert.equal(bm.timetableMemberId,bm.id);
+  await family1.command(a,'workspace.timetable.preference.save',{memberId:bm.id});
+  assert.equal((await family2.command<{timetableMemberId:string}>(a,'workspace.me')).timetableMemberId,bm.id);
+  assert.equal((await family2.command<{timetableMemberId:string}>(b,'workspace.me')).timetableMemberId,bm.id);
+  await assert.rejects(family1.command(a,'workspace.timetable.preference.save',{memberId:'00000000-0000-0000-0000-000000000001'}),{message:'ASSIGNEE_INVALID'});
+  await assert.rejects(family1.command(a,'workspace.timetable.preference.save',{memberId:am.id,profileId:bm.id}),{message:'INVALID_INPUT'});
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_v111('workspace.me','{}')"),{code:'42501'});
+  await family1.command(a,'workspace.timetable.preference.save',{memberId:am.id});
+ });
  await check('UI83 administrator APIs are inaccessible through runtime tables, helper functions or forged member context',async()=>{
   await assert.rejects(family1.command(a,'admin.overview'),{message:'ADMIN_REQUIRED'});
   await admin.query('INSERT INTO app_private.system_admins(member_id) VALUES($1)',[a.memberId]);

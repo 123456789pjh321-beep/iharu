@@ -14,11 +14,20 @@ const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=.8;
 const hourLabel=(hour:number)=>hour===24?'밤 12':`${hour<12?'오전':'오후'} ${hour%12||12}`;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
-export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
+export function PersonalTimetable({day,items,members,loading,embedded=false,setDay,create,edit,viewerId,defaultMemberId,saveDefaultMember}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;viewerId?:string;defaultMemberId?:string;saveDefaultMember?:(id:string)=>Promise<void>;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays((embedded?day:koreaToday()).slice(0,7));
- const [member,setMember]=useState('all'),[now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
+ const [selectedMember,setMember]=useState<string|null>(null),[savingDefault,setSavingDefault]=useState(false),[preferenceError,setPreferenceError]=useState(''),[preferenceNotice,setPreferenceNotice]=useState(''),preferenceLock=useRef(false); const [now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),page=useRef<HTMLDivElement>(null),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
- useEffect(()=>{if(member!=='all'&&!members.some(m=>m.id===member))setMember('all');},[members,member]);
+ const fallbackMember=members.some(m=>m.id===viewerId)?viewerId!:members[0]?.id||'';
+ const savedMember=members.some(m=>m.id===defaultMemberId)?defaultMemberId!:fallbackMember;
+ const member=embedded?'all':members.some(m=>m.id===selectedMember)?selectedMember!:savedMember;
+ const savedName=members.find(m=>m.id===savedMember)?.name||'나';
+ useEffect(()=>{if(selectedMember&&!members.some(m=>m.id===selectedMember))setMember(null);},[members,selectedMember]);
+ async function savePreference(){
+  if(preferenceLock.current||!saveDefaultMember||!member||member===savedMember)return;
+  preferenceLock.current=true;setSavingDefault(true);setPreferenceError('');setPreferenceNotice('');
+  try{await saveDefaultMember(member);setPreferenceNotice('첫 화면에 표시할 사람을 저장했어요.');}catch(error){setPreferenceError((error as Error).message);}finally{preferenceLock.current=false;setSavingDefault(false);}
+ }
  const today=koreaToday(),dates=embedded?[day]:timetableWeekDates(today),period=dates[0],selectedDay=dates.includes(day)?day:today;
  useCalendarSlide(page,period,'day',embedded);
  const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),undefined,embedded);
@@ -41,7 +50,9 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  const label=(item:WorkspaceItem,interval?:{start:number;end:number})=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':' timetable-weekly')} aria-label={embedded?'일간 일정':'주간 시간표'}>
   {!embedded&&<><header className="workspace-toolbar" aria-label="시간표"><h1 className="timetable-fixed-title">주간 시간표</h1></header>
-  <MemberFilter className="timetable-filters" members={members} value={member} onChange={setMember} label="시간표 구성원 필터"/></>}
+  <MemberFilter className="timetable-filters" members={members} value={member} showAll={false} disabled={savingDefault} onChange={id=>{setMember(id);setPreferenceError('');setPreferenceNotice('');}} label="시간표 구성원 필터"/>
+  <div className="timetable-preference"><span>첫 화면 <strong>{savedName}</strong></span><button type="button" className="button compact" aria-busy={savingDefault} disabled={savingDefault||member===savedMember||!saveDefaultMember} onClick={()=>void savePreference()}>{savingDefault?'저장 중':member===savedMember?<><Icon name="check"/>첫 화면으로 설정됨</>:'첫 화면으로 저장'}</button></div>
+  {preferenceError&&<p className="timetable-preference-message error" role="alert">{preferenceError}</p>}{preferenceNotice&&<p className="timetable-preference-message" role="status">{preferenceNotice}</p>}</>}
   <div className="timetable-summary"><span>{loading?'불러오는 중':`${embedded?'':'매주 반복 · '}${events.length}개 일정`}{showToday&&<button type="button" className="timetable-now-jump" onClick={scrollToNow} aria-label="현재 시간으로 이동"><Icon name="clock"/>현재 {now}</button>}</span>
    {showToday&&!loading&&<div className={'timetable-current-summary'+(currentEvents.length?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
   </div>
