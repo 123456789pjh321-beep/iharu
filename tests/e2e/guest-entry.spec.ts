@@ -107,7 +107,7 @@ test('tapping a sample never imports it into the account after login',async({pag
 
 test('native Back from Google restores a cached login sheet that can retry or close',async({playwright})=>{
  // Playwright normally disables bfcache; enable it for this real browser lifecycle regression.
- const browser=await playwright.chromium.launch({ignoreDefaultArgs:['--disable-back-forward-cache']}),context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce'}),page=await context.newPage();
+ const browser=await playwright.chromium.launch({channel:'chromium',ignoreDefaultArgs:['--disable-back-forward-cache']}),context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce'}),page=await context.newPage();
  try{
   await page.addInitScript(()=>window.addEventListener('pageshow',event=>{document.documentElement.dataset.restoredFromCache=String(event.persisted);}));
   await page.route('https://accounts.google.com/**',route=>route.fulfill({contentType:'text/html',body:'<p>Isolated Google authorization fixture</p>'}));
