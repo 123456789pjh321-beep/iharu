@@ -5,6 +5,11 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { readFile,readdir } from 'node:fs/promises';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {createServer as createHttpsServer} from 'node:https';
 import { testDatabase } from './auth-db.js';
 import { createAuthService } from '../../server/auth/service.js';
 import { FamilyService } from '../../server/family/service.js';
@@ -40,11 +45,20 @@ app.post('/__test__/verify-draft',async c=>{const {draftId,birthDate='2018-03-02
 app.post('/__test__/reviewer',async c=>{const {email}=await c.req.json();if(typeof email!=='string'||!email.endsWith('@example.test'))return c.json({},400);await query(db,'INSERT INTO app_private.guardian_reviewers(member_id) SELECT m.id FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id WHERE u.email=$1 ON CONFLICT DO NOTHING',[email]);return c.json({ok:true});});
 app.post('/__test__/system-admin',async c=>{const {email}=await c.req.json();if(typeof email!=='string'||!email.endsWith('@example.test'))return c.json({},400);await query(db,'INSERT INTO app_private.system_admins(member_id) SELECT m.id FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id WHERE u.email=$1 AND u."emailVerified" ON CONFLICT DO NOTHING',[email]);return c.json({ok:true});});
 app.get('/__test__/mail',c=>c.json(outbox));
+// An actual second origin lets bfcache tests navigate without browser request interception,
+// which disables the browser cache. The real auth router still issues OAuth state.
+const providerOrigin='https://127.0.0.1:'+(fixturePort+100),providerTls=mkdtempSync(join(tmpdir(),'iharu-oauth-fixture-'));
+execFileSync('openssl',['req','-x509','-newkey','rsa:2048','-nodes','-keyout',join(providerTls,'key.pem'),'-out',join(providerTls,'cert.pem'),'-subj','/CN=127.0.0.1','-addext','subjectAltName=IP:127.0.0.1','-days','1'],{stdio:'ignore'});
+const providerServer=serve({hostname:'127.0.0.1',port:fixturePort+100,createServer:createHttpsServer,serverOptions:{key:readFileSync(join(providerTls,'key.pem')),cert:readFileSync(join(providerTls,'cert.pem'))},fetch:()=>new Response('<p>Isolated external authorization fixture</p>',{headers:{'Content-Type':'text/html; charset=utf-8'}})});
+// Vercel serves the public SPA shell separately from private API responses. Match
+// that distinction for this cache test; all personal/auth API responses keep no-store.
+app.use('/today/calendar',async(c,next)=>{await next();if(c.req.header('x-fixture-oauth-return')==='1'&&c.res.headers.get('Content-Type')?.startsWith('text/html'))c.header('Cache-Control','private, max-age=0, must-revalidate');});
+app.use('/api/auth/sign-in/social',async(c,next)=>{await next();if(c.req.header('x-fixture-oauth-return')!=='1'||!c.res.ok)return;const result=await c.res.clone().json();if(typeof result.url!=='string')return;const headers=new Headers(c.res.headers);headers.delete('Content-Length');c.res=new Response(JSON.stringify({...result,url:providerOrigin+'/authorize'}),{status:c.res.status,headers});});
 app.route('/',createApp({environment:'local',demoEnabled:false},()=>svc,async()=>family));
 for(const path of publicPaths)app.get(path,serveStatic({path:'./dist'+path+'.html'}));
 app.use('*',serveStatic({root:'./dist'}));
 app.get('*',serveStatic({path:'./dist/index.html'}));
 const server=serve({fetch:app.fetch,hostname:'127.0.0.1',port:fixturePort});
-async function stop(){server.close();await db.destroy();process.exit(0);}
+async function stop(){server.close();providerServer.close();rmSync(providerTls,{recursive:true,force:true});await db.destroy();process.exit(0);}
 process.on('SIGTERM',()=>{void stop();});process.on('SIGINT',()=>{void stop();});
 

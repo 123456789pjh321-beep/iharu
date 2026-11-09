@@ -1,5 +1,5 @@
 import {ChildAccountPage,LoginRoleTabs} from './ChildAccount';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../api';
 import { providersSchema, sessionSchema, authPost, startSocial, socialErrorMessage } from '../auth';
@@ -50,6 +50,13 @@ function SignupChoice(){const next=entryReturnPath(new URLSearchParams(useLocati
 function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthenticated,onBusy}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean;inline?:boolean;returnTo?:string;onAuthenticated?:()=>Promise<void>;onBusy?:(busy:boolean)=>void}) {
   const { pathname, search } = useLocation(); const navigate = useNavigate();
   const [busy,setBusy] = useState(false); const [error,setError] = useState(''); const [message,setMessage] = useState('');
+  const socialPending=useRef(false);
+  useEffect(()=>{
+    // A native Back from the provider can restore React with busy=true from bfcache.
+    // Release only a social redirect; an unrelated email submission stays protected.
+    const restore=(event:PageTransitionEvent)=>{if(!event.persisted||!socialPending.current)return;socialPending.current=false;setBusy(false);onBusy?.(false);};
+    window.addEventListener('pageshow',restore);return()=>window.removeEventListener('pageshow',restore);
+  },[onBusy]);
   const [token] = useState(() => new URLSearchParams(search).get('token') || '');
   useEffect(()=>{ if (token) window.history.replaceState(null,'',pathname); },[token,pathname]);
   const mode = inline?'login':pathname === '/signup' ? 'signup' : pathname === '/forgot-password' ? 'forgot' : pathname === '/verify-email' ? 'verify' : pathname === '/reset-password' ? 'reset' : 'login';
@@ -78,7 +85,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
       if (mode === 'reset') { await authPost('/api/auth/reset-password',{token,newPassword:password});setMessage('암호가 바뀌었어요. 모든 기기에서 로그아웃했으니 새 암호로 로그인해 주세요.'); }
     } catch (e) {setError(e instanceof Error?e.message:'연결을 확인해 주세요.');} finally {setBusy(false);onBusy?.(false);}
   }
-  async function social(id:string) { setBusy(true);onBusy?.(true);setError('');try {await startSocial(id,false,reauthenticate,next);}catch(e){setError((e as Error).message);setBusy(false);onBusy?.(false);} }
+  async function social(id:string) { if(busy)return;socialPending.current=true;setBusy(true);onBusy?.(true);setError('');try {await startSocial(id,false,reauthenticate,next);}catch(e){socialPending.current=false;setError((e as Error).message);setBusy(false);onBusy?.(false);} }
   if(canonicalLogin)return <AuthLayout><Loading label="안전한 로그인 화면으로 이동하고 있어요"/><a className="button primary full" href={new URL(canonicalPath,loginOrigin).href}>운영 로그인 화면 열기</a></AuthLayout>;
   return <AuthLayout>{mode!=='login'&&<div className="auth-title"><h2>{titles[mode]}</h2><p>{subtitles[mode]}</p></div>}
     {providers.loading?<Loading label="로그인 방법을 확인하고 있어요"/>:providers.error?<ErrorState message={providers.error} retry={providers.retry}/>:<>
