@@ -13,7 +13,7 @@ export function ExperienceProvider({children}:{children:ReactNode}){
 export function useExperience(){return useContext(Context);}
 export function DisplaySettings(){
  const {preferences,setPreference}=useContext(Context);
- return <div className="theme-toggle" role="group" aria-label="화면 밝기"><button type="button" aria-pressed={preferences.theme==='light'} onClick={()=>setPreference({theme:'light'})}><Icon name="sun"/><span>밝게</span></button><button type="button" aria-pressed={preferences.theme==='dark'} onClick={()=>setPreference({theme:'dark'})}><Icon name="moon"/><span>어둡게</span></button></div>;
+ return <div className="theme-toggle" role="group" aria-label="화면 밝기"><button type="button" aria-label="밝게" aria-pressed={preferences.theme==='light'} onClick={()=>setPreference({theme:'light'})}><Icon name="sun"/><span>밝게</span></button><button type="button" aria-label="어둡게" aria-pressed={preferences.theme==='dark'} onClick={()=>setPreference({theme:'dark'})}><Icon name="moon"/><span>어둡게</span></button></div>;
 }
 /** Enter-only: no exit delay or route remount. */
 export function Entrance({children,className=''}:{children:ReactNode;className?:string}){return <m.div className={className} initial={false} animate={{opacity:1}}>{children}</m.div>;}

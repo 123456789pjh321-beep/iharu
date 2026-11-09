@@ -16,11 +16,11 @@ export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultM
  const save=async()=>{if(lock.current||!saveDefaultMembers||!memberIds.length||isSaved)return;lock.current=true;setSaving(true);setError('');setNotice('');try{await saveDefaultMembers([...memberIds]);setNotice('첫 화면에 표시할 사람들을 저장했어요.');}catch(e){setError((e as Error).message);}finally{lock.current=false;setSaving(false);}};
  return {memberIds,saved,isSaved,saving,error,notice,toggle,save,canSave:!!saveDefaultMembers};
 }
-export function MemberPreferenceFilter({members,selection,label,className=''}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string}){
+export function MemberPreferenceFilter({members,selection,label,className='',collapsible=true}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string;collapsible?:boolean}){
  const {memberIds,saved,isSaved,saving,error,notice,toggle,save,canSave}=selection;
  const name=members.filter(m=>saved.includes(m.id)).map(m=>m.name).join(' · ')||'나';
  return <section className="member-preference" aria-label={label+' 설정'}>
-  <MemberFilter className={className} members={members} value={memberIds} showAll={false} disabled={saving} onChange={toggle} label={label}/>
+  <MemberFilter collapsible={collapsible} className={className} members={members} value={memberIds} showAll={false} disabled={saving} onChange={toggle} label={label}/>
   <div className="timetable-preference"><span>첫 화면 <strong>{name}</strong></span><button type="button" className="button compact" aria-busy={saving} disabled={saving||isSaved||!canSave} onClick={()=>void save()}>{saving?'저장 중':isSaved?<><Icon name="check"/>첫 화면으로 설정됨</>:'첫 화면으로 저장'}</button></div>
   {error&&<p className="timetable-preference-message error" role="alert">{error}</p>}{notice&&<p className="timetable-preference-message" role="status">{notice}</p>}
  </section>;

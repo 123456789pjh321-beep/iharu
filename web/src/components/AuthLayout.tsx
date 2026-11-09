@@ -8,6 +8,7 @@ import {DisplaySettings,Entrance,FamilyArtwork} from './Experience';
 import {WorkspaceGateProvider,useWorkspaceGate} from './WorkspaceGate';
 import {workspaceRequest} from '../workspace-api';
 import type {WorkspaceMe} from '../../../shared/workspace';
+import {WorkspaceHeaderToolsContext} from './WorkspaceHeaderTools';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
@@ -28,17 +29,18 @@ function StableWorkspaceFrame(){
  return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<Outlet/>}</FrameContext.Provider></AuthLayoutRoot>;
 }
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false,showNavigation=true }: { children: ReactNode; wide?: boolean;personalChild?:boolean;showNavigation?:boolean }) {
+  const [headerTools,setHeaderTools]=useState<HTMLDivElement|null>(null);
   const { pathname } = useLocation(),inPublicFrame=useInPublicFrame();
   const wide=requestedWide||['/account','/family','/device','/child','/phone'].some(p=>pathname.startsWith(p));
   useEffect(() => { const names:Record<string,string>={'/today':'오늘','/today/calendar':'달력','/timetable':'시간표','/today/repeats':'반복 일정','/tuition':'학원비','/records':'메모','/notification-settings':'알림설정','/chat':'대화','/child/chat':'대화','/family':'가족 관리','/admin':'시스템 관리','/location':'위치','/account':'내 계정'};document.title = `${names[pathname]||(pathname.startsWith('/family')?'우리 가족':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정')} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
-  return <div className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
-    {wide?<header className="auth-header"><WorkspaceBrand/><span className="auth-header-caption">가족의 하루를 잇다</span><div className="auth-display-actions"><DisplaySettings/></div></header>:!inPublicFrame&&<PublicHeader/>}
+  return <WorkspaceHeaderToolsContext.Provider value={headerTools}><div className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
+    {wide?<header className="auth-header"><WorkspaceBrand iconOnly/><div ref={setHeaderTools} className="auth-header-tools"/><div className="auth-display-actions"><DisplaySettings/></div></header>:!inPublicFrame&&<PublicHeader/>}
     {wide&&showNavigation&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
       {!wide && <aside className="auth-intro"><span className="eyebrow">가족의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>가족이 함께하는 하루를 시작하세요.</p><FamilyArtwork/></aside>}
       <Entrance className="auth-panel">{children}{!wide&&<div className="auth-entry-display"><DisplaySettings/></div>}</Entrance>
     </main>{!inPublicFrame&&<footer className="auth-footer"><span className="auth-footer-brand">아이하루 · 가족의 하루를 잇다</span> <Link to="/service">서비스 소개</Link><Link to="/guide">활용방법</Link><Link to="/notices">공지사항</Link><Link to="/blog">블로그</Link><Link to="/legal/terms">이용약관</Link><Link to="/legal/privacy">개인정보처리방침</Link><Link to="/privacy">개인정보 관리</Link></footer>}
-  </div>;
+  </div></WorkspaceHeaderToolsContext.Provider>;
 }
 export function LoginActions({busy=false,ready=true}:{busy?:boolean;ready?:boolean;child?:boolean}) {
   return <div className="auth-login-actions"><button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!ready?'이메일 로그인 준비 중':'로그인'}</button><Link className="button full" to="/signup">회원가입</Link></div>;

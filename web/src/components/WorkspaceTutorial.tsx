@@ -1,3 +1,4 @@
+import {WorkspaceHeaderTool} from './WorkspaceHeaderTools';
 import {useEffect,useId,useRef,useState} from 'react';
 import {useLocation,useNavigate} from 'react-router-dom';
 import {Icon,type IconName} from './Icon';
@@ -13,18 +14,16 @@ const steps:{title:string;icon:IconName;description:string;tips:string[]}[]=[
 export function WorkspaceTutorial({profileId,child=false}:{profileId:string;child?:boolean}){
  const {pathname,search}=useLocation(),navigate=useNavigate(),id=useId(),dialog=useRef<HTMLDialogElement>(null),heading=useRef<HTMLHeadingElement>(null),trigger=useRef<HTMLButtonElement>(null);
  const storageKey='iharu:tutorial:v1:'+profileId;
- const [welcoming,setWelcoming]=useState(()=>{try{return localStorage.getItem(storageKey)!=='done';}catch{return true;}}),[open,setOpen]=useState(false),[step,setStep]=useState(0);
+ const [open,setOpen]=useState(false),[step,setStep]=useState(0);
  const shown=child?steps.filter(s=>s.icon!=='wallet'):steps,current=shown[step];
  const requested=new URLSearchParams(search).get('guide')==='1';
  useEffect(()=>{if(requested){setStep(0);setOpen(true);}},[requested]);
  useEffect(()=>{if(!open)return;const node=dialog.current;if(!node)return;node.showModal();return()=>node.close();},[open]);
  useEffect(()=>{if(open)heading.current?.focus({preventScroll:true});},[open,step]);
- function remember(){try{localStorage.setItem(storageKey,'done');}catch{/* Help remains available when browser storage is disabled. */}setWelcoming(false);}
+ function remember(){try{localStorage.setItem(storageKey,'done');}catch{/* Help remains available when browser storage is disabled. */}}
  function close(completed=false){if(completed)remember();setOpen(false);if(requested){const params=new URLSearchParams(search);params.delete('guide');navigate({pathname,search:params.toString()},{replace:true});}requestAnimationFrame(()=>trigger.current?.focus({preventScroll:true}));}
  return <>
-  <aside className={'workspace-guide'+(welcoming?' welcome':'')} aria-label="사용 안내">
-   {welcoming?<><span className="workspace-guide-symbol"><Icon name="sun"/></span><div><strong>아이하루, 이렇게 시작해요</strong><p>시간표부터 가족 대화까지, 1분이면 익숙해져요.</p></div><button ref={trigger} type="button" className="button compact primary" onClick={()=>{setStep(0);setOpen(true);}}>사용 안내 시작</button><button type="button" className="icon-button" aria-label="사용 안내 나중에 보기" onClick={remember}><Icon name="close"/></button></>:<button ref={trigger} type="button" className="workspace-guide-replay" onClick={()=>{setStep(0);setOpen(true);}}><Icon name="book"/>사용 안내</button>}
-  </aside>
+  <WorkspaceHeaderTool><button ref={trigger} type="button" className="workspace-guide-replay" aria-haspopup="dialog" onClick={()=>{setStep(0);setOpen(true);}}><Icon name="book"/>사용 안내</button></WorkspaceHeaderTool>
   {open&&<dialog ref={dialog} className="workspace-guide-dialog" aria-labelledby={id+'-title'} aria-describedby={id+'-description'} onCancel={event=>{event.preventDefault();close();}} onClick={event=>{if(event.target===event.currentTarget)close();}}>
    <header><span>아이하루 사용 안내 · {step+1}/{shown.length}</span><button type="button" className="icon-button" aria-label="사용 안내 닫기" onClick={()=>close()}><Icon name="close"/></button></header>
    <div className="guide-progress" aria-label={`안내 ${shown.length}단계 중 ${step+1}단계`}>{shown.map((s,index)=><span key={s.title} className={index<=step?'done':''}/>)}</div>

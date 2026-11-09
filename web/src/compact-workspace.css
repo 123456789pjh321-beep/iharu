@@ -254,3 +254,24 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 .timetable-preference-message{margin:0;padding:0 12px 8px;color:var(--primary);font-size:.75rem}
 .timetable-preference-message.error{color:#a3454b}
 html[data-theme=dark] .timetable-preference-message.error{color:#ffbdc5}
+
+/* The app header keeps the logo, page clock and help together above the content. */
+.workspace-page .auth-header{gap:10px}
+.workspace-page .workspace-brand.icon-only{width:44px;min-width:44px;height:44px;justify-content:center;flex-shrink:0}
+.auth-header-tools{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.auth-header-tools:empty{display:none}
+.auth-header-tools>.timetable-now-jump{order:1;flex-shrink:0;white-space:nowrap;min-height:36px;font-variant-numeric:tabular-nums}
+.auth-header-tools>.workspace-guide-replay{order:2;margin-left:auto;flex-shrink:0;white-space:nowrap;min-height:36px;padding:5px 8px;border:1px solid var(--line);border-radius:9px;color:var(--muted)}
+.workspace-page .auth-header .auth-display-actions{margin-left:auto}
+.workspace-page .timetable-weekly>.timetable-summary{min-height:0;padding:0 12px 8px;justify-content:flex-end;flex-shrink:0}
+.workspace-page .timetable-weekly .timetable-current-summary{max-width:100%}
+@media(max-width:480px){
+ .workspace-page .auth-header{padding-inline:8px;gap:6px}
+ .auth-header-tools{gap:6px}
+ .auth-header-tools .current-time-prefix{display:none}
+ .auth-header-tools>.timetable-now-jump{font-size:.72rem;padding-inline:6px}
+ .auth-header-tools>.workspace-guide-replay{font-size:.68rem;padding-inline:6px;gap:4px}
+ .workspace-page .auth-header .theme-toggle{gap:2px;padding:3px}
+ .workspace-page .auth-header .theme-toggle button{width:32px;min-width:32px;padding:6px;gap:0}
+ .workspace-page .auth-header .theme-toggle button>span{display:none}
+}
