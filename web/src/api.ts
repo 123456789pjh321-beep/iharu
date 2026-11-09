@@ -15,7 +15,7 @@ export function useApi<T>(path: string, schema: z.ZodType<T>, actor?: 'child', e
     if(!enabled)return;
     const controller = new AbortController();
     const identity=JSON.stringify([path,actor]);
-    const preserve=revision.background&&previousRequest.current===identity;
+    const preserve=previousRequest.current===identity;
     previousRequest.current=identity;
     // A successful session recheck must not unmount an in-progress form.
     // Changed resources and every error still clear the prior response.

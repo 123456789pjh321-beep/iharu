@@ -1,12 +1,5 @@
-import {useRef,type ReactNode} from 'react';
-import {useCalendarPager} from './useCalendarPager';
-
-export function MonthSwipeArea({month,onChange,children}:{month:string;onChange:(month:string)=>void;children:ReactNode}){
- const page=useRef<HTMLDivElement>(null);
- const swipe=useCalendarPager(page,month,'month',delta=>{
-  const date=new Date(month+'-01T12:00:00Z');
-  date.setUTCMonth(date.getUTCMonth()+delta);
-  if(date.getUTCFullYear()>=1&&date.getUTCFullYear()<=9999)onChange(date.toISOString().slice(0,7));
- });
- return <div className="calendar-viewport month-swipe-viewport" {...swipe}><div ref={page} className="month-swipe-area">{children}</div></div>;
+import type {ReactNode} from 'react';
+import {PeriodPager,shiftMonth} from './PeriodPager';
+export function MonthSwipeArea({month,onChange,children}:{month:string;onChange:(month:string)=>void;children:(month:string)=>ReactNode}){
+ return <PeriodPager period={month} view="month" className="month-swipe-viewport" onMove={delta=>onChange(shiftMonth(month,delta))} renderPage={offset=><div className="month-swipe-area">{children(shiftMonth(month,offset))}</div>}/>;
 }

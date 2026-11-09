@@ -1,4 +1,3 @@
-import {WorkspaceTutorial} from '../components/WorkspaceTutorial';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useApi } from '../api';
@@ -18,7 +17,7 @@ export function AccountPage(){
   if(session.loading)return <AuthLayout wide><Loading label="내 계정을 확인하고 있어요"/></AuthLayout>;
   if(session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;
   if(!session.data?.authenticated)return <Navigate to="/login" replace/>;
-  return <AuthLayout wide><WorkspaceTutorial/>{session.data.assurance==='LOW'?<LowAccount/>:<VerifiedAccount name={session.data.name||'보호자'} email={session.data.email} emailVerified={session.data.emailVerified}/>}</AuthLayout>;
+  return <AuthLayout wide>{session.data.assurance==='LOW'?<LowAccount/>:<VerifiedAccount name={session.data.name||'보호자'} email={session.data.email} emailVerified={session.data.emailVerified}/>}</AuthLayout>;
 }
 function LowAccount(){
   const action=useAction();

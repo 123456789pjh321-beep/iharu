@@ -75,6 +75,7 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   </Route>
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
   <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<Navigate to="/notification-settings" replace/>}/><Route path="/notification-settings" element={<NotificationSettings/>}/>
+  <Route path="/more" element={<WorkspaceEntry mode="more"/>}/><Route path="/settings" element={<WorkspaceEntry mode="settings"/>}/>
   <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>
   <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
   <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/legal/:section" element={<LegalPage/>}/><Route path="/privacy" element={<PrivacyPage/>}/><Route path="/location" element={<Navigate to="/timetable" replace/>}/><Route path="/today" element={<WorkspaceLanding/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
@@ -88,7 +89,7 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/account/reauth" element={<ReauthPage/>}/><Route path="/account/email" element={<EmailLinkPage/>}/>
   </Route>
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/><Route path="/child/schedules" element={<ChildSchedulePage/>}/>
-  <Route path="/settings" element={<Navigate to="/account" replace/>}/><Route path="*" element={<Shell/>}/>
+  <Route path="*" element={<Shell/>}/>
 </Routes></BrowserRouter>;}
 function WorkspaceLanding(){const {health}=useWorkspaceGate();return health.data?.data.demoEnabled?<Shell/>:<Navigate to="/timetable" replace/>;}
 function ScheduleAlias({repeats=false}:{repeats?:boolean}){const {health}=useWorkspaceGate();if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}

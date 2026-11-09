@@ -11,7 +11,7 @@ test('new family content dots clear after the destination loads and the replaced
   const call=async(client:typeof other,op:string,data:object={})=>{const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();};
   const invite=await call(page.request,'invite.issue',{consent:true});await call(other,'family.join',{code:invite.code});
   await page.goto('/family');await expect(page.getByRole('heading',{name:'연결된 가족',exact:true})).toBeVisible();await page.goto('/timetable');
-  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'}),chat=nav.getByRole('link',{name:'대화',exact:true}),more=nav.getByRole('button',{name:'전체메뉴',exact:true});
+  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'}),chat=nav.getByRole('link',{name:'대화',exact:true}),more=nav.getByRole('link',{name:'더보기',exact:true});
   await call(other,'chat.send',{text:'읽음 표시 확인 메시지',clientMessageId:crypto.randomUUID()});
   await expect(chat.locator('.workspace-nav-update')).toHaveCount(1,{timeout:15000});await expect(chat).toHaveAccessibleDescription('새 업데이트가 있어요');
   await chat.click();await expect(page.getByRole('button',{name:'메시지 상세: 읽음 표시 확인 메시지',exact:true})).toBeVisible();await expect(chat.locator('.workspace-nav-update')).toHaveCount(0);
@@ -19,7 +19,7 @@ test('new family content dots clear after the destination loads and the replaced
   const now=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Seoul'});
   await call(other,'items.create',{kind:'NOTE',data:{title:'새 메모 알림',date:now,note:'확인 후 사라져요'}});
   await expect(more.locator('.workspace-nav-update')).toHaveCount(0);await more.click();
-  const menu=page.getByRole('navigation',{name:'전체 메뉴',exact:true});await expect(menu.getByRole('link',{name:'메모',exact:true})).toHaveCount(0);await expect(menu.getByRole('link',{name:'알림설정',exact:true})).toBeVisible();
+  const menu=page.getByRole('navigation',{name:'더보기 메뉴',exact:true});await expect(menu.getByRole('link',{name:'메모',exact:true})).toHaveCount(0);await expect(menu.getByRole('link',{name:'알림설정',exact:true})).toBeVisible();
   await menu.getByRole('link',{name:'알림설정',exact:true}).click();await expect(page.getByRole('heading',{name:'알림설정',exact:true})).toBeVisible();
   await page.goto('/records');await expect(page.getByRole('heading',{name:'새 메모 알림',exact:true})).toBeVisible();
 

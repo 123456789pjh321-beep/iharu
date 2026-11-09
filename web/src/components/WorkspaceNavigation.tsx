@@ -1,4 +1,3 @@
-import {workspaceGuidePath} from './workspaceGuides';
 import {hasMenuUpdate,menuForPath} from '../../../shared/workspace-updates';
 import {useEffect,useId,useRef} from 'react';
 import {Link,useLocation} from 'react-router-dom';
@@ -32,11 +31,11 @@ export function WorkspaceNavigation({childMode=false,testMode=false,personalChil
  const primary=childMode&&!testMode?items:items.filter(item=>['/timetable','/today/calendar','/chat','/child/chat','/tuition','/test/today','/test/calendar','/test/chat','/test/location'].includes(item.to));
  primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','대화','학원비'];return order.indexOf(a.label)-order.indexOf(b.label);});
  const extraUpdate=items.some(item=>!primary.includes(item)&&hasUpdate(item.to));
- const extraActive=items.some(item=>current(item.to)&&!primary.includes(item));
+ const extraActive=!primary.some(item=>current(item.to));
  return <>
  <span id={updateDescription} className="sr-only">새 업데이트가 있어요</span>
- <nav className="workspace-mobile-nav" aria-label="모바일 주 메뉴">{primary.map(item=>renderItem(item))}{primary.length<items.length&&<button ref={more} type="button" className={extraActive?'active':''} aria-haspopup="dialog" aria-controls={dialogId} aria-describedby={extraUpdate?updateDescription:undefined} onClick={()=>dialog.current?.showModal()}><span className="rail-icon"><Icon name="menu"/>{extraUpdate&&<span className="workspace-nav-update" aria-hidden="true"/>}</span><span>전체메뉴</span></button>}</nav>
+ <nav className="workspace-mobile-nav" aria-label="모바일 주 메뉴">{primary.map(item=>renderItem(item))}{!testMode&&!childMode?<Link to="/more" className={extraActive?'active':''} aria-current={extraActive?'page':undefined} aria-describedby={extraUpdate?updateDescription:undefined}><span className="rail-icon"><Icon name="menu"/>{extraUpdate&&<span className="workspace-nav-update" aria-hidden="true"/>}</span><span>더보기</span></Link>:primary.length<items.length&&<button ref={more} type="button" className={extraActive?'active':''} aria-haspopup="dialog" aria-controls={dialogId} aria-describedby={extraUpdate?updateDescription:undefined} onClick={()=>dialog.current?.showModal()}><span className="rail-icon"><Icon name="menu"/>{extraUpdate&&<span className="workspace-nav-update" aria-hidden="true"/>}</span><span>더보기</span></button>}</nav>
  <dialog ref={dialog} id={dialogId} className="workspace-menu-dialog" aria-labelledby={dialogId+'-title'} onKeyDown={e=>{if(e.key!=='Tab')return;const nodes=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('a[href],button:not([disabled])'));const first=nodes[0],last=nodes.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}} onCancel={()=>more.current?.focus()} onClick={e=>{if(e.target===e.currentTarget){dialog.current?.close();more.current?.focus();}}}>
  <div className="workspace-menu-heading"><div><h2 id={dialogId+'-title'}>전체 메뉴</h2></div><button type="button" className="icon-button" aria-label="전체 메뉴 닫기" onClick={()=>{dialog.current?.close();more.current?.focus();}}><Icon name="close"/></button></div>
- <nav className="workspace-menu-grid" aria-label="전체 메뉴">{items.filter(item=>item.to!=='/tuition'||!gate||gate.workspaceRole==='PARENT'||gate.session.data?.authenticated).map(item=>renderItem(item,true))}</nav>{!testMode&&!childMode&&<Link className="workspace-menu-help" to={workspaceGuidePath(pathname)+"?guide=1"} onClick={()=>dialog.current?.close()}><Icon name="book"/>사용 안내 다시 보기<Icon name="chevron"/></Link>}</dialog></>;
+ <nav className="workspace-menu-grid" aria-label="전체 메뉴">{items.filter(item=>!primary.includes(item)).filter(item=>item.to!=='/tuition'||!gate||gate.workspaceRole==='PARENT'||gate.session.data?.authenticated).map(item=>renderItem(item,true))}</nav></dialog></>;
 }
