@@ -40,7 +40,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
   const before=await tray.evaluate(el=>el.scrollLeft);await child.getByRole('button',{name:'다음 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBeGreaterThan(before);
   const next=await tray.evaluate(el=>el.scrollLeft);await child.getByRole('button',{name:'이전 그림 보기'}).click();await expect.poll(()=>tray.evaluate(el=>el.scrollLeft)).toBeLessThan(next);
   await child.screenshot({path:'test-results/picture-chat-mobile.png'});
-  await child.getByRole('button',{name:'어둡게',exact:true}).click();await child.screenshot({path:'test-results/picture-chat-dark.png'});
+  await child.goto('/settings');await child.getByRole('button',{name:'어둡게',exact:true}).click();await child.goto('/child/chat');await child.screenshot({path:'test-results/picture-chat-dark.png'});
  }finally{await context.close();}
 });
 
@@ -51,5 +51,5 @@ test('timetable, tuition and calendar creation open their matching editors witho
  await page.goto('/timetable');await page.locator('.timetable-slot[data-time="09:00"]').first().click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
  await page.goto('/tuition');await page.getByRole('button',{name:'학원비 추가',exact:true}).click();await expect(page.getByRole('dialog',{name:'학원비 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
  for(const path of ['/timetable','/today/calendar']){await page.goto(path);await expect(page.locator('.workspace-add-action')).toHaveCount(0);}
- await page.locator('.calendar-cell.is-today .calendar-day-target').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();await expect(page.getByRole('dialog',{name:'일정 등록',exact:true})).toBeVisible();
+ await page.locator('[data-pager-current] .calendar-cell.is-today .calendar-day-target').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();await expect(page.getByRole('dialog',{name:'일정 등록',exact:true})).toBeVisible();
 });

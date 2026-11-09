@@ -18,7 +18,7 @@ test('real adjacent events, holidays and recurring fees remain present during dr
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});
    for(let n=1;n<=8;n++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x-box.width*.65*n/8,y,id:1}]});
    await expect(page.locator('.calendar-page-track')).toHaveAttribute('data-paging','dragging');await expect(month).toHaveValue('2026-11');
-   const a=(await page.locator('[data-pager-current]').boundingBox())!,b=(await next.boundingBox())!;expect(Math.abs(a.x+a.width-b.x)).toBeLessThan(.5);expect(b.x).toBeLessThan(box.x+box.width*.4);expect(b.x+b.width).toBeGreaterThanOrEqual(box.x+box.width);
+   await expect.poll(()=>page.locator('.calendar-page-track').evaluate(el=>new DOMMatrix(getComputedStyle(el).transform).m41)).toBeCloseTo(-box.width*.65,0);const {a,b}=await page.evaluate(()=>{const a=document.querySelector('[data-pager-current]')!.getBoundingClientRect(),b=document.querySelector('[data-page-offset="1"]')!.getBoundingClientRect();return {a:{x:a.x,width:a.width},b:{x:b.x,width:b.width}};});expect(Math.abs(a.x+a.width-b.x)).toBeLessThan(.5);expect(b.x).toBeLessThan(box.x+box.width*.4);expect(b.x+b.width).toBeGreaterThanOrEqual(box.x+box.width);
    await page.screenshot({path:`test-results/ui123-seam-${route==='/tuition'?'fees':'calendar'}.png`});
    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await expect(month).toHaveValue('2026-12');
    await expect(page.locator('[data-pager-current]')).toContainText(route==='/tuition'?'18만':'다음 달 실제 일정',{timeout:600});
@@ -28,7 +28,7 @@ test('real adjacent events, holidays and recurring fees remain present during dr
   const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await nav.getByRole('link',{name:'더보기',exact:true}).click();await expect(page.locator('.more-account')).toContainText('연속 화면');
   await page.route('**/api/v1/workspace/items.list',async r=>{await new Promise(resolve=>setTimeout(resolve,1600));await r.continue();});
   await nav.getByRole('link',{name:'학원비',exact:true}).click();await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('180,000원',{timeout:600});await expect(page.locator('.loading-state')).toHaveCount(0);
- }finally{await context.close();}
+ }finally{await page.unrouteAll({behavior:'wait'});await context.close();}
 });
 test('failed and successful mutations preserve input, avoid duplicate writes and refresh before the sheet closes',async({browser})=>{
  const context=await browser.newContext({baseURL:origin,reducedMotion:'reduce',viewport:{width:390,height:900}}),page=await context.newPage();try{
@@ -42,5 +42,5 @@ test('failed and successful mutations preserve input, avoid duplicate writes and
   await expect(editor.getByRole('button',{name:'저장 중',exact:true})).toBeVisible();await expect(editor).toHaveCount(0);await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('25,000원');
   await page.locator('[data-pager-current] .tuition-date[data-date="2026-11-15"]').click();await expect(page.locator('.tuition-day-event')).toHaveCount(1);await page.getByRole('button',{name:'등록 확인 교재 수정',exact:true}).click();await editor.getByLabel('납부 금액',{exact:true}).fill('30000');await editor.getByRole('button',{name:'저장',exact:true}).click();await expect(editor).toHaveCount(0);await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('30,000원');
   await page.locator('[data-pager-current] .tuition-date[data-date="2026-11-15"]').click();await page.getByRole('button',{name:'등록 확인 교재 수정',exact:true}).click();await editor.getByRole('button',{name:'삭제',exact:true}).click();await editor.getByRole('button',{name:'삭제 확인',exact:true}).click();await expect(editor).toHaveCount(0);await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('0원');
- }finally{await context.close();}
+ }finally{await page.unrouteAll({behavior:'wait'});await context.close();}
 });
