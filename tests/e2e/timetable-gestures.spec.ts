@@ -1,3 +1,4 @@
+import {setEntryTime} from './entry-controls';
 import {test,expect} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 
@@ -14,8 +15,8 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
   await page.goto('/today');await expect(page).toHaveURL(/\/timetable$/);await expect(page.getByLabel('시간표 날짜 선택')).toHaveCount(0);
   await page.getByRole('button',{name:'2026-11-02 09:00 일정 등록',exact:true}).click();
   const editor=page.getByRole('dialog',{name:'반복 일정 등록',exact:true});await expect(editor).toBeVisible();
-  await expect(editor.locator('input[type=date]')).toHaveCount(0);await expect(editor.getByRole('combobox')).toHaveCount(0);
-  await editor.getByLabel('제목',{exact:true}).fill('유치원');await editor.getByLabel('종료 시간',{exact:true}).fill('16:20');
+  await expect(editor.locator('input[type=date]')).toHaveCount(0);await expect(editor.getByRole('radiogroup',{name:'가족 구성원'}).getByRole('combobox')).toHaveCount(0);await expect(editor.getByRole('region',{name:'일정 시간'}).getByRole('combobox')).toHaveCount(6);
+  await editor.getByLabel('제목',{exact:true}).fill('유치원');await setEntryTime(editor,'종료 시간','16:20');
   await editor.getByRole('radio',{name:'전체',exact:true}).check();await expect(editor.getByRole('radio',{name:'전체',exact:true})).toBeChecked();
   const weekdays=editor.getByRole('group',{name:'반복 요일',exact:true});await weekdays.getByLabel('월',{exact:true}).uncheck();await editor.getByRole('button',{name:'저장',exact:true}).click();
   await expect(editor.getByRole('alert')).toContainText('반복 요일');await expect(editor.getByLabel('제목',{exact:true})).toHaveValue('유치원');
@@ -39,6 +40,6 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
   const saved=await context.request.post('/api/v1/workspace/items.list',{headers:{Origin:origin},data:{kind:'REPEAT',from:'2030-01-01',to:'2030-01-31'}});const items=(await saved.json()).items;expect(items).toHaveLength(1);expect(items[0].data.untilDate).toBeUndefined();expect(items[0].data.weekdays).toEqual([1,2,3,4,5]);
   // The calendar retains its own day navigation and recurrence dates.
   await page.goto('/today/calendar');await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'일간',exact:true}).click();await page.getByLabel('달력 날짜 선택').fill('2026-12-31');
-  await page.locator('.timetable-scroll').hover();await page.mouse.wheel(400,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');expect(errors).toEqual([]);
+  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await page.locator('.timetable-scroll').hover();await page.mouse.wheel(400,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');expect(errors).toEqual([]);
  }finally{await context.close();}
 });
