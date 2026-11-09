@@ -1,12 +1,13 @@
 import {useId,useRef,useState} from 'react';
 import {Link,useLocation} from 'react-router-dom';
 import {Icon} from './Icon';
+import {BrandWordmark} from './BrandWordmark';
 import '../public-header.css';
 
 const links=[['/service','서비스'],['/guide','활용방법'],['/notices','공지사항'],['/blog','블로그']];
 
 export function PublicBrand(){
- return <Link className="market-brand" to="/service" aria-label="아이하루 서비스 소개"><span><Icon name="sun"/></span><strong>아이하루<small>FAMILY WORKSPACE</small></strong></Link>;
+ return <Link className="market-brand" to="/service" aria-label="아이하루 서비스 소개"><BrandWordmark/></Link>;
 }
 
 /** One header for introduction pages and account entry, including mobile navigation. */
