@@ -23,7 +23,7 @@
 .chat-member-choices span{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}
 .chat-member-choices small{font-size:.75rem;color:var(--muted)}
 .chat-read-only{font-size:.78rem;line-height:1.6;margin:0;padding:10px 16px;background:var(--mint);color:var(--primary)}
-.workspace-page .auth-panel:has(>.chat-workspace.full){padding:0}
+.workspace-page .auth-panel:has(>.chat-workspace.full){padding:0;height:100%;min-height:0;display:flex;flex-direction:column}
 .guest-chat-actions{display:flex;justify-content:flex-end;padding:0 16px 10px}
 @media(max-width:600px){.chat-rooms{padding-inline:12px}.chat-room-list>button{max-width:190px}.chat-rooms-heading{margin-bottom:2px}}
 @media(max-height:500px){.auth-app.workspace-page{padding-top:calc(env(safe-area-inset-top) + 12px)}.chat-rooms{padding-bottom:4px}.chat-room-list>button{min-height:40px;padding-block:4px}.chat-rooms-heading{min-height:36px}.chat-rooms-heading .button{min-height:32px}}
