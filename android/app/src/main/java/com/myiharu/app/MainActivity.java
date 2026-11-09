@@ -46,7 +46,7 @@ public final class MainActivity extends LauncherActivity {
             && "myiharu.com".equalsIgnoreCase(url.getHost())
             && (url.getPort() == -1 || url.getPort() == 443)
             && url.getUserInfo() == null;
-        clean.setData(ownOrigin ? url : Uri.parse("https://myiharu.com/today"));
+        clean.setData(ownOrigin ? url : Uri.parse("https://myiharu.com/timetable"));
         return clean;
     }
 

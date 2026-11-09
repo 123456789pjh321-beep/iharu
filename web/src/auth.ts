@@ -1,3 +1,4 @@
+import {clearDevicePush} from './push-device';
 import { z } from 'zod';
 export const providersSchema = z.object({ loginOrigin: z.url().optional(), providers: z.array(z.object({ id: z.enum(['email','google','kakao','naver','phone']), name: z.string(), enabled: z.boolean() })) });
 export type Provider = z.infer<typeof providersSchema>['providers'][number];
@@ -34,6 +35,7 @@ export async function authPost(path: string, body: object) {
   const response = await fetch(path, { method: 'POST', credentials: 'same-origin', cache:'no-store', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const data = await response.json() as { code?:string; url?:string; caseId?:string };
   if (!response.ok) throw new Error(messages[data.code || ''] || '입력한 내용을 확인하고 다시 시도해 주세요.');
+  if(path==='/api/auth/sign-out')await clearDevicePush();
   return data;
 }
 export async function startSocial(provider:string, link = false, reauthenticate = false) {
