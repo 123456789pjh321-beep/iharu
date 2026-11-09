@@ -36,8 +36,53 @@
 
 ## 검증
 
-복귀 주소·입력 종류·유효기간 검증과 실제 브라우저의 비회원 진입, 시간표·달력 입력 시 로그인, 취소·뒤로 가기, 학부모·자녀 로그인, 로그인 후 명시적 저장, 소셜 콜백, 비회원 API 거부를 확인합니다. 최종 결과는 배포 전 기록합니다. 기존 전체 E2E의 알려진 실패와 이번 기능의 전용 검증을 구분합니다.
+실행 코드 검증 기준: `af48b1ab46befb3047f71a0545a511add3221e65`. 이후 변경은 이 문서뿐입니다.
+
+| 검증 | 결과 | 근거 |
+|---|---|---|
+| 타입 검사·프로덕션 빌드 | 통과 | 로컬 빌드 및 [전용 CI](https://github.com/123456789pjh321-beep/iharu/actions/runs/42707901626) |
+| 전체 단위 테스트 | 29개 파일·234개 통과 | 로컬 전체 실행 및 [문서 저장 CI](https://github.com/123456789pjh321-beep/iharu/actions/runs/42707901663)의 `npm run check` |
+| 복귀 경로·유효기간·행동 제한 | 4개 통과 | `tests/entry-intent.test.ts` |
+| 비회원·로그인 전용 브라우저 | 9개 통과 | 위 전용 CI |
+| 안내문·공지·블로그·달력 스와이프 | 3개 통과 | [읽기·달력 CI](https://github.com/123456789pjh321-beep/iharu/actions/runs/42707901726) |
+| 문서 저장·게시·동시 수정 | 3개 통과 | 위 문서 저장 CI |
+| 알림·달력 UI | 통과 | [알림·달력 CI](https://github.com/123456789pjh321-beep/iharu/actions/runs/42707901557) |
+| 일정 입력·시간표 제스처·표시·선호 설정 | 8개 통과 | [시간표 회귀 CI](https://github.com/123456789pjh321-beep/iharu/actions/runs/42707901680) |
+| 첫 로고·로딩 전환 | 7개 통과 | [시작 화면 회귀 CI](https://github.com/123456789pjh321-beep/iharu/actions/runs/42707901600) |
+| 실제 PostgreSQL 동시성·역할 분리 | 통과 | [통합 CI](https://github.com/123456789pjh321-beep/iharu/actions/runs/42707901705)의 해당 단계 |
+
+전용 검사는 실제 분리된 테스트 DB와 인증 쿠키를 사용합니다. 비회원 탐색 중 개인 자료 조회가 시작되지 않는지, 입력 위치가 로그인 후 이어지는지, 잘못된 암호가 창 안에 표시되는지, Escape·뒤로 가기가 날짜/월과 포커스를 유지하는지 확인했습니다. 로그인 중 뒤로 가기로 취소한 동작이 나중에 재실행되지 않는지도 확인했습니다.
+
+자녀 계정에는 부모가 등록한 학원비가 반환되지 않고, 학원비 등록 요청은 403으로 거부됩니다. 비회원의 일정 조회·등록·대화·초대 API도 401으로 거부됩니다. 소셜 인증의 제공자 구간은 외부 계정에 접속하지 않는 리디렉션 대역을 사용하고, 복귀 후 실제 계정 쿠키로 입력창 복귀를 확인했습니다. 새 소셜 제공자를 운영에 등록하거나 활성화한 패치는 아닙니다.
+
+320/820/1440px 화면과 모바일 바텀시트, PC 어두운 화면, 움직임 줄이기 결과를 캡처해 확인했습니다. 기존 전체 E2E의 알려진 실패와 이번 전용/관련 회귀 검증을 구분하며 전체 CI 통과로 표현하지 않습니다.
 
 ## 적용과 복구
 
-수정·추가 파일만 원래 구조로 제공하며 삭제 파일은 없습니다. 파일별 목록은 최종 검증 결과와 함께 기록합니다. 소스 반영 후 `npm ci`, `npm run build`로 빌드합니다. 운영 복구는 위 UI127 배포로 되돌립니다.
+추가 9개·수정 14개·삭제 0개입니다. 수정·추가 파일만 원래 구조로 제공합니다. 소스 반영 후 `npm ci`, `npm run build`로 빌드합니다. 운영 복구는 위 UI127 배포로 되돌립니다. 기존 실행 중인 탭은 새로고침하면 새 진입 정책이 적용됩니다.
+
+| 구분 | 파일 | 주요 변경 |
+|---|---|---|
+| 추가 | `shared/entry-intent.ts` | 복귀 경로·입력 위치·유효기간 검증 |
+| 추가 | `web/src/entry-session.ts` | 최소 입력 위치의 일회성 임시 보관·취소 |
+| 추가 | `web/src/components/EntryAccess.tsx` | 로그인 창·기존 화면 유지·뒤로 가기·완료 처리 |
+| 추가 | `web/src/components/GuestWorkspace.tsx` | 비회원 작업 화면과 개인 페이지 진입 제한 |
+| 추가 | `web/src/guest-entry.css` | 모바일 바텀시트·PC 중앙 창·비회원 화면 스타일 |
+| 추가 | `tests/entry-intent.test.ts` | 외부 복귀 주소·변조·만료·행동 제한 검사 |
+| 추가 | `tests/e2e/guest-entry.spec.ts` | 비회원/계정별 사용 흐름 9개 브라우저 검사 |
+| 추가 | `.github/workflows/guest-entry.yml` | 전용 빌드·단위·브라우저 CI |
+| 추가 | `docs/UI128-guest-entry-login.md` | 진입 정책·근거·검증·변경/복구 안내 |
+| 수정 | `web/src/App.tsx` | 개인·관리·가족·알림 화면의 계정 진입 제한 |
+| 수정 | `web/src/auth.ts` | 소셜 로그인 복귀 경로 검증과 오류 복귀 |
+| 수정 | `web/src/components/WorkspaceGate.tsx` | 비회원·학부모·자녀 식별과 개인 자료 폴링 제한 |
+| 수정 | `web/src/components/AuthLayout.tsx` | 공통 로그인 창 연결·인라인 폼·가입 복귀 링크 |
+| 수정 | `web/src/pages/Login.tsx` | 기존 이메일 로그인 폼 재사용·인라인/복귀 지원 |
+| 수정 | `web/src/pages/ChildAccount.tsx` | 자녀 로그인 창·가입 후 기능 복귀 |
+| 수정 | `web/src/pages/PersonalWorkspace.tsx` | 비회원 작업 화면·선택한 입력창 복귀·로그아웃 진입 |
+| 수정 | `web/src/components/PersonalCalendar.tsx` | 비회원 날짜 입력 시 로그인과 빈 구성원 표시 정리 |
+| 수정 | `web/src/components/PersonalTimetable.tsx` | 비회원의 빈 구성원 표시 정리, 기존 시간 입력 콜백 재사용 |
+| 수정 | `web/src/components/WorkspaceMore.tsx` | 비회원의 계정 안내와 공통 메뉴 |
+| 수정 | `web/src/components/PublicHeader.tsx` | 소개 상단의 시간표 둘러보기 연결 |
+| 수정 | `web/src/pages/Marketing.tsx` | 소개 화면에서 작업 화면으로 바로 진입 |
+| 수정 | `web/src/pages/Account.tsx` | 로그아웃 후 비회원 시간표로 이동 |
+| 수정 | `web/src/main.tsx` | 새 진입/로그인 창 스타일 연결 |
