@@ -73,3 +73,8 @@ it('clears old-account queued notifications when a shared endpoint changes owner
 it('cancels stale versions, sends deletion updates, and exposes preview text only after opt-in',async()=>{
  const{a,b}=await linked();await subscribe(b,'versions');await b.ok('push.settings.save',{...saved,preview:true});const input=event('changed title'),created=await a.ok('items.create',input);await a.ok('items.update',{...input,id:created.id,version:1,data:{...input.data,title:'new title'}});const messages:any[]=[];expect((await dispatchPush(family,config,{sender:async d=>{messages.push(d.payload);return 201;}})).accepted).toBe(1);expect(messages[0].body).toBe('new title');await a.ok('items.delete',{id:created.id,version:2});expect((await dispatchPush(family,config,{sender:async d=>{messages.push(d.payload);return 201;}})).accepted).toBe(1);expect(messages[1].body).not.toContain('new title');
 });
+
+it('sends start reminders only once for a multi-day event, never on continuation days',async()=>{
+ const data={...event().data,date:'2026-12-31',endDate:'2027-01-02',startTime:'22:00',endTime:'04:00'};
+ for(const day of ['2026-12-31','2027-01-01','2027-01-02']){const [row]=await query<{yes:boolean}>(database.db,'SELECT app_private.workspace_push_occurs($1::jsonb,$2::date) yes',[JSON.stringify(data),day]);expect(row.yes).toBe(day==='2026-12-31');expect(visibleOn({kind:'EVENT',data} as WorkspaceItem,day)).toBe(true);}
+});

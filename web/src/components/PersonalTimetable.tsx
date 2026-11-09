@@ -2,7 +2,7 @@ import {timetableRuns} from '../../../shared/timetable-runs';
 import {useHolidays} from './useHolidays';
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
 import {addDays,koreaToday} from '../../../shared/schedules';
-import {dailySchedules,scheduleAssignee,schedulePhase,timetableRange,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../../../shared/workspace-schedules';
+import {dailySchedules,scheduleTimeCaption,scheduleAssignee,schedulePhase,timetableRange,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../../../shared/workspace-schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {eventColor} from './scheduleColors';
 import {Icon} from './Icon';
@@ -23,7 +23,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
  useCalendarSlide(page,period,'day',embedded);
  const daySwipe=useDaySwipe(page,delta=>setDay(addDays(day,delta)),undefined,embedded);
  const sourceItems=items.filter(item=>item.kind===(embedded?'EVENT':'REPEAT'));
- const lanes=dates.map(date=>{const events=dailySchedules(sourceItems,date,member);return {date,events,allDay:events.filter(i=>i.data.allDay),layout:timetableLayout(events,embedded?undefined:timetableRange)};});
+ const lanes=dates.map(date=>{const events=dailySchedules(sourceItems,date,member);return {date,events,allDay:events.filter(i=>i.data.allDay),layout:timetableLayout(events,embedded?undefined:timetableRange,date)};});
  const joined=timetableRuns(lanes),joinedKeys=new Set(joined.flatMap(run=>run.days.map(({date,item})=>date+':'+item.id)));
  const events=lanes.flatMap(lane=>lane.events),showToday=dates.includes(today),currentEvents=dailySchedules(sourceItems,today,member).filter(i=>!i.data.allDay&&schedulePhase(i,today,today,now)==='current');
  const timed=lanes.flatMap(lane=>lane.layout),startMinute=embedded?(timed.length?Math.max(0,Math.min(...timed.map(row=>row.start))-60):540):timetableRange.start,endMinute=timetableRange.end;
@@ -37,8 +37,8 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
   const current=timeMinutes(now),target=showToday&&current>=startMinute&&current<endMinute?current:startMinute;
   scroller.current.scrollTop=Math.max(0,(target-startMinute)*minuteHeight-scroller.current.clientHeight*.3);
  },[period,member,loading,startMinute,endMinute,now,showToday]);
- const content=(item:WorkspaceItem)=><><strong className="timetable-title">{item.data.title}</strong><span className="timetable-range">{item.data.allDay?'종일':`${item.data.startTime} – ${item.data.endTime}`}</span></>;
- const label=(item:WorkspaceItem)=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${item.data.allDay?'종일':item.data.startTime+' – '+item.data.endTime} · ${item.mine?'수정':'상세'}`;
+ const content=(item:WorkspaceItem)=><><strong className="timetable-title">{item.data.title}</strong><span className="timetable-range">{scheduleTimeCaption(item,embedded?day:undefined)}</span></>;
+ const label=(item:WorkspaceItem)=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${scheduleTimeCaption(item,embedded?day:undefined)} · ${item.mine?'수정':'상세'}`;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':' timetable-weekly')} aria-label={embedded?'일간 일정':'주간 시간표'}>
   {!embedded&&<><header className="workspace-toolbar" aria-label="시간표"><h1 className="timetable-fixed-title">주간 시간표</h1></header>
   <MemberFilter className="timetable-filters" members={members} value={member} onChange={setMember} label="시간표 구성원 필터"/></>}
@@ -65,7 +65,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,setD
        })}</div>
        {layout.filter(({item})=>!joinedKeys.has(date+':'+item.id)).map(({item,start,end,column,columns})=>{
         const duration=end-start;
-        return <button type="button" key={item.id} className={'timetable-card timetable-event '+(schedulePhase(item,date,today,now)==='current'?'current-event ':'')+(duration<30?'short-event ':duration<60?'compact-event ':'')+(columns>1?'overlap-event':'')} style={{'--event-color':eventColor(item,members),top:(start-startMinute)*minuteHeight,height:duration*minuteHeight,left:`calc(${column/columns*100}% + 2px)`,width:`calc(${100/columns}% - 4px)`} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} title={label(item)+(item.data.place?' · '+item.data.place:'')+(item.kind==='REPEAT'?' · 매주 반복':'')} data-timetable-item={item.id} data-start-minute={start} data-end-minute={end}>{content(item)}</button>;
+        return <button type="button" key={item.id+':'+start} className={'timetable-card timetable-event '+(schedulePhase(item,date,today,now)==='current'?'current-event ':'')+(duration<30?'short-event ':duration<60?'compact-event ':'')+(columns>1?'overlap-event':'')} style={{'--event-color':eventColor(item,members),top:(start-startMinute)*minuteHeight,height:duration*minuteHeight,left:`calc(${column/columns*100}% + 2px)`,width:`calc(${100/columns}% - 4px)`} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} title={label(item)+(item.data.place?' · '+item.data.place:'')+(item.kind==='REPEAT'?' · 매주 반복':'')} data-timetable-item={item.id} data-start-minute={start} data-end-minute={end}>{content(item)}</button>;
        })}
        {date===today&&timeMinutes(now)>=startMinute&&timeMinutes(now)<endMinute&&<div className="timetable-now" style={{top:(timeMinutes(now)-startMinute)*minuteHeight}} aria-label={'현재 시간 '+now}><span/><strong>현재 {now}</strong></div>}
       </div>)}

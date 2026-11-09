@@ -66,3 +66,29 @@ it('clamps calendar month/year boundaries without drifting the original anchor',
  for(const day of ['2025-02-28','2028-02-29'])expect(dailySchedules([yearly],day)).toHaveLength(1);
  for(const day of ['2023-02-28','2025-03-01','2028-02-28','2029-02-28'])expect(dailySchedules([yearly],day)).toEqual([]);
 });
+
+it('shows inclusive multi-day events across month/year boundaries and clips the daily clock without changing source data',()=>{
+ const trip=event('trip','22:00',{date:'2026-12-31',endDate:'2027-01-02',endTime:'04:00'});
+ for(const day of ['2026-12-31','2027-01-01','2027-01-02'])expect(dailySchedules([trip],day)).toEqual([trip]);
+ for(const day of ['2026-12-30','2027-01-03'])expect(dailySchedules([trip],day)).toEqual([]);
+ expect(timetableLayout([trip],undefined,'2026-12-31').map(r=>[r.start,r.end])).toEqual([[1320,1440]]);
+ expect(timetableLayout([trip],undefined,'2027-01-01').map(r=>[r.start,r.end])).toEqual([[0,1440]]);
+ expect(timetableLayout([trip],undefined,'2027-01-02').map(r=>[r.start,r.end])).toEqual([[0,240]]);
+ expect(schedulePhase(trip,'2027-01-01','2027-01-01','12:00')).toBe('current');
+ expect(schedulePhase(trip,'2027-01-02','2027-01-02','04:00')).toBe('past');
+ expect(trip.data).toMatchObject({date:'2026-12-31',endDate:'2027-01-02',startTime:'22:00',endTime:'04:00'});
+});
+it('retains recurring duration beyond the final start date and separates overnight segments',()=>{
+ const monthly=event('monthly trip','12:00',{date:'2028-01-31',endDate:'2028-02-02',calendarFrequency:'MONTHLY',untilDate:'2028-02-29'});
+ for(const day of ['2028-02-01','2028-02-02','2028-02-29','2028-03-01','2028-03-02'])expect(dailySchedules([monthly],day)).toHaveLength(1);
+ for(const day of ['2028-02-03','2028-03-03','2028-03-31'])expect(dailySchedules([monthly],day)).toHaveLength(0);
+ const daily=event('overnight','23:00',{date:'2026-11-08',endDate:'2026-11-09',endTime:'01:00',calendarFrequency:'DAILY'});
+ expect(timetableLayout([daily],undefined,'2026-11-09').map(r=>[r.start,r.end])).toEqual([[0,60],[1380,1440]]);
+ expect(schedulePhase(daily,'2026-11-09','2026-11-09','12:00')).toBe('upcoming');
+ const long={...daily,data:{...daily.data,endDate:'2026-11-10'}};
+ expect(timetableLayout([long],undefined,'2026-11-10').map(r=>[r.start,r.end])).toEqual([[0,1440]]);
+ const weekly={...daily,data:{...daily.data,calendarFrequency:'WEEKLY' as const,weekdays:[0],untilDate:'2026-11-08'}};
+ expect(dailySchedules([weekly],'2026-11-09')).toHaveLength(1);expect(dailySchedules([weekly],'2026-11-10')).toHaveLength(0);
+ const yearly=event('yearly trip','10:00',{date:'2024-02-29',endDate:'2024-03-01',calendarFrequency:'YEARLY'});
+ expect(dailySchedules([yearly],'2025-03-01')).toHaveLength(1);expect(dailySchedules([yearly],'2025-03-02')).toHaveLength(0);
+});
