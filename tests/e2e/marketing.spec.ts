@@ -2,6 +2,20 @@ import {test,expect} from '@playwright/test';
 const origin='http://127.0.0.1:4174';
 test.use({baseURL:origin,reducedMotion:'reduce'});
 
+test('public motion preference persists across pages and respects the device setting',async({page})=>{
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.goto('/service');
+ const toggle=page.getByRole('button',{name:'화면 움직임',exact:true});
+ await expect(toggle).toHaveAttribute('aria-pressed','true');await toggle.click();
+ await expect(page.locator('.public-frame')).toHaveAttribute('data-motion','off');
+ await page.locator('.market-nav').getByRole('link',{name:'블로그',exact:true}).click();await page.reload();
+ await expect(toggle).toHaveAttribute('aria-pressed','false');await toggle.click();
+ await expect(page.locator('.public-frame')).toHaveAttribute('data-motion','on');
+ await page.emulateMedia({reducedMotion:'reduce'});await expect(toggle).toBeDisabled();
+ await expect(page.locator('.public-frame')).toHaveAttribute('data-motion','off');
+ await page.emulateMedia({reducedMotion:'no-preference'});await expect(toggle).toBeEnabled();
+ await expect(page.locator('.public-frame')).toHaveAttribute('data-motion','on');
+});
+
 test('public service and usage pages work across phone, tablet and desktop without account navigation',async({page})=>{
  test.setTimeout(90000);
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
