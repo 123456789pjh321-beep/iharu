@@ -28,22 +28,22 @@
 .member-preference{min-width:0;flex-shrink:0;margin-bottom:8px}
 .member-preference-row{display:flex;align-items:center;gap:10px;min-width:0;padding:0 16px;box-sizing:border-box}
 .workspace-page .member-preference-row>.member-filter-bar{flex:1 1 0;min-width:0;padding:0;margin:0}
-.workspace-page .member-preference-row .member-filters{flex-wrap:nowrap;overflow:visible;padding:8px 0;min-height:56px;gap:6px}
+.workspace-page .member-preference-row .member-filters{flex-wrap:nowrap;overflow:visible;padding:var(--member-filter-touch-space) 0;min-height:44px;gap:6px}
 .workspace-page .compact-members>.member-filters{--member-chip-width:78px;--member-overflow-width:54px}
-.workspace-page .compact-members>.member-filters>button{box-sizing:border-box;flex:0 0 var(--member-chip-width);width:var(--member-chip-width);height:40px;min-height:40px;max-width:none;justify-content:center;padding:6px;gap:6px;font-size:.75rem;border-radius:10px}
-.workspace-page .compact-members>.member-filters .member-filter-marker{width:16px;height:16px;border-radius:5px}
+.workspace-page .compact-members>.member-filters>button{box-sizing:border-box;flex:0 0 var(--member-chip-width);width:var(--member-chip-width);height:var(--member-filter-height);min-height:var(--member-filter-height);max-width:none;justify-content:center;padding:4px 6px;gap:6px;font-size:.75rem;border-radius:8px}
+.workspace-page .compact-members>.member-filters .member-filter-marker{width:var(--member-filter-marker-size);height:var(--member-filter-marker-size);border-radius:4px}
 .workspace-page .compact-members>.member-filters>.member-filter-more{flex-basis:var(--member-overflow-width);width:var(--member-overflow-width);color:var(--muted);background:var(--surface-sub);font-weight:650}
 .workspace-page .compact-members>.member-filters>.member-filter-more[data-selected]{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 40%,var(--line));background:var(--mint)}
 .member-preference-row>.timetable-preference{flex:0 1 auto;max-width:46%;min-width:0;padding:0;margin:0;flex-wrap:nowrap}
-.member-preference-row .timetable-preference>.button{box-sizing:border-box;min-width:0;max-width:100%;height:40px;min-height:40px;white-space:nowrap;gap:5px;padding:6px 9px;border-radius:10px;font-size:.75rem;background:var(--mint);color:var(--primary);border-color:color-mix(in srgb,var(--primary) 45%,var(--line))}
+.member-preference-row .timetable-preference>.button{position:relative;box-sizing:border-box;min-width:0;max-width:100%;height:var(--member-filter-height);min-height:var(--member-filter-height);white-space:nowrap;gap:5px;padding:4px 9px;border-radius:8px;font-size:.75rem;background:var(--mint);color:var(--primary);border-color:color-mix(in srgb,var(--primary) 45%,var(--line))}
 .member-preference-row .timetable-preference>.button[data-saved=true]{background:var(--surface-sub);border-color:var(--line);color:var(--muted)}
-.member-preference-row .preference-member-names{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:24px;font-weight:650;color:var(--ink)}
+.member-preference-row .preference-member-names{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:24px;font-weight:600;color:var(--ink)}
 .member-preference-row .preference-action-short,.member-preference-row .icon{flex-shrink:0}.preference-action-short{display:inline}
 .member-filter-dialog{box-sizing:border-box;width:min(420px,calc(100% - 28px));max-height:85dvh;margin:auto;padding:22px;border:1px solid var(--line);border-radius:20px;background:var(--surface);color:var(--ink);overflow:auto;box-shadow:0 20px 65px #102d3f30}
 .member-filter-dialog::backdrop{background:#0c233b55;backdrop-filter:blur(4px)}
 .member-filter-dialog>header{display:flex;align-items:center;justify-content:space-between;gap:12px}.member-filter-dialog h2{font-size:1.05rem;margin:0}.member-filter-dialog>p{font-size:.8rem;color:var(--muted);line-height:1.7;margin:8px 0 16px}
-.workspace-page .member-filter-dialog .member-filter-bar{padding:0}.workspace-page .member-filter-dialog .member-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0;overflow:visible}
-.workspace-page .member-filter-dialog .member-filters button{justify-content:flex-start;padding:10px;gap:7px;min-height:40px;width:100%;box-sizing:border-box}
+.workspace-page .member-filter-dialog .member-filter-bar{padding:0}.workspace-page .member-filter-dialog .member-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 8px;padding:var(--member-filter-touch-space) 0;overflow:visible}
+.workspace-page .member-filter-dialog .member-filters button{justify-content:flex-start;padding:4px 8px;gap:6px;min-height:var(--member-filter-height);width:100%;box-sizing:border-box}
 .member-filter-dialog .member-filter-name{white-space:normal;overflow-wrap:anywhere}.member-filter-dialog>footer{margin-top:20px;display:flex;justify-content:flex-end}.member-filter-dialog>footer>.button{min-height:40px}
 @media(max-width:600px){.member-preference-row{gap:8px;padding-inline:12px}.member-preference-row .timetable-preference>.button{padding-inline:8px;font-size:.72rem;gap:4px}}
 
@@ -64,7 +64,7 @@ html[data-theme=dark] .workspace-wordmark{color:#a7c6b7}html[data-theme=dark] .i
 .workspace-header-guide:hover{background:var(--surface);color:var(--ink)}.workspace-header-guide>.icon{width:15px;height:15px}
 .workspace-header-guide[data-new]:after{content:"";position:absolute;top:3px;right:3px;width:4px;height:4px;border-radius:50%;background:var(--primary)}
 .workspace-header-guide:focus-visible,.workspace-header-clock>.timetable-now-jump:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
-.workspace-page .member-filter-bar.wrapped .member-filters{flex-wrap:wrap;overflow:visible}.member-filter-bar.wrapped .member-filter-name{white-space:normal;overflow-wrap:anywhere}
+.workspace-page .member-filter-bar.wrapped .member-filters{flex-wrap:wrap;row-gap:12px;overflow:visible}.member-filter-bar.wrapped .member-filter-name{white-space:normal;overflow-wrap:anywhere}
 .workspace-page .timetable-weekly>.timetable-summary{justify-content:flex-end;min-height:0;padding:0 12px 4px}
 .workspace-page .timetable-weekly>.timetable-summary:empty,.workspace-page .timetable-weekly>.timetable-summary:has(>.empty){display:none}
 .workspace-page .timetable-weekly .timetable-current-summary{max-width:100%;padding:0}

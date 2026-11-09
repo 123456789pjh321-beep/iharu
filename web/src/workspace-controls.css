@@ -14,21 +14,24 @@
 .workspace-page .workspace-add-action{position:fixed;right:136px;bottom:24px;z-index:25;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:56px;min-height:56px;margin:0;padding:0 20px;border:0;border-radius:28px;background:var(--primary);color:#fff;box-shadow:0 4px 16px #102c4b26;font-size:.9rem;font-weight:750;cursor:pointer}
 .workspace-add-action .icon{width:24px;height:24px;flex-shrink:0}
 /* Family chips remain a single scrollable row until explicitly expanded. */
+.workspace-page{--member-filter-height:32px;--member-filter-touch-space:6px;--member-filter-marker-size:14px}
 .workspace-page .member-filter-bar{display:flex;align-items:flex-start;gap:6px;padding:0 16px;margin:0;min-width:0;max-width:100%;box-sizing:border-box;flex-shrink:0}
-.workspace-page .member-filters{display:flex;align-items:center;gap:6px;flex:1;min-width:0;max-width:100%;min-height:56px;padding:8px 2px;margin:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box}
+.workspace-page .member-filters{display:flex;align-items:center;gap:6px;flex:1;min-width:0;max-width:100%;min-height:44px;padding:var(--member-filter-touch-space) 2px;margin:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;box-sizing:border-box}
 .member-filters::-webkit-scrollbar{display:none}
-.workspace-page .member-filters button{display:inline-flex;align-items:center;gap:7px;min-height:40px;max-width:100%;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);font-size:.82rem;line-height:1.4;white-space:nowrap}
-.workspace-page .member-filters button[aria-pressed=true]{background:var(--mint);color:var(--ink);border-color:color-mix(in srgb,var(--primary) 55%,var(--line));font-weight:750}
-.member-filter-marker{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;border-radius:5px;background:var(--member-color,var(--primary));color:#fff;opacity:.6}
-.member-filter-marker .icon{width:13px;height:13px;stroke-width:3}
+.workspace-page .member-filters button{position:relative;display:inline-flex;align-items:center;gap:6px;box-sizing:border-box;min-height:var(--member-filter-height);max-width:100%;padding:4px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted);font-size:.8rem;line-height:1.4;white-space:nowrap}
+/* The slim surface keeps a 44px vertical pointer target inside the row spacing. */
+.workspace-page .member-filters button::after,.member-preference-row .timetable-preference>.button::after,.workspace-page .member-filter-expand::after{content:"";position:absolute;inset:50% -1px auto;height:100%;min-height:44px;transform:translateY(-50%)}
+.workspace-page .member-filters button[aria-pressed=true]{background:var(--mint);color:var(--ink);border-color:color-mix(in srgb,var(--primary) 55%,var(--line));font-weight:650}
+.member-filter-marker{display:inline-flex;align-items:center;justify-content:center;width:var(--member-filter-marker-size,18px);height:var(--member-filter-marker-size,18px);flex-shrink:0;border-radius:4px;background:var(--member-color,var(--primary));color:#fff;opacity:.6}
+.member-filter-marker .icon{width:11px;height:11px;stroke-width:2.5}
 .member-filter-marker.all{color:var(--surface)}
 .workspace-page .member-filters button:focus-visible{outline-offset:-2px}
 .member-filters [aria-pressed=true] .member-filter-marker{opacity:1}
 .member-filter-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.member-filter-expand{display:grid;place-items:center;flex-shrink:0;width:40px;height:44px;margin-top:6px;padding:0;border:0;border-radius:9px;background:transparent;color:var(--muted);cursor:pointer}
+.member-filter-expand{position:relative;display:grid;place-items:center;flex-shrink:0;width:40px;height:var(--member-filter-height,32px);margin-top:6px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
 .member-filter-expand .icon{width:18px;height:18px;transform:rotate(90deg)}
 .member-filter-expand[aria-expanded=true] .icon{transform:rotate(-90deg)}
-.workspace-page .member-filter-bar.expanded .member-filters{flex-wrap:wrap;overflow:visible}
+.workspace-page .member-filter-bar.expanded .member-filters{flex-wrap:wrap;row-gap:12px;overflow:visible}
 .member-filter-bar.expanded .member-filter-name{white-space:normal;overflow-wrap:anywhere}
 .workspace-page .home-member-filters,.workspace-page .personal-home-feed .fee-member-filters{padding-inline:0}
 .direct-calendar>.member-filter-bar{flex:0 0 auto}
