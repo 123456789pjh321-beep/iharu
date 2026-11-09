@@ -29,7 +29,11 @@ export function NotificationSettings(){
   });
  }
  async function disable(){await run(async()=>{const subscription=await deviceSubscription();if(subscription){await workspaceRequest('push.unsubscribe',{endpoint:subscription.endpoint});await subscription.unsubscribe();}const registration=await navigator.serviceWorker.getRegistration('/');for(const n of await registration?.getNotifications()||[])n.close();await load();setMessage('이 기기의 알림을 껐어요. 다른 기기의 설정은 유지돼요.');});}
- async function save(patch:Partial<Settings>){if(!settings)return;await run(async()=>{const value={...settings,...patch},subscription=await deviceSubscription();const next=await workspaceRequest<Settings>('push.settings.save',{calendarChanges:value.calendarChanges,calendarReminders:value.calendarReminders,chat:value.chat,reminderMinutes:value.reminderMinutes,preview:value.preview,...(subscription?{endpoint:subscription.endpoint}:{})});setSettings(next);setMessage('알림설정을 저장했어요.');});}
+ async function save(patch:Partial<Settings>){
+  if(!settings)return;const previous=settings,value={...settings,...patch};setSettings(value);
+  await run(async()=>{try{const subscription=await deviceSubscription();const next=await workspaceRequest<Settings>('push.settings.save',{calendarChanges:value.calendarChanges,calendarReminders:value.calendarReminders,chat:value.chat,reminderMinutes:value.reminderMinutes,preview:value.preview,...(subscription?{endpoint:subscription.endpoint}:{})});setSettings(next);setMessage('알림설정을 저장했어요.');}catch(e){setSettings(previous);throw e;}});
+ }
+
  const enabled=settings?.deviceEnabled&&permission==='granted';
  return <AuthLayout wide><div className="notification-settings"><div className="workspace-page-heading"><div><p className="eyebrow">필요한 소식만, 놓치지 않도록</p><h1>알림설정</h1><p>가족 달력과 대화의 새 소식을 받아보세요.</p></div><span className="notification-heading-icon"><Icon name="bell"/></span></div>
  {error&&<div role="alert" className="notification-notice error">{error}</div>}{message&&<div role="status" className="notification-notice">{message}</div>}
