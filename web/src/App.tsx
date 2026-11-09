@@ -76,6 +76,8 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
   <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<Navigate to="/notification-settings" replace/>}/><Route path="/notification-settings" element={<NotificationSettings/>}/>
   <Route path="/more" element={<WorkspaceEntry mode="more"/>}/><Route path="/settings" element={<WorkspaceEntry mode="settings"/>}/>
+  <Route path="/help" element={<WorkspaceEntry mode="guide"/>}/>
+  {(['notices','blog'] as const).flatMap(mode=>[<Route key={mode} path={'/more/'+mode} element={<WorkspaceEntry mode={mode}/>}/>,<Route key={mode+'-post'} path={'/more/'+mode+'/:slug'} element={<WorkspaceEntry mode={mode}/>}/>])}
   <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>
   <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
   <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/legal/:section" element={<LegalPage/>}/><Route path="/privacy" element={<PrivacyPage/>}/><Route path="/location" element={<Navigate to="/timetable" replace/>}/><Route path="/today" element={<WorkspaceLanding/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>

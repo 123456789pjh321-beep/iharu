@@ -1,11 +1,11 @@
 import type {CSSProperties,MouseEvent} from 'react';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
-import {calendarWeekLayout,type CalendarRun} from '../../../shared/calendar-layout';
+import type {calendarWeekLayout,CalendarRun} from '../../../shared/calendar-layout';
 import {scheduleAssignee,scheduleTimeCaption} from '../../../shared/workspace-schedules';
 import {eventColor} from './scheduleColors';
 
-export function CalendarWeekRow({dates,items,members,month,day,today,weekView,holidayName,openDay,edit}:{dates:string[];items:WorkspaceItem[];members:WorkspaceMember[];month:string;day:string;today:string;weekView:boolean;holidayName:(date:string)=>string;openDay:(date:string)=>void;edit:(item:WorkspaceItem,date:string)=>void}){
- const {runs,hidden,rows}=calendarWeekLayout(items,dates,weekView?10:3),hasHoliday=dates.some(date=>holidayName(date));
+export function CalendarWeekRow({dates,layout,members,month,day,today,holidayName,openDay,edit}:{dates:string[];layout:ReturnType<typeof calendarWeekLayout>;members:WorkspaceMember[];month:string;day:string;today:string;holidayName:(date:string)=>string;openDay:(date:string)=>void;edit:(item:WorkspaceItem,date:string)=>void}){
+ const {runs,hidden,rows}=layout,hasHoliday=dates.some(date=>holidayName(date));
  function openRun(event:MouseEvent<HTMLButtonElement>,run:CalendarRun){
   const bounds=event.currentTarget.getBoundingClientRect();
   const index=event.detail===0?Math.max(0,run.days.findIndex(d=>d.date===day)):Math.min(run.days.length-1,Math.max(0,Math.floor((event.clientX-bounds.left)/bounds.width*run.days.length)));

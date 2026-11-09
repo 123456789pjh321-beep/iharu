@@ -68,6 +68,7 @@ for(const width of [390,820])test(`month rows, holiday colors and all dates stay
    await swipe(direction);await expect(month).toHaveValue(value);await inspect();
   }
   const last=await inspect();expect(last.rowHeights).toEqual(first.rowHeights);await page.screenshot({path:`test-results/ui124-month-rows-${width}.png`,animations:'disabled'});
+  for(let index=0;index<4;index++)expect((await context.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'EVENT',data:{title:'밀집 일정 '+index,date:'2027-05-03',allDay:true}}})).ok()).toBe(true);
   // A four-row February and a dense six-row month must remain scrollable when resized.
   for(const value of ['2026-02','2027-05']){await month.fill(value);await inspect();await page.setViewportSize({width,height:640});await inspect();await page.setViewportSize({width,height:900});}
  }finally{await context.close();}

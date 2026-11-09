@@ -12,6 +12,7 @@ import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {dailySchedules,matchesMember} from '../../../shared/workspace-schedules';
 export {visibleOn} from '../../../shared/workspace-schedules';
 import {PeriodPager,shiftMonth} from './PeriodPager';
+import {calendarWeekLayout} from '../../../shared/calendar-layout';
 const weekdays=['일','월','화','수','목','금','토'];
 export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,month,day,items,members,loading=false,setMonth,setDay,create,edit}:MemberPreferenceProps&{month:string;day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading?:boolean;setMonth:(v:string)=>void;setDay:(v:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays(month),[detail,setDetail]=useState<string|null>(null);
@@ -26,8 +27,13 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,m
   if(view==='day')return <PersonalTimetable embedded day={addDays(day,offset)} items={shown} members={members} loading={loading} setDay={selectDay} create={create} edit={edit}/>;
   const first=pageMonth+'-01',count=new Date(Number(pageMonth.slice(0,4)),Number(pageMonth.slice(5)),0).getDate(),start=new Date(first+'T12:00:00Z').getUTCDay();
   const dates=view==='week'?Array.from({length:7},(_,n)=>addDays(weekStart,offset*7+n)):Array.from({length:Math.ceil((start+count)/7)*7},(_,n)=>addDays(first,n-start));
-  return <div className="calendar-month-content"><div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div><div className={'calendar-grid '+(view==='week'?'week-view':'')}>
-   {Array.from({length:dates.length/7},(_,index)=><CalendarWeekRow key={dates[index*7]} dates={dates.slice(index*7,index*7+7)} items={shown} members={members} month={pageMonth} day={day} today={today} weekView={view==='week'} holidayName={holidays.name} openDay={date=>{selectDay(date);setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
+  const weeks=Array.from({length:dates.length/7},(_,index)=>{const datesInWeek=dates.slice(index*7,index*7+7);return {dates:datesInWeek,layout:calendarWeekLayout(shown,datesInWeek,view==='week'?10:3)};});
+  // Reserve the same date/holiday and event space for every row. A short viewport
+  // scrolls the complete grid instead of letting a holiday row enlarge and clip it.
+  const lanes=Math.max(...weeks.map(week=>week.layout.runs.length?week.layout.rows:0)),overflow=weeks.some(week=>week.layout.hidden.some(Boolean));
+  const rowMinimum=Math.max(view==='week'?300:0,56+lanes*32+(overflow?32:4));
+  return <div className="calendar-month-content" key={dates[0]}><div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div><div className={'calendar-grid '+(view==='week'?'week-view':'')} style={{gridTemplateRows:`repeat(${weeks.length},minmax(${rowMinimum}px,1fr))`}}>
+   {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={date=>{selectDay(date);setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
   </div></div>;
  };
  return <section className="direct-calendar" aria-label="일정 달력">
