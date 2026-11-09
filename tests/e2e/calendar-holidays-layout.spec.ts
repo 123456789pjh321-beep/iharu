@@ -16,7 +16,7 @@ test('holidays, day agenda and full-screen editors use a bottom navigation at ev
   await page.screenshot({path:`test-results/ui96-calendar-${width}.png`,animations:'disabled'});
   await cell.locator('.calendar-overflow').click();const agenda=page.getByRole('dialog',{name:'2월 9일 화요일',exact:true});await expect(agenda.locator('.day-sheet-event')).toHaveCount(5);await expect(agenda.locator('.holiday-label')).toHaveText('대체공휴일(설날)');
   await page.screenshot({path:`test-results/ui96-agenda-${width}.png`,animations:'disabled'});
-  await agenda.getByRole('button',{name:'이 날짜에 일정 추가'}).click();const editor=page.locator('.personal-editor');await expect(page.getByLabel('날짜',{exact:true})).toHaveValue('2027-02-09');
+  await agenda.getByRole('button',{name:'이 날짜에 일정 추가'}).click();const editor=page.locator('.personal-editor');await expect(page.getByLabel('시작일',{exact:true})).toHaveValue('2027-02-09');
   await expect.poll(async()=>Math.round((await editor.boundingBox())!.y)).toBe(0);const box=(await editor.boundingBox())!;expect(box.x).toBe(0);expect(box.y).toBe(0);expect(box.width).toBe(width);expect(box.height).toBe(height);
   await page.getByLabel('제목',{exact:true}).fill('날짜에서 등록');await page.getByLabel('메모',{exact:true}).fill('입력 중인 내용은 화면을 바꾸어도 유지되어야 해요');
   await editor.locator('.entry-editor-body').evaluate(el=>el.scrollTop=el.scrollHeight);await expect(editor.getByRole('button',{name:'저장',exact:true})).toBeInViewport();expect(await editor.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
