@@ -13,7 +13,7 @@ export function useSlidingDialog(){
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   node.showModal();
   if(!quiet()&&!document.hidden&&node.animate){
-   const animation=node.animate([{transform:`translateY(${window.innerHeight}px)`},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+   const animation=node.animate([{transform:`translateY(${Math.max(node.getBoundingClientRect().height,window.innerHeight-node.getBoundingClientRect().top)}px)`},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
    motion.current=animation;
    void animation.finished.catch(()=>{}).finally(()=>{if(motion.current===animation)motion.current=null;});
   }
@@ -28,7 +28,7 @@ export function useSlidingDialog(){
   const from=getComputedStyle(node).transform;
   motion.current?.cancel();motion.current=null;
   if(!quiet()&&!document.hidden&&node.animate){
-   const animation=node.animate([{transform:from==='none'?'translateY(0)':from},{transform:`translateY(${window.innerHeight}px)`}],{duration:220,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+   const animation=node.animate([{transform:from==='none'?'translateY(0)':from},{transform:`translateY(${Math.max(node.getBoundingClientRect().height,window.innerHeight-node.getBoundingClientRect().top)}px)`}],{duration:220,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
    motion.current=animation;
    await animation.finished.catch(()=>{});
   }

@@ -30,9 +30,9 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
    for(let n=1;n<=8;n++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+(end-x)*n/8,y,id:1}]});
    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }
-  const pane=page.locator('.timetable-scroll');await pane.hover();await page.mouse.wheel(400,0);await page.mouse.wheel(-400,0);
+  const pane=page.locator('.timetable-weekly .timetable-scroll,[data-pager-current] .timetable-scroll');await pane.hover();await page.mouse.wheel(400,0);await page.mouse.wheel(-400,0);
   expect(await page.locator('[data-timetable-date]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-timetable-date')))).toEqual(before);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
-  await pane.evaluate(el=>{el.scrollTop=0;});await pane.hover();await page.mouse.wheel(0,300);await expect.poll(()=>pane.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
+  await page.setViewportSize({width:390,height:700});await pane.evaluate(el=>{el.scrollTop=0;});await pane.hover();await page.mouse.wheel(0,300);await expect.poll(()=>pane.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
   for(const width of [320,820,1440]){
    await page.setViewportSize({width,height:900});await expect(page.locator('.timetable-day-column')).toHaveCount(7);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await pane.evaluate(el=>{el.scrollTop=el.scrollHeight;});await page.screenshot({path:`test-results/ui105-fixed-timetable-${width}.png`});
@@ -40,6 +40,6 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
   const saved=await context.request.post('/api/v1/workspace/items.list',{headers:{Origin:origin},data:{kind:'REPEAT',from:'2030-01-01',to:'2030-01-31'}});const items=(await saved.json()).items;expect(items).toHaveLength(1);expect(items[0].data.untilDate).toBeUndefined();expect(items[0].data.weekdays).toEqual([1,2,3,4,5]);
   // The calendar retains its own day navigation and recurrence dates.
   await page.goto('/today/calendar');await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'일간',exact:true}).click();await page.getByLabel('달력 날짜 선택').fill('2026-12-31');
-  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await page.locator('.timetable-scroll').hover();await page.mouse.wheel(400,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');expect(errors).toEqual([]);
+  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await page.locator('.timetable-weekly .timetable-scroll,[data-pager-current] .timetable-scroll').hover();await page.mouse.wheel(400,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');expect(errors).toEqual([]);
  }finally{await context.close();}
 });

@@ -7,7 +7,7 @@ export function Card({ title, icon, children, className = '', action }: { title:
   return <m.section initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className={`card ${className}`}><div className="card-heading"><h2><span className="section-icon"><Icon name={icon}/></span>{title}</h2>{action}</div>{children}</m.section>;
 }
 export function Loading({ label = '가족의 하루를 불러오고 있어요' }: { label?:string }) {
-  return <div className="loading-state" role="status"><span className="loader"/>{label}</div>;
+  return <div className="loading-state" role="status"><div className="loading-skeleton" aria-hidden="true"><i/><i/><i/></div><span>{label}</span></div>;
 }
 export function ErrorState({ message, retry }: { message:string; retry:() => void }) {
   return <div className="error-state" role="alert"><strong>{copy.error}</strong><p>{message}</p><button className="button" onClick={retry}>{copy.retry}</button></div>;
