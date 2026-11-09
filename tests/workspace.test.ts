@@ -291,3 +291,33 @@ it('supports child preferences and falls back to self when a saved family member
  expect((await a.ok('me')).timetableMemberId).toBe(am.id);expect((await device.ok('me')).timetableMemberId).toBe(cm.id);
  expect((await a.req(api+'timetable.preference.save',{memberId:cm.id})).status).toBe(400);expect((await device.req(api+'timetable.preference.save',{memberId:am.id})).status).toBe(400);
 });
+
+it('stores multiple timetable members per account and rejects an invalid combination atomically',async()=>{
+ const a=await parent('multi-a'),b=await parent('multi-b'),x=await parent('multi-x');const am=await a.ok('me'),bm=await b.ok('me'),xm=await x.ok('me');
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ expect(am.timetableMemberIds).toEqual([am.id]);
+ // Legacy saved choices remain readable before backfill and old clients still work.
+ await query(database.db,'UPDATE app_private.workspace_profiles SET timetable_member_id=$1,timetable_member_ids=NULL WHERE id=$2',[bm.id,am.id]);
+ expect((await a.ok('me')).timetableMemberIds).toEqual([bm.id]);
+ expect(await a.ok('timetable.preference.save',{memberIds:[am.id,bm.id]})).toMatchObject({memberIds:[am.id,bm.id]});
+ const device=new Browser();expect((await device.req('/api/auth/sign-in/email',{email:'multi-a@example.test',password:'parent-fixture-password'})).ok).toBe(true);
+ expect((await device.ok('me')).timetableMemberIds).toEqual([am.id,bm.id]);expect((await b.ok('me')).timetableMemberIds).toEqual([bm.id]);
+ for(const value of [{memberIds:[]},{memberIds:[am.id,am.id]},{memberIds:[am.id,'all']},{memberIds:[am.id,xm.id]},{memberIds:[am.id,crypto.randomUUID()]},{memberIds:[am.id],memberId:am.id},{memberIds:[am.id],profileId:bm.id},{memberIds:'all'},{memberIds:[null]}]){
+  expect((await a.req(api+'timetable.preference.save',value)).status).toBe(400);expect((await a.ok('me')).timetableMemberIds).toEqual([am.id,bm.id]);
+ }
+ expect((await new Browser().req(api+'timetable.preference.save',{memberIds:[am.id,bm.id]})).status).toBe(401);
+ await b.ok('timetable.preference.save',{memberIds:[am.id]});expect((await a.ok('me')).timetableMemberIds).toEqual([am.id,bm.id]);
+ await a.ok('timetable.preference.save',{memberId:bm.id});expect((await a.ok('me')).timetableMemberIds).toEqual([bm.id]);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v112('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
+});
+it('keeps remaining selections after family disconnection and restores child combinations on a new login',async()=>{
+ const a=await parent('multi-child-parent'),c=new Browser(),invite=await a.ok('invite.issue',{consent:true});
+ await c.ok('child.signup',{loginId:'multi_child',name:'다중 자녀',password:'child-fixture-password',code:invite.code});const am=await a.ok('me'),cm=await c.ok('me');
+ await a.ok('timetable.preference.save',{memberIds:[cm.id,am.id]});await c.ok('timetable.preference.save',{memberIds:[am.id,cm.id]});
+ await c.ok('logout');const device=new Browser();await device.ok('child.login',{loginId:'multi_child',password:'child-fixture-password'});expect((await device.ok('me')).timetableMemberIds).toEqual([am.id,cm.id]);
+ await a.ok('family.remove',{familyId:am.family.id,profileId:cm.id,version:am.family.members.find((m:any)=>m.id===cm.id).version});
+ expect((await a.ok('me')).timetableMemberIds).toEqual([am.id]);expect((await device.ok('me')).timetableMemberIds).toEqual([cm.id]);
+ expect((await a.req(api+'timetable.preference.save',{memberIds:[am.id,cm.id]})).status).toBe(400);
+ // Deleted targets are excluded even if their IDs remain in the stored array.
+ await query(database.db,'UPDATE app_private.workspace_profiles SET timetable_member_ids=$1 WHERE id=$2',[[crypto.randomUUID()],am.id]);expect((await a.ok('me')).timetableMemberIds).toEqual([am.id]);
+});

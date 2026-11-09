@@ -92,3 +92,12 @@ it('retains recurring duration beyond the final start date and separates overnig
  const yearly=event('yearly trip','10:00',{date:'2024-02-29',endDate:'2024-03-01',calendarFrequency:'YEARLY'});
  expect(dailySchedules([yearly],'2025-03-01')).toHaveLength(1);expect(dailySchedules([yearly],'2025-03-02')).toHaveLength(0);
 });
+
+it('unions selected member schedules without duplicating shared events and keeps overlap lanes',()=>{
+ const rows=[event('parent class','09:00',{endTime:'10:00'}),event('child class','09:00',{assigneeId:'child',endTime:'10:00'}),event('other class','09:00',{assigneeId:'other'}),event('shared','11:00',{allMembers:true})];
+ const selected=dailySchedules(rows,'2026-11-08',['parent','child']);
+ expect(selected.map(i=>i.id).sort()).toEqual(['child class','parent class','shared']);
+ expect(timetableLayout(selected).filter(r=>r.start===540).map(r=>r.columns)).toEqual([2,2]);
+ expect(dailySchedules(rows,'2026-11-08',['child']).map(i=>i.id)).toEqual(['child class','shared']);
+ expect(dailySchedules(rows,'2026-11-08',[])).toEqual([]);
+});

@@ -245,7 +245,8 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 
 /* Account-specific timetable start view; other member filters retain their all option. */
 .timetable-preference{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:0 12px 8px;color:var(--muted);font-size:.75rem}
-.timetable-preference>span{display:flex;gap:6px;min-width:0;align-items:center}
+.timetable-filter-hint{font-size:.72rem;color:var(--muted);margin-left:auto}
+.timetable-preference>span{display:flex;gap:6px;min-width:0;align-items:baseline;flex-wrap:wrap}
 .timetable-preference strong{color:var(--ink);overflow-wrap:anywhere}
 .timetable-preference .button{font-size:.75rem;min-height:34px;gap:5px;padding:6px 10px}
 .timetable-preference .button:disabled{opacity:1;color:var(--muted);background:var(--surface);cursor:default}
