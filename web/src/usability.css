@@ -25,25 +25,43 @@
 @media(max-width:760px){.workspace-guide-dialog{padding:20px}.tuition-month-summary{padding:16px 14px}.tuition-month-summary strong{font-size:1.5rem}.tuition-month-summary>span{font-size:.7rem}.tuition-date,.tuition-date-empty{min-height:76px}.tuition-date{padding:6px 4px;gap:5px}.tuition-date strong{font-size:.66rem;letter-spacing:-.04em}.tuition-date small{font-size:.6rem}.tuition-date-grid{gap:3px}.tuition-date>span{font-size:.72rem}.tuition-ledger>header .button{padding-inline:8px;font-size:.7rem}.group-chat .conversation-sticker-tray{grid-template-rows:50px;grid-auto-columns:50px}.group-chat .chat-bubble.picture-bubble{width:72px}}
 @media(max-height:550px){.guide-scene{display:none}.workspace-guide-dialog{padding:14px 20px}.workspace-guide-dialog ol{margin:10px 0 16px}.group-chat .conversation-sticker-tray{grid-template-rows:46px;grid-auto-columns:46px}}
 @media(max-height:500px){.workspace-page .group-chat .chat-room-header{padding-block:4px}}
-.member-preference{min-width:0;flex-shrink:0}.member-preference .fee-member-filters{margin-bottom:0;padding-bottom:8px}.member-preference>.timetable-preference{margin-bottom:12px}
+.member-preference{min-width:0;flex-shrink:0;margin-bottom:8px}
+.member-preference-row{display:flex;align-items:center;gap:10px;min-width:0;padding:0 16px;box-sizing:border-box}
+.workspace-page .member-preference-row>.member-filter-bar{flex:1 1 0;min-width:0;padding:0;margin:0;overflow:hidden}
+.workspace-page .member-preference-row .member-filters{flex-wrap:nowrap;overflow-x:auto;padding:8px 2px;min-height:56px}
+.member-preference-row>.timetable-preference{flex:0 1 auto;max-width:48%;min-width:0;padding:0;margin:0;flex-wrap:nowrap}
+.member-preference-row .timetable-preference>.button{min-width:0;max-width:100%;min-height:40px;white-space:nowrap;gap:6px;border-radius:10px}
+.member-preference-row .preference-member-names{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:18px;font-weight:750;color:var(--ink)}
+.member-preference-row .preference-action-full,.member-preference-row .preference-action-short,.member-preference-row .icon{flex-shrink:0}
+.preference-action-short{display:none}
+@media(max-width:600px){.member-preference-row{gap:6px;padding-inline:12px}.member-preference-row .timetable-preference>.button{padding-inline:8px;font-size:.72rem;gap:4px}.preference-action-full{display:none}.preference-action-short{display:inline}}
+
 
 /* Keep workspace help and the timetable clock in the single top title bar. */
 .workspace-page .auth-header{gap:10px;flex-wrap:nowrap}
 .workspace-header-tools{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
-.workspace-header-tools>.timetable-now-jump{order:0;flex-shrink:0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.workspace-page .auth-header .auth-display-actions{margin-left:0;flex-shrink:0}
+.workspace-header-clock{display:flex;align-items:center;flex-shrink:0}
+.workspace-header-clock:empty{display:none}
+.workspace-header-clock>.timetable-now-jump{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;margin:0;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-sub);color:var(--primary);font-size:.75rem;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.workspace-page .workspace-wordmark{gap:4px;min-height:36px;color:var(--primary);text-decoration:none}
+.workspace-wordmark .iharu-symbol{width:26px;height:26px;flex-shrink:0}
+.workspace-wordmark .iharu-wordmark{font-family:'Manrope Variable',sans-serif;font-size:20px;font-weight:650;letter-spacing:-.06em;line-height:1}
+.workspace-wordmark:focus-visible{outline:2px solid var(--primary);outline-offset:3px;border-radius:5px}
 .workspace-header-guide{position:relative;order:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-shrink:0;min-height:36px;margin-left:auto;padding:6px 9px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);font:inherit;font-size:.75rem;white-space:nowrap;cursor:pointer}
 .workspace-header-guide>.icon{width:15px;height:15px}
 .workspace-header-guide[data-new]:after{content:"";position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--primary)}
-.workspace-header-guide:focus-visible,.workspace-header-tools>.timetable-now-jump:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.workspace-header-guide:focus-visible,.workspace-header-clock>.timetable-now-jump:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .workspace-page .member-filter-bar.wrapped .member-filters{flex-wrap:wrap;overflow:visible}
 .member-filter-bar.wrapped .member-filter-name{white-space:normal;overflow-wrap:anywhere}
 .workspace-page .timetable-weekly>.timetable-summary{justify-content:flex-end;min-height:0;padding:0 12px 4px}
 .workspace-page .timetable-weekly>.timetable-summary:empty,.workspace-page .timetable-weekly>.timetable-summary:has(>.empty){display:none}
 .workspace-page .timetable-weekly .timetable-current-summary{max-width:100%;padding:0}
 @media(max-width:600px){
- .workspace-page .auth-header{padding-inline:10px;gap:8px}
+ .workspace-page .auth-header{padding-inline:10px;gap:6px}
+ .workspace-wordmark .iharu-symbol{width:22px;height:22px}.workspace-wordmark .iharu-wordmark{font-size:17px}
  .workspace-header-tools{gap:5px}
- .workspace-header-tools>.timetable-now-jump{font-size:.7rem;padding-inline:6px}
+ .workspace-header-clock>.timetable-now-jump{font-size:.7rem;padding-inline:6px}
  .workspace-header-guide{font-size:.7rem;padding-inline:7px}
  .workspace-page .auth-header .theme-toggle{gap:2px;padding:3px}
  .workspace-page .auth-header .theme-toggle button{width:32px;min-width:32px;padding:5px;justify-content:center}
