@@ -59,7 +59,7 @@ test('mobile navigation and content order remain usable without horizontal overf
   const ys=await page.locator('.attendance-card,.family-calendar,.location-card,.tuition-card').evaluateAll(elements=>elements.map(e=>e.getBoundingClientRect().top));
   expect(ys.length).toBe(3); expect(ys).toEqual([...ys].sort((a,b)=>a-b));
   const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
-  await nav.getByRole('button',{name:'더보기',exact:true}).click();
+  await nav.getByRole('button',{name:'전체메뉴',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'전체 메뉴',exact:true}).getByRole('link',{name:'위치',exact:true})).toHaveCount(0);
 });
 

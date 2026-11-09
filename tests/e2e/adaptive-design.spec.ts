@@ -19,7 +19,7 @@ for(const [width,height] of [[320,740],[390,844],[600,960],[768,1024],[820,1180]
 }
 test('mobile More exposes every destination, traps focus and closes on navigation or Escape',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto('/test/today');
- const more=page.getByRole('button',{name:'더보기',exact:true});await more.click();
+ const more=page.getByRole('button',{name:'전체메뉴',exact:true});await more.click();
  const menu=page.getByRole('dialog',{name:'전체 메뉴',exact:true});await expect(menu).toBeVisible();await expect(menu.getByRole('link')).toHaveCount(12);
  await menu.getByRole('link',{name:'내 계정',exact:true}).focus();await page.keyboard.press('Tab');await expect(menu.getByRole('button',{name:'전체 메뉴 닫기'})).toBeFocused();
  await page.keyboard.press('Escape');await expect(menu).not.toBeVisible();await expect(more).toBeFocused();
@@ -28,7 +28,7 @@ test('mobile More exposes every destination, traps focus and closes on navigatio
 test('large type, dark theme and reduced motion preserve mobile menu access',async({page})=>{
  await page.setViewportSize({width:320,height:740});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/test/chat');
  await expect(page.getByRole('button',{name:'큰 글씨',exact:true})).toHaveCount(0);await expect(page.getByLabel('화면 설정',{exact:true})).toHaveCount(0);await page.getByRole('button',{name:'어둡게',exact:true}).click();
- await page.keyboard.press('Escape');await page.getByRole('button',{name:'더보기',exact:true}).click();
+ await page.keyboard.press('Escape');await page.getByRole('button',{name:'전체메뉴',exact:true}).click();
  const menu=page.getByRole('dialog',{name:'전체 메뉴',exact:true});await expect(menu).toBeVisible();
  expect(await menu.evaluate(el=>getComputedStyle(el).animationName)).toBe('none');
  await menu.getByRole('link',{name:'내 계정',exact:true}).click();await expect(page.locator('main h1')).toBeVisible();

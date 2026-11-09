@@ -73,8 +73,8 @@ export function chronologicalSchedules(items:WorkspaceItem[]){return [...items].
 
 export function timeMinutes(time:string){const [hours,minutes]=time.split(':').map(Number);return hours*60+minutes;}
 export function timeLabel(minutes:number){return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
-/** Weekly timetable always spans 06:00 through the end of the day (24:00). */
-export const timetableRange={start:360,end:1440} as const;
+/** Weekly timetable shows 08:00–22:00; calendar daily view keeps the full day. */
+export const timetableRange={start:480,end:1320} as const;
 /** Greedy interval packing: simultaneous events get separate columns in one time grid. */
 export function timetableLayout(items:WorkspaceItem[],range?:{start:number;end:number},date?:string){
  const rows=items.filter(i=>!i.data.allDay&&i.data.startTime&&i.data.endTime).flatMap(item=>(date?scheduleDayIntervals(item,date):[{start:timeMinutes(item.data.startTime!),end:timeMinutes(item.data.endTime!)}]).map(interval=>({item,...interval,column:0,columns:1}))).filter(row=>row.end>row.start&&(!range||row.end>range.start&&row.start<range.end)).map(row=>range?{...row,start:Math.max(row.start,range.start),end:Math.min(row.end,range.end)}:row).sort((a,b)=>a.start-b.start||compareScheduleTime(a.item,b.item));
