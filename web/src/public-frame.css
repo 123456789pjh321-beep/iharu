@@ -5,10 +5,10 @@
 .public-content>.marketing-site{height:auto;min-height:100%;overflow:visible}
 .public-content>.auth-app.entry-page{min-height:100%;height:auto;overflow:visible}
 .public-content .auth-app.entry-page .auth-main{overflow:visible;scrollbar-gutter:auto}
-.public-footer{display:flex;flex-shrink:0;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;min-height:58px;padding:10px 24px max(10px,env(safe-area-inset-bottom));border-top:1px solid #dfebe6;background:#fff;color:#678378;color-scheme:light;font-family:'Noto Sans KR Variable',sans-serif;font-size:11px;line-height:1.7}
+.public-footer{display:flex;flex-shrink:0;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;min-height:58px;padding:10px 24px max(10px,env(safe-area-inset-bottom));border-top:1px solid #dae8e2;background:#fff;color:#617a70;color-scheme:light;font-family:'Noto Sans KR Variable',sans-serif;font-size:11px;line-height:1.7}
 .public-footer nav{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 14px}
 .public-footer a{padding-block:5px;text-decoration:underline;text-underline-offset:3px}
-.public-footer a:hover{color:#24b57b}
-.public-footer a:focus-visible{outline:2px solid #24b57b;outline-offset:3px}
+.public-footer a:hover{color:#21865d}
+.public-footer a:focus-visible{outline:2px solid #21865d;outline-offset:3px}
 @media(max-width:760px){.public-footer{min-height:58px;padding:6px 12px max(6px,env(safe-area-inset-bottom));font-size:10px}.public-footer>span{display:none}.public-footer nav{gap:0 12px}.public-footer a{padding-block:4px}.public-content{scrollbar-width:thin}}
 @media(prefers-reduced-motion:reduce){.public-content{scroll-behavior:auto}}

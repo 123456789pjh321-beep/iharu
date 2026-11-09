@@ -24,12 +24,12 @@ html[data-theme=dark]{
 .workspace-page .workspace-mobile-nav a.active,.workspace-page .workspace-mobile-nav>button.active{background:var(--mint);color:var(--primary)}
 .calendar-weekdays>span:last-child,.tuition-weekdays>span:last-child,.calendar-cell.saturday .calendar-date,.timetable-day-headings .saturday-date{color:var(--weekend-ink)}
 .calendar-day-sheet::backdrop,.direct-editor::backdrop,.workspace-guide-dialog::backdrop,.member-filter-dialog::backdrop{background:#15261d66}
-.entry-redesign .entry-editor-header .registration-action,.entry-redesign .entry-weekdays input:checked+span,.entry-redesign .entry-picker-grid .is-selected,.tuition-date[aria-current=date]>span,.calendar-day-target.today>strong,.group-chat .chat-send{color:var(--on-primary)}
+.entry-redesign .entry-editor-header .registration-action,.entry-redesign .entry-weekdays input:checked+span,.entry-redesign .entry-picker-grid .is-selected,.tuition-date[aria-current=date]>span,.is-today .calendar-day-target>span,.group-chat .chat-send{color:var(--on-primary)}
 html[data-theme=dark] :is(.button.primary,.workspace-add-action,.calendar-day.selected,.chat-groups button.active){color:var(--on-primary)}
 html[data-theme=dark] .timetable-week button[aria-pressed=true]>span{color:var(--on-primary)}
 
 /* Visual-only outgoing pages retain their own layout (grid OR timetable OR fee list). */
-.calendar-viewport{background:var(--surface);overscroll-behavior-x:contain}
+.calendar-viewport{background:var(--surface);overscroll-behavior-x:contain;touch-action:pan-y pinch-zoom}
 .calendar-viewport>.calendar-motion-snapshot{position:absolute;inset:0;width:100%;height:100%;margin:0;flex:none;pointer-events:none;user-select:none;z-index:2;overflow:hidden;will-change:transform}
 .calendar-viewport>.calendar-motion-snapshot:not(.calendar-grid){display:block;border:0;background:var(--surface)}
 .calendar-grid,.month-swipe-area,.timetable-day{touch-action:pan-y pinch-zoom;backface-visibility:hidden}

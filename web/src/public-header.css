@@ -1,12 +1,12 @@
 /* One fixed-height header shared by public pages and account entry. */
 .market-header {
-  --market-blue: #24b57b;
-  --market-ink: #204536;
+  --market-blue: #21865d;
+  --market-ink: #243830;
   position: sticky;
   top: 0;
   z-index: 30;
   flex-shrink: 0;
-  border-bottom: 1px solid #ebf2ef;
+  border-bottom: 1px solid #e8f0ed;
   background: #ffffffed;
   backdrop-filter: blur(18px);
   color: var(--market-ink);
@@ -24,7 +24,7 @@
 }
 .market-header .icon { width: 22px; height: 22px; }
 .market-header button { font-family: inherit; color: inherit; background: transparent; cursor: pointer; }
-.market-header :focus-visible { outline: 3px solid #24b57b; outline-offset: 4px; }
+.market-header :focus-visible { outline: 3px solid #21865d; outline-offset: 4px; }
 .market-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; color: var(--market-ink); }
 .market-brand > span { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: var(--market-blue); color: white; }
 .market-brand > span .icon { width: 30px; height: 30px; }
@@ -53,10 +53,10 @@
   .market-header-actions { margin-left: auto; gap: 10px; }
   .market-signup { display: none; }
   .market-login { display: flex; align-items: center; min-height: 44px; font-size: 12px; }
-  .market-menu-button { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #dfebe6; border-radius: 9px; }
+  .market-menu-button { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #dae8e2; border-radius: 9px; }
   .market-menu-button .icon { width: 19px; }
-  .market-nav { display: none; position: absolute; top: 70px; left: 0; right: 0; margin: 0; padding: 14px 20px; gap: 8px; background: white; box-shadow: 0 16px 20px #20453612; border-bottom: 1px solid #dfebe6; }
+  .market-nav { display: none; position: absolute; top: 70px; left: 0; right: 0; margin: 0; padding: 14px 20px; gap: 8px; background: white; box-shadow: 0 16px 20px #24383012; border-bottom: 1px solid #dae8e2; }
   .market-nav.open { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .market-nav a { padding: 12px; border-radius: 8px; font-size: 14px; text-align: left; }
-  .market-nav a[aria-current] { background: #edfaf5; }
+  .market-nav a[aria-current] { background: #eef4f2; }
 }

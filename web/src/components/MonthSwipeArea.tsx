@@ -8,5 +8,5 @@ export function MonthSwipeArea({month,onChange,children}:{month:string;onChange:
   date.setUTCMonth(date.getUTCMonth()+delta);
   if(date.getUTCFullYear()>=1&&date.getUTCFullYear()<=9999)onChange(date.toISOString().slice(0,7));
  });
- return <div className="calendar-viewport month-swipe-viewport"><div ref={page} className="month-swipe-area" {...swipe}>{children}</div></div>;
+ return <div className="calendar-viewport month-swipe-viewport" {...swipe}><div ref={page} className="month-swipe-area">{children}</div></div>;
 }

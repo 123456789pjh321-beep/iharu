@@ -55,7 +55,7 @@ export function useCalendarPager(target:RefObject<HTMLDivElement|null>,period:st
   watch([animate(node,incoming,0,duration),animate(page,outgoing.offset,-outgoing.direction*outgoing.width,duration)]);
  },[period,view,enabled,preferences.quiet,onMove]);
  useEffect(()=>{
-  const node=target.current;if(!enabled||!node)return;
+  const node=target.current?.parentElement;if(!enabled||!node)return;
   let distance=0,last=0,changed=false;
   const wheel=(event:WheelEvent)=>{
    if(event.ctrlKey||event.metaKey||gesture.current)return;
