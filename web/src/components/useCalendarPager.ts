@@ -109,7 +109,7 @@ export function useCalendarPager(target:RefObject<HTMLDivElement|null>,period:st
   },
   onPointerCancel:()=>{gesture.current=null;cancelTap();returnHome();},
   onLostPointerCapture:event=>{if(event.target===event.currentTarget&&gesture.current){gesture.current=null;returnHome();}},
-  onPointerLeave:event=>{if(!event.currentTarget.hasPointerCapture(event.pointerId)){gesture.current=null;returnHome();}},
+  onPointerLeave:event=>{if(gesture.current?.id===event.pointerId&&!event.currentTarget.hasPointerCapture(event.pointerId)){gesture.current=null;returnHome();}},
   onClickCapture:event=>{cancelTap();if(event.detail>0&&Date.now()<suppressClick.current){event.preventDefault();event.stopPropagation();}}
  };
 }
