@@ -26,7 +26,7 @@ test('tuition and notes swipe across months while filters, taps, scrolling and r
    await cdp.send('Input.dispatchTouchEvent',{type:cancel?'touchCancel':'touchEnd',touchPoints:[]});
   };
   const swipe=async(region:Locator,left:boolean,cancel=false)=>{const b=(await region.boundingBox())!,y=Math.max(b.y,80)+Math.min(b.height/2,80);await touch({x:b.x+(left?b.width-24:24),y},{x:b.x+(left?24:b.width-24),y:y+2},cancel);};
-  await page.goto('/tuition');await month.fill('2026-12');await expect(area.locator('.personal-fee-summary')).toContainText('120,000원');await settled();
+  await page.goto('/tuition');await page.getByRole('group',{name:'학원비 보기'}).getByRole('button',{name:'내역',exact:true}).click();await month.fill('2026-12');await expect(area.locator('.personal-fee-summary')).toContainText('120,000원');await settled();
   const filter=page.getByRole('group',{name:'학원비 구성원 필터'}),selected=filter.getByRole('button',{name:'월 이동 부모',exact:true});await selected.click();
   await swipe(area.locator('.personal-tuition-item').first(),true);await expect(month).toHaveValue('2027-01');await settled();
   await expect(area.locator('.personal-fee-summary')).toContainText('100,000원');await expect(selected).toHaveAttribute('aria-pressed','true');await expect(page.getByRole('dialog')).toHaveCount(0);

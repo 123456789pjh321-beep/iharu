@@ -1,7 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import type {WorkspaceMember} from '../../../shared/workspace';
 import {MemberFilter} from './MemberFilter';
-import {Icon} from './Icon';
 
 export type MemberPreferenceProps={viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>};
 export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultMemberIds,saveDefaultMembers}:MemberPreferenceProps){
@@ -18,12 +17,13 @@ export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultM
 }
 export function MemberPreferenceFilter({members,selection,label,className=''}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string}){
  const {memberIds,isSaved,saving,error,notice,toggle,save,canSave}=selection;
- const name=members.filter(m=>memberIds.includes(m.id)).map(m=>m.name).join(' · ')||'나';
+ const names=members.filter(m=>memberIds.includes(m.id)).map(m=>m.name);
+ const name=names.join(' · ')||'나',summary=names.length>1?`${names[0]} 외 ${names.length-1}명`:name;
  const action=saving?'저장 중':isSaved?'첫 화면으로 설정됨':'첫 화면으로 저장';
  return <section className="member-preference" aria-label={label+' 설정'}>
   <div className="member-preference-row">
-   <MemberFilter className={className} members={members} value={memberIds} showAll={false} expandable={false} disabled={saving} onChange={toggle} label={label}/>
-   <div className="timetable-preference"><button type="button" className="button compact" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} disabled={saving||isSaved||!canSave} onClick={()=>void save()}>{isSaved&&<Icon name="check"/>}<strong className="preference-member-names">{name}</strong><span className="preference-action-full">{action}</span><span className="preference-action-short" aria-hidden="true">{saving?'저장 중':isSaved?'설정됨':'저장'}</span></button></div>
+   <MemberFilter className={className} members={members} value={memberIds} showAll={false} compact disabled={saving} onChange={toggle} label={label}/>
+   <div className="timetable-preference"><button type="button" className="button compact" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} data-saved={isSaved} disabled={saving||isSaved||!canSave} onClick={()=>void save()}><strong className="preference-member-names">{summary}</strong><span className="preference-action-short" aria-hidden="true">{saving?'저장 중':isSaved?'설정됨':'저장'}</span></button></div>
   </div>
   {error&&<p className="timetable-preference-message error" role="alert">{error}</p>}{notice&&<p className="timetable-preference-message" role="status">{notice}</p>}
  </section>;
