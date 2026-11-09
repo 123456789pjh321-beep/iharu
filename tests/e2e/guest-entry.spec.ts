@@ -47,6 +47,14 @@ test('calendar login opens the selected date and creates a record only after an 
  const items=await command(page.request,'items.list',{from:'2027-02-01',to:'2027-02-28',kind:'EVENT'});expect(items.items.some((item:{data:{title:string;date:string}})=>item.data.title==='로그인 후 직접 저장한 일정'&&item.data.date==='2027-02-18')).toBe(true);
 });
 
+test('Back during an in-flight login cancels the continuation without replaying an input action',async({page,playwright})=>{
+ const user=await parent(playwright,'cancel-login');await user.client.dispose();let release!:()=>void,submitted!:()=>void;
+ const held=new Promise<void>(resolve=>{release=resolve;}),requested=new Promise<void>(resolve=>{submitted=resolve;});
+ await page.route('**/api/auth/sign-in/email',async route=>{submitted();await held;await route.continue();});
+ await page.goto('/timetable');await ready(page);await page.locator('.timetable-day-column').first().locator('[data-time="10:00"]').click();const sheet=page.getByRole('dialog');await sheet.getByLabel('아이디',{exact:true}).fill(user.email);await sheet.getByLabel('암호',{exact:true}).fill(password);await sheet.getByRole('button',{name:'로그인',exact:true}).click();await requested;await page.goBack();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();release();
+ await expect(page.locator('[data-guest-workspace]')).toHaveCount(0,{timeout:12000});await expect(page.locator('.personal-editor')).toHaveCount(0);await expect(page).toHaveURL(/\/timetable$/);expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();
+});
+
 test('account-dependent deep links open the same login sheet without mounting private pages',async({page})=>{
  const sensitive:string[]=[];page.on('request',r=>{if(/\/api\/account\/(methods|sessions)|\/api\/v1\/(legal\/admin|workspace\/(items\.|chat\.|push\.|invite\.))/.test(r.url()))sensitive.push(r.url());});
  for(const path of ['/account','/family','/chat','/tuition','/notification-settings','/privacy','/admin']){

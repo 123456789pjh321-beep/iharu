@@ -14,7 +14,7 @@ export function useEntryAccess(){const value=useContext(EntryContext);if(!value)
 export function EntryAccessProvider({children}:{children:ReactNode}){
  const location=useLocation(),navigate=useNavigate(),gate=useWorkspaceGate();
  const [request,setRequest]=useState<LoginRequest|null>(null),[busy,setBusy]=useState(false),dialog=useRef<HTMLDialogElement>(null),completed=useRef(false),historyOpen=useRef(false),opening=useRef(false),generation=useRef(0);
- const open=!!request,signInParam=new URLSearchParams(location.search).get('signin')==='1';
+ const signInParam=new URLSearchParams(location.search).get('signin')==='1',open=!!request&&signInParam;
  const requestLogin=useCallback((value:Partial<LoginRequest>={})=>{
   if(opening.current)return;opening.current=true;++generation.current;
   const intent=value.intent||{type:'page',path:entryReturnPath(location.pathname)};
@@ -35,8 +35,9 @@ export function EntryAccessProvider({children}:{children:ReactNode}){
   show();const observer=new MutationObserver(show);if(open)observer.observe(document.body,{childList:true});
   if(!open&&node.open)node.close();return()=>{observer.disconnect();if(node.open)node.close();};
  },[open]);
+ const requestVersion=generation.current;
  const complete=async()=>{
-  const version=generation.current;
+  const version=requestVersion;
   const response=await fetch('/api/account/session',{credentials:'same-origin',cache:'no-store'});if(!response.ok)throw new Error('로그인 상태를 확인하지 못했어요. 다시 시도해 주세요.');
   const session=sessionSchema.parse(await response.json());
   if(version!==generation.current){gate.session.refresh();void gate.refreshAccess();return;}
