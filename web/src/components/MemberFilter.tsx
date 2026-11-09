@@ -23,7 +23,7 @@ export function MemberFilter({members,value,onChange,label,className='',showAll=
  useLayoutEffect(()=>{
   if(!compact||!list.current)return;
   const node=list.current,measure=()=>{
-   const style=getComputedStyle(node),chip=parseFloat(style.getPropertyValue('--member-chip-width')),overflow=parseFloat(style.getPropertyValue('--member-overflow-width')),gap=parseFloat(style.columnGap)||0,width=node.clientWidth;
+   const style=getComputedStyle(node),chip=parseFloat(style.getPropertyValue('--member-chip-width')),overflow=parseFloat(style.getPropertyValue('--member-overflow-width')),gap=parseFloat(style.columnGap)||0,width=Math.floor(node.getBoundingClientRect().width);
    if(!chip||!overflow)return;
    const count=members.length*chip+Math.max(0,members.length-1)*gap<=width?members.length:Math.max(0,Math.floor((width-overflow)/(chip+gap)));
    setVisibleCount(Math.min(members.length,count));

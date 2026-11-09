@@ -5,7 +5,7 @@ async function call(client:APIRequestContext,op:string,data:object={}){const r=a
 async function signIn(page:Page,email:string){expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);}
 async function parent(page:Page,email:string,name:string){expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await signIn(page,email);}
 const filters=(page:Page)=>page.getByRole('group',{name:'시간표 구성원 필터',exact:true});
-async function selected(page:Page,name:string,pressed=true){const button=filters(page).getByRole('button',{name,exact:true});if(await button.count()){await expect(button).toHaveAttribute('aria-pressed',String(pressed));return;}await filters(page).getByRole('button',{name:/가족 선택/}).click();const dialog=page.getByRole('dialog',{name:'조회할 가족 선택'});await expect(dialog.getByRole('button',{name,exact:true})).toHaveAttribute('aria-pressed',String(pressed));await dialog.getByRole('button',{name:'선택 완료'}).click();}
+async function selected(page:Page,name:string,pressed=true){await expect(filters(page)).toBeVisible();await expect(filters(page).getByRole('button').first()).toBeVisible();const button=filters(page).getByRole('button',{name,exact:true});if(await button.count()){await expect(button).toHaveAttribute('aria-pressed',String(pressed));return;}await filters(page).getByRole('button',{name:/가족 선택/}).click();const dialog=page.getByRole('dialog',{name:'조회할 가족 선택'});await expect(dialog.getByRole('button',{name,exact:true})).toHaveAttribute('aria-pressed',String(pressed));await dialog.getByRole('button',{name:'선택 완료'}).click();}
 
 test('timetable toggles multiple people, saves combinations across devices and keeps accounts isolated',async({page,browser})=>{
  test.setTimeout(120000);const bContext=await browser.newContext({baseURL:origin}),otherContext=await browser.newContext({baseURL:origin}),b=await bContext.newPage(),other=await otherContext.newPage();
@@ -25,7 +25,7 @@ test('timetable toggles multiple people, saves combinations across devices and k
   await page.request.post('/api/auth/sign-out',{headers:{Origin:origin},data:{}});await signIn(page,'tt-pref-b@example.test');await page.goto('/timetable');await selected(page,'기본 보호자');await selected(page,'다른 보호자',false);
   await filters(page).getByRole('button',{name:'다른 보호자',exact:true}).click();await page.route('**/api/v1/workspace/member-filter.preference.save',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'저장 연결을 다시 확인해 주세요.'}})}));await page.getByRole('button',{name:/첫 화면으로 저장$/}).click();await expect(page.locator('.timetable-preference-message[role=alert]')).toContainText('다시 확인');expect((await call(page.request,'me')).timetableMemberId).toBe(am.id);await page.unroute('**/api/v1/workspace/member-filter.preference.save');await page.reload();await selected(page,'기본 보호자');await selected(page,'다른 보호자',false);
   await page.goto('/today/calendar');await expect(page.getByRole('group',{name:'달력 구성원 필터',exact:true}).getByRole('button',{name:'전체 보기',exact:true})).toHaveCount(0);
- }finally{await bContext.close();await otherContext.close();}
+ }finally{await bContext.close().catch(()=>{});await otherContext.close().catch(()=>{});}
 });
 
 test('child saves multiple members and a disconnected target is removed from the combination',async({page,browser})=>{
@@ -36,5 +36,5 @@ test('child saves multiple members and a disconnected target is removed from the
   await page.goto('/timetable');await filters(page).getByRole('button',{name:'선택 자녀',exact:true}).click();await page.getByRole('button',{name:/첫 화면으로 저장$/}).click();await expect(page.locator('.timetable-preference')).toContainText('설정됨');
   await call(page.request,'family.remove',{familyId:am.family.id,profileId:cm.id,version:am.family.members.find((m:any)=>m.id===cm.id).version});await page.reload();await child.reload();await selected(page,'연결 보호자');await selected(child,'선택 자녀');await expect(filters(child).getByRole('button')).toHaveCount(1);
   await child.getByRole('button',{name:'어둡게',exact:true}).click();await child.screenshot({path:'test-results/ui113-child-multiple-dark.png',animations:'disabled'});
- }finally{await childContext.close();}
+ }finally{await childContext.close().catch(()=>{});}
 });
