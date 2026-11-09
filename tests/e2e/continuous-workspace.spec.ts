@@ -22,7 +22,7 @@ test('real adjacent events, holidays and recurring fees remain present during dr
    await page.screenshot({path:`test-results/ui123-seam-${route==='/tuition'?'fees':'calendar'}.png`});
    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await expect(month).toHaveValue('2026-12');
    await expect(page.locator('[data-pager-current]')).toContainText(route==='/tuition'?'18만':'다음 달 실제 일정',{timeout:600});
-   await page.unroute('**/api/v1/workspace/items.list');
+   await page.unrouteAll({behavior:'wait'});
   }
   // A visited menu paints from its scoped snapshot while a fresh request is still pending.
   const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await nav.getByRole('link',{name:'더보기',exact:true}).click();await expect(page.locator('.more-account')).toContainText('연속 화면');

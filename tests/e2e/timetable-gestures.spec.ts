@@ -32,7 +32,7 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
   }
   const pane=page.locator('.timetable-weekly .timetable-scroll,[data-pager-current] .timetable-scroll');await pane.hover();await page.mouse.wheel(400,0);await page.mouse.wheel(-400,0);
   expect(await page.locator('[data-timetable-date]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-timetable-date')))).toEqual(before);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
-  await pane.evaluate(el=>{el.scrollTop=0;});await pane.hover();await page.mouse.wheel(0,300);await expect.poll(()=>pane.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
+  await page.setViewportSize({width:390,height:700});await pane.evaluate(el=>{el.scrollTop=0;});await pane.hover();await page.mouse.wheel(0,300);await expect.poll(()=>pane.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
   for(const width of [320,820,1440]){
    await page.setViewportSize({width,height:900});await expect(page.locator('.timetable-day-column')).toHaveCount(7);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await pane.evaluate(el=>{el.scrollTop=el.scrollHeight;});await page.screenshot({path:`test-results/ui105-fixed-timetable-${width}.png`});
