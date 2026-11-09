@@ -1,3 +1,4 @@
+import {pushCron} from './push/service.js';
 import {holidayCalendarRoutes} from './schedules/holiday-calendar.js';
 import {legalRoutes} from './legal/routes.js';
 import {workspaceRoutes} from './workspace/routes.js';
@@ -68,6 +69,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.get('/api/v1/message-catalog',c=>{const version=Number(c.req.query('version')||2);if(![1,2].includes(version)||(c.req.query('locale')||'ko-KR')!=='ko-KR')return c.json({error:{code:'CATALOG_VERSION_UNSUPPORTED',message:'그림 목록을 다시 확인해 주세요.'}},409);c.header('Cache-Control','public, max-age=31536000, immutable');return c.json({data:messageCatalog(version)});});
   app.route('/', dailyRoutes(authRuntime,familyRuntime));
   app.route('/', scheduleCron());
+  app.route('/', pushCron(familyRuntime));
   app.all('/api/v1/*', async c => {
     const principal = await resolvePrincipal(c.req.raw, authRuntime());
     if (!isAuthenticated(principal)) return c.json({ error:{ code:'AUTH_REQUIRED', message:'로그인이 필요해요.' }, requestId:c.get('requestId') }, 401);

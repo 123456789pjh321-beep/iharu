@@ -9,7 +9,7 @@ const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/chat',label:'대화',icon:'chat'},
  {to:'/tuition',label:'학원비',icon:'wallet'},
 
- {to:'/records',label:'메모',icon:'book'},
+ {to:'/notification-settings',label:'알림설정',icon:'bell'},
  {to:'/family',label:'가족 관리',icon:'users'},
  {to:'/account',label:'내 계정',icon:'settings'},
  {to:'/privacy',label:'개인정보 관리',icon:'shield'},

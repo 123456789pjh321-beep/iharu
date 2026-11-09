@@ -1,6 +1,6 @@
 import {test,expect,request as apiRequest} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
-test('new family content dots clear after the destination loads and memo dots survive opening More',async({page,request})=>{
+test('new family content dots clear after the destination loads and the replaced memo menu does not contribute a hidden update dot',async({page,request})=>{
  test.setTimeout(120000);
  const password='menu-dot-fixture-2026',other=await apiRequest.newContext({baseURL:origin});
  try{
@@ -18,8 +18,10 @@ test('new family content dots clear after the destination loads and memo dots su
   await page.goto('/timetable');await page.reload();await expect(chat.locator('.workspace-nav-update')).toHaveCount(0);
   const now=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Seoul'});
   await call(other,'items.create',{kind:'NOTE',data:{title:'새 메모 알림',date:now,note:'확인 후 사라져요'}});
-  await expect(more.locator('.workspace-nav-update')).toHaveCount(1,{timeout:15000});await more.click();
-  const memo=page.getByRole('navigation',{name:'전체 메뉴',exact:true}).getByRole('link',{name:'메모',exact:true});await expect(memo.locator('.workspace-nav-update')).toHaveCount(1);await expect(more.locator('.workspace-nav-update')).toHaveCount(1);
-  await memo.click();await expect(page.getByRole('heading',{name:'새 메모 알림',exact:true})).toBeVisible();await expect(more.locator('.workspace-nav-update')).toHaveCount(0);
+  await expect(more.locator('.workspace-nav-update')).toHaveCount(0);await more.click();
+  const menu=page.getByRole('navigation',{name:'전체 메뉴',exact:true});await expect(menu.getByRole('link',{name:'메모',exact:true})).toHaveCount(0);await expect(menu.getByRole('link',{name:'알림설정',exact:true})).toBeVisible();
+  await menu.getByRole('link',{name:'알림설정',exact:true}).click();await expect(page.getByRole('heading',{name:'알림설정',exact:true})).toBeVisible();
+  await page.goto('/records');await expect(page.getByRole('heading',{name:'새 메모 알림',exact:true})).toBeVisible();
+
  }finally{await other.dispose();}
 });

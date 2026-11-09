@@ -1,10 +1,10 @@
+import {NotificationSettings} from './pages/NotificationSettings';
 import {PublicFrame} from './components/PublicFrame';
 import {LegalPage,PrivacyPage} from './pages/Legal';
 import {PersonalWorkspace,type PersonalMode} from './pages/PersonalWorkspace';
 import {useWorkspaceGate} from './components/WorkspaceGate';
 import {RouteEffects} from './components/RouteEffects';
 import {GuardianVerificationPage} from './pages/GuardianVerification';
-import {NotificationsPage} from './pages/Notifications';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { envelope, healthSchema, type ChildFilter } from '../../shared/contracts';
@@ -74,7 +74,7 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
   </Route>
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
-  <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<NotificationsPage/>}/>
+  <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<Navigate to="/notification-settings" replace/>}/><Route path="/notification-settings" element={<NotificationSettings/>}/>
   <Route path="/admin" element={<Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>}/>
   <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
   <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/legal/:section" element={<LegalPage/>}/><Route path="/privacy" element={<PrivacyPage/>}/><Route path="/location" element={<Navigate to="/timetable" replace/>}/><Route path="/today" element={<WorkspaceLanding/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>

@@ -26,12 +26,26 @@ import org.robolectric.annotation.Config;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk={28,35})
 public class RuntimeRecoveryTest {
+    @Test public void notificationDelegationIsDeclaredWithPrivatePermissionActivity() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        var pm = context.getPackageManager();
+        var service = pm.getServiceInfo(new ComponentName(context,
+            "com.google.androidbrowserhelper.trusted.DelegationService"), PackageManager.GET_META_DATA);
+        assertTrue(service.exported);
+        assertNotEquals(0,service.metaData.getInt("android.support.customtabs.trusted.SMALL_ICON"));
+        var activity = pm.getActivityInfo(new ComponentName(context,
+            "com.google.androidbrowserhelper.trusted.NotificationPermissionRequestActivity"),0);
+        assertFalse(activity.exported);
+        var permissions = pm.getPackageInfo(context.getPackageName(),PackageManager.GET_PERMISSIONS).requestedPermissions;
+        assertTrue(java.util.Arrays.asList(permissions).contains("android.permission.POST_NOTIFICATIONS"));
+    }
+
     @Test public void browserDataManagerExistsBeforeOnlineLauncherEnablesIt() throws Exception {
         Context context = RuntimeEnvironment.getApplication();
         ComponentName component = new ComponentName(context,ManageDataLauncherActivity.class);
         var info = context.getPackageManager().getActivityInfo(component,PackageManager.GET_META_DATA);
         assertFalse(info.exported);
-        assertEquals("https://myiharu.com/today",info.metaData.getString("android.support.customtabs.trusted.MANAGE_SPACE_URL"));
+        assertEquals("https://myiharu.com/timetable",info.metaData.getString("android.support.customtabs.trusted.MANAGE_SPACE_URL"));
         assertEquals(component.getClassName(),context.getApplicationInfo().manageSpaceActivityName);
         // This is the exact call that threw on-device when the manifest entry was absent.
         ManageDataLauncherActivity.addSiteSettingsShortcut(context,null);
@@ -71,7 +85,7 @@ public class RuntimeRecoveryTest {
     @Test public void ownLinksSurviveAndForeignLinksCannotReachTheBrowser() {
         Context context = RuntimeEnvironment.getApplication();
         String[] rejected = {"https://evil.example/today","https://myiharu.com.evil.example/", "https://user@myiharu.com/", "http://myiharu.com/", "https://myiharu.com:444/", "content://private/data"};
-        for (String url : rejected) assertEquals("https://myiharu.com/today",
+        for (String url : rejected) assertEquals("https://myiharu.com/timetable",
             MainActivity.sanitizeIntent(context,new Intent(Intent.ACTION_VIEW,Uri.parse(url))).getData().toString());
         assertEquals("https://myiharu.com/timetable?date=2026-11-09",
             MainActivity.sanitizeIntent(context,new Intent(Intent.ACTION_VIEW,Uri.parse("https://myiharu.com/timetable?date=2026-11-09"))).getData().toString());

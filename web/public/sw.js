@@ -25,3 +25,51 @@ self.addEventListener('fetch', event => {
     }
   })());
 });
+
+// Only an opaque active profile ID is stored; messages and calendar data are never cached.
+function pushProfile(value) {
+  return new Promise(resolve => {
+    const request = indexedDB.open('iharu-push-context',1);
+    request.onupgradeneeded = () => request.result.createObjectStore('context');
+    request.onerror = () => resolve(null);
+    request.onsuccess = () => {
+      const db=request.result,write=arguments.length>0;
+      const transaction=db.transaction('context',write?'readwrite':'readonly');
+      const operation=write?transaction.objectStore('context').put(value,'profile'):transaction.objectStore('context').get('profile');
+      operation.onerror=()=>{db.close();resolve(null);};
+      operation.onsuccess=()=>{const result=operation.result;transaction.oncomplete=()=>{db.close();resolve(write?value:result);};};
+    };
+  });
+}
+self.addEventListener('message',event=>{
+  if(event.data?.type!=='IHARU_PUSH_PROFILE')return;
+  const profileId=event.data.profileId;
+  if(profileId!==null&&(typeof profileId!=='string'||!/^[0-9a-f-]{36}$/i.test(profileId)))return;
+  event.waitUntil((async()=>{const previous=await pushProfile();await pushProfile(profileId);if(previous!==profileId){for(const notification of await self.registration.getNotifications())notification.close();}})());
+});
+const pushPaths=new Set(['/chat','/today/calendar','/notification-settings']);
+self.addEventListener('push',event=>{
+  event.waitUntil((async()=>{
+    let payload;try{payload=event.data?.json();}catch{return;}
+    if(!payload||typeof payload.title!=='string'||typeof payload.body!=='string'||!pushPaths.has(payload.url))return;
+    if(!Number.isFinite(Date.parse(payload.expiresAt))||Date.parse(payload.expiresAt)<=Date.now())return;
+    const profile=await pushProfile(),sameAccount=profile===payload.profileId;
+    await self.registration.showNotification(sameAccount?payload.title.slice(0,80):'아이하루 알림',{
+      body:sameAccount?payload.body.slice(0,180):'로그인한 계정의 알림설정을 확인해 주세요.',
+      icon:'/push-icon.png',badge:'/push-badge.png',tag:typeof payload.tag==='string'?payload.tag.slice(0,100):'iharu-update',
+      data:{url:sameAccount?payload.url:'/notification-settings',profileId:payload.profileId},
+    });
+  })());
+});
+self.addEventListener('notificationclick',event=>{
+  event.notification.close();
+  event.waitUntil((async()=>{
+    const profile=await pushProfile();
+    const path=profile===event.notification.data?.profileId&&pushPaths.has(event.notification.data?.url)?event.notification.data.url:'/notification-settings';
+    const url=new URL(path,self.location.origin).href;
+    const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    const existing=windows.find(client=>new URL(client.url).origin===self.location.origin);
+    if(existing){await existing.navigate(url);await existing.focus();}else await self.clients.openWindow(url);
+    // Opening a push never marks data read; the loaded page's existing read receipt does that.
+  })());
+});

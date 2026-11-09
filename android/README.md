@@ -1,9 +1,9 @@
-# 아이하루 Android 1.0.1
+# 아이하루 Android 1.1.0
 
 - Application ID: `com.myiharu.app` (Play 최초 업로드 후 변경 불가)
-- versionCode: `2`, versionName: `1.0.1`
+- versionCode: `3`, versionName: `1.1.0`
 - Android 7.0(API 24) 이상 / target·compile SDK 36
-- Android Browser Helper 2.7.4의 Trusted Web Activity로 `https://myiharu.com/today` 실행
+- Android Browser Helper 2.7.4의 Trusted Web Activity로 `https://myiharu.com/timetable` 실행
 - 위치·연락처·사진·광고 ID·결제 SDK를 추가하지 않음. 웹의 인증과 가족 권한을 그대로 사용.
 - 지원 브라우저와 인터넷 연결 필요. 도메인 검증 실패 시 주소 표시줄이 있는 Custom Tab으로 열릴 수 있음.
 
@@ -29,7 +29,7 @@ CI의 **Android release kit** 워크플로도 같은 빌드를 수행한다. Git
 
 확인 주소: `https://myiharu.com/.well-known/assetlinks.json` — HTTPS 200, JSON, 리디렉션 없이 응답해야 한다.
 
-현재 포함하지 않는 기능: 네이티브 홈 화면 위젯, 네이티브 푸시 알림, 오프라인 일정 편집, 위치 추적. 스토어 소개에서 지원하는 것처럼 표시하지 않는다.
+현재 포함하지 않는 기능: 네이티브 홈 화면 위젯, 오프라인 일정 편집, 위치 추적. 스토어 소개에서 지원하는 것처럼 표시하지 않는다.
 
 ## 출시 전 운영 확인
 
@@ -44,3 +44,12 @@ CI의 **Android release kit** 워크플로도 같은 빌드를 수행한다. Git
 - 앱 아이콘 실행의 빈 URI를 유지하여 기존 TWA 복귀와 딥링크 실행을 구분합니다.
 - 앱 버전 1.0.1 / versionCode 2. 1.0.0과 같은 업로드 키로 서명해야 제거 없이 업데이트됩니다.
 - Android 단위 회귀 검사와 API 28/36 에뮬레이터에서 오프라인 실행·재시도·종료·회전을 검사합니다. 삼성 실기기의 원본 오류 로그와 동일 원인인지는 별도 확인이 필요합니다.
+
+## 1.1.0 — 달력·대화 기기 알림
+
+- 더보기 → 알림설정에서 사용자가 허용하면 Web Push를 등록한다. TWA의 `DelegationService`가 검증된 브라우저의 알림을 아이하루 앱으로 위임받는다.
+- Android 13 이상 `POST_NOTIFICATIONS`와 비공개 `NotificationPermissionRequestActivity`를 선언했다. 자동으로 권한을 요청하지 않으며, 알림 켜기 버튼에서 요청한다.
+- 앱 시작 주소는 `/timetable`, 알림 터치는 `/today/calendar` 또는 `/chat`으로 연결한다.
+- 새 네이티브 선언을 사용하려면 **versionCode 3 / versionName 1.1.0** 설치가 필요하다. 이전 APK에는 웹 화면 변경만 반영되고 앱 이름의 알림 위임은 적용되지 않는다.
+- 앱 종료 후 수신은 Chrome/TWA의 Web Push와 OS 알림 허용에 의존한다. 강제 중지·배터리 제한·오프라인 상태에서는 지연될 수 있다.
+- 기존 서명키로 업데이트 설치하고, 실기기에서 알림 허용 → 시험 알림 → 앱 닫기 → 다른 가족의 대화·달력 변경 순으로 확인한다. Play 배포는 별도 앱 서명 인증서가 assetlinks에 등록되어 있어야 한다.
