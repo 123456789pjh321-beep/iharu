@@ -24,7 +24,9 @@ export async function currentSession(svc: AuthService, request: Request) {
 
 export function accountRoutes(resolve: () => AuthService | null = getAuthRuntime) {
   const app = new Hono();
-  app.use('*', bodyLimit({ maxSize: 16_384, onError: c => c.json({ code: 'BODY_TOO_LARGE' }, 413) }));
+  // This router is mounted at '/'. A wildcard here also rejected legal documents
+  // before their own bounded document-size check could run.
+  for(const path of ['/api/auth/*','/api/account/*'])app.use(path, bodyLimit({ maxSize: 16_384, onError: c => c.json({ code: 'BODY_TOO_LARGE' }, 413) }));
   app.use('*', async (c, next) => {
     if (!c.req.path.startsWith('/api/auth/') && !c.req.path.startsWith('/api/account/')) { await next(); return; }
     c.header('Cache-Control', 'private, no-store'); c.header('Referrer-Policy', 'no-referrer');

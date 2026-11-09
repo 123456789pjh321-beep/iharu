@@ -456,6 +456,18 @@ try{
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_v83('workspace.me','{}')"),{code:'42501'});
   await assert.rejects(family2.command({memberId:a.memberId,sessionId:b.sessionId,requestId:randomUUID()},'legal.admin.read'),{message:'ADMIN_REQUIRED'});
  });
+ await check('UI126 service saves contend atomically without changing legal acceptance and legacy entrypoints are private',async()=>{
+  const previous=await family1.command<{publication:{id:string};accepted:boolean}>(a,'legal.state');
+  const results=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'legal.admin.service.save',{version:0,draft:{title:'서비스 소개 '+i,body:'가족의 시간표와 달력을 함께 관리하는 서비스입니다.'},reason:'소개 동시 저장 검증'})));
+  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal((results.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
+  assert.equal((await family1.command<{publication:unknown}>(anonymous,'legal.service.public')).publication,null);
+  await family1.command(a,'legal.admin.service.publish',{version:1,reviewed:true,reason:'소개 독립 게시 검증'});
+  const published=await family2.command<{publication:{version:number;document:{title:string}}}>(anonymous,'legal.service.public');assert.equal(published.publication.version,1);
+  await family1.command(a,'legal.admin.service.save',{version:2,draft:{title:'다음 비공개 초안',body:'아직 외부에서 읽을 수 없어야 하는 다음 소개 초안입니다.'},reason:'게시 후 비공개 수정'});
+  assert.equal((await family2.command<typeof published>(anonymous,'legal.service.public')).publication.document.title,published.publication.document.title);
+  const current=await family2.command<typeof previous>(a,'legal.state');assert.equal(current.publication.id,previous.publication.id);assert.equal(current.accepted,previous.accepted);
+  await assert.rejects(query(db1,"SELECT app_private.legal_command_v125('legal.public','{}')"),{code:'42501'});
+ });
  console.log(`PostgreSQL integration: ${passed} scenarios passed`);
 }finally{for(const db of connections)await db.destroy();await admin.end();}
 
