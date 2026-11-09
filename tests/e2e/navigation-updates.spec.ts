@@ -10,7 +10,7 @@ test('new family content dots clear after the destination loads and the replaced
   }
   const call=async(client:typeof other,op:string,data:object={})=>{const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();};
   const invite=await call(page.request,'invite.issue',{consent:true});await call(other,'family.join',{code:invite.code});
-  await page.goto('/family');await expect(page.getByRole('heading',{name:'연결된 가족',exact:true})).toBeVisible();await page.goto('/timetable');
+  await page.goto('/family');await expect(page.getByRole('heading',{name:'연결된 그룹',exact:true})).toBeVisible();await page.goto('/timetable');
   const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'}),chat=nav.getByRole('link',{name:'대화',exact:true}),more=nav.getByRole('link',{name:'더보기',exact:true});
   await call(other,'chat.send',{text:'읽음 표시 확인 메시지',clientMessageId:crypto.randomUUID()});
   await expect(chat.locator('.workspace-nav-update')).toHaveCount(1,{timeout:15000});await expect(chat).toHaveAccessibleDescription('새 업데이트가 있어요');

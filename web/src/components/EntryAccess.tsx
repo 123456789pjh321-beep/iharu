@@ -19,7 +19,7 @@ export function EntryAccessProvider({children}:{children:ReactNode}){
   if(opening.current)return;opening.current=true;++generation.current;
   const intent=value.intent||{type:'page',path:entryReturnPath(location.pathname)};
   rememberEntry(intent);completed.current=false;historyOpen.current=false;setBusy(false);
-  setRequest({intent,title:value.title||'우리 가족의 하루를 이어보세요',description:value.description||'로그인하면 내 계정에 맞는 기능과 가족 자료를 사용할 수 있어요.'});
+  setRequest({intent,title:value.title||'우리 그룹의 하루를 이어보세요',description:value.description||'로그인하면 내 계정에 맞는 기능과 그룹 자료를 사용할 수 있어요.'});
   const params=new URLSearchParams(location.search);params.set('signin','1');
   navigate({pathname:location.pathname,search:'?'+params.toString(),hash:location.hash},{state:{...location.state,iharuSignIn:true}});
  },[location,navigate]);

@@ -28,6 +28,18 @@ const saved={calendarChanges:true,calendarReminders:true,chat:true,reminderMinut
 beforeAll(async()=>{database=await testDatabase();for(const file of(await readdir('db/migrations')).filter(n=>/^\d+_[a-z0-9_]+\.sql$/.test(n)).sort())await database.engine.exec(await readFile('db/migrations/'+file,'utf8'));await query(database.db,'INSERT INTO app_private.workspace_push_config(secret_hash) VALUES($1)',[createHash('sha256').update(config.secret).digest('hex')]);},30000);
 beforeEach(async()=>{await database.engine.exec('TRUNCATE app.families,iharu_auth."user",iharu_auth.verification,iharu_auth.rate_buckets CASCADE');mail.length=0;const svc=createAuthService({origin,secret,databaseUrl:'unused',mail:{key:'fixture',from:'test@example.test'},sms:null,social:{}},database.db,{sendMail:async m=>{mail.push(m);},sendSms:async()=>{}});family=new FamilyService(database.db,secret,'app_runtime');app=createApp({environment:'local',demoEnabled:false},()=>svc,async()=>family);});
 afterAll(async()=>{await database.db.destroy();});
+it('limits private-room push recipients and revalidates membership before delivery',async()=>{
+ const {a,b}=await linked(),c=await parent('push-unselected'),invitation=await a.ok('invite.issue',{consent:true});await c.ok('family.join',{code:invitation.code});
+ await subscribe(b,'room-selected');await subscribe(c,'room-unselected');
+ const bm=await b.ok('me'),am=await a.ok('me');
+ const room=await a.ok('chat.room.create',{memberIds:[bm.id],name:'',clientRequestId:crypto.randomUUID()});
+ await a.ok('chat.send',{roomId:room.id,text:'선택한 사람만 받는 알림',clientMessageId:crypto.randomUUID()});
+ const rows=await query<{profile_id:string}>(database.db,"SELECT s.profile_id FROM app_private.workspace_push_outbox q JOIN app_private.workspace_push_subscriptions s ON s.id=q.subscription_id WHERE q.reason='chat'");
+ expect(rows.map(row=>row.profile_id)).toEqual([bm.id]);
+ const jobs=await pushCommand<{id:string;leaseToken:string}[]>(family,config,'claim');expect(jobs).toHaveLength(1);
+ await a.ok('family.remove',{familyId:am.family.id,profileId:bm.id,version:1});
+ expect(await pushCommand(family,config,'delivery',jobs[0])).toBeNull();
+});
 it('requires authenticated settings, blocks arbitrary push targets and denies direct table/worker access',async()=>{
  expect((await new Browser().req('push.settings')).status).toBe(401);const a=await parent('push-auth');expect(await a.ok('push.settings')).toMatchObject({...saved,deviceCount:0,pushAvailable:false});
  for(const url of ['http://fcm.googleapis.com/a','https://fcm.googleapis.com.evil.test/a','https://127.0.0.1/a','https://user@fcm.googleapis.com/a','https://fcm.googleapis.com:8443/a','https://web.push.apple.com/a#leak'])expect(allowedPushEndpoint(url)).toBe(false);

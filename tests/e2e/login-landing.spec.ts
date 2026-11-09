@@ -16,8 +16,8 @@ for(const width of [390,1320])test(`login tabs keep the frame and ready requests
     const frame=await page.locator('.auth-app').elementHandle();
     const tabs=await page.getByRole('navigation',{name:'로그인 대상'}).elementHandle();
     for(const child of [!initialChild,initialChild,!initialChild,initialChild]){
-      await page.getByRole('link',{name:child?'자녀':'학부모',exact:true}).click();
-      await expect(page.getByRole('link',{name:child?'자녀':'학부모',exact:true})).toHaveAttribute('aria-current','page');
+      await page.getByRole('link',{name:child?'어린이':'일반사용자',exact:true}).click();
+      await expect(page.getByRole('link',{name:child?'어린이':'일반사용자',exact:true})).toHaveAttribute('aria-current','page');
       await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeEnabled();
       await expect(page.getByText('로그인 상태를 확인하고 있어요',{exact:true})).toHaveCount(0);
       await expect(page.getByText('로그인 방법을 확인하고 있어요',{exact:true})).toHaveCount(0);
@@ -26,9 +26,9 @@ for(const width of [390,1320])test(`login tabs keep the frame and ready requests
       expect({sessions,providers,documents}).toEqual(counts);
     }
     await page.goBack();
-    await expect(page.getByRole('link',{name:initialChild?'학부모':'자녀',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(page.getByRole('link',{name:initialChild?'일반사용자':'어린이',exact:true})).toHaveAttribute('aria-current','page');
     await page.goForward();
-    await expect(page.getByRole('link',{name:initialChild?'자녀':'학부모',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(page.getByRole('link',{name:initialChild?'어린이':'일반사용자',exact:true})).toHaveAttribute('aria-current','page');
     expect(await frame!.evaluate(el=>el.isConnected)).toBe(true);
     expect({sessions,providers,documents}).toEqual(counts);
     await frame!.dispose();await tabs!.dispose();
@@ -39,7 +39,7 @@ test('email-less Kakao session enters the live home without demo or protected-da
   // UI contract fixture only; the real email-less Kakao callback/cookie is tested in auth.test.ts.
   const paths:string[]=[];page.on('request',r=>paths.push(new URL(r.url()).pathname));
   let state:'signed-in'|'expired'|'error'='signed-in';
-  await page.route('**/api/account/session',route=>state==='error'?route.fulfill({status:503,json:{error:{code:'AUTH_UNAVAILABLE',message:'연결을 확인해 주세요.'}}}):route.fulfill({json:state==='expired'?{authenticated:false}:{authenticated:true,assurance:'HIGH',name:'가상 카카오 보호자',email:null,emailVerified:false,accessReady:false}}));
+  await page.route('**/api/account/session',route=>state==='error'?route.fulfill({status:503,json:{error:{code:'AUTH_UNAVAILABLE',message:'연결을 확인해 주세요.'}}}):route.fulfill({json:state==='expired'?{authenticated:false}:{authenticated:true,assurance:'HIGH',name:'가상 카카오 일반사용자',email:null,emailVerified:false,accessReady:false}}));
   await page.goto('/login');await expect(page).toHaveURL(/\/timetable$/);
   await expect(page.getByRole('heading',{name:'이메일 확인',exact:true})).toBeVisible();
   await expect(page.getByText('로그인 완료',{exact:true})).toBeVisible();
@@ -72,8 +72,8 @@ test('Kakao without verified contact sees successful login and actionable chat s
   await page.route('**/api/account/session',r=>r.fulfill({json:{authenticated:true,assurance:'HIGH',email:null,emailVerified:false,accessReady:false}}));
   await page.goto('/chat?legacy=1');
   await expect(page.getByText('로그인 완료',{exact:true})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'가족 대화를 준비하고 있어요'})).toBeVisible();
-  await expect(page.getByRole('link',{name:'가족 연결 상태 확인'})).toHaveAttribute('href','/family');
+  await expect(page.getByRole('heading',{name:'단체 대화를 준비하고 있어요'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'그룹 연결 상태 확인'})).toHaveAttribute('href','/family');
   await expect(page.getByText('화면을 불러오지 못했어요')).toHaveCount(0);
   expect(protectedRequests).toEqual([]);
 });
@@ -81,9 +81,9 @@ test('Kakao without verified contact sees successful login and actionable chat s
 test('chat retains versioned API error message and redirects when session expires',async({page})=>{
   await page.route('**/api/account/session',r=>r.fulfill({json:{authenticated:true,assurance:'HIGH',email:'fixture@example.test',emailVerified:true,accessReady:true}}));
   let expired=false;
-  await page.route('**/api/v1/chat-rooms',r=>r.fulfill({status:expired?401:403,json:{error:{code:expired?'AUTH_REQUIRED':'ACCESS_NOT_READY',message:'계정 확인과 가족 연결을 먼저 마쳐 주세요.'},meta:{requestId:'fixture',serverNow:new Date().toISOString()}}}));
+  await page.route('**/api/v1/chat-rooms',r=>r.fulfill({status:expired?401:403,json:{error:{code:expired?'AUTH_REQUIRED':'ACCESS_NOT_READY',message:'계정 확인과 그룹 연결을 먼저 마쳐 주세요.'},meta:{requestId:'fixture',serverNow:new Date().toISOString()}}}));
   await page.goto('/chat?legacy=1');
-  await expect(page.getByText('계정 확인과 가족 연결을 먼저 마쳐 주세요.')).toBeVisible();
+  await expect(page.getByText('계정 확인과 그룹 연결을 먼저 마쳐 주세요.')).toBeVisible();
   expired=true;
   await page.route('**/api/account/session',r=>r.fulfill({json:{authenticated:false}}));
   await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();

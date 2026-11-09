@@ -18,7 +18,7 @@ const specs:Record<string,z.ZodType>={
  'member.sessions.revoke':z.object({id,version,reason}).strict(),
  'role.set':z.object({id,version,reason,active:z.boolean()}).strict(),
 };
-const messages:Record<string,string>={ADMIN_REQUIRED:'최고관리자만 이용할 수 있습니다.',AUTH_REQUIRED:'로그인이 필요합니다.',INVALID_INPUT:'입력 내용을 확인해 주세요.',REASON_REQUIRED:'변경 사유를 3자 이상 입력해 주세요.',NOT_FOUND:'회원 정보를 찾을 수 없습니다.',VERSION_CONFLICT:'다른 작업으로 정보가 변경됐습니다. 새로고침 후 확인해 주세요.',REAUTH_REQUIRED:'권한을 변경하려면 비밀번호를 다시 확인해 주세요.',LAST_ADMIN:'마지막 최고관리자 권한은 해제할 수 없습니다.',SELF_PROTECTED:'현재 사용 중인 관리자 계정에는 이 작업을 할 수 없습니다.',ADMIN_ACCOUNT_PROTECTED:'최고관리자는 권한을 먼저 해제한 후 이용 정지할 수 있습니다.',MEMBER_NOT_ACTIVE:'탈퇴 처리 중인 계정은 변경할 수 없습니다.',ROLE_TARGET_INVALID:'이메일 인증을 마친 정상 부모 계정만 최고관리자로 지정할 수 있습니다.',RATE_LIMITED:'잠시 후 다시 시도해 주세요.'};
+const messages:Record<string,string>={ADMIN_REQUIRED:'최고관리자만 이용할 수 있습니다.',AUTH_REQUIRED:'로그인이 필요합니다.',INVALID_INPUT:'입력 내용을 확인해 주세요.',REASON_REQUIRED:'변경 사유를 3자 이상 입력해 주세요.',NOT_FOUND:'회원 정보를 찾을 수 없습니다.',VERSION_CONFLICT:'다른 작업으로 정보가 변경됐습니다. 새로고침 후 확인해 주세요.',REAUTH_REQUIRED:'권한을 변경하려면 비밀번호를 다시 확인해 주세요.',LAST_ADMIN:'마지막 최고관리자 권한은 해제할 수 없습니다.',SELF_PROTECTED:'현재 사용 중인 관리자 계정에는 이 작업을 할 수 없습니다.',ADMIN_ACCOUNT_PROTECTED:'최고관리자는 권한을 먼저 해제한 후 이용 정지할 수 있습니다.',MEMBER_NOT_ACTIVE:'탈퇴 처리 중인 계정은 변경할 수 없습니다.',ROLE_TARGET_INVALID:'이메일 인증을 마친 정상 일반사용자 계정만 최고관리자로 지정할 수 있습니다.',RATE_LIMITED:'잠시 후 다시 시도해 주세요.'};
 export function adminRoutes(auth:()=>AuthService|null,runtime:()=>Promise<FamilyService|null>){
  const app=new Hono<{Variables:{requestId:string}}>();
  app.use('/api/v1/admin/*',bodyLimit({maxSize:8192,onError:c=>c.json({error:{code:'INVALID_INPUT',message:messages.INVALID_INPUT}},413)}));

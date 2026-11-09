@@ -433,6 +433,19 @@ try{
   await assert.rejects(query(authdb,"SELECT app_private.admin_command('admin.overview','{}')"),{code:'42501'});
   await assert.rejects(family2.command({memberId:a.memberId,sessionId:b.sessionId,requestId:randomUUID()},'admin.overview'),{message:'ADMIN_REQUIRED'});
  });
+ await check('UI130 concurrent room creation and message retries preserve participant isolation',async()=>{
+  const am=await family1.command<{id:string}>(a,'workspace.me'),bm=await family2.command<{id:string}>(b,'workspace.me');
+  const [left,right]=await Promise.all([
+   family1.command<{id:string}>(a,'workspace.chat.room.create',{memberIds:[bm.id],name:'',clientRequestId:randomUUID()}),
+   family2.command<{id:string}>(b,'workspace.chat.room.create',{memberIds:[am.id],name:'',clientRequestId:randomUUID()})
+  ]);assert.equal(left.id,right.id);
+  const message={roomId:left.id,text:'두 연결에서 재시도',clientMessageId:randomUUID()};
+  const [one,two]=await Promise.all([family1.command<{id:string}>(a,'workspace.chat.send',message),family2.command<{id:string}>(a,'workspace.chat.send',message)]);assert.equal(one.id,two.id);
+  const room=await family2.command<{items:{id:string}[]}>(b,'workspace.chat.list',{roomId:left.id});assert.equal(room.items.filter(i=>i.id===one.id).length,1);
+  assert.equal((await family2.command<{items:{id:string}[]}>(b,'workspace.chat.list',{})).items.some(i=>i.id===one.id),false);
+  await assert.rejects(family1.command(a,'workspace.chat.send',{text:message.text,clientMessageId:message.clientMessageId}),{message:'VERSION_CONFLICT'});
+  for(const sql of ['SELECT * FROM app_private.workspace_chat_rooms','SELECT * FROM app_private.workspace_chat_members',"SELECT app_private.workspace_room_member(NULL,NULL)","SELECT app_private.workspace_command_v129('workspace.me','{}')"])await assert.rejects(query(db1,sql),{code:'42501'});
+ });
  await check('UI83 concurrent admin writes have one winner and role/session revocation takes effect immediately',async()=>{
   const edits=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'admin.member.update',{id:b.memberId,version:0,name:'운영 동시 변경 '+i,reason:'실제 PostgreSQL 충돌 검사'})));
   assert.equal(edits.filter(x=>x.status==='fulfilled').length,1);assert.equal((edits.find(x=>x.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
@@ -450,6 +463,7 @@ try{
   await family1.command(a,'legal.admin.publish',{version:1,reviewed:true,reason:'검토된 문서 게시 검증'});
   const state=await family1.command<{publication:{id:string;document:Record<string,string>}}>(a,'legal.state');assert.equal(state.publication.document.reviewNotes,undefined);
   await assert.rejects(family1.command(a,'workspace.items.create',{kind:'NOTE',data:{title:'동의 전 차단',date:'2026-11-08'}}),{message:'LEGAL_ACCEPTANCE_REQUIRED'});
+  await assert.rejects(family1.command(a,'workspace.chat.room.create',{memberIds:[randomUUID()],name:'',clientRequestId:randomUUID()}),{message:'LEGAL_ACCEPTANCE_REQUIRED'});
   await family1.command(a,'legal.accept',{publicationId:state.publication.id,terms:true,privacy:true,adult:true});
   await family1.command(a,'workspace.items.create',{kind:'NOTE',data:{title:'동의 후 저장',date:'2026-11-08'}});
   for(const table of ['legal_settings','legal_publications','legal_acceptances','privacy_requests'])await assert.rejects(query(db1,'SELECT * FROM app_private.'+table),{code:'42501'});

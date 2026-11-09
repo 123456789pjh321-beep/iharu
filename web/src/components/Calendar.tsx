@@ -40,7 +40,7 @@ export function Calendar({ child, onPreview }: { child:ChildFilter; onPreview:(t
       {selectedEvents.length ? selectedEvents.map(e => <CalendarItem key={e.id} event={e} childName={data?.data.children.find(c => c.id === e.childId)?.name || ''}/>) : <p className="muted empty-day">등록된 예시 일정이 없어요.</p>}
       {holiday && <p className="holiday-note">공휴일이어도 학원 일정은 따로 확인해 주세요.</p>}
     </>}
-    </div><button className="calendar-add" onClick={() => onPreview('가족 일정 추가')}><Icon name="plus"/>일정 추가</button>
+    </div><button className="calendar-add" onClick={() => onPreview('그룹 일정 추가')}><Icon name="plus"/>일정 추가</button>
   </div>;
 }
 function CalendarItem({ event, childName }: { event:Dashboard['events'][number]; childName:string }) {

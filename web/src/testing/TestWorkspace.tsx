@@ -46,7 +46,7 @@ const pages: Record<
   { title: string; description: string; icon: IconName }
 > = {
   today: {
-    title: "가족의 하루를 자유롭게 테스트해요",
+    title: "그룹의 하루를 자유롭게 테스트해요",
     description: "일정부터 등하원, 대화까지 직접 추가하고 확인하세요.",
     icon: "home",
   },
@@ -67,12 +67,12 @@ const pages: Record<
   },
   chat: {
     title: "대화",
-    description: "보호자와 아이 역할을 바꿔 글과 그림 메시지를 보내 보세요.",
+    description: "일반사용자와 아이 역할을 바꿔 글과 그림 메시지를 보내 보세요.",
     icon: "chat",
   },
   family: {
-    title: "가족과 아이 관리",
-    description: "가상 아이와 보호자를 등록하고 공유 범위를 조정해 보세요.",
+    title: "그룹과 아이 관리",
+    description: "가상 아이와 일반사용자를 등록하고 공유 범위를 조정해 보세요.",
     icon: "shield",
   },
   devices: {
@@ -97,7 +97,7 @@ const pages: Record<
     icon: "book",
   },
   notifications: {
-    title: "가족의 새 소식",
+    title: "그룹의 새 소식",
     description: "일정과 대화, 등하원 기록에서 만들어진 알림을 확인해요.",
     icon: "bell",
   },
@@ -108,7 +108,7 @@ const pages: Record<
   },
   child: {
     title: "아이의 하루",
-    description: "큰 버튼으로 도착을 알리고 가족에게 그림을 보내 보세요.",
+    description: "큰 버튼으로 도착을 알리고 그룹에게 그림을 보내 보세요.",
     icon: "sun",
   },
 };
@@ -126,7 +126,7 @@ const stickerNames: Record<string, string> = {
 const kindNames: Record<LogKind, string> = {
   schedule: "일정",
   daily: "등하원",
-  family: "가족",
+  family: "그룹",
   chat: "대화",
   device: "기기",
   fee: "학원비",
@@ -277,7 +277,7 @@ function EditDialog({
       child: "아이",
       repeat: "반복 일정",
       fee: "학원비",
-      member: "보호자",
+      member: "일반사용자",
     }[editor.kind] + (current ? " 수정" : " 추가");
   const [error, setError] = useState("");
   return (
@@ -344,7 +344,7 @@ function EditDialog({
           </>
         ) : editor.kind === "member" ? (
           <Field
-            label="가상 보호자 이름"
+            label="가상 일반사용자 이름"
             name="name"
             value={defaults?.name}
             maxLength={20}
@@ -626,7 +626,7 @@ export default function TestWorkspace() {
               location: false,
             });
           else s.members[i].name = get("name").trim();
-          audit(s, "가상 보호자를 저장했어요.", "family");
+          audit(s, "가상 일반사용자를 저장했어요.", "family");
           break;
         }
       }
@@ -782,7 +782,7 @@ export default function TestWorkspace() {
             to={page === "child" ? "/test/today" : "/test/child"}
           >
             <Icon name={page === "child" ? "home" : "sun"} />
-            {page === "child" ? "보호자 화면" : "아이 화면"}
+            {page === "child" ? "일반사용자 화면" : "어린이 화면"}
           </Link>
         </div>
         <div className="test-context-bar">
@@ -856,7 +856,7 @@ export default function TestWorkspace() {
             <>
               <section
                 className="workspace-metrics"
-                aria-label="테스트 가족 현황"
+                aria-label="테스트 그룹 현황"
               >
                 {[
                   {
@@ -870,7 +870,7 @@ export default function TestWorkspace() {
                     to: "family",
                     label: "함께하는 아이",
                     value: `${state.children.length}명`,
-                    note: `보호자 ${state.members.filter((m) => m.status === "active").length + 1}명`,
+                    note: `일반사용자 ${state.members.filter((m) => m.status === "active").length + 1}명`,
                     icon: "shield" as const,
                   },
                   {
@@ -1194,7 +1194,7 @@ export default function TestWorkspace() {
           {page === "family" && (
             <>
               <div className="test-two-columns">
-                <Card title="우리 가족" icon="home">
+                <Card title="우리 그룹" icon="home">
                   <form
                     className="test-inline-form"
                     onSubmit={(e) => {
@@ -1204,11 +1204,11 @@ export default function TestWorkspace() {
                       ).trim();
                       update((s) => {
                         s.familyName = name;
-                        audit(s, "테스트 가족 이름을 수정했어요.", "family");
+                        audit(s, "테스트 그룹 이름을 수정했어요.", "family");
                       });
                     }}
                   >
-                    <label htmlFor="test-family-name">가족 이름</label>
+                    <label htmlFor="test-family-name">그룹 이름</label>
                     <input
                       key={state.familyName}
                       id="test-family-name"
@@ -1224,12 +1224,12 @@ export default function TestWorkspace() {
                   <div className="test-info-note">
                     <Icon name="shield" />
                     <p>
-                      테스트 모드는 이메일·보호자 인증을 요구하지 않아요. 아래
+                      테스트 모드는 이메일·일반사용자 인증을 요구하지 않아요. 아래
                       상태 변경은 심사 화면 테스트를 위한 시뮬레이션이에요.
                     </p>
                   </div>
                   <div className="test-review-row">
-                    <span>보호자 확인</span>
+                    <span>일반사용자 확인</span>
                     <strong>
                       {
                         {
@@ -1241,7 +1241,7 @@ export default function TestWorkspace() {
                       }
                     </strong>
                     <select
-                      aria-label="보호자 확인 테스트 상태"
+                      aria-label="일반사용자 확인 테스트 상태"
                       value={state.guardianReview}
                       onChange={(e) =>
                         update((s) => {
@@ -1249,7 +1249,7 @@ export default function TestWorkspace() {
                             .value as TestState["guardianReview"];
                           audit(
                             s,
-                            "보호자 확인 테스트 상태를 변경했어요.",
+                            "일반사용자 확인 테스트 상태를 변경했어요.",
                             "family",
                           );
                         })
@@ -1315,7 +1315,7 @@ export default function TestWorkspace() {
                 </Card>
               </div>
               <Card
-                title="함께하는 보호자 · 공유 범위"
+                title="함께하는 일반사용자 · 공유 범위"
                 icon="shield"
                 action={
                   <button
@@ -1323,7 +1323,7 @@ export default function TestWorkspace() {
                     onClick={() => open("member")}
                   >
                     <Icon name="plus" />
-                    보호자 초대 테스트
+                    일반사용자 초대 테스트
                   </button>
                 }
               >
@@ -1382,7 +1382,7 @@ export default function TestWorkspace() {
                                   "active";
                                 audit(
                                   s,
-                                  "가상 보호자의 참여를 승인했어요.",
+                                  "가상 일반사용자의 참여를 승인했어요.",
                                   "family",
                                 );
                               })
@@ -1395,8 +1395,8 @@ export default function TestWorkspace() {
                           className="test-text-button danger-text"
                           onClick={() =>
                             ask(
-                              "보호자 참여 해제",
-                              "테스트 보호자의 참여와 공유 설정을 해제해요.",
+                              "일반사용자 참여 해제",
+                              "테스트 일반사용자의 참여와 공유 설정을 해제해요.",
                               () =>
                                 update((s) => {
                                   s.members = s.members.filter(
@@ -1404,7 +1404,7 @@ export default function TestWorkspace() {
                                   );
                                   audit(
                                     s,
-                                    "테스트 보호자의 참여를 해제했어요.",
+                                    "테스트 일반사용자의 참여를 해제했어요.",
                                     "family",
                                   );
                                 }),
@@ -1418,7 +1418,7 @@ export default function TestWorkspace() {
                   ))}
                 </div>
                 {!state.members.length && (
-                  <Empty title="함께할 가상 보호자를 추가해 주세요." />
+                  <Empty title="함께할 가상 일반사용자를 추가해 주세요." />
                 )}
               </Card>
             </>
@@ -1612,13 +1612,13 @@ export default function TestWorkspace() {
                     ).trim();
                     update((s) => {
                       s.profileName = name;
-                      audit(s, "테스트 보호자 이름을 저장했어요.", "account");
+                      audit(s, "테스트 일반사용자 이름을 저장했어요.", "account");
                     });
                   }}
                 >
                   <Field
                     key={state.profileName}
-                    label="테스트 보호자 이름"
+                    label="테스트 일반사용자 이름"
                     name="profileName"
                     value={state.profileName}
                     maxLength={30}
@@ -1628,7 +1628,7 @@ export default function TestWorkspace() {
                 <div className="test-account-status">
                   <span>이메일 인증</span>
                   <strong>테스트에서 생략</strong>
-                  <span>보호자 확인</span>
+                  <span>일반사용자 확인</span>
                   <strong>테스트에서 생략</strong>
                   <span>저장 위치</span>
                   <strong>현재 브라우저</strong>
@@ -1636,7 +1636,7 @@ export default function TestWorkspace() {
               </Card>
               <Card title="데이터와 테스트 범위" icon="shield">
                 <p className="section-description">
-                  테스트 작업실은 실제 가족 계정과 연결되지 않아요. 다른
+                  테스트 작업실은 실제 그룹 계정과 연결되지 않아요. 다른
                   기기·브라우저와는 공유하지 않으며, 브라우저 데이터를 지우면
                   테스트 기록도 사라질 수 있어요.
                 </p>
@@ -1647,11 +1647,11 @@ export default function TestWorkspace() {
                   </li>
                   <li>
                     <Icon name="check" />
-                    아이·보호자·기기·학원비·알림·기록
+                    아이·일반사용자·기기·학원비·알림·기록
                   </li>
                   <li>
                     <Icon name="shield" />
-                    위치·기기 연결·보호자 심사는 시뮬레이션
+                    위치·기기 연결·일반사용자 심사는 시뮬레이션
                   </li>
                   <li>
                     <Icon name="shield" />
@@ -1663,7 +1663,7 @@ export default function TestWorkspace() {
                   onClick={() =>
                     ask(
                       "테스트 데이터 초기화",
-                      "이 브라우저의 테스트 내용을 지우고 처음의 예시 데이터로 되돌려요. 실제 계정과 가족 정보에는 영향이 없어요.",
+                      "이 브라우저의 테스트 내용을 지우고 처음의 예시 데이터로 되돌려요. 실제 계정과 그룹 정보에는 영향이 없어요.",
                       () =>
                         update(
                           (s) => Object.assign(s, seedTestState()),
@@ -1686,7 +1686,7 @@ export default function TestWorkspace() {
               <section className="test-child-welcome">
                 <span className="badge soft">아이 역할 · 테스트</span>
                 <h2>{nickname(childId)}, 오늘도 좋은 하루!</h2>
-                <p>도착을 알리거나 가족에게 그림으로 마음을 전해 보세요.</p>
+                <p>도착을 알리거나 그룹에게 그림으로 마음을 전해 보세요.</p>
                 <div className="test-child-actions">
                   <Link to="/test/daily">
                     <Icon name="arrival" />
@@ -1695,7 +1695,7 @@ export default function TestWorkspace() {
                   </Link>
                   <Link to="/test/chat">
                     <Icon name="chat" />
-                    <strong>가족에게 말하기</strong>
+                    <strong>그룹에게 말하기</strong>
                     <span>그림과 글로 보내는 마음</span>
                   </Link>
                   <Link to="/test/calendar">
@@ -1832,7 +1832,7 @@ function TestChat({
   }, [state.messages.length, childId]);
   return (
     <div className="test-chat-layout">
-      <Card title={`${nickname} 가족방 · 테스트`} icon="chat">
+      <Card title={`${nickname} 그룹방 · 테스트`} icon="chat">
         <div className="test-message-list" aria-label="테스트 대화 내용">
           {state.messages
             .filter((m) => m.childId === childId)
@@ -1883,7 +1883,7 @@ function TestChat({
             aria-pressed={actor === "guardian"}
             onClick={() => setActor("guardian")}
           >
-            보호자
+            일반사용자
           </button>
           <button
             aria-pressed={actor === "child"}
@@ -1931,7 +1931,7 @@ function TestChat({
             onChange={(e) => setText(e.target.value)}
             maxLength={500}
             rows={3}
-            placeholder="가족에게 짧은 소식을 남겨요."
+            placeholder="그룹에게 짧은 소식을 남겨요."
           />
           <small className="test-caption">
             {text.length}/500자 ·{" "}
@@ -1948,7 +1948,7 @@ function TestChat({
           </button>
         </form>
         <p className="test-caption">
-          역할을 바꿔 같은 브라우저에서 답장을 테스트해요. 실제 가족이나 외부
+          역할을 바꿔 같은 브라우저에서 답장을 테스트해요. 실제 그룹이나 외부
           메신저로 전송하지 않아요.
         </p>
       </Card>
@@ -2013,7 +2013,7 @@ function TestDevices({
             </div>
           )}
         </Card>
-        <Card title="2. 보호자가 연결 확인" icon="shield">
+        <Card title="2. 일반사용자가 연결 확인" icon="shield">
           <form
             className="test-edit-form"
             onSubmit={(e) => {
@@ -2172,7 +2172,7 @@ function TestLocation({
           <Icon name="shield" />
           <p>
             위치 권한을 요청하거나 실제 좌표를 수집하지 않아요. 운영 위치 기능의
-            카카오 지도에 예시 좌표를 표시해요. 실제 GPS 수집·가족 간 위치 전송은 별도 개발 대상이에요.
+            카카오 지도에 예시 좌표를 표시해요. 실제 GPS 수집·그룹 간 위치 전송은 별도 개발 대상이에요.
           </p>
         </div>
       </Card>

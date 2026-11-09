@@ -16,7 +16,7 @@ test("test workspace needs no auth, persists CRUD and never touches production A
   const calls = await isolate(page);
   await page.goto("/test/today");
   await expect(
-    page.getByRole("heading", { name: "가족의 하루를 자유롭게 테스트해요" }),
+    page.getByRole("heading", { name: "그룹의 하루를 자유롭게 테스트해요" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "일정 추가", exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -193,15 +193,15 @@ test("validation, cancellation, fixed font and theme preferences remain usable",
   await expect(page.locator("html")).toHaveAttribute("data-font", "noto");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.goto("/test/account");
-  await page.getByLabel("테스트 보호자 이름").fill("변경 테스트");
+  await page.getByLabel("테스트 일반사용자 이름").fill("변경 테스트");
   await page.getByRole("button", { name: "프로필 저장" }).click();
   await page.getByRole("button", { name: "테스트 데이터 초기화" }).click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "확인", exact: true })
     .click();
-  await expect(page.getByLabel("테스트 보호자 이름")).toHaveValue(
-    "테스트 보호자",
+  await expect(page.getByLabel("테스트 일반사용자 이름")).toHaveValue(
+    "테스트 일반사용자",
   );
   expect(calls).toEqual([]);
 });

@@ -46,8 +46,8 @@ test('visitors can explore examples, use mobile navigation and reach signup/logi
  await expect(preview.locator('.preview-brief')).toContainText('06:00–24:00');
  await preview.getByRole('button',{name:'학원비',exact:true}).click();await expect(preview.locator('.demo-fee-total strong')).toHaveText('540,000원');
  await preview.getByRole('button',{name:'민서',exact:true}).click();await expect(preview.locator('.demo-fee-total strong')).toHaveText('370,000원');await expect(preview.locator('.demo-fee-row')).toHaveCount(2);
- await preview.getByRole('button',{name:'가족 달력',exact:true}).click();await expect(preview.locator('.calendar-school')).toBeVisible();
- await preview.getByRole('button',{name:'가족 대화',exact:true}).click();await preview.getByRole('button',{name:'사랑해 예시 입력'}).click();await expect(preview.locator('.demo-chat-input')).toContainText('💛 사랑해');
+ await preview.getByRole('button',{name:'그룹 달력',exact:true}).click();await expect(preview.locator('.calendar-school')).toBeVisible();
+ await preview.getByRole('button',{name:'단체 대화',exact:true}).click();await preview.getByRole('button',{name:'사랑해 예시 입력'}).click();await expect(preview.locator('.demo-chat-input')).toContainText('💛 사랑해');
  await page.getByRole('button',{name:'소개 메뉴 열기'}).click();await page.locator('.market-nav').getByRole('link',{name:'활용방법',exact:true}).click();await expect(page).toHaveURL(/\/guide$/);await expect(page.getByRole('button',{name:'소개 메뉴 열기'})).toHaveAttribute('aria-expanded','false');
  await page.locator('.guide-jumps').getByRole('link',{name:'학원비 관리'}).click();await expect(page).toHaveURL(/\/guide#fees$/);await expect(page.locator('#fees h2')).toBeInViewport();
  await page.getByRole('button',{name:'소개 메뉴 열기'}).click();await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'소개 메뉴 열기'})).toBeFocused();
@@ -64,9 +64,9 @@ for(const width of [320,820,1440])test(`public header and footer stay fixed thro
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
  await header.getByRole('link',{name:'로그인',exact:true}).click();await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
- await page.getByRole('link',{name:'회원가입',exact:true}).click();await expect(page.getByRole('link',{name:'학부모로 회원가입'})).toBeVisible();await expect(page.getByRole('link',{name:'자녀로 회원가입'})).toBeVisible();
+ await page.getByRole('link',{name:'회원가입',exact:true}).click();await expect(page.getByRole('link',{name:'일반사용자로 회원가입'})).toBeVisible();await expect(page.getByRole('link',{name:'어린이로 회원가입'})).toBeVisible();
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
- await page.getByRole('link',{name:'자녀로 회원가입'}).click();await expect(page.getByLabel('부모 승인번호',{exact:true})).toBeVisible();
- await page.getByRole('navigation',{name:'회원가입 대상'}).getByRole('link',{name:'학부모',exact:true}).click();await expect(page.getByRole('heading',{name:'학부모 회원가입'})).toBeVisible();await expect(page.getByLabel('부모 승인번호',{exact:true})).toHaveCount(0);
+ await page.getByRole('link',{name:'어린이로 회원가입'}).click();await expect(page.getByLabel('일반사용자 승인번호',{exact:true})).toBeVisible();
+ await page.getByRole('navigation',{name:'회원가입 대상'}).getByRole('link',{name:'일반사용자',exact:true}).click();await expect(page.getByRole('heading',{name:'일반사용자 회원가입'})).toBeVisible();await expect(page.getByLabel('일반사용자 승인번호',{exact:true})).toHaveCount(0);
  await page.locator('.public-content').evaluate(el=>{el.scrollTop=el.scrollHeight;});expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
 });

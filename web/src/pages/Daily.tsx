@@ -21,15 +21,15 @@ export function DailyWorkspace({records=false}:{records?:boolean}){
  const family=families.data?.families.find(f=>f.id===search.get('family'))||families.data?.families[0];
  if(families.loading)return <Loading/>;
  if(families.error)return <ErrorState message={families.error} retry={families.retry}/>;
- if(!family)return <section className="card daily-empty"><h2>가족의 하루를 연결해요</h2><p>함께할 가족을 만들고 아이의 공유 범위를 확인해 주세요.</p><Link className="button primary" to="/family">우리 가족 연결</Link></section>;
- return <><div className="daily-family"><label>가족<select value={family.id} onChange={e=>setSearch({legacy:'1',family:e.target.value})}>{families.data!.families.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label></div><FamilyDaily key={`${family.id}:${records}`} family={family} records={records}/></>;
+ if(!family)return <section className="card daily-empty"><h2>그룹의 하루를 연결해요</h2><p>함께할 그룹을 만들고 아이의 공유 범위를 확인해 주세요.</p><Link className="button primary" to="/family">우리 그룹 연결</Link></section>;
+ return <><div className="daily-family"><label>그룹<select value={family.id} onChange={e=>setSearch({legacy:'1',family:e.target.value})}>{families.data!.families.map(f=><option key={f.id} value={f.id}>{f.name}</option>)}</select></label></div><FamilyDaily key={`${family.id}:${records}`} family={family} records={records}/></>;
 }
 function FamilyDaily({family,records}:{family:Family;records:boolean}){
  const children=useApi(`/api/v1/families/${family.id}/schedule-children`,scheduleChildrenResponse),[search,setSearch]=useSearchParams();
  const choices=children.data?.children||[],selected=choices.find(c=>c.id===search.get('child'))?.id||(records?choices[0]?.id||'':'');
  if(children.loading)return <Loading label="함께 볼 아이를 확인하고 있어요"/>;
  if(children.error)return <ErrorState message={children.error} retry={children.retry}/>;
- if(!choices.length)return <section className="card daily-empty"><h2>아직 공유받은 아이가 없어요</h2><p>가족 관리에서 아이 등록과 공유 상태를 확인해 주세요.</p><Link className="button primary" to="/family">가족과 아이 관리</Link></section>;
+ if(!choices.length)return <section className="card daily-empty"><h2>아직 공유받은 아이가 없어요</h2><p>그룹 관리에서 아이 등록과 공유 상태를 확인해 주세요.</p><Link className="button primary" to="/family">그룹과 아이 관리</Link></section>;
  return <><div className="daily-child-filter" aria-label="아이 선택">{!records&&<button className={`button ${!selected?'primary':''}`} aria-pressed={!selected} onClick={()=>setSearch({legacy:'1',family:family.id})}>모든 아이</button>}{choices.map((c,i)=><button key={c.id} className={`button child-filter-chip ${selected===c.id?'primary':''}`} aria-pressed={selected===c.id} onClick={()=>setSearch({legacy:'1',family:family.id,child:c.id})}><span className={`avatar ${i%2?'peach':'mint'}`} aria-hidden="true">{c.nickname.slice(0,1)}</span>{c.nickname}</button>)}</div>
  {records?<Records key={selected} child={choices.find(c=>c.id===selected)!} serverToday={children.data!.serverToday}/>:<DayBoard key={selected} familyId={family.id} childId={selected} childrenOptions={choices} serverToday={children.data!.serverToday}/>}</>;
 }
@@ -39,7 +39,7 @@ function DayBoard({familyId,childId,childrenOptions,serverToday,childMode=false}
  return <>
  {!childMode&&<div className="daily-daybar"><label>보는 날짜<input type="date" value={day} min={addDays(serverToday,-89)} max={addDays(serverToday,55)} onChange={e=>{if(e.target.value){setDay(e.target.value);setMessage('');}}}/></label><button className="button quiet" onClick={()=>setDay(serverToday)}>오늘로</button><span>한국 시간 기준</span></div>}
  <div className="daily-daybar"><button className="button quiet" onClick={()=>{setRevision(v=>v+1);setMessage('');}}>최신 기록 확인</button></div><FormNotice message={message}/>
- <DayContents key={`${url}:${revision}`} url={url} familyId={familyId} childId={childId} childrenOptions={childrenOptions} day={day} serverToday={serverToday} childMode={childMode} saved={()=>{setRevision(v=>v+1);setMessage('가족의 하루에 기록했어요.');}} selectDay={setDay}/>
+ <DayContents key={`${url}:${revision}`} url={url} familyId={familyId} childId={childId} childrenOptions={childrenOptions} day={day} serverToday={serverToday} childMode={childMode} saved={()=>{setRevision(v=>v+1);setMessage('그룹의 하루에 기록했어요.');}} selectDay={setDay}/>
  </>;
 }
 function DayContents({url,familyId,childId,childrenOptions,day,serverToday,childMode,saved,selectDay}:{url:string;familyId?:string;childId:string;childrenOptions:ChildOption[];day:string;serverToday:string;childMode:boolean;saved:()=>void;selectDay:(d:string)=>void}){
@@ -59,12 +59,12 @@ function DayContents({url,familyId,childId,childrenOptions,day,serverToday,child
   {data!.checkins.filter(c=>!c.occurrenceId).map(c=><RecordItem key={c.id} item={c} open={open} childMode={childMode}/>)}
   <small className="daily-footnote">{childMode?'눌러서 남긴 기록만 보여요.':'일정과 직접 남긴 기록이에요. 도착 여부를 자동으로 판단하지 않아요.'}</small></>}
  </Card>
- {!childMode&&<><Card title="우리 가족 달력" icon="calendar" className="daily-calendar"><MiniCalendar familyId={familyId!} childId={childId} today={serverToday} day={day} select={selectDay}/></Card><Card title="아이 위치" icon="pin" className="daily-location" action={<span className="badge soft">준비 중</span>}><div className="location-preparing"><span className="location-symbol"><Icon name="pin"/></span><h3>위치 공유를 준비하고 있어요</h3><p>위치 정보는 아직 수집하지 않아요.<br/>현재 위치로 추정해 표시하지 않아요.</p><Link className="text-link" to="/location">공유 안내 보기<Icon name="arrow"/></Link></div></Card></>}
+ {!childMode&&<><Card title="우리 그룹 달력" icon="calendar" className="daily-calendar"><MiniCalendar familyId={familyId!} childId={childId} today={serverToday} day={day} select={selectDay}/></Card><Card title="아이 위치" icon="pin" className="daily-location" action={<span className="badge soft">준비 중</span>}><div className="location-preparing"><span className="location-symbol"><Icon name="pin"/></span><h3>위치 공유를 준비하고 있어요</h3><p>위치 정보는 아직 수집하지 않아요.<br/>현재 위치로 추정해 표시하지 않아요.</p><Link className="text-link" to="/location">공유 안내 보기<Icon name="arrow"/></Link></div></Card></>}
  <Card title={childMode?'오늘 해 볼 일':'오늘의 할 일'} icon="check" className="daily-tasks" action={!childMode&&data?<button className="button compact" onClick={()=>setForm({type:'TASK'})}><Icon name="plus"/>할 일 추가</button>:undefined}>
   {pending||<>{data!.tasks.length?data!.tasks.map(t=><RecordItem key={t.id} item={t} open={open} childMode={childMode}/>):<Empty text={childMode?'지금 할 일이 없어요. 잠깐 쉬어 가요.':'오늘 할 일을 가볍게 적어 보세요.'}/>}</>}
  </Card>
  <Card title={childMode?'누가 데리러 올까요?':'픽업 약속'} icon="home" className="daily-pickups" action={!childMode&&data?<button className="button compact" onClick={()=>setForm({type:'PICKUP'})}><Icon name="plus"/>픽업 요청</button>:undefined}>
-  {pending||<>{data!.pickups.length?data!.pickups.map(p=><RecordItem key={p.id} item={p} open={open} childMode={childMode}/>):<Empty text={childMode?'아직 정해진 픽업 약속이 없어요.':'아이를 만날 가족과 시간을 정해 주세요.'}/>}</>}
+  {pending||<>{data!.pickups.length?data!.pickups.map(p=><RecordItem key={p.id} item={p} open={open} childMode={childMode}/>):<Empty text={childMode?'아직 정해진 픽업 약속이 없어요.':'아이를 만날 그룹과 시간을 정해 주세요.'}/>}</>}
  </Card>
  {!childMode&&<><Card title="오늘의 배움" icon="book" className="daily-learning" action={data?<button className="button compact" onClick={()=>setForm({type:'LEARNING'})}><Icon name="plus"/>메모 추가</button>:undefined}>{pending||<>{data!.recent.length?data!.recent.map(l=><RecordItem key={l.id} item={l} open={open}/>):<Empty text="작은 배움과 변화를 한 줄로 남겨요."/>}<Link className="text-link" to={`/records?${new URLSearchParams({family:familyId!,...(childId?{child:childId}:{})})}`}>지난 기록 모아 보기<Icon name="arrow"/></Link></>}</Card><Card title="이번 달 학원비" icon="wallet" className="daily-fees" action={<span className="badge soft">준비 중</span>}><p>학원비 기록은 후속 업데이트에서 연결할 예정이에요.</p><Link className="text-link" to="/tuition">학원비 안내<Icon name="arrow"/></Link></Card></>}
  {data?.truncated&&<p className="daily-limit" role="status">표시할 항목이 많아요. 아이를 선택하거나 달력·기록 메뉴에서 더 확인해 주세요.</p>}
@@ -81,8 +81,8 @@ export function RecordItem({item,open,childMode=false}:{item:DailyItem;open:(i:D
   {i.type==='CHECKIN'&&<><p>{datetime(i.happenedAt!)} · {i.occurrenceTitle||'직접 남긴 기록'}</p>{i.supersedesId&&<small>원본을 정정한 기록</small>}{i.reason&&<p>{i.reason}</p>}</>}
   {i.type==='TASK'&&<>{i.detail&&<p className="daily-prewrap">{i.detail}</p>}{i.dueAt&&<small>마감 {datetime(i.dueAt)}</small>}{i.sourceUrl?.startsWith('https://')&&<a className="text-link" href={i.sourceUrl} target="_blank" rel="noopener noreferrer">{i.sourceName||'출처 보기'}<Icon name="arrow"/></a>}</>}
   {i.type==='LEARNING'&&<><p className="daily-prewrap">{i.content}</p><small>{i.learningDate}</small>{i.taskId&&<p className="account-caption">연결한 할 일: {i.taskTitle||'지금은 확인할 수 없는 할 일'}</p>}</>}
-  {i.type==='PICKUP'&&<><p><Icon name="clock"/> {time(i.scheduledAt!)}{i.place?` · ${i.place}`:''}</p>{i.memo&&<p className="daily-prewrap">{i.memo}</p>}{childMode&&<small>{i.state==='PROPOSED'?'보호자가 확인하고 있어요.':i.state==='ACCEPTED'?'이 가족이 데리러 올 예정이에요.':'가족이 남긴 픽업 기록이에요.'}</small>}{!childMode&&i.history&&<details><summary>변경 이력 {i.history.length}개</summary><ol>{i.history.map((h,n)=><li key={n}>{datetime(h.at)} · {h.actorName}<br/>{({CREATE:'요청 등록',ACCEPT:'담당 수락',HANDOVER:'만남 기록',REASSIGN:'담당 변경',CANCEL:'요청 취소',ANNOTATE:'정정 메모',ASSIGNEE_REVOKED:'공유 종료로 담당 해제'} as Record<string,string>)[h.action]||h.action}{h.reason&&` · ${h.reason}`}</li>)}</ol></details>}</>}
-  {!childMode&&<small className="daily-author">처음 남긴 가족: {i.authorName}{i.version>1?` · 최근 변경: ${i.editorName}`:''}</small>}
+  {i.type==='PICKUP'&&<><p><Icon name="clock"/> {time(i.scheduledAt!)}{i.place?` · ${i.place}`:''}</p>{i.memo&&<p className="daily-prewrap">{i.memo}</p>}{childMode&&<small>{i.state==='PROPOSED'?'일반사용자가 확인하고 있어요.':i.state==='ACCEPTED'?'이 그룹이 데리러 올 예정이에요.':'그룹이 남긴 픽업 기록이에요.'}</small>}{!childMode&&i.history&&<details><summary>변경 이력 {i.history.length}개</summary><ol>{i.history.map((h,n)=><li key={n}>{datetime(h.at)} · {h.actorName}<br/>{({CREATE:'요청 등록',ACCEPT:'담당 수락',HANDOVER:'만남 기록',REASSIGN:'담당 변경',CANCEL:'요청 취소',ANNOTATE:'정정 메모',ASSIGNEE_REVOKED:'공유 종료로 담당 해제'} as Record<string,string>)[h.action]||h.action}{h.reason&&` · ${h.reason}`}</li>)}</ol></details>}</>}
+  {!childMode&&<small className="daily-author">처음 남긴 그룹: {i.authorName}{i.version>1?` · 최근 변경: ${i.editorName}`:''}</small>}
   {i.actions.length>0&&<div className="card-actions">{i.actions.map(a=><button key={a} className={`button ${['COMPLETE','ACCEPT','HANDOVER'].includes(a)?'primary':''} ${childMode?'child-cta':'compact'}`} onClick={()=>open(i,a)}>{a==='COMPLETE'&&<Icon name="check"/>}{actionLabels[a]||a}</button>)}</div>}
  </article>;
 }

@@ -6,7 +6,7 @@ async function login(page: Page, request: APIRequestContext, email: string) {
     data: {
       email,
       password: "household-browser-password-2026",
-      name: "가상 보호자",
+      name: "가상 일반사용자",
       callbackURL: "/login?verified=1",
     },
   });

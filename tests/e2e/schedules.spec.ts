@@ -5,10 +5,10 @@ const origin='http://127.0.0.1:4174';
 async function fixture(page:Page){
  const email=`schedule-${crypto.randomUUID()}@example.test`,password='schedule-browser-fixture-password';
  async function post(path:string,data:object){const r=await page.request.post(path,{headers:{Origin:origin,'Idempotency-Key':crypto.randomUUID()},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
- await post('/api/auth/sign-up/email',{email,password,name:'가상 보호자',callbackURL:'/login?verified=1'});
+ await post('/api/auth/sign-up/email',{email,password,name:'가상 일반사용자',callbackURL:'/login?verified=1'});
  const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);
  await post('/api/auth/sign-in/email',{email,password});await post('/__test__/ready',{email});
- const family=await post('/api/v1/families',{name:'일정 테스트 가족'}),draft=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});
+ const family=await post('/api/v1/families',{name:'일정 테스트 그룹'}),draft=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});
  await post('/__test__/verify-draft',{draftId:draft.id});const proof=await post(`/api/v1/child-registration-drafts/${draft.id}/consent-proofs`,{general:true,location:false,policyVersion:'6.1'});
  const child=await post(`/api/v1/families/${family.id}/children`,{draftId:draft.id,proofId:proof.proofId,nickname:'가상 하늘',birthDate:'2018-03-02'});
  return {familyId:family.id as string,childId:child.id as string,email,password,post};
@@ -17,7 +17,7 @@ test('P04 weekly calendar → manual decision → single edit → future preview
  test.setTimeout(90000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
  const {familyId}=await fixture(page),date=addDays(koreaToday(),1),dow=new Date(date+'T00:00:00Z').getUTCDay(),dayLabel=['일','월','화','수','목','금','토'][dow];
  await page.setViewportSize({width:1440,height:1000});await page.goto(`/today/calendar?legacy=1&family=${familyId}&day=${date}`);
- await expect(page.getByRole('heading',{name:'우리 가족 달력',exact:true})).toBeVisible();await expect(page.getByText('정보 미수집',{exact:false}).first()).toBeVisible();
+ await expect(page.getByRole('heading',{name:'우리 그룹 달력',exact:true})).toBeVisible();await expect(page.getByText('정보 미수집',{exact:false}).first()).toBeVisible();
  await page.getByRole('button',{name:'이날 일정 추가',exact:true}).click();const dialog=page.getByRole('dialog');
  await dialog.getByLabel('일정 이름',{exact:true}).fill('해봄 영어 학원');await dialog.getByLabel('장소',{exact:true}).fill('우리 동네 교실');
  for(const checkbox of await dialog.locator('.schedule-weekdays input').all())await checkbox.uncheck();await dialog.getByLabel(dayLabel,{exact:true}).check();await dialog.getByLabel(/^반복 종료 날짜/).fill(addDays(date,35));

@@ -23,7 +23,7 @@ export function MemberPreferenceFilter({members,selection,label,className='',pre
  return <section className="member-preference" aria-label={label+' 설정'}>
   <div className="member-preference-row">
    <MemberFilter className={className} members={members} value={memberIds} showAll={false} compact disabled={saving} onChange={toggle} label={label}/>
-   {preview?<span className="guest-sample-badge" title="가상 예시이며 실제 가족 자료가 아닙니다">샘플 데이터</span>:<div className="timetable-preference"><button type="button" className="button compact" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} data-saved={isSaved} disabled={saving||isSaved||!canSave} onClick={()=>void save()}><strong className="preference-member-names">{summary}</strong><span className="preference-action-short" aria-hidden="true">{saving?'저장 중':isSaved?'설정됨':'저장'}</span></button></div>}
+   {preview?<span className="guest-sample-badge" title="가상 예시이며 실제 그룹 자료가 아닙니다">샘플 데이터</span>:<div className="timetable-preference"><button type="button" className="button compact" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} data-saved={isSaved} disabled={saving||isSaved||!canSave} onClick={()=>void save()}><strong className="preference-member-names">{summary}</strong><span className="preference-action-short" aria-hidden="true">{saving?'저장 중':isSaved?'설정됨':'저장'}</span></button></div>}
   </div>
   {error&&<p className="timetable-preference-message error" role="alert">{error}</p>}{notice&&<p className="timetable-preference-message" role="status">{notice}</p>}
  </section>;
