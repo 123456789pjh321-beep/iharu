@@ -24,7 +24,7 @@ for(const width of [390,820])test(`finger-follow, snap-back, cancellation and to
    const end=()=>cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    // The live page follows the finger before release; a held, small drag returns without opening a card.
    await start();await drag(-20);await drag(-40);await expect(area).toHaveAttribute('data-paging','dragging');
-   expect(await area.evaluate(el=>new DOMMatrix(getComputedStyle(el).transform).m41)).toBeCloseTo(-40,0);await expect(month).toHaveValue('2026-11');
+   await expect.poll(()=>area.evaluate(el=>new DOMMatrix(getComputedStyle(el).transform).m41)).toBeCloseTo(-40,0);await expect(month).toHaveValue('2026-11');
    await page.screenshot({path:`test-results/ui122-drag-${route==='/tuition'?'tuition':'calendar'}-${width}.png`});
    await page.waitForTimeout(150);await end();await settled(page);await expect(month).toHaveValue('2026-11');await expect(page.getByRole('dialog')).toHaveCount(0);
    // Cancel an in-progress horizontal gesture: no period change and no lingering transformed surface.
@@ -54,9 +54,9 @@ test('jade palette remains readable and aligned in light and dark at phone, tabl
   expect((await context.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'FEE',data:{title:'피아노',amount:180000,date:'2026-11-01',feeFrequency:'MONTHLY'}}})).ok()).toBe(true);
   await page.goto('/tuition');await page.getByLabel('조회 월').fill('2026-11');
   for(const theme of ['light','dark']){
-   await page.getByRole('button',{name:theme==='light'?'밝게':'어둡게',exact:true}).click();
+   await page.getByRole('button',{name:theme==='light'?'밝게':'어둡게',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
    const contrasts=await page.evaluate(()=>{
-    const root=getComputedStyle(document.documentElement),rgb=(value:string)=>{const hex=value.trim().replace('#','');return [0,2,4].map(n=>parseInt(hex.slice(n,n+2),16)/255);};
+    const root=getComputedStyle(document.documentElement),rgb=(value:string)=>{const probe=document.createElement('span');probe.style.color=value.trim();document.body.appendChild(probe);const color=getComputedStyle(probe).color;probe.remove();return color.match(/[\d.]+/g)!.slice(0,3).map(n=>Number(n)/255);};
     const lum=(color:string)=>rgb(color).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
     const ratio=(a:string,b:string)=>{const x=lum(root.getPropertyValue(a)),y=lum(root.getPropertyValue(b));return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
     return [ratio('--ink','--surface'),ratio('--muted','--surface'),ratio('--primary','--mint'),ratio('--on-primary','--primary')];
