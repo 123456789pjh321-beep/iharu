@@ -18,7 +18,7 @@ for(const width of [390,820])test(`finger-follow, snap-back, cancellation and to
   ]){
    await page.goto(route);const month=page.getByLabel(inputLabel,{exact:true});await month.fill('2026-11');await settled(page);
    const area=page.locator(areaSelector),grid=page.locator(gridSelector);
-   const bounds=(await grid.boundingBox())!,x=bounds.x+bounds.width*.65,y=bounds.y+40;
+   const bounds=(await grid.boundingBox())!,x=bounds.x+bounds.width*.5,y=bounds.y+40;
    const start=()=>cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});
    const drag=async(dx:number,dy=0)=>{await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx,y:y+dy,id:1}]});};
    const end=()=>cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
@@ -30,10 +30,11 @@ for(const width of [390,820])test(`finger-follow, snap-back, cancellation and to
    // Cancel an in-progress horizontal gesture: no period change and no lingering transformed surface.
    await start();await drag(-90);await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await settled(page);await expect(month).toHaveValue('2026-11');
    // A deliberate swipe commits exactly one month; taps on the arriving page still work.
-   await start();for(let i=1;i<=8;i++)await drag(-Math.min(210,bounds.width*.52)*i/8);await end();await expect(month).toHaveValue('2026-12');await settled(page);
-   const day=route==='/tuition'?page.locator('.tuition-date[data-date="2026-12-01"]'):page.locator('.calendar-day-target').filter({hasText:/^1$/}).first();
+   await start();for(let i=1;i<=8;i++)await drag(-Math.min(210,bounds.width*.46)*i/8);await end();await expect(month).toHaveValue('2026-12');await settled(page);
+   const day=route==='/tuition'?page.locator('.tuition-date[data-date="2026-12-01"]'):page.locator('.calendar-cell[data-date="2026-12-01"] .calendar-day-target');
    if(route==='/tuition'){await day.tap();await page.waitForTimeout(650);await expect(page.locator('.tuition-day-sheet')).toBeVisible();await page.getByRole('button',{name:'날짜 학원비 닫기'}).tap();}
-   else{await page.locator('.calendar-day-target').first().tap();await page.waitForTimeout(650);await expect(page.locator('.calendar-day-sheet')).toBeVisible();await page.keyboard.press('Escape');}
+   else{await day.tap();await page.waitForTimeout(650);await expect(page.locator('.calendar-day-sheet')).toBeVisible();await page.keyboard.press('Escape');}
+   await expect(page.getByRole('dialog')).toHaveCount(0);
    await start();await drag(100);await drag(180);await end();await expect(month).toHaveValue('2026-11');await settled(page);
    // Vertical movement must never change the month.
    await start();await drag(2,-40);await drag(3,-100);await end();await expect(month).toHaveValue('2026-11');await settled(page);
