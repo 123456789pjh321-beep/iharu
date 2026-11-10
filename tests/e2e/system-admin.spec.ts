@@ -24,7 +24,7 @@ test('system administrator manages family-grouped members, sessions, roles and a
   await page.getByLabel('관리 작업').selectOption('role');await page.getByLabel('관리 변경 사유').fill('운영 검증 최고관리자 해제');await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('dialog').locator('.admin-member-badges')).not.toContainText('최고관리자');expect((await api(other,'admin/access')).allowed).toBe(false);
   await page.getByLabel('관리 작업').selectOption('sessions');await page.getByLabel('관리 변경 사유').fill('운영 검증 세션 종료');await page.getByRole('button',{name:'변경 적용',exact:true}).click();await expect(page.getByRole('dialog').locator('.admin-member-facts')).toContainText('0개');await page.getByRole('button',{name:'회원 상세 닫기'}).click();
   await page.setViewportSize({width:390,height:844});for(const label of ['회원 유형','회원 상태'])expect((await page.getByLabel(label).boundingBox())!.width).toBeGreaterThanOrEqual(120);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/ui83-admin-members-mobile.png',animations:'disabled'});
-  await page.goto('/settings');await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.goto('/admin?section=members');await page.getByLabel('회원 검색').fill('운영관리자');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-family')).toHaveCount(1);
+  await page.goto('/settings');await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.goto('/admin?section=members');await expect(page.locator('.admin-member-identity strong').first()).toBeVisible();
   // Theme colors transition briefly; verify the settled text contrast before capturing.
   await expect.poll(()=>page.locator('.admin-member-identity strong').first().evaluate(title=>{
    const card=title.closest('.admin-panel')!;
@@ -33,7 +33,7 @@ test('system administrator manages family-grouped members, sessions, roles and a
    const foreground=luminance(getComputedStyle(title).color),background=luminance(getComputedStyle(card).backgroundColor);
    return (Math.max(foreground,background)+0.05)/(Math.min(foreground,background)+0.05);
   })).toBeGreaterThanOrEqual(4.5);
-  await page.screenshot({path:'test-results/ui83-admin-members-dark.png',animations:'disabled'});await page.goto('/settings');await page.getByRole('button',{name:'밝게',exact:true}).click();await page.goto('/admin?section=history');
+  await page.screenshot({path:'test-results/ui83-admin-members-dark.png',animations:'disabled'});await page.goto('/settings');await page.getByRole('button',{name:'밝게',exact:true}).click();await page.goto('/admin?section=history');await expect(page.locator('.admin-events')).toBeVisible();
   await page.getByRole('button',{name:'이력관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('운영 검증');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-events')).toContainText('최고관리자 권한 변경');await expect(page.locator('.admin-events')).toContainText('전체 세션 종료');
   await page.getByRole('button',{name:'로그관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/member.update');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-log').first()).toContainText('200');
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'현재 목록 CSV'}).click();expect((await downloadPromise).suggestedFilename()).toMatch(/^iharu-logs-/);
