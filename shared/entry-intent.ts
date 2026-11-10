@@ -1,9 +1,10 @@
 import {z} from 'zod';
 
 const paths=new Set(['/timetable','/today/calendar','/today/repeats','/chat','/child/chat','/tuition','/records','/family','/family/invite','/account','/account/email','/account/reauth','/privacy','/notification-settings','/more','/settings','/help','/more/service','/more/notices','/more/blog','/admin']);
-/** Auth returns are exact app paths, never arbitrary URLs, query strings, or fragments. */
+/** Auth returns are exact app destinations. Only the explicit AI settings query is allowed. */
 export function entryReturnPath(value:unknown):string{
  if(typeof value!=='string')return '/timetable';
+ if(value==='/admin?section=ai')return value;
  return paths.has(value)||/^\/more\/(notices|blog)\/[a-z0-9-]{1,100}$/.test(value)?value:'/timetable';
 }
 const pageIntent=z.object({type:z.literal('page'),path:z.string()}).strict();

@@ -8,7 +8,7 @@ export const sessionSchema = z.discriminatedUnion('authenticated', [
   z.object({ authenticated: z.literal(true), assurance: z.enum(['LOW','HIGH']), name: z.string().optional(), email: z.string().nullable().optional(), emailVerified: z.boolean().optional(), accessReady: z.boolean(), reauthenticatedAt: z.string().nullable().optional() }),
 ]);
 export type SignedInSession = Extract<z.infer<typeof sessionSchema>, {authenticated:true}>;
-export const methodsSchema = z.object({ methods: z.array(z.object({ id: z.string(), provider: z.string() })) });
+export const methodsSchema = z.object({ methods: z.array(z.object({ id: z.string(), provider: z.string(), canReauthenticate:z.boolean().optional() })) });
 export const sessionsSchema = z.object({ sessions: z.array(z.object({ id: z.string(), current: z.boolean(), device: z.string(), createdAt: z.string(), lastSeenAt: z.string() })) });
 export const methodNames: Record<string, string> = { credential:'이메일 · 비밀번호', google:'Google', kakao:'카카오', naver:'네이버', phone:'휴대폰' };
 export const emailLinkSchema = z.object({pending:z.object({email:z.string(),expiresAt:z.string()}).nullable()});
@@ -41,8 +41,8 @@ export async function authPost(path: string, body: object) {
   return data;
 }
 export async function startSocial(provider:string, link = false, reauthenticate = false,returnTo?:string) {
-  const next=entryReturnPath(returnTo);
-  const data = await authPost(`/api/auth/${link?'link-social':'sign-in/social'}`, { provider, callbackURL:link||reauthenticate?'/account':next, errorCallbackURL:'/login?next='+encodeURIComponent(next) });
+  const next=reauthenticate&&returnTo===undefined?'/account':entryReturnPath(returnTo);
+  const data = await authPost(`/api/auth/${link?'link-social':'sign-in/social'}`, { provider, callbackURL:link?'/account':next, errorCallbackURL:'/login?next='+encodeURIComponent(next) });
   if (!data.url || !data.url.startsWith('https://')) throw new Error('로그인 연결 주소를 확인하지 못했어요. 다시 시도해 주세요.');
   window.location.assign(data.url);
 }

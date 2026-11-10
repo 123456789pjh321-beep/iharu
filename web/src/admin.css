@@ -13,3 +13,5 @@
 .ai-settings-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.ai-briefing-settings .auth-form{max-width:640px}.ai-briefing-settings input{min-width:0;width:100%;box-sizing:border-box}.ai-briefing-settings .admin-member-facts dd{overflow-wrap:anywhere}.ai-briefing-settings dialog{width:min(480px,calc(100vw - 28px));box-sizing:border-box}.ai-briefing-settings dialog footer{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
 
 .ai-briefing-settings .admin-member-facts>div{grid-template-columns:120px minmax(0,1fr)}.ai-briefing-settings .admin-member-facts dt{word-break:keep-all}@media(max-width:600px){.ai-briefing-settings .admin-member-facts>div{grid-template-columns:88px minmax(0,1fr)}}
+
+.admin-reauth-panel{margin:18px 0;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--mint);color:var(--ink)}.admin-reauth-panel h3{font-size:1rem;margin:0 0 10px}.admin-reauth-panel p{font-size:.82rem;line-height:1.75}.admin-reauth-social{display:flex;flex-wrap:wrap;gap:10px}.admin-reauth-social .button{min-height:44px}.admin-reauth-panel .auth-form{margin-top:16px}

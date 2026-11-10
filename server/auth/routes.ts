@@ -133,8 +133,8 @@ export function accountRoutes(resolve: () => AuthService | null = getAuthRuntime
   });
   app.get('/api/account/methods', async c => {
     const svc = resolve()!; const s = (await currentSession(svc, c.req.raw))!;
-    const accounts = await query<{ id: string; providerId: string }>(svc.db, 'SELECT id,"providerId" FROM iharu_auth.account WHERE "userId"=$1 ORDER BY "createdAt"', [s.user.id]);
-    return c.json({ methods: [...accounts.map(a => ({ id: a.id, provider: a.providerId })), ...(s.user.phoneNumberVerified ? [{ id: 'phone', provider: 'phone' }] : [])] });
+    const accounts = await query<{ id: string; providerId: string; hasPassword:boolean }>(svc.db, 'SELECT id,"providerId",password IS NOT NULL AS "hasPassword" FROM iharu_auth.account WHERE "userId"=$1 ORDER BY "createdAt"', [s.user.id]);
+    return c.json({ methods: [...accounts.map(a => ({ id: a.id, provider: a.providerId,canReauthenticate:a.providerId==='credential'?a.hasPassword&&Boolean(svc.settings.mail):socialIds.includes(a.providerId as typeof socialIds[number])&&Boolean(svc.settings.social[a.providerId as typeof socialIds[number]]) })), ...(s.user.phoneNumberVerified ? [{ id: 'phone', provider: 'phone',canReauthenticate:false }] : [])] });
   });
   app.post('/api/account/unlink', async c => {
     const { accountId } = z.object({ accountId: z.string().min(1).max(100) }).parse(await c.req.json());

@@ -60,7 +60,8 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
   const [token] = useState(() => new URLSearchParams(search).get('token') || '');
   useEffect(()=>{ if (token) window.history.replaceState(null,'',pathname); },[token,pathname]);
   const mode = inline?'login':pathname === '/signup' ? 'signup' : pathname === '/forgot-password' ? 'forgot' : pathname === '/verify-email' ? 'verify' : pathname === '/reset-password' ? 'reset' : 'login';
-  const next=entryReturnPath(returnTo||new URLSearchParams(search).get('next'));
+  const requestedNext=returnTo||new URLSearchParams(search).get('next');
+  const next=reauthenticate&&!requestedNext?'/account':entryReturnPath(requestedNext);
   const callback='/login?verified=1&next='+encodeURIComponent(next);
   const titles = { login:'로그인', signup:'일반사용자 회원가입', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
   const subtitles = { login:'', signup:'이메일로 일반사용자 계정을 만들어요. 이메일 확인 후 그룹 관리에서 일반사용자 승인번호를 발급할 수 있어요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
@@ -78,7 +79,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
     event.preventDefault();if(busy)return; const form = new FormData(event.currentTarget); setBusy(true);onBusy?.(true);setError('');setMessage('');
     try {
       const email = String(form.get('email') || '').trim(); const password = String(form.get('password') || '');
-      if (mode === 'login') { await authPost('/api/auth/sign-in/email',{email,password});if(onAuthenticated)await onAuthenticated();else navigate(reauthenticate?'/account':next,{replace:true}); }
+      if (mode === 'login') { await authPost('/api/auth/sign-in/email',{email,password});if(onAuthenticated)await onAuthenticated();else navigate(next,{replace:true}); }
       if (mode === 'signup') { await authPost('/api/auth/sign-up/email',{email,password,name:String(form.get('name')).trim(),callbackURL:callback});setMessage('가입을 진행할 수 있는 이메일이면 인증 메일이 도착해요. 메일함과 스팸함을 확인해 주세요.'); }
       if (mode === 'forgot') { await authPost('/api/auth/request-password-reset',{email,redirectTo:'/reset-password'});setMessage('일치하는 이메일 계정이 있으면 재설정 링크를 보내드려요. 메일함을 확인해 주세요.'); }
       if (mode === 'verify') { await authPost('/api/auth/send-verification-email',{email,callbackURL:callback});setMessage('인증이 필요한 계정이면 메일을 보내드려요. 메일함과 스팸함을 확인해 주세요.'); }
