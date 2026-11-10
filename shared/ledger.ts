@@ -3,8 +3,8 @@ import {tuitionMonth} from './tuition-calendar.js';
 export const ledgerFlows=['INCOME','EXPENSE'] as const;
 export const ledgerMethods=['CASH','CARD','TRANSFER','OTHER'] as const;
 export const ledgerCategories=[
- {id:'SALARY',label:'급여',flow:'INCOME'},{id:'SIDE_INCOME',label:'부수입',flow:'INCOME'},{id:'ALLOWANCE',label:'용돈·지원금',flow:'INCOME'},{id:'REFUND',label:'환급·환불',flow:'INCOME'},{id:'OTHER_INCOME',label:'기타 수입',flow:'INCOME'},
- {id:'EDUCATION',label:'교육·학원',flow:'EXPENSE'},{id:'FOOD',label:'식비',flow:'EXPENSE'},{id:'GROCERIES',label:'생활용품',flow:'EXPENSE'},{id:'TRANSPORT',label:'교통·자동차',flow:'EXPENSE'},{id:'HOUSING',label:'주거·통신',flow:'EXPENSE'},{id:'HEALTH',label:'건강·의료',flow:'EXPENSE'},{id:'SHOPPING',label:'쇼핑',flow:'EXPENSE'},{id:'LEISURE',label:'문화·여가',flow:'EXPENSE'},{id:'INSURANCE',label:'보험',flow:'EXPENSE'},{id:'OTHER_EXPENSE',label:'기타 지출',flow:'EXPENSE'},
+ {id:'SALARY',label:'월급',flow:'INCOME'},{id:'SIDE_INCOME',label:'추가로 번 돈',flow:'INCOME'},{id:'ALLOWANCE',label:'용돈',flow:'INCOME'},{id:'REFUND',label:'돌려받은 돈',flow:'INCOME'},{id:'OTHER_INCOME',label:'그 밖에 받은 돈',flow:'INCOME'},
+ {id:'EDUCATION',label:'교육·학원',flow:'EXPENSE'},{id:'FOOD',label:'식비',flow:'EXPENSE'},{id:'GROCERIES',label:'생활용품',flow:'EXPENSE'},{id:'TRANSPORT',label:'교통·자동차',flow:'EXPENSE'},{id:'HOUSING',label:'주거·통신',flow:'EXPENSE'},{id:'HEALTH',label:'건강·의료',flow:'EXPENSE'},{id:'SHOPPING',label:'쇼핑',flow:'EXPENSE'},{id:'LEISURE',label:'문화·여가',flow:'EXPENSE'},{id:'INSURANCE',label:'보험',flow:'EXPENSE'},{id:'OTHER_EXPENSE',label:'그 밖에 쓴 돈',flow:'EXPENSE'},
 ] as const;
 export type LedgerFlow=typeof ledgerFlows[number];
 export type LedgerCategory=typeof ledgerCategories[number]['id'];

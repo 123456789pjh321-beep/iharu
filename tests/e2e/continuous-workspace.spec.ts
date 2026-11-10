@@ -34,9 +34,9 @@ test('failed and successful mutations preserve input, avoid duplicate writes and
  const context=await browser.newContext({baseURL:origin,reducedMotion:'reduce',viewport:{width:390,height:900}}),page=await context.newPage();try{
   await setup(context,'continuous-mutations@example.test');await page.goto('/tuition');await page.getByLabel('조회 월').fill('2026-11');
   await page.locator('[data-pager-current] .tuition-date[data-date="2026-11-15"]').click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();
-  const editor=page.locator('.personal-editor');await editor.getByLabel('거래 내용').fill('등록 확인 교재');await editor.getByLabel('금액',{exact:true}).fill('25000');await editor.getByRole('button',{name:'한 번',exact:true}).click();
+  const editor=page.locator('.personal-editor');await editor.getByLabel('내용').fill('등록 확인 교재');await editor.getByLabel('금액',{exact:true}).fill('25000');await editor.getByRole('button',{name:'한 번',exact:true}).click();
   await page.route('**/api/v1/workspace/items.create',r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'잠시 후 다시 시도해 주세요.'}})}),{times:1});
-  await editor.getByRole('button',{name:'저장',exact:true}).click();await expect(editor.getByRole('alert')).toContainText('잠시 후');await expect(editor.getByLabel('거래 내용')).toHaveValue('등록 확인 교재');
+  await editor.getByRole('button',{name:'저장',exact:true}).click();await expect(editor.getByRole('alert')).toContainText('잠시 후');await expect(editor.getByLabel('내용')).toHaveValue('등록 확인 교재');
   await page.route('**/api/v1/workspace/items.list',async r=>{await new Promise(resolve=>setTimeout(resolve,800));await r.continue();});
   await editor.getByRole('button',{name:'저장',exact:true}).evaluate((button:HTMLButtonElement)=>{button.click();button.click();});
   await expect(editor.getByRole('button',{name:'저장 중',exact:true})).toBeVisible();await expect(editor).toHaveCount(0);await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('25,000원');
