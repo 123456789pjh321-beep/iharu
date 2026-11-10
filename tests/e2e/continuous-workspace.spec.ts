@@ -27,7 +27,7 @@ test('real adjacent events, holidays and recurring fees remain present during dr
   // A visited menu paints from its scoped snapshot while a fresh request is still pending.
   const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await nav.getByRole('link',{name:'더보기',exact:true}).click();await expect(page.locator('.more-account')).toContainText('연속 화면');
   await page.route('**/api/v1/workspace/items.list',async r=>{await new Promise(resolve=>setTimeout(resolve,1600));await r.continue();});
-  await nav.getByRole('link',{name:'가계부',exact:true}).click();await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('180,000원',{timeout:600});await expect(page.locator('.loading-state')).toHaveCount(0);
+  await nav.getByRole('link',{name:'가계부',exact:true}).click();await expect(page.locator('[data-pager-current] .ledger-summary>section').last().locator('strong')).toHaveText('180,000원',{timeout:600});await expect(page.locator('.loading-state')).toHaveCount(0);
  }finally{await page.unrouteAll({behavior:'wait'});await context.close();}
 });
 test('failed and successful mutations preserve input, avoid duplicate writes and refresh before the sheet closes',async({browser})=>{
