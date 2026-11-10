@@ -1,0 +1,17 @@
+UI139 locally hosted editorial topic photographs. These are NOT photographs of a reported event or a user's actual facility/location.
+
+library.jpg - Clay Banks / Unsplash, "library interior"
+https://unsplash.com/photos/library-interior-z_DkoUqgx6M
+https://images.unsplash.com/photo-1533327325824-76bc4e62d560
+
+park.jpg - Erdélyi Gergely / Unsplash
+https://unsplash.com/photos/a-tall-building-with-lots-of-windows-sitting-in-the-middle-of-a-park-av1Jn654PHs
+https://images.unsplash.com/photo-1713693783829-57798a0919d2
+
+facility.jpg - Photos of Korea / Unsplash, Sejong public library
+https://unsplash.com/photos/a-circular-building-with-a-ramp-in-front-of-it-g3QB0sjh8p0
+https://images.unsplash.com/photo-1679232709188-0f033301d36e
+
+All three source pages identify the files as free under the Unsplash License (checked 2026-11-10).
+https://unsplash.com/license
+UI labels them "주제 사진" and links the respective author/source. No runtime request goes to an image vendor.
