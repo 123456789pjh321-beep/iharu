@@ -49,6 +49,6 @@ export function NotificationSettings(){
  <label className="notification-option"><span><strong>미리 알림 시간</strong><small>종일 일정은 오전 9시 기준 · 한국 시간</small></span><select aria-label="달력 미리 알림 시간" disabled={!settings.calendarReminders} value={settings.reminderMinutes} onChange={e=>void save({reminderMinutes:Number(e.target.value)})}>{minutes.map(m=><option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
  </section><section className="account-card"><div className="notification-section-heading"><Icon name="chat"/><div><h2>대화</h2><p>그룹이 전하는 새로운 이야기</p></div></div><label className="notification-option"><span><strong>새 대화 알림</strong><small>그룹의 새 메시지를 알려드려요. 이미 확인한 대화는 발송 전에 제외해요.</small></span><input type="checkbox" role="switch" checked={settings.chat} onChange={e=>void save({chat:e.target.checked})}/></label></section>
  <section className="account-card"><label className="notification-option"><span><strong>알림에 내용 미리 보기</strong><small>켠 경우 일정 제목·대화 내용이 기기 알림과 잠금화면에 표시될 수 있어요.</small></span><input type="checkbox" role="switch" checked={settings.preview} onChange={e=>void save({preview:e.target.checked})}/></label></section></fieldset>
- <p className="notification-footnote">수신 항목은 계정의 모든 연결 기기에 적용돼요. 시간표·학원비·메모는 푸시 알림을 보내지 않아요. 로그아웃하거나 로그인이 만료되면 다시 로그인하고 기기 알림을 연결해 주세요. 기기의 절전·방해금지·네트워크 상태에 따라 수신이 지연될 수 있어요.</p>
+ <p className="notification-footnote">수신 항목은 계정의 모든 연결 기기에 적용돼요. 시간표·가계부·메모는 푸시 알림을 보내지 않아요. 로그아웃하거나 로그인이 만료되면 다시 로그인하고 기기 알림을 연결해 주세요. 기기의 절전·방해금지·네트워크 상태에 따라 수신이 지연될 수 있어요.</p>
  </> }</div></AuthLayout>;
 }

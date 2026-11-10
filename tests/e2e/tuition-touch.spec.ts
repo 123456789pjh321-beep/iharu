@@ -24,10 +24,10 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
    await page.waitForTimeout(650);await expect(sheet).toBeVisible();await expect(sheet.locator('.tuition-day-event')).toHaveCount(1);
    await expect(sheet).toContainText('터치 피아노');await page.screenshot({path:`test-results/ui121-tuition-touch-${width}-${reducedMotion}.png`});
    await sheet.getByRole('button',{name:'터치 피아노 수정',exact:true}).tap();
-   const editor=page.getByRole('dialog',{name:'수정',exact:true});await expect(editor).toBeVisible();await expect(page.getByLabel('학원·비용 이름')).toHaveValue('터치 피아노');
+   const editor=page.getByRole('dialog',{name:'수정',exact:true});await expect(editor).toBeVisible();await expect(page.getByLabel('거래 내용')).toHaveValue('터치 피아노');
    await page.getByRole('button',{name:'편집 닫기'}).tap();await expect(page.getByRole('dialog')).toHaveCount(0);
-   await page.locator('[data-pager-current] .tuition-date[data-date="2026-11-02"]').tap();await expect(sheet).toContainText('이 날짜에 등록된 학원비가 없어요.');
-   await sheet.getByRole('button',{name:'이 날짜에 학원비 추가',exact:true}).tap();await expect(page.getByRole('dialog',{name:'학원비 등록',exact:true})).toBeVisible();await expect(page.getByLabel('첫 납부일',{exact:true})).toHaveValue('2026-11-02');
+   await page.locator('[data-pager-current] .tuition-date[data-date="2026-11-02"]').tap();await expect(sheet).toContainText('이 날짜에 등록된 가계부가 없어요.');
+   await sheet.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).tap();await expect(page.getByRole('dialog',{name:'가계부 등록',exact:true})).toBeVisible();await expect(page.getByLabel('거래일',{exact:true})).toHaveValue('2026-11-02');
    await page.getByRole('button',{name:'편집 닫기'}).tap();await expect(page.getByRole('dialog')).toHaveCount(0);
    const cdp=await context.newCDPSession(page),grid=page.locator('[data-pager-current] .tuition-date-grid'),area=page.locator('.calendar-page-track');
    const box=(await grid.boundingBox())!,start={x:box.x+box.width-20,y:box.y+30},end={x:box.x+20,y:box.y+32};
@@ -37,8 +37,8 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
    await expect(month).toHaveValue('2026-12');await expect(page.getByRole('dialog')).toHaveCount(0);await expect.poll(()=>area.evaluate(el=>el.getAnimations().length)).toBe(0);
    // The first intentional tap after a swipe must not be swallowed or doubled.
    await page.locator('[data-pager-current] .tuition-date[data-date="2026-12-01"]').tap();await page.waitForTimeout(650);await expect(sheet).toBeVisible();await expect(sheet).toContainText('터치 피아노');
-   await sheet.getByRole('button',{name:'날짜 학원비 닫기'}).tap();await expect(sheet).toHaveCount(0);
-   await page.getByRole('group',{name:'학원비 보기'}).getByRole('button',{name:'내역',exact:true}).tap();await expect(page.locator('[data-pager-current] .tuition-ledger')).toBeVisible();await page.getByRole('button',{name:'터치 피아노 수정',exact:true}).tap();await expect(editor).toBeVisible();expect(errors).toEqual([]);
+   await sheet.getByRole('button',{name:'날짜 가계부 닫기'}).tap();await expect(sheet).toHaveCount(0);
+   await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).tap();await expect(page.locator('[data-pager-current] .tuition-ledger')).toBeVisible();await page.getByRole('button',{name:'터치 피아노 수정',exact:true}).tap();await expect(editor).toBeVisible();expect(errors).toEqual([]);
   }finally{
    if(!page.isClosed()){
     const path=test.info().outputPath('touch-event-order.json');await writeFile(path,JSON.stringify(await page.evaluate(()=>(window as unknown as {touchTrace?:object[]}).touchTrace||[]),null,2));await test.info().attach('touch-event-order',{path,contentType:'application/json'});

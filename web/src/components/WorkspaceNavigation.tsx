@@ -8,7 +8,7 @@ const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/timetable',label:'시간표',icon:'clock'},
  {to:'/today/calendar',label:'달력',icon:'calendar'},
  {to:'/chat',label:'대화',icon:'chat'},
- {to:'/tuition',label:'학원비',icon:'wallet'},
+ {to:'/tuition',label:'가계부',icon:'wallet'},
 
  {to:'/notification-settings',label:'알림설정',icon:'bell'},
  {to:'/family',label:'그룹 관리',icon:'users'},
@@ -22,7 +22,7 @@ export function WorkspaceNavigation({childMode=false,testMode=false,personalChil
  personalChild=personalChild||gate?.workspaceRole==='CHILD';
  const dialog=useRef<HTMLDialogElement>(null),more=useRef<HTMLButtonElement>(null),dialogId=useId();
  useEffect(()=>{dialog.current?.close();},[pathname]);
- const testLinks:{to:string;label:string;icon:IconName}[]=[{to:'today',label:'오늘',icon:'home'},{to:'calendar',label:'달력',icon:'calendar'},{to:'daily',label:'등하원',icon:'bag'},{to:'repeats',label:'반복 일정',icon:'repeat'},{to:'chat',label:'대화',icon:'chat'},{to:'family',label:'관리',icon:'shield'},{to:'devices',label:'기기 연결',icon:'device'},{to:'location',label:'위치',icon:'pin'},{to:'fees',label:'학원비',icon:'wallet'},{to:'records',label:'메모',icon:'book'},{to:'notifications',label:'새 소식',icon:'bell'},{to:'account',label:'내 계정',icon:'settings'}];
+ const testLinks:{to:string;label:string;icon:IconName}[]=[{to:'today',label:'오늘',icon:'home'},{to:'calendar',label:'달력',icon:'calendar'},{to:'daily',label:'등하원',icon:'bag'},{to:'repeats',label:'반복 일정',icon:'repeat'},{to:'chat',label:'대화',icon:'chat'},{to:'family',label:'관리',icon:'shield'},{to:'devices',label:'기기 연결',icon:'device'},{to:'location',label:'위치',icon:'pin'},{to:'fees',label:'가계부',icon:'wallet'},{to:'records',label:'메모',icon:'book'},{to:'notifications',label:'새 소식',icon:'bell'},{to:'account',label:'내 계정',icon:'settings'}];
  const standardLinks=gate?.adminAllowed?[...links,{to:'/admin',label:'관리',icon:'shield' as const}]:links;
  const items=testMode?testLinks.map(l=>({...l,to:'/test/'+l.to})):childMode?[{to:'/child/connected',label:'내 하루',icon:'home' as const},{to:'/child/schedules',label:'내 일정',icon:'calendar' as const},{to:'/child/chat',label:'대화',icon:'chat' as const}]:personalChild?links.filter(l=>l.to!=='/tuition').map(l=>({...l,to:l.to==='/chat'?'/child/chat':l.to})):standardLinks;
  const current=(to:string)=>testMode?pathname===to:to==='/account'?pathname.startsWith('/account')||pathname==='/settings':to==='/today/calendar'?pathname.includes('calendar')||pathname.includes('repeats'):to==='/child/chat'?pathname==='/chat'||pathname.startsWith('/child/chat'):pathname.startsWith(to);
@@ -30,7 +30,7 @@ export function WorkspaceNavigation({childMode=false,testMode=false,personalChil
  const updateDescription=dialogId+'-updates';
  const renderItem=(item:typeof items[number],close=false)=><Link key={item.to} to={item.to} onClick={close?()=>dialog.current?.close():undefined} className={current(item.to)?'active':''} aria-current={current(item.to)?'page':undefined} aria-describedby={hasUpdate(item.to)?updateDescription:undefined}><span className="rail-icon"><Icon name={item.icon}/>{hasUpdate(item.to)&&<span className="workspace-nav-update" aria-hidden="true"/>}</span><span>{item.label}</span>{current(item.to)&&<span className="rail-active-dot" aria-hidden="true"/>}</Link>;
  const primary=childMode&&!testMode?items:items.filter(item=>['/timetable','/today/calendar','/chat','/child/chat','/tuition','/test/today','/test/calendar','/test/chat','/test/location'].includes(item.to));
- primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','대화','학원비'];return order.indexOf(a.label)-order.indexOf(b.label);});
+ primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','대화','가계부'];return order.indexOf(a.label)-order.indexOf(b.label);});
  const extraUpdate=items.some(item=>!primary.includes(item)&&hasUpdate(item.to));
  const extraActive=!primary.some(item=>current(item.to));
  return <>

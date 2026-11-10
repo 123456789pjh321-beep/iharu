@@ -86,9 +86,9 @@ const pages: Record<
     icon: "pin",
   },
   fees: {
-    title: "학원비 관리",
+    title: "가계부 관리",
     description:
-      "예상 학원비와 납부 상태를 기록해요. 실제 결제는 발생하지 않아요.",
+      "예상 가계부와 납부 상태를 기록해요. 실제 결제는 발생하지 않아요.",
     icon: "wallet",
   },
   records: {
@@ -129,7 +129,7 @@ const kindNames: Record<LogKind, string> = {
   family: "그룹",
   chat: "대화",
   device: "기기",
-  fee: "학원비",
+  fee: "가계부",
   location: "위치",
   account: "계정",
 };
@@ -276,7 +276,7 @@ function EditDialog({
       event: "일정",
       child: "아이",
       repeat: "반복 일정",
-      fee: "학원비",
+      fee: "가계부",
       member: "일반사용자",
     }[editor.kind] + (current ? " 수정" : " 추가");
   const [error, setError] = useState("");
@@ -351,7 +351,7 @@ function EditDialog({
           />
         ) : (
           <Field
-            label={editor.kind === "fee" ? "학원비 항목" : "일정 이름"}
+            label={editor.kind === "fee" ? "가계부 항목" : "일정 이름"}
             name="title"
             value={defaults?.title}
           />
@@ -882,7 +882,7 @@ export default function TestWorkspace() {
                   },
                   {
                     to: "fees",
-                    label: "납부 예정 학원비",
+                    label: "납부 예정 가계부",
                     value: money(
                       state.fees
                         .filter(
@@ -960,7 +960,7 @@ export default function TestWorkspace() {
                       },
                       {
                         to: "fees",
-                        label: "학원비 납부 표시",
+                        label: "가계부 납부 표시",
                         done: state.fees.some((f) => f.paid),
                       },
                     ].map((step, i) => (
@@ -1298,7 +1298,7 @@ export default function TestWorkspace() {
                               onClick={() =>
                                 ask(
                                   "테스트 아이 삭제",
-                                  "이 아이의 테스트 일정·대화·학원비·기기 연결도 함께 삭제돼요.",
+                                  "이 아이의 테스트 일정·대화·가계부·기기 연결도 함께 삭제돼요.",
                                   () => update((s) => removeChild(s, c.id)),
                                 )
                               }
@@ -1445,7 +1445,7 @@ export default function TestWorkspace() {
               <section className="test-financial-summary">
                 {[
                   {
-                    label: "등록한 학원비",
+                    label: "등록한 가계부",
                     value: state.fees
                       .filter((f) => child === "all" || f.childId === child)
                       .reduce((a, f) => a + f.amount, 0),
@@ -1476,7 +1476,7 @@ export default function TestWorkspace() {
                 ))}
               </section>
               <Card
-                title="학원비 장부"
+                title="가계부 장부"
                 icon="wallet"
                 action={
                   <button
@@ -1484,7 +1484,7 @@ export default function TestWorkspace() {
                     onClick={() => open("fee")}
                   >
                     <Icon name="plus" />
-                    학원비 추가
+                    가계부 추가
                   </button>
                 }
               >
@@ -1544,7 +1544,7 @@ export default function TestWorkspace() {
                       ))}
                   </div>
                 ) : (
-                  <Empty title="등록된 학원비가 없어요." />
+                  <Empty title="등록된 가계부가 없어요." />
                 )}
                 <p className="test-caption">
                   실제 결제·송금·청구 없이 장부 기록만 테스트해요.
@@ -1647,7 +1647,7 @@ export default function TestWorkspace() {
                   </li>
                   <li>
                     <Icon name="check" />
-                    아이·일반사용자·기기·학원비·알림·기록
+                    아이·일반사용자·기기·가계부·알림·기록
                   </li>
                   <li>
                     <Icon name="shield" />

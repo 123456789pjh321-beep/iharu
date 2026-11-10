@@ -428,10 +428,10 @@ export function saveFee(s: TestState, input: TestFee) {
   const i = s.fees.findIndex((x) => x.id === f.id);
   if (i < 0) {
     if (s.fees.length >= 200)
-      throw new Error("학원비는 200개까지 테스트할 수 있어요.");
+      throw new Error("가계부는 200개까지 테스트할 수 있어요.");
     s.fees.push(f);
   } else s.fees[i] = f;
-  audit(s, `${f.title} 학원비를 저장했어요.`, "fee");
+  audit(s, `${f.title} 가계부를 저장했어요.`, "fee");
 }
 export function issuePairing(s: TestState, label: string, now = Date.now()) {
   const bytes = new Uint32Array(1);

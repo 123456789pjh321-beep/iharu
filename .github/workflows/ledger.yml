@@ -1,0 +1,27 @@
+name: Household ledger
+on:
+  pull_request:
+    paths: ['web/**', 'shared/**', 'server/workspace/**', 'tests/**', '.github/workflows/ledger.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ledger-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - run: npm ci
+      - run: npm test -- --maxWorkers=2
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/e2e/ledger.spec.ts tests/e2e/entry-input.spec.ts tests/e2e/tuition-touch.spec.ts tests/e2e/guest-entry.spec.ts tests/e2e/chat-rooms.spec.ts tests/e2e/conversation-stickers.spec.ts --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: iharu-ui132-results, path: test-results/, retention-days: 3}

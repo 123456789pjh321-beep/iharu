@@ -32,12 +32,10 @@ function CreateChatRoom({me,close,saved}:{me:WorkspaceMe;close:()=>void;saved:(i
  }
  return <dialog ref={ref} className="personal-editor chat-create-dialog" aria-labelledby="create-room-title" onCancel={e=>{e.preventDefault();if(!busy)close();}}>
   <header><h2 id="create-room-title">대화방 만들기</h2><button type="button" className="icon-button" aria-label="대화방 만들기 닫기" disabled={busy} onClick={close}><Icon name="close"/></button></header>
-  <p className="account-caption">같은 그룹의 구성원을 선택하세요. 한 명을 고르면 1:1 대화, 여러 명을 고르면 선택한 사람만 참여하는 단체 대화가 열려요.</p>
   <FormNotice error={error}/>
   {choices.length?<form onSubmit={e=>{e.preventDefault();void submit();}}>
    <fieldset className="chat-member-choices" disabled={busy}><legend>대화할 구성원</legend>{choices.map(member=><label key={member.id}><input type="checkbox" checked={selected.includes(member.id)} onChange={()=>setSelected(ids=>ids.includes(member.id)?ids.filter(id=>id!==member.id):[...ids,member.id])}/><span><strong>{member.name}</strong><small>{member.kind==='CHILD'?'어린이':'일반사용자'}</small></span></label>)}</fieldset>
    {selected.length>1&&<label className="form-field">대화방 이름<input value={name} maxLength={60} placeholder="예: 주말 모임" disabled={busy} onChange={e=>setName(e.target.value)}/></label>}
-   <p className="account-caption">나를 포함해 {selected.length+1}명이 참여해요. 선택하지 않은 구성원에게는 이 방의 메시지와 알림이 표시되지 않아요.</p>
    <button className="button primary full" disabled={busy||!selected.length}>{busy?'대화방을 여는 중':'대화 시작하기'}</button>
   </form>:<div className="chat-empty"><Icon name="users"/><p>그룹 관리에서 다른 구성원을 먼저 연결해 주세요.</p></div>}
  </dialog>;

@@ -20,7 +20,7 @@ import {Icon,type IconName} from './Icon';
 const privatePages:Record<string,{title:string;icon:IconName;description:string;action:string}>={
  '/chat':{title:'대화',icon:'chat',description:'우리 그룹과 연결해 글과 그림으로 소식을 나눠요.',action:'로그인하고 대화하기'},
  '/child/chat':{title:'대화',icon:'chat',description:'내 계정으로 그룹과 소식을 나눠요.',action:'로그인하고 대화하기'},
- '/tuition':{title:'학원비',icon:'wallet',description:'일반사용자 계정에서 학원비와 납부 기록을 함께 관리해요.',action:'로그인하고 학원비 관리'},
+ '/tuition':{title:'가계부',icon:'wallet',description:'일반사용자 계정에서 가계부와 납부 기록을 함께 관리해요.',action:'로그인하고 가계부 관리'},
  '/records':{title:'메모',icon:'book',description:'그룹에게 전할 준비물과 중요한 내용을 남겨요.',action:'로그인하고 메모 남기기'},
  '/family':{title:'그룹 관리',icon:'users',description:'로그인한 계정에서 일반사용자 승인번호로 그룹을 연결해요.',action:'로그인하고 그룹 연결'},
  '/family/invite':{title:'그룹 연결',icon:'users',description:'내 계정을 확인한 뒤 그룹과 연결할 수 있어요.',action:'로그인하고 그룹 연결'},
@@ -49,7 +49,7 @@ export function GuestWorkspace({mode}:{mode:PersonalMode}){
  const today=koreaToday(),[day,setDay]=useState(today),[month,setMonth]=useState(today.slice(0,7)),{pathname}=useLocation(),{requestLogin}=useEntryAccess();
  const samples=guestSamples(month,today),preview={preview:true,members:sampleMembers,defaultMemberIds:sampleChildIds};
  const create=(kind:'EVENT'|'REPEAT'|'FEE'|'NOTE',date:string,time?:string)=>{
-  const paths={EVENT:'/today/calendar',REPEAT:'/timetable',FEE:'/tuition',NOTE:'/records'},names={EVENT:'일정을',REPEAT:'시간표를',FEE:'학원비를',NOTE:'메모를'};
+  const paths={EVENT:'/today/calendar',REPEAT:'/timetable',FEE:'/tuition',NOTE:'/records'},names={EVENT:'일정을',REPEAT:'시간표를',FEE:'가계부를',NOTE:'메모를'};
   const intent:EntryIntent={type:'create',kind,path:paths[kind],date,...(time?{time}:{})};
   requestLogin({intent,title:names[kind]+' 입력하려면 로그인해 주세요',description:time?`${date} ${time}부터 내 계정에서 이어서 입력해요.`:`${date}에 내 계정으로 새 내용을 입력해요.`});
  };
@@ -61,7 +61,7 @@ export function GuestWorkspace({mode}:{mode:PersonalMode}){
  return <div className={'guest-workspace'+(['timetable','calendar','repeats'].includes(mode)?' guest-schedule':'')} data-guest-workspace>
   {mode==='timetable'||mode==='repeats'?<PersonalTimetable {...preview} defaultMemberIds={[sampleChildIds[0]]} day={day} setDay={setDay} items={samples.repeats} loading={false} create={(date,time)=>create('REPEAT',date,time)} edit={edit}/>
   :mode==='calendar'?<PersonalCalendar {...preview} month={month} day={day} setMonth={setMonth} setDay={setDay} items={samples.events} create={(date,time)=>create('EVENT',date,time)} edit={edit} guestCreate/>
-  :mode==='fees'?<><WorkspaceToolbar title="학원비" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} createLabel="학원비 추가" onCreate={()=>create('FEE',day)}/><section className="account-card fee-workspace"><PersonalFees {...preview} items={samples.fees} month={month} onMonthChange={selectMonth} edit={edit} create={date=>create('FEE',date||day)}/></section></>
+  :mode==='fees'?<><WorkspaceToolbar title="가계부" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} createLabel="가계부 추가" onCreate={()=>create('FEE',day)}/><section className="account-card fee-workspace"><PersonalFees {...preview} defaultMemberIds={sampleMembers.map(m=>m.id)} items={samples.fees} month={month} onMonthChange={selectMonth} edit={edit} create={date=>create('FEE',date||day)}/></section></>
   :mode==='records'?<><WorkspaceToolbar title="메모" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} createLabel="메모 추가" onCreate={()=>create('NOTE',day)}/><section className="account-card"><GuestNotesSample items={samples.notes} create={date=>create('NOTE',date)}/></section></>
   :mode==='chat'?<GuestChatSample login={login}/>:mode==='family'?<GuestFamilySample login={login}/>
   :readOnly?<WorkspaceReader mode={mode}/>:mode==='more'?<WorkspaceMore me={null}/>:mode==='settings'?<WorkspaceSettings/>:<GuestFeature path={entryReturnPath(pathname)}/>}</div>;

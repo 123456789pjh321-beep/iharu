@@ -22,7 +22,7 @@ export function Home({session}:{session:SignedInSession}) {
       <Card title="오늘의 등하원" icon="bag"><p className="section-description">학교와 학원에 가는 시간을 그룹 달력에서 확인하세요. 그룹 연결 후 도착·출발 기록을 남길 수 있어요.</p><div className="card-actions"><Link className="button primary" to="/today/calendar">오늘 일정 보기<Icon name="arrow"/></Link></div></Card>
       <Card title="우리 그룹 달력" icon="calendar"><p className="section-description">매주 반복되는 일정과 휴강·보강을 관리해요. 승인된 그룹과 아이의 일정만 표시해요.</p><div className="card-actions"><Link className="button" to="/today/calendar">그룹 달력 열기</Link><Link className="button" to="/today/repeats">반복 일정</Link></div></Card>
     </div>}
-    <section className="home-shortcuts" aria-label="다른 메뉴"><span className="shortcut-caption">자주 찾는 메뉴</span><Link className="button" to="/chat"><Icon name="chat"/>단체 대화</Link><Link className="button" to="/tuition"><Icon name="wallet"/>학원비 · 준비 중</Link><Link className="button" to="/account"><Icon name="settings"/>내 계정</Link></section>
+    <section className="home-shortcuts" aria-label="다른 메뉴"><span className="shortcut-caption">자주 찾는 메뉴</span><Link className="button" to="/chat"><Icon name="chat"/>단체 대화</Link><Link className="button" to="/tuition"><Icon name="wallet"/>가계부 · 준비 중</Link><Link className="button" to="/account"><Icon name="settings"/>내 계정</Link></section>
   </Entrance>;
 }
 

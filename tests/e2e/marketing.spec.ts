@@ -44,12 +44,12 @@ test('visitors can explore examples, use mobile navigation and reach signup/logi
  await expect(preview.locator('.demo-hours span')).toHaveText(['오전 6','오전 9','오후 12','오후 3','오후 6','오후 9','밤 12']);
  await expect(preview.locator('.demo-days strong')).toHaveText(['일','월','화','수','목','금','토']);
  await expect(preview.locator('.preview-brief')).toContainText('06:00–24:00');
- await preview.getByRole('button',{name:'학원비',exact:true}).click();await expect(preview.locator('.demo-fee-total strong')).toHaveText('540,000원');
+ await preview.getByRole('button',{name:'가계부',exact:true}).click();await expect(preview.locator('.demo-fee-total strong')).toHaveText('540,000원');
  await preview.getByRole('button',{name:'민서',exact:true}).click();await expect(preview.locator('.demo-fee-total strong')).toHaveText('370,000원');await expect(preview.locator('.demo-fee-row')).toHaveCount(2);
  await preview.getByRole('button',{name:'그룹 달력',exact:true}).click();await expect(preview.locator('.calendar-school')).toBeVisible();
  await preview.getByRole('button',{name:'단체 대화',exact:true}).click();await preview.getByRole('button',{name:'사랑해 예시 입력'}).click();await expect(preview.locator('.demo-chat-input')).toContainText('💛 사랑해');
  await page.getByRole('button',{name:'소개 메뉴 열기'}).click();await page.locator('.market-nav').getByRole('link',{name:'활용방법',exact:true}).click();await expect(page).toHaveURL(/\/guide$/);await expect(page.getByRole('button',{name:'소개 메뉴 열기'})).toHaveAttribute('aria-expanded','false');
- await page.locator('.guide-jumps').getByRole('link',{name:'학원비 관리'}).click();await expect(page).toHaveURL(/\/guide#fees$/);await expect(page.locator('#fees h2')).toBeInViewport();
+ await page.locator('.guide-jumps').getByRole('link',{name:'가계부 관리'}).click();await expect(page).toHaveURL(/\/guide#fees$/);await expect(page.locator('#fees h2')).toBeInViewport();
  await page.getByRole('button',{name:'소개 메뉴 열기'}).click();await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'소개 메뉴 열기'})).toBeFocused();
  await page.locator('.market-closing').getByRole('link',{name:'아이하루 시작하기',exact:true}).click();await expect(page).toHaveURL(/\/signup$/);await expect(page.locator('meta[name=robots]')).toHaveAttribute('content','noindex, nofollow');await expect(page.locator('link[rel=canonical]')).toHaveCount(0);
  await page.locator('.public-footer').getByRole('link',{name:'서비스 소개',exact:true}).click();await expect(page).toHaveURL(/\/service$/);
