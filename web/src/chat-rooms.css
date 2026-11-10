@@ -4,17 +4,23 @@
 .chat-workspace.full{height:100%;flex:1}
 .chat-workspace.compact{height:480px}
 .chat-workspace.compact>.group-chat.compact{height:100%;flex:1}
-.chat-rooms{flex-shrink:0;border-bottom:1px solid var(--line);padding:0 16px 12px}
-.chat-rooms-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-bottom:6px}
-.chat-rooms-heading>strong{font-size:.85rem}
-.chat-rooms-heading .button{font-size:.76rem;min-height:40px;gap:6px}
-.chat-rooms-heading .icon{width:17px;height:17px}
-.chat-room-list{display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;padding:2px 1px 5px;max-width:100%}
-.chat-room-list>button{display:flex;align-items:center;gap:8px;flex-shrink:0;max-width:240px;min-height:52px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:.82rem;text-align:left;cursor:pointer}
+.chat-workspace,.guest-chat-sample{--chat-control-height:40px}
+.chat-rooms{flex-shrink:0;border-bottom:1px solid var(--line);padding:0 16px 10px}
+.chat-rooms-toolbar{display:flex;align-items:center;gap:8px;min-width:0}
+.chat-room-create.button{display:flex;align-items:center;justify-content:center;flex-shrink:0;box-sizing:border-box;height:var(--chat-control-height);min-height:var(--chat-control-height);font-size:.76rem;gap:6px;padding:0 12px;white-space:nowrap}
+.chat-room-create .icon{width:17px;height:17px}
+.chat-room-list{display:flex;align-items:center;flex:1;min-width:0;gap:8px;overflow-x:auto;scrollbar-width:none;padding:1px;max-width:100%}
+.chat-room-list::-webkit-scrollbar{display:none}
+.chat-room-list>button{display:flex;align-items:center;gap:8px;flex-shrink:0;box-sizing:border-box;height:var(--chat-control-height);min-height:var(--chat-control-height);max-width:240px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;font-size:.82rem;line-height:1.4;text-align:left;cursor:pointer}
 .chat-room-list>button[aria-pressed=true]{background:var(--mint);border-color:var(--primary);color:var(--primary)}
 .chat-room-list>button>.icon{width:20px;height:20px;flex-shrink:0}
 .chat-room-list>button>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chat-room-list small{display:block;margin-top:3px;color:var(--muted);font-size:.65rem;font-weight:400}
+.workspace-page .group-chat .chat-room-header{padding:6px 16px;min-height:0;gap:12px}
+.workspace-page .group-chat .chat-room-avatar{width:var(--chat-control-height);height:var(--chat-control-height)}
+.group-chat .chat-room-details{display:flex;align-items:center;min-width:0;height:var(--chat-control-height)}
+.group-chat .chat-room-meta{display:flex;align-items:center;height:var(--chat-control-height);min-width:0;max-width:100%;margin:0;color:var(--muted);font-size:.8rem;line-height:1.4}
+.chat-room-meta>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-page .group-chat .chat-room-tools .icon-button{box-sizing:border-box;width:var(--chat-control-height);min-width:var(--chat-control-height);height:var(--chat-control-height);min-height:var(--chat-control-height);padding:8px;display:flex;align-items:center;justify-content:center}
 .chat-create-dialog{width:min(480px,calc(100vw - 24px));max-height:85dvh;box-sizing:border-box}
 .chat-member-choices{margin:18px 0;padding:0;border:0;max-height:34dvh;overflow-y:auto}
 .chat-member-choices legend{font-size:.8rem;color:var(--muted);margin-bottom:10px}
@@ -25,7 +31,7 @@
 .chat-read-only{font-size:.78rem;line-height:1.6;margin:0;padding:10px 16px;background:var(--mint);color:var(--primary)}
 .workspace-page .auth-panel:has(>.chat-workspace.full){padding:0;height:100%;min-height:0;display:flex;flex-direction:column}
 .guest-chat-actions{display:flex;justify-content:flex-end;padding:0 16px 10px}
-@media(max-width:600px){.chat-rooms{padding-inline:12px}.chat-room-list>button{max-width:190px}.chat-rooms-heading{margin-bottom:2px}}
-@media(max-height:500px){.auth-app.workspace-page{padding-top:calc(env(safe-area-inset-top) + 12px)}.chat-rooms{padding-bottom:4px}.chat-room-list>button{min-height:40px;padding-block:4px}.chat-rooms-heading{min-height:36px}.chat-rooms-heading .button{min-height:32px}}
+@media(max-width:600px){.chat-rooms{padding-inline:12px}.chat-room-list>button{max-width:190px}.workspace-page .group-chat .chat-room-header{padding-inline:12px;gap:8px}}
+@media(max-height:500px){.auth-app.workspace-page{padding-top:calc(env(safe-area-inset-top) + 12px)}.chat-rooms{padding-bottom:4px}.workspace-page .group-chat .chat-room-header{padding-block:4px}}
 /* In landscape, picture selection temporarily uses the room-list space. The active room title stays visible. */
 @media(max-height:500px){.chat-workspace:has(.chat-sticker-toggle[aria-expanded=true])>.chat-rooms{display:none}}
