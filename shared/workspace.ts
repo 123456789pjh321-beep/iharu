@@ -18,7 +18,7 @@ export const workspaceItemInput=z.object({kind:workspaceKind,data:workspaceData}
  if(v.kind==='FEE'&&v.data.ledgerCategory&&!ledgerCategories.some(c=>c.id===v.data.ledgerCategory&&c.flow===(v.data.ledgerFlow||'EXPENSE')))c.addIssue({code:'custom',message:'수입·지출에 맞는 분류를 선택해 주세요.'});
  if(v.kind==='FEE'&&v.data.amount===undefined)c.addIssue({code:'custom',message:'금액을 입력해 주세요.'});
  if(v.kind==='FEE'&&v.data.untilDate&&v.data.untilDate<v.data.date)c.addIssue({code:'custom',message:'반복 종료일을 확인해 주세요.'});
- if(v.kind!=='FEE'&&(v.data.feeFrequency||v.data.feePayerId))c.addIssue({code:'custom',message:'학원비에서만 결제 정보를 지정할 수 있어요.'});
+ if(v.kind!=='FEE'&&(v.data.feeFrequency||v.data.feePayerId))c.addIssue({code:'custom',message:'가계부에서만 거래 정보를 지정할 수 있어요.'});
 });
 export type WorkspaceData=z.infer<typeof workspaceData>;
 export type WorkspaceKind=z.infer<typeof workspaceKind>;
