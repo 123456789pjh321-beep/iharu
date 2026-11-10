@@ -21,7 +21,7 @@ jobs:
       - run: npm test -- --maxWorkers=2
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test tests/e2e/ledger.spec.ts tests/e2e/member-filters.spec.ts tests/e2e/entry-input.spec.ts tests/e2e/tuition-touch.spec.ts tests/e2e/guest-entry.spec.ts tests/e2e/chat-rooms.spec.ts tests/e2e/conversation-stickers.spec.ts tests/e2e/system-admin.spec.ts tests/e2e/notification-calendar.spec.ts tests/e2e/navigation-updates.spec.ts --workers=1
+      - run: npx playwright test tests/e2e/ledger.spec.ts tests/e2e/member-filters.spec.ts tests/e2e/timetable-preference.spec.ts tests/e2e/entry-input.spec.ts tests/e2e/tuition-touch.spec.ts tests/e2e/guest-entry.spec.ts tests/e2e/chat-rooms.spec.ts tests/e2e/conversation-stickers.spec.ts tests/e2e/system-admin.spec.ts tests/e2e/notification-calendar.spec.ts tests/e2e/navigation-updates.spec.ts --workers=1
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: iharu-ui134-results, path: test-results/, retention-days: 3}

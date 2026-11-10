@@ -13,7 +13,7 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
    expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
    expect((await context.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'FEE',data:{title:'터치 피아노',amount:180000,date:'2026-11-01',feeFrequency:'MONTHLY'}}})).ok()).toBe(true);
    await page.goto('/tuition');const month=page.getByLabel('조회 월',{exact:true});await month.fill('2026-11');
-   await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('180,000원');
+   await expect(page.locator('[data-pager-current] .tuition-month-summary strong')).toHaveText('0원');await expect(page.locator('[data-pager-current] .ledger-summary>section').last().locator('strong')).toHaveText('180,000원');
    await page.evaluate(()=>{
     const events:object[]=[];(window as unknown as {touchTrace:object[]}).touchTrace=events;
     for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,event=>{const target=event.target as Element;events.push({type,target:target.className||target.tagName,detail:(event as MouseEvent).detail,openDialogs:document.querySelectorAll('dialog[open]').length});},true);
