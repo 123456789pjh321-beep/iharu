@@ -9,7 +9,7 @@ test('article reading size persists and the outline follows the selected section
  await expect(page.locator('.story-detail')).toHaveAttribute('data-reading-size','large');
  expect(await body.locator('p').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThan(normal);
  await page.reload();await expect(controls.getByRole('button',{name:'크게',exact:true})).toHaveAttribute('aria-pressed','true');
- const section=page.getByRole('navigation',{name:'글 목차'}).getByRole('link',{name:'대상과 처리 담당자를 함께 기록해요',exact:true});
+ const section=page.getByRole('navigation',{name:'글 목차'}).getByRole('link',{name:'누구의 내역인지 정해요',exact:true});
  await section.click();await expect(section).toHaveAttribute('aria-current','location');await expect(page.locator('#part-1 h2')).toBeInViewport();
  await controls.getByRole('button',{name:'기본',exact:true}).click();await expect(page.locator('.story-detail')).toHaveAttribute('data-reading-size','normal');
 });
