@@ -16,6 +16,28 @@ const listing={from:'2026-11-01',to:'2026-11-30'};
 beforeAll(async()=>{database=await testDatabase();for(const file of (await readdir('db/migrations')).filter(n=>/^\d+_[a-z0-9_]+\.sql$/.test(n)).sort())await database.engine.exec(await readFile('db/migrations/'+file,'utf8'));},30000);
 beforeEach(async()=>{await database.engine.exec('TRUNCATE app.families,iharu_auth."user",iharu_auth.verification,iharu_auth.rate_buckets CASCADE');mail.length=0;const svc=createAuthService({origin,secret,databaseUrl:'unused',mail:{key:'fixture',from:'test@example.test'},sms:null,social:{}},database.db,{sendMail:async m=>{mail.push(m);},sendSms:async()=>{}});app=createApp({environment:'local',demoEnabled:false},()=>svc,async()=>new FamilyService(database.db,secret,'app_runtime'));});
 afterAll(async()=>{await database.db.destroy();});
+it('isolates monthly budgets by account and exact member selection, checks access and rejects lost updates',async()=>{
+ const a=await parent('budget-a'),b=await parent('budget-b'),x=await parent('budget-x'),child=new Browser(),guest=new Browser();
+ const am=await a.ok('me'),bm=await b.ok('me'),xm=await x.ok('me'),scope={month:'2027-02',memberIds:[am.id]};
+ expect(await a.ok('ledger.budget.read',scope)).toMatchObject({amount:0,version:0});
+ expect((await guest.req(api+'ledger.budget.read',scope)).status).toBe(401);
+ expect((await b.req(api+'ledger.budget.read',scope)).status).toBe(400);
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ expect(await a.ok('ledger.budget.save',{...scope,amount:1000000,version:0})).toMatchObject({amount:1000000,version:1});
+ expect(await b.ok('ledger.budget.read',scope)).toMatchObject({amount:0,version:0});
+ expect(await a.ok('ledger.budget.read',{...scope,month:'2027-03'})).toMatchObject({amount:0,version:0});
+ expect(await a.ok('ledger.budget.read',{...scope,memberIds:[am.id,bm.id]})).toMatchObject({amount:0,version:0});
+ await a.ok('ledger.budget.save',{...scope,memberIds:[bm.id,am.id],amount:2000000,version:0});
+ expect(await a.ok('ledger.budget.read',{...scope,memberIds:[am.id,bm.id]})).toMatchObject({amount:2000000,version:1});
+ const responses=await Promise.all([a.req(api+'ledger.budget.save',{...scope,amount:1200000,version:1}),a.req(api+'ledger.budget.save',{...scope,amount:1400000,version:1})]);expect(responses.map(r=>r.status).sort()).toEqual([200,409]);
+ expect((await a.req(api+'ledger.budget.save',{...scope,amount:100,version:0})).status).toBe(409);
+ expect(await a.ok('ledger.budget.save',{...scope,amount:0,version:2})).toMatchObject({amount:0,version:3});
+ for(const extra of [{memberIds:[xm.id]},{memberIds:[am.id,am.id]},{memberIds:[]},{month:'2027-13'},{amount:-1},{amount:1.5},{amount:1000000001},{profileId:bm.id}])expect((await a.req(api+'ledger.budget.save',{...scope,amount:100,version:3,...extra})).status).toBe(400);
+ const code=await a.ok('invite.issue',{consent:true});await child.ok('child.signup',{loginId:'budget_child',name:'예산 어린이',password:'child-fixture-password',code:code.code});
+ expect((await child.req(api+'ledger.budget.read',{...scope,memberIds:[(await child.ok('me')).id]})).status).toBe(403);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,'SELECT * FROM app_private.workspace_ledger_budgets');})).rejects.toMatchObject({code:'42501'});
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.workspace_command_v133('workspace.me','{}')");})).rejects.toMatchObject({code:'42501'});
+});
 it('persists ledger metadata, monthly settlement and legacy edits without exposing finances to children',async()=>{
  const a=await parent('ledger-a'),b=await parent('ledger-b'),child=new Browser();let invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});invite=await a.ok('invite.issue',{consent:true});await child.ok('child.signup',{loginId:'ledger_child',name:'어린이',password:'child-fixture-password',code:invite.code});
  const data={...payload('월급','FEE').data,amount:3000000,ledgerFlow:'INCOME',ledgerCategory:'SALARY',ledgerMethod:'TRANSFER',feeFrequency:'MONTHLY',paid:true};
