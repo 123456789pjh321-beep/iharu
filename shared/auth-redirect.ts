@@ -11,6 +11,6 @@ export function authRedirectAllowed(value:unknown,origin:string,path:string,fiel
  if(field==='redirectTo')return url.pathname==='/reset-password'&&!url.search;
  if(field==='errorCallbackURL')return url.pathname==='/login'&&keys.every(key=>key==='next')&&validNext;
  if(path==='/sign-up/email'||path==='/send-verification-email'||path==='/verify-email')return url.pathname==='/login'&&params.get('verified')==='1'&&keys.every(key=>key==='verified'||key==='next')&&validNext;
- if(path==='/sign-in/social')return !url.search&&(url.pathname==='/today'||entryReturnPath(url.pathname)===url.pathname);
+ if(path==='/sign-in/social'){const target=url.pathname+url.search;return target==='/today'||entryReturnPath(target)===target;}
  return url.pathname==='/account'&&!url.search;
 }
