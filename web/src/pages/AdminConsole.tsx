@@ -1,3 +1,4 @@
+import {AiBriefingSettings} from './AiBriefingSettings';
 import {LegalAdmin} from './LegalAdmin';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {Link,useSearchParams} from 'react-router-dom';
@@ -11,12 +12,12 @@ import {FormNotice,PasswordField} from '../components/AuthLayout';
 import {koreaToday,addDays} from '../../../shared/schedules';
 import '../admin.css';
 
-const tabs=[['overview','현황','menu'],['members','회원관리','users'],['history','이력관리','clock'],['roles','권한관리','shield'],['logs','로그관리','book'],['legal','운영·개인정보','shield']] as const;
+const tabs=[['overview','현황','menu'],['members','회원관리','users'],['history','이력관리','clock'],['roles','권한관리','shield'],['logs','로그관리','book'],['legal','운영·개인정보','shield'],['ai','AI 브리핑 설정','key']] as const;
 type Tab=typeof tabs[number][0];
 const number=(n:number)=>new Intl.NumberFormat('ko-KR').format(n);
 const date=(s:string|null)=>s?new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(s)):'기록 없음';
 const statusText=(s:string)=>({ACTIVE:'정상',SUSPENDED:'이용 정지',DELETION_PENDING:'탈퇴 처리 중'}[s]||s);
-const actionText=(s:string)=>({'admin.role.bootstrap':'최초 최고관리자 지정','admin.role.set':'최고관리자 권한 변경','admin.member.update':'회원정보 변경','admin.member.sessions.revoke':'전체 세션 종료','family.member.joined':'그룹 참여','family.member.left':'그룹 연결 해제','member.profile.created':'회원 프로필 생성','auth.session.created':'로그인 세션 생성','auth.session.ended':'로그인 세션 종료'}[s]||s.replace('workspace.event.','일정 ').replace('workspace.repeat.','반복 일정 ').replace('workspace.fee.','가계부 ').replace('workspace.note.','메모 ').replace('workspace.chat.','대화 ').replace('created','등록').replace('updated','수정').replace('deleted','삭제'));
+const actionText=(s:string)=>({'admin.ai.key.save':'OpenAI 키 등록·교체','admin.ai.key.remove':'OpenAI 키 삭제','admin.ai.key.checked':'OpenAI 연결 확인','admin.role.bootstrap':'최초 최고관리자 지정','admin.role.set':'최고관리자 권한 변경','admin.member.update':'회원정보 변경','admin.member.sessions.revoke':'전체 세션 종료','family.member.joined':'그룹 참여','family.member.left':'그룹 연결 해제','member.profile.created':'회원 프로필 생성','auth.session.created':'로그인 세션 생성','auth.session.ended':'로그인 세션 종료'}[s]||s.replace('workspace.event.','일정 ').replace('workspace.repeat.','반복 일정 ').replace('workspace.fee.','가계부 ').replace('workspace.note.','메모 ').replace('workspace.chat.','대화 ').replace('created','등록').replace('updated','수정').replace('deleted','삭제'));
 function changeSummary(value:unknown){const data=(value&&typeof value==='object'?value:{}) as {name?:string;status?:string;superAdmin?:boolean};return [data.name&&'이름 '+data.name,data.status&&'상태 '+statusText(data.status),data.superAdmin!==undefined&&'권한 '+(data.superAdmin?'최고관리자':'일반 회원')].filter(Boolean).join(' · ');}
 function useAdminData<T>(op:string,params:object,revision:number){
  const [data,setData]=useState<T|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');const key=JSON.stringify(params);
@@ -40,7 +41,7 @@ export default function AdminConsole(){
  return <div className="admin-console"><header className="admin-heading"><div><span className="admin-eyebrow">아이하루 운영센터</span><h1>시스템 관리 <span className="admin-tag elevated">최고관리자</span></h1><p>회원과 그룹의 연결 상태, 권한과 운영 이력을 한곳에서 확인합니다.</p></div><button className="button compact" onClick={refresh}><Icon name="repeat"/>새로고침</button></header>
  <nav className="admin-tabs" aria-label="시스템 관리 메뉴">{tabs.map(([id,label,icon])=><button key={id} type="button" aria-current={tab===id?'page':undefined} onClick={()=>{setSearch({section:id});setNotice('');}}><Icon name={icon}/>{label}</button>)}</nav>
  <FormNotice message={notice}/>
- {tab==='legal'?<LegalAdmin/>:tab==='overview'?<Overview revision={revision} refresh={refresh} choose={s=>setSearch({section:s})}/>:tab==='members'?<Members revision={revision} refresh={refresh} select={setSelected}/>:tab==='roles'?<Roles revision={revision} refresh={refresh} select={setSelected} members={()=>setSearch({section:'members'})}/>:<Journal key={tab} kind={tab} revision={revision} refresh={refresh}/>}
+ {tab==='ai'?<AiBriefingSettings revision={revision}/>:tab==='legal'?<LegalAdmin/>:tab==='overview'?<Overview revision={revision} refresh={refresh} choose={s=>setSearch({section:s})}/>:tab==='members'?<Members revision={revision} refresh={refresh} select={setSelected}/>:tab==='roles'?<Roles revision={revision} refresh={refresh} select={setSelected} members={()=>setSearch({section:'members'})}/>:<Journal key={tab} kind={tab} revision={revision} refresh={refresh}/>}
  {selected&&<MemberDialog initial={selected} close={()=>setSelected(null)} changed={m=>{setSelected(m);setNotice('관리 작업을 저장하고 이력에 기록했습니다.');refresh();}}/>}
  </div>;
 }

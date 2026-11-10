@@ -1,3 +1,4 @@
+import {sealOpenAiKey} from '../../server/admin/ai-credentials.js';
 import {childPasswordHash} from '../../server/child-accounts/routes.js';
 // CI-only disposable PostgreSQL. Never run against a Supabase/Preview/production database.
 import assert from 'node:assert/strict';
@@ -455,6 +456,14 @@ try{
   assert.ok((await family1.command<{items:unknown[]}>(a,'workspace.chat.list',{roomId:room.id})).items.length>0);
   const fresh=await family1.command<{id:string}>(a,'workspace.chat.room.create',{memberIds:[bm.id],name:'',clientRequestId:randomUUID()});assert.notEqual(fresh.id,room.id);assert.deepEqual((await family2.command<{items:unknown[]}>(b,'workspace.chat.list',{roomId:fresh.id})).items,[]);assert.equal((await family2.command<{family:{id:string}}>(b,'workspace.me')).family.id,am.family.id);
   await family2.command(b,'workspace.chat.send',{text:'기본 단체 대화는 유지',clientMessageId:randomUUID()});await assert.rejects(query(db1,"SELECT app_private.workspace_command_v135('workspace.me','{}')"),{code:'42501'});
+ });
+ await check('UI137 encrypted AI credentials serialize rotations and deny runtime table access',async()=>{
+  const fixtureMaster='ab'.repeat(32),version=(await family1.command<{version:number}>(a,'ai.credentials.read')).version;
+  const results=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'ai.credentials.save',{version,...sealOpenAiKey('sk-isolated-pg-fixture-provider-key-'+i,fixtureMaster)})));
+  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal((results.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
+  const state=await family1.command<{configured:boolean;version:number}>(a,'ai.credentials.read');assert.equal(state.configured,true);assert.equal(state.version,version+1);assert.equal('ciphertext' in state,false);
+  await assert.rejects(family2.command(b,'ai.credentials.get'),{message:'ADMIN_REQUIRED'});await assert.rejects(query(db1,'SELECT * FROM app_private.ai_provider_settings'),{code:'42501'});
+  await family1.command(a,'ai.credentials.remove',{version:state.version});assert.equal((await family1.command<{configured:boolean}>(a,'ai.credentials.read')).configured,false);
  });
  await check('UI83 concurrent admin writes have one winner and role/session revocation takes effect immediately',async()=>{
   const edits=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'admin.member.update',{id:b.memberId,version:0,name:'운영 동시 변경 '+i,reason:'실제 PostgreSQL 충돌 검사'})));

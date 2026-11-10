@@ -4,12 +4,15 @@ import {z} from 'zod';
 import {currentSession} from '../auth/routes.js';
 import type {AuthService} from '../auth/service.js';
 import type {FamilyService} from '../family/service.js';
+import {AiCredentials,aiCredentialDefaults,type AiCredentialDependencies} from './ai-credentials.js';
 
 const empty=z.object({}).strict(),id=z.uuid(),version=z.number().int().min(0),reason=z.string().trim().min(3).max(300);
 const page={page:z.number().int().min(1).max(10000).default(1),pageSize:z.number().int().min(1).max(100).default(12),query:z.string().trim().max(100).default('')};
 const period={from:z.iso.datetime({offset:true}).optional(),to:z.iso.datetime({offset:true}).optional()};
 const specs:Record<string,z.ZodType>={
  access:empty,overview:empty,roles:empty,
+ 'ai.read':empty,'ai.check':empty,'ai.remove':z.object({version}).strict(),
+ 'ai.save':z.object({version,apiKey:z.string().trim().min(20).max(512).regex(/^[!-~]+$/)}).strict(),
  members:z.object({...page,kind:z.enum(['ALL','PARENT','CHILD']).default('ALL'),status:z.enum(['ALL','ACTIVE','SUSPENDED','DELETION_PENDING']).default('ALL')}).strict(),
  member:z.object({id}).strict(),
  history:z.object({...page,...period,category:z.enum(['ALL','ADMIN','MEMBER','FAMILY','SCHEDULE','AUTH','LEGACY']).default('ALL'),targetId:id.optional()}).strict(),
@@ -19,7 +22,8 @@ const specs:Record<string,z.ZodType>={
  'role.set':z.object({id,version,reason,active:z.boolean()}).strict(),
 };
 const messages:Record<string,string>={ADMIN_REQUIRED:'최고관리자만 이용할 수 있습니다.',AUTH_REQUIRED:'로그인이 필요합니다.',INVALID_INPUT:'입력 내용을 확인해 주세요.',REASON_REQUIRED:'변경 사유를 3자 이상 입력해 주세요.',NOT_FOUND:'회원 정보를 찾을 수 없습니다.',VERSION_CONFLICT:'다른 작업으로 정보가 변경됐습니다. 새로고침 후 확인해 주세요.',REAUTH_REQUIRED:'권한을 변경하려면 비밀번호를 다시 확인해 주세요.',LAST_ADMIN:'마지막 최고관리자 권한은 해제할 수 없습니다.',SELF_PROTECTED:'현재 사용 중인 관리자 계정에는 이 작업을 할 수 없습니다.',ADMIN_ACCOUNT_PROTECTED:'최고관리자는 권한을 먼저 해제한 후 이용 정지할 수 있습니다.',MEMBER_NOT_ACTIVE:'탈퇴 처리 중인 계정은 변경할 수 없습니다.',ROLE_TARGET_INVALID:'이메일 인증을 마친 정상 일반사용자 계정만 최고관리자로 지정할 수 있습니다.',RATE_LIMITED:'잠시 후 다시 시도해 주세요.'};
-export function adminRoutes(auth:()=>AuthService|null,runtime:()=>Promise<FamilyService|null>){
+Object.assign(messages,{AI_ENCRYPTION_UNAVAILABLE:'서버 암호화 설정을 준비하고 있어요. 잠시 후 다시 확인해 주세요.',AI_DECRYPT_FAILED:'등록 키를 읽을 수 없어요. 서버 암호화 설정을 확인한 뒤 키를 다시 등록해 주세요.',AI_KEY_MISSING:'OpenAI API 키를 먼저 등록해 주세요.'});
+export function adminRoutes(auth:()=>AuthService|null,runtime:()=>Promise<FamilyService|null>,aiDependencies:AiCredentialDependencies=aiCredentialDefaults){
  const app=new Hono<{Variables:{requestId:string}}>();
  app.use('/api/v1/admin/*',bodyLimit({maxSize:8192,onError:c=>c.json({error:{code:'INVALID_INPUT',message:messages.INVALID_INPUT}},413)}));
  for(const op of Object.keys(specs))app.post('/api/v1/admin/'+op,async c=>{
@@ -32,10 +36,13 @@ export function adminRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Family
    if(s.guard.assurance!=='HIGH'||!s.user.emailVerified||s.user.email.endsWith('@identity.iharu.invalid'))return fail('ADMIN_REQUIRED',403);
    await svc.policy.takeLimits([{key:'system-admin:'+s.guard.member_id,windowMs:60000,limit:150}]);
    const family=await runtime();if(!family)return fail('UNAVAILABLE',503);
-   const result=await family.command({memberId:s.guard.member_id,sessionId:s.session.id,requestId:c.get('requestId')},'admin.'+op,parsed.data as Record<string,unknown>);
+   const actor={memberId:s.guard.member_id,sessionId:s.session.id,requestId:c.get('requestId')};
+   if(op==='ai.check')await svc.policy.takeLimits([{key:'admin-openai-check:'+s.guard.member_id,windowMs:60000,limit:3}]);
+   const ai=new AiCredentials(family,aiDependencies),input=parsed.data as {version:number;apiKey:string};
+   const result=op==='ai.read'?await ai.read(actor):op==='ai.save'?await ai.save(actor,input.version,input.apiKey):op==='ai.remove'?await ai.remove(actor,input.version):op==='ai.check'?await ai.check(actor):await family.command(actor,'admin.'+op,parsed.data as Record<string,unknown>);
    return c.json(result);
   }catch(e){const err=e as {message?:string;body?:{code?:string}};const code=err.body?.code||err.message||'';
-   if(messages[code])return fail(code,code==='AUTH_REQUIRED'?401:code==='NOT_FOUND'?404:code==='VERSION_CONFLICT'?409:code==='RATE_LIMITED'?429:['ADMIN_REQUIRED','REAUTH_REQUIRED'].includes(code)?403:400);
+   if(messages[code])return fail(code,code==='AUTH_REQUIRED'?401:code==='NOT_FOUND'?404:code==='VERSION_CONFLICT'?409:code==='RATE_LIMITED'?429:['AI_ENCRYPTION_UNAVAILABLE','AI_DECRYPT_FAILED'].includes(code)?503:['ADMIN_REQUIRED','REAUTH_REQUIRED'].includes(code)?403:400);
    console.error(JSON.stringify({code:'ADMIN_FAILED',requestId:c.get('requestId')}));return fail('UNAVAILABLE',503);
   }
  });return app;

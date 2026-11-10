@@ -4,6 +4,7 @@ import {hasMenuUpdate,menuForPath} from '../../../shared/workspace-updates';
 import {Icon,type IconName} from './Icon';
 import {DisplaySettings,useExperience} from './Experience';
 import {useOptionalWorkspaceGate} from './WorkspaceGate';
+import {BriefingLocationSettings} from './BriefingLocation';
 export function WorkspaceMore({me}:{me:WorkspaceMe|null}){
  const gate=useOptionalWorkspaceGate();
  const shortcuts:{to:string;label:string;icon:IconName}[]=[
@@ -23,6 +24,7 @@ export function WorkspaceSettings(){
  const {preferences,setPreference}=useExperience();
  return <section className="more-screen settings-screen" aria-labelledby="settings-title"><div className="settings-heading"><Link to="/more" className="icon-button" aria-label="더보기로 돌아가기"><Icon name="arrow" className="flip"/></Link><h1 id="settings-title">설정</h1></div>
   <div className="more-section"><h2>화면</h2><div className="more-group"><div className="settings-row"><div><strong>화면 밝기</strong><p>편안하게 볼 수 있는 화면을 선택해요.</p></div><DisplaySettings/></div><div className="settings-row"><div><strong id="quiet-label">움직임 줄이기</strong><p id="quiet-help">전환 효과를 줄이고 바로 이동해요.</p></div><button type="button" role="switch" aria-checked={preferences.quiet} aria-labelledby="quiet-label" aria-describedby="quiet-help" className="setting-switch" onClick={()=>setPreference({quiet:!preferences.quiet})}><span/></button></div></div><p className="settings-note">화면 설정은 이 기기에 저장됩니다. 기기의 ‘동작 줄이기’ 설정도 함께 적용돼요.</p></div>
+  <BriefingLocationSettings/>
   <div className="more-section"><h2>알림과 도움말</h2><div className="more-group"><Link className="more-row" to="/notification-settings"><span><Icon name="bell"/>알림설정</span><Icon name="chevron"/></Link><Link className="more-row" to="/help"><span><Icon name="book"/>사용 가이드</span><Icon name="chevron"/></Link></div></div>
  </section>;
 }

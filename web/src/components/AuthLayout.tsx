@@ -7,13 +7,14 @@ import {WorkspaceNavigation} from './WorkspaceNavigation';
 import {FamilyArtwork,useExperience} from './Experience';
 import {WorkspaceGateProvider,useWorkspaceGate} from './WorkspaceGate';
 import {EntryAccessProvider} from './EntryAccess';
+import {BriefingLocationProvider,LocationAccessPrompt} from './BriefingLocation';
 import {entryReturnPath} from '../../../shared/entry-intent';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
 export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
-export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><StableWorkspaceFrame/></EntryAccessProvider></WorkspaceGateProvider>;}
+export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><BriefingLocationProvider><StableWorkspaceFrame/></BriefingLocationProvider></EntryAccessProvider></WorkspaceGateProvider>;}
 function StableWorkspaceFrame(){
  const {pathname,search}=useLocation(),{health,session,access}=useWorkspaceGate();
  const publicDocument=pathname.startsWith('/legal/');
@@ -30,6 +31,7 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
   return <div className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
     {!wide&&!inPublicFrame&&<PublicHeader/>}
     {wide&&showNavigation&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }
+    {wide&&showNavigation&&<LocationAccessPrompt/>}
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
       {!wide && <aside className="auth-intro"><span className="eyebrow">그룹의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>그룹이 함께하는 하루를 시작하세요.</p><FamilyArtwork/></aside>}
       <div ref={panel} className="auth-panel">{children}</div>
