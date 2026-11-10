@@ -24,8 +24,9 @@ import {readRealtimeConfig,type RealtimeConfig} from './messages/realtime.js';
 import {messageRoutes} from './messages/routes.js';
 import {messageCatalog} from '../shared/message-catalog.js';
 import { dailyRoutes } from './daily/routes.js';
+import {aiCredentialDefaults,type AiCredentialDependencies} from './admin/ai-credentials.js';
 
-export function createApp(config: AppConfig = readConfig(), authRuntime: () => AuthService | null = getAuthRuntime, familyRuntime: () => Promise<FamilyService | null> = getFamilyRuntime, realtimeConfig:()=>RealtimeConfig|null=readRealtimeConfig) {
+export function createApp(config: AppConfig = readConfig(), authRuntime: () => AuthService | null = getAuthRuntime, familyRuntime: () => Promise<FamilyService | null> = getFamilyRuntime, realtimeConfig:()=>RealtimeConfig|null=readRealtimeConfig, aiDependencies:AiCredentialDependencies=aiCredentialDefaults) {
   const app = new Hono<{ Variables: { requestId: string } }>();
   app.use('*', secureHeaders());
   app.use('*', async (c, next) => {
@@ -59,7 +60,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.route('/', holidayCalendarRoutes());
   app.route('/', accountRoutes(authRuntime));
   app.route('/', legalRoutes(authRuntime,familyRuntime));
-  app.route('/', adminRoutes(authRuntime,familyRuntime));
+  app.route('/', adminRoutes(authRuntime,familyRuntime,aiDependencies));
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
   app.route('/', workspaceRoutes(authRuntime,familyRuntime));
   app.route('/', childAccountRoutes(authRuntime,familyRuntime));

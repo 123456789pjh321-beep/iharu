@@ -4,7 +4,7 @@
 - versionCode: `3`, versionName: `1.1.0`
 - Android 7.0(API 24) 이상 / target·compile SDK 36
 - Android Browser Helper 2.7.4의 Trusted Web Activity로 `https://myiharu.com/timetable` 실행
-- 위치·연락처·사진·광고 ID·결제 SDK를 추가하지 않음. 웹의 인증과 가족 권한을 그대로 사용.
+- 네이티브 위치 위임·연락처·사진·광고 ID·결제 SDK를 추가하지 않음. 웹의 인증과 그룹 권한을 그대로 사용.
 - 지원 브라우저와 인터넷 연결 필요. 도메인 검증 실패 시 주소 표시줄이 있는 Custom Tab으로 열릴 수 있음.
 
 ## 빌드
@@ -53,3 +53,11 @@ CI의 **Android release kit** 워크플로도 같은 빌드를 수행한다. Git
 - 새 네이티브 선언을 사용하려면 **versionCode 3 / versionName 1.1.0** 설치가 필요하다. 이전 APK에는 웹 화면 변경만 반영되고 앱 이름의 알림 위임은 적용되지 않는다.
 - 앱 종료 후 수신은 Chrome/TWA의 Web Push와 OS 알림 허용에 의존한다. 강제 중지·배터리 제한·오프라인 상태에서는 지연될 수 있다.
 - 기존 서명키로 업데이트 설치하고, 실기기에서 알림 허용 → 시험 알림 → 앱 닫기 → 다른 가족의 대화·달력 변경 순으로 확인한다. Play 배포는 별도 앱 서명 인증서가 assetlinks에 등록되어 있어야 한다.
+
+## UI137 — 접속 시 선택 위치 권한
+
+- 웹·PWA와 동일하게 첫 접속 안내의 **위치 사용하기**를 누르면 브라우저가 현재 사이트의 위치 권한을 요청합니다. 거부해도 앱의 기본 메뉴는 사용할 수 있습니다.
+- 이 APK는 네이티브 위치 권한을 선언하지 않습니다. Chrome 공식 TWA 동작에 따라 앱이 위치 권한을 선언하지 않은 경우 Chrome의 사이트 위치 권한으로 처리합니다. [Chromium 공식 문서](https://chromium.googlesource.com/chromium/src/+/HEAD/chrome/android/java/src/org/chromium/chrome/browser/browserservices/permissiondelegation/README.md)
+- 따라서 이번 웹 패치에 새 APK 설치나 네이티브 위치 SDK 추가는 필요하지 않습니다. 설치 앱에서도 사이트 권한과 기기의 위치 서비스가 모두 허용되어야 합니다. 브라우저별 실제 표시 형태는 다를 수 있습니다.
+- 대략적인 좌표만 활성 화면 메모리에 최대 30분 보관합니다. 좌표 서버 저장·외부 AI 전송·그룹 위치 공유·백그라운드 추적은 이번 패치에 포함하지 않습니다. 향후 브리핑은 웹의 `useBriefingLocation().getBriefingLocation()`으로 유효한 현재 위치를 읽어 연결할 수 있습니다.
+- 실제 Android 기기에서 허용·거부·일회성 권한·앱 복귀·OS 위치 OFF를 확인합니다. 자동 브라우저 검사는 실제 Android 권한 UI 검증을 대신하지 않습니다.

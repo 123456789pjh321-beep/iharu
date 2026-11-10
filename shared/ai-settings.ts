@@ -1,0 +1,1 @@
+export type AiSettings={configured:boolean;fingerprint:string|null;version:number;updatedAt:string|null;lastCheckedAt:string|null;lastCheck:'OK'|'AUTH'|'LIMIT'|'UNAVAILABLE'|null;encryptionReady:boolean};
