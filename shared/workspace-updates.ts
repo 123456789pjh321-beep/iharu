@@ -1,4 +1,4 @@
-export const workspaceMenus=['timetable','calendar','chat','fees','records','family'] as const;
+export const workspaceMenus=['timetable','calendar','chat','briefing','fees','records','family'] as const;
 export type WorkspaceMenu=typeof workspaceMenus[number];
 export type MenuRevision={revision:number;seen:number};
 export type MenuUpdateState={profileId:string;updates:Partial<Record<WorkspaceMenu,MenuRevision>>};
@@ -7,6 +7,7 @@ export function menuForPath(path:string):WorkspaceMenu|undefined{
  if(path==='/timetable'||path==='/today/timetable'||path==='/today/repeats')return 'timetable';
  if(path==='/today/calendar'||path==='/calendar')return 'calendar';
  if(path==='/chat'||path==='/child/chat')return 'chat';
+ if(path==='/briefing')return 'briefing';
  if(path==='/tuition')return 'fees';
  if(path==='/records')return 'records';
  if(path==='/family')return 'family';

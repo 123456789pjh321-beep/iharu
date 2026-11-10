@@ -16,7 +16,7 @@ export class FamilyService {
       if(op==='system.log'){
         const [row]=await query<{data:T}>(tx,'SELECT app_private.system_log_request($1::jsonb) AS data',[JSON.stringify(input)]);return row.data;
       }
-      const [row]=await query<{data:T}>(tx,op.startsWith('ai.credentials.')?'SELECT app_private.ai_credentials_command($1,$2::jsonb) AS data':op.startsWith('legal.')?'SELECT app_private.legal_command($1,$2::jsonb) AS data':op.startsWith('admin.')?'SELECT app_private.admin_command($1,$2::jsonb) AS data':op.startsWith('workspace.')?'SELECT app_private.workspace_command($1,$2::jsonb) AS data':op.startsWith('childaccount.')?'SELECT app_private.child_account_command($1,$2::jsonb) AS data':op.startsWith('guardian.')?'SELECT app_private.guardian_command($1,$2::jsonb) AS data':'SELECT app_private.family_command($1,$2::jsonb) AS data',[op,JSON.stringify(input)]);
+      const [row]=await query<{data:T}>(tx,op.startsWith('briefing.')?'SELECT app_private.briefing_command($1,$2::jsonb) AS data':op.startsWith('ai.credentials.')?'SELECT app_private.ai_credentials_command($1,$2::jsonb) AS data':op.startsWith('legal.')?'SELECT app_private.legal_command($1,$2::jsonb) AS data':op.startsWith('admin.')?'SELECT app_private.admin_command($1,$2::jsonb) AS data':op.startsWith('workspace.')?'SELECT app_private.workspace_command($1,$2::jsonb) AS data':op.startsWith('childaccount.')?'SELECT app_private.child_account_command($1,$2::jsonb) AS data':op.startsWith('guardian.')?'SELECT app_private.guardian_command($1,$2::jsonb) AS data':'SELECT app_private.family_command($1,$2::jsonb) AS data',[op,JSON.stringify(input)]);
       return groupLabels(op,row.data);
     });
   }

@@ -1,3 +1,4 @@
+import {briefingRoutes} from './briefing/routes.js';
 import {pushCron} from './push/service.js';
 import {holidayCalendarRoutes} from './schedules/holiday-calendar.js';
 import {legalRoutes} from './legal/routes.js';
@@ -61,6 +62,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.route('/', accountRoutes(authRuntime));
   app.route('/', legalRoutes(authRuntime,familyRuntime));
   app.route('/', adminRoutes(authRuntime,familyRuntime,aiDependencies));
+  app.route('/', briefingRoutes(authRuntime,familyRuntime));
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
   app.route('/', workspaceRoutes(authRuntime,familyRuntime));
   app.route('/', childAccountRoutes(authRuntime,familyRuntime));

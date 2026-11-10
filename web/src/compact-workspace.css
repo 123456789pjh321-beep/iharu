@@ -254,3 +254,6 @@ html[data-theme=dark] .conversation-sticker-art{--sticker-paper:#20362f;--sticke
 .timetable-preference-message{margin:0;padding:0 12px 8px;color:var(--primary);font-size:.75rem}
 .timetable-preference-message.error{color:#a3454b}
 html[data-theme=dark] .timetable-preference-message.error{color:#ffbdc5}
+
+/* Six primary items keep the briefing label on one readable line. */
+@media(max-width:480px){.workspace-mobile-nav a[href='/briefing']>span:nth-child(2){white-space:nowrap;font-size:.65rem;letter-spacing:-.035em}}
