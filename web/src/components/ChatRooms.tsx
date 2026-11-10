@@ -10,7 +10,7 @@ export function ChatRooms({me,rooms,selected,select,created,error}:{me:Workspace
   <div className="chat-rooms-toolbar">
   <nav className="chat-room-list" aria-label="대화방 목록">
    <button type="button" aria-label={me.family?'단체 대화 그룹 전체':'나와의 대화 개인 메모'} title={me.family?'단체 대화 · 그룹 전체':'나와의 대화 · 개인 메모'} aria-pressed={selected===null} onClick={()=>select(null)}><Icon name="users"/><span>{me.family?'단체 대화':'나와의 대화'}</span></button>
-   {rooms.map(room=><button type="button" key={room.id} aria-label={room.name+' '+(room.kind==='DIRECT'?'1:1 대화':room.members.length+'명 참여')+(!room.canSend?' · 읽기 전용':'')} title={room.name+' · '+(room.kind==='DIRECT'?'1:1 대화':room.members.length+'명 참여')+(!room.canSend?' · 읽기 전용':'')} aria-pressed={selected===room.id} onClick={()=>select(room.id)}><Icon name={room.kind==='DIRECT'?'chat':'users'}/><span>{room.name}{!room.canSend?' · 읽기 전용':''}</span></button>)}
+   {rooms.map(room=><button type="button" key={room.id} aria-label={room.name+' '+(room.kind==='DIRECT'?'1:1 대화':room.members.filter(m=>m.active).length+'명 참여')+(!room.canSend?' · 읽기 전용':'')} title={room.name+' · '+(room.kind==='DIRECT'?'1:1 대화':room.members.filter(m=>m.active).length+'명 참여')+(!room.canSend?' · 읽기 전용':'')} aria-pressed={selected===room.id} onClick={()=>select(room.id)}><Icon name={room.kind==='DIRECT'?'chat':'users'}/><span>{room.name}{!room.canSend?' · 읽기 전용':''}</span></button>)}
   </nav>
   <button type="button" className="button compact chat-room-create" aria-label="대화방 만들기" title="대화방 만들기" onClick={()=>setOpen(true)}><Icon name="plus"/><span>대화방</span></button>
   </div><FormNotice error={error}/>
