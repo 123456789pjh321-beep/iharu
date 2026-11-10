@@ -32,7 +32,9 @@ it('groups all related parents and children while searching a family member, and
  const {b:root}=await parent('root',true),{b:other}=await parent('second'),{id:solo}=await parent('solo');
  const invite=await root.ws('invite.issue',{consent:true});await other.ws('family.join',{code:invite.code});const next=await root.ws('invite.issue',{consent:true}),child=new Browser();await child.ws('child.signup',{loginId:'group_child',name:'가상 서하',password,code:next.code});
  const result=await root.admin('members',{query:'가상 서하'});expect(result.matchedMembers).toBe(1);expect(result.groups).toHaveLength(1);expect(result.groups[0].members).toHaveLength(3);expect(result.groups[0].members[0].host).toBe(true);
- expect((await root.admin('members',{query:'solo'})).groups[0].members[0].id).toBe(solo);
+ expect(result.groups[0].name).toBe('root의 그룹');expect(result.groups[0].members.every((m:{familyName:string})=>m.familyName==='root의 그룹')).toBe(true);
+ const unlinked=(await root.admin('members',{query:'solo'})).groups[0];expect(unlinked.name).toBe('그룹 미연결');expect(unlinked.members[0].id).toBe(solo);
+ expect((await root.admin('member',{id:result.groups[0].members[0].id})).familyName).toBe('root의 그룹');
  const overview=await root.admin('overview');expect(overview).toMatchObject({members:4,parents:3,children:1,families:1,admins:1});
 });
 it('grants and revokes system roles with fresh authentication and immediate session authorization checks',async()=>{
