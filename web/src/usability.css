@@ -81,3 +81,7 @@ html[data-theme=dark] .workspace-wordmark{color:#a7c6b7}html[data-theme=dark] .i
 
 .tuition-day-event{--event-color:var(--primary)}.tuition-day-event>span{flex-basis:104px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);overflow-wrap:anywhere}.tuition-day-sheet>header p{color:var(--muted)}
 @media(max-width:420px){.tuition-day-event{gap:10px}.tuition-day-event>span{flex-basis:82px;font-size:.75rem}.tuition-day-event>div{padding-left:9px}}
+
+/* Keep the shared select-all action visible beside the member overflow. */
+.workspace-page .compact-members>.member-filters{--member-all-width:64px}
+.workspace-page .compact-members>.member-filters>.member-select-all{flex-basis:var(--member-all-width);width:var(--member-all-width);padding-inline:3px}

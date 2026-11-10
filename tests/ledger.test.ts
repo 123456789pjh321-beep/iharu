@@ -1,8 +1,14 @@
 import {describe,it,expect} from 'vitest';
 import {workspaceItemInput,type WorkspaceItem} from '../shared/workspace';
-import {ledgerMonth,ledgerCSV,ledgerCategory} from '../shared/ledger';
+import {ledgerMonth,ledgerCSV,ledgerCategory,ledgerStatistics,ledgerQuickEntries} from '../shared/ledger';
 const row=(id:string,amount:number,flow?:'INCOME'|'EXPENSE',paid=false):WorkspaceItem=>({id,kind:'FEE',ownerId:'a',ownerName:'A',mine:true,version:1,data:{title:id,date:'2027-01-31',amount,ledgerFlow:flow,weekdays:[],note:'',place:'',paid:false},fee:{month:'2027-02',dueDate:'2027-02-28',paid,payerId:'a',payerName:'A',canMarkPaid:true}});
 describe('household ledger',()=>{
+ it('builds completed or planned category, payment and three-month statistics without mixing members',()=>{
+  const a=row('장보기',100,'EXPENSE',true),b=row('학원비',200,'EXPENSE',false),income=row('월급',1000,'INCOME',true),other=row('다른 사람',999,'EXPENSE',true),previous=row('지난달',80,'EXPENSE',true);a.data.ledgerCategory='FOOD';a.data.ledgerMethod='CARD';other.data.assigneeId='b';previous.fee={...previous.fee!,month:'2027-01',dueDate:'2027-01-31'};
+  const items=[a,b,income,other,previous],actual=ledgerStatistics(items,'2027-02',['a']);expect(actual).toMatchObject({expense:100,income:1000,categories:[{label:'식비',amount:100}],payments:[{label:'카드',amount:100}],trend:[{month:'2026-12',expense:0},{month:'2027-01',expense:80},{month:'2027-02',expense:100}]});
+  expect(ledgerStatistics(items,'2027-02',['a'],true).expense).toBe(300);
+  expect(ledgerQuickEntries([a,{...a,fee:{...a.fee!,month:'2027-03',dueDate:'2027-03-28'}},b,other],['a']).map(i=>i.data.title)).toEqual(['장보기','학원비']);
+ });
  it('keeps legacy fees as education expenses and separates planned and completed cash flow',()=>{
   const income=row('급여',3000000,'INCOME',true),legacy=row('교육비',200000),expense=row('식비',100000,'EXPENSE',true);expense.data.ledgerCategory='FOOD';
   const data=ledgerMonth([income,legacy,expense],'2027-02');expect(ledgerCategory(legacy).id).toBe('EDUCATION');expect(data).toMatchObject({income:3000000,expense:300000,balance:2700000,settledBalance:2900000,pendingExpense:200000});expect(data.days.get('2027-02-28')).toMatchObject({income:3000000,expense:300000});expect(data.categories.map(c=>c.amount)).toEqual([200000,100000]);

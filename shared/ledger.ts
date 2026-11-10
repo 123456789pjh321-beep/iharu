@@ -25,3 +25,14 @@ export function ledgerCSV(items:WorkspaceItem[]){
  const cell=(v:string|number)=>{let s=String(v);if(typeof v==='string'&&/^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};
  return '\uFEFF'+[['거래일','구분','분류','내용','금액(원)','처리 상태','결제 수단','담당자','메모'],...items.map(i=>[i.fee!.dueDate,ledgerFlow(i)==='INCOME'?'수입':'지출',ledgerCategory(i).label,i.data.title,i.data.amount||0,i.fee?.paid?'완료':'예정',ledgerMethodLabels[i.data.ledgerMethod||'OTHER'],i.fee?.payerName||'',i.data.note])].map(row=>row.map(cell).join(',')).join('\r\n');
 }
+/** Statistics share the same member/month rules as the ledger; pending is explicit. */
+export function ledgerStatistics(items:WorkspaceItem[],month:string,members:readonly string[]|string='all',includePending=false){
+ const data=ledgerMonth(items,month,members,{status:includePending?'ALL':'DONE'}),payments=new Map<string,number>();
+ for(const item of data.fees)if(ledgerFlow(item)==='EXPENSE'){const method=item.data.ledgerMethod||'OTHER';payments.set(method,(payments.get(method)||0)+(item.data.amount||0));}
+ const trend=Array.from({length:3},(_,index)=>{const d=new Date(month+'-01T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+index-2);const key=d.toISOString().slice(0,7),summary=ledgerMonth(items,key,members,{status:includePending?'ALL':'DONE'});return {month:key,income:summary.income,expense:summary.expense};});
+ return {...data,payments:[...payments].map(([method,amount])=>({label:ledgerMethodLabels[method as keyof typeof ledgerMethodLabels],amount})).sort((a,b)=>b.amount-a.amount),trend};
+}
+/** Reuse drafts only; each repeating record appears once across loaded months. */
+export function ledgerQuickEntries(items:WorkspaceItem[],members:readonly string[]){
+ const seen=new Set<string>();return items.filter(i=>i.kind==='FEE'&&members.includes(i.data.assigneeId||i.ownerId)).sort((a,b)=>(b.fee?.dueDate||b.data.date).localeCompare(a.fee?.dueDate||a.data.date)).filter(i=>{const key=JSON.stringify([i.data.title,i.data.amount,ledgerFlow(i),ledgerCategory(i).id,i.data.ledgerMethod,i.data.assigneeId||i.ownerId]);if(seen.has(key))return false;seen.add(key);return true;}).slice(0,6);
+}
