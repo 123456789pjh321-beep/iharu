@@ -35,3 +35,7 @@
 @media(max-height:500px){.auth-app.workspace-page{padding-top:calc(env(safe-area-inset-top) + 12px)}.chat-rooms{padding-bottom:4px}.workspace-page .group-chat .chat-room-header{padding-block:4px}}
 /* In landscape, picture selection temporarily uses the room-list space. The active room title stays visible. */
 @media(max-height:500px){.chat-workspace:has(.chat-sticker-toggle[aria-expanded=true])>.chat-rooms{display:none}}
+
+.chat-room-tools .chat-room-leave{box-sizing:border-box;min-height:var(--chat-control-height);height:var(--chat-control-height);padding:0 10px;white-space:nowrap;flex-shrink:0;color:var(--holiday-ink);font-size:.75rem}
+.chat-leave-dialog{box-sizing:border-box;width:min(420px,calc(100vw - 28px));max-height:85dvh;margin:auto;padding:22px;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink);box-shadow:0 20px 65px #102d3f30;overflow:auto}.chat-leave-dialog::backdrop{background:#0c233b55;backdrop-filter:blur(4px)}.chat-leave-dialog h2{font-size:1.1rem;margin:0 0 14px}.chat-leave-dialog p{font-size:.85rem;line-height:1.75;overflow-wrap:anywhere}.chat-leave-dialog .account-caption{font-size:.75rem;color:var(--muted)}.chat-leave-dialog footer{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}.chat-leave-dialog footer .button{min-width:76px;min-height:42px}
+@media(max-width:600px){.chat-room-tools .chat-room-leave{padding-inline:8px}.workspace-page .group-chat .chat-room-header{gap:6px}}

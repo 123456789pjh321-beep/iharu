@@ -446,6 +446,16 @@ try{
   await assert.rejects(family1.command(a,'workspace.chat.send',{text:message.text,clientMessageId:message.clientMessageId}),{message:'VERSION_CONFLICT'});
   for(const sql of ['SELECT * FROM app_private.workspace_chat_rooms','SELECT * FROM app_private.workspace_chat_members',"SELECT app_private.workspace_room_member(NULL,NULL)","SELECT app_private.workspace_command_v129('workspace.me','{}')"])await assert.rejects(query(db1,sql),{code:'42501'});
  });
+ await check('UI136 room leave serializes with sends, retries safely and does not restore old history',async()=>{
+  const am=await family1.command<{id:string;family:{id:string}}>(a,'workspace.me'),bm=await family2.command<{id:string}>(b,'workspace.me');
+  const room=await family1.command<{id:string}>(a,'workspace.chat.room.create',{memberIds:[bm.id],name:'',clientRequestId:randomUUID()});
+  const [left,sent]=await Promise.allSettled([family2.command(b,'workspace.chat.room.leave',{roomId:room.id}),family1.command(a,'workspace.chat.send',{roomId:room.id,text:'나가기와 동시에 보낸 메시지',clientMessageId:randomUUID()})]);assert.equal(left.status,'fulfilled');if(sent.status==='rejected')assert.equal(sent.reason.message,'ROOM_READ_ONLY');
+  await Promise.all([family1.command(b,'workspace.chat.room.leave',{roomId:room.id}),family2.command(b,'workspace.chat.room.leave',{roomId:room.id})]);
+  await assert.rejects(family2.command(b,'workspace.chat.list',{roomId:room.id}),{message:'NOT_FOUND'});await assert.rejects(family1.command(b,'workspace.chat.send',{roomId:room.id,text:'나간 뒤 전송 차단',clientMessageId:randomUUID()}),{message:'NOT_FOUND'});
+  assert.ok((await family1.command<{items:unknown[]}>(a,'workspace.chat.list',{roomId:room.id})).items.length>0);
+  const fresh=await family1.command<{id:string}>(a,'workspace.chat.room.create',{memberIds:[bm.id],name:'',clientRequestId:randomUUID()});assert.notEqual(fresh.id,room.id);assert.deepEqual((await family2.command<{items:unknown[]}>(b,'workspace.chat.list',{roomId:fresh.id})).items,[]);assert.equal((await family2.command<{family:{id:string}}>(b,'workspace.me')).family.id,am.family.id);
+  await family2.command(b,'workspace.chat.send',{text:'기본 단체 대화는 유지',clientMessageId:randomUUID()});await assert.rejects(query(db1,"SELECT app_private.workspace_command_v135('workspace.me','{}')"),{code:'42501'});
+ });
  await check('UI83 concurrent admin writes have one winner and role/session revocation takes effect immediately',async()=>{
   const edits=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'admin.member.update',{id:b.memberId,version:0,name:'운영 동시 변경 '+i,reason:'실제 PostgreSQL 충돌 검사'})));
   assert.equal(edits.filter(x=>x.status==='fulfilled').length,1);assert.equal((edits.find(x=>x.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
