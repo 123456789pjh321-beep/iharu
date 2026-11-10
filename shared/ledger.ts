@@ -12,24 +12,25 @@ export const ledgerCategoryIds=ledgerCategories.map(c=>c.id);
 export const ledgerMethodLabels={CASH:'현금',CARD:'카드',TRANSFER:'계좌이체',OTHER:'미지정'};
 export function ledgerFlow(item:WorkspaceItem):LedgerFlow{return item.data.ledgerFlow||'EXPENSE';}
 export function ledgerCategory(item:WorkspaceItem){return ledgerCategories.find(c=>c.id===item.data.ledgerCategory&&c.flow===ledgerFlow(item))||ledgerCategories.find(c=>c.id===(ledgerFlow(item)==='INCOME'?'OTHER_INCOME':item.data.ledgerCategory?'OTHER_EXPENSE':'EDUCATION'))!;}
-export type LedgerFilter={flow?:'ALL'|LedgerFlow;category?:string;query?:string;status?:'ALL'|'DONE'|'PENDING'};
+export type LedgerFilter={flow?:'ALL'|LedgerFlow;category?:string;query?:string};
+/** Every recorded amount counts once; legacy completion flags never affect totals. */
 export function ledgerMonth(items:WorkspaceItem[],month:string,members:readonly string[]|string='all',filter:LedgerFilter={}){
  const query=filter.query?.trim().toLocaleLowerCase('ko-KR')||'';
- const fees=tuitionMonth(items,month,members).fees.filter(i=>(!filter.flow||filter.flow==='ALL'||ledgerFlow(i)===filter.flow)&&(!filter.category||filter.category==='ALL'||ledgerCategory(i).id===filter.category)&&(!filter.status||filter.status==='ALL'||(filter.status==='DONE')===!!i.fee?.paid)&&(!query||[i.data.title,i.data.note,i.fee?.payerName,ledgerCategory(i).label].join(' ').toLocaleLowerCase('ko-KR').includes(query)));
- let income=0,expense=0,settledIncome=0,settledExpense=0;
+ const fees=tuitionMonth(items,month,members).fees.filter(i=>(!filter.flow||filter.flow==='ALL'||ledgerFlow(i)===filter.flow)&&(!filter.category||filter.category==='ALL'||ledgerCategory(i).id===filter.category)&&(!query||[i.data.title,i.data.note,i.fee?.payerName,ledgerCategory(i).label].join(' ').toLocaleLowerCase('ko-KR').includes(query)));
+ let income=0,expense=0;
  const days=new Map<string,{items:WorkspaceItem[];income:number;expense:number}>(),categories=new Map<string,{label:string;amount:number}>();
- for(const i of fees){const amount=i.data.amount||0,incoming=ledgerFlow(i)==='INCOME',date=i.fee!.dueDate,day=days.get(date)||{items:[],income:0,expense:0};day.items.push(i);if(incoming){income+=amount;day.income+=amount;if(i.fee!.paid)settledIncome+=amount;}else{expense+=amount;day.expense+=amount;if(i.fee!.paid)settledExpense+=amount;const c=ledgerCategory(i),bucket=categories.get(c.id)||{label:c.label,amount:0};bucket.amount+=amount;categories.set(c.id,bucket);}days.set(date,day);}
- return {fees,days,income,expense,balance:income-expense,settledIncome,settledExpense,settledBalance:settledIncome-settledExpense,pendingIncome:income-settledIncome,pendingExpense:expense-settledExpense,categories:[...categories.values()].sort((a,b)=>b.amount-a.amount)};
+ for(const i of fees){const amount=i.data.amount||0,incoming=ledgerFlow(i)==='INCOME',date=i.fee!.dueDate,day=days.get(date)||{items:[],income:0,expense:0};day.items.push(i);if(incoming){income+=amount;day.income+=amount;}else{expense+=amount;day.expense+=amount;const c=ledgerCategory(i),bucket=categories.get(c.id)||{label:c.label,amount:0};bucket.amount+=amount;categories.set(c.id,bucket);}days.set(date,day);}
+ return {fees,days,income,expense,balance:income-expense,categories:[...categories.values()].sort((a,b)=>b.amount-a.amount)};
 }
 export function ledgerCSV(items:WorkspaceItem[]){
  const cell=(v:string|number)=>{let s=String(v);if(typeof v==='string'&&/^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};
- return '\uFEFF'+[['거래일','구분','분류','내용','금액(원)','처리 상태','결제 수단','담당자','메모'],...items.map(i=>[i.fee!.dueDate,ledgerFlow(i)==='INCOME'?'수입':'지출',ledgerCategory(i).label,i.data.title,i.data.amount||0,i.fee?.paid?'완료':'예정',ledgerMethodLabels[i.data.ledgerMethod||'OTHER'],i.fee?.payerName||'',i.data.note])].map(row=>row.map(cell).join(',')).join('\r\n');
+ return '\uFEFF'+[['거래일','구분','분류','내용','금액(원)','결제 수단','담당자','메모'],...items.map(i=>[i.fee!.dueDate,ledgerFlow(i)==='INCOME'?'수입':'지출',ledgerCategory(i).label,i.data.title,i.data.amount||0,ledgerMethodLabels[i.data.ledgerMethod||'OTHER'],i.fee?.payerName||'',i.data.note])].map(row=>row.map(cell).join(',')).join('\r\n');
 }
-/** Statistics share the same member/month rules as the ledger; pending is explicit. */
-export function ledgerStatistics(items:WorkspaceItem[],month:string,members:readonly string[]|string='all',includePending=false){
- const data=ledgerMonth(items,month,members,{status:includePending?'ALL':'DONE'}),payments=new Map<string,number>();
+/** Statistics, dates and summaries use identical record filters. */
+export function ledgerStatistics(items:WorkspaceItem[],month:string,members:readonly string[]|string='all',filter:LedgerFilter={}){
+ const data=ledgerMonth(items,month,members,filter),payments=new Map<string,number>();
  for(const item of data.fees)if(ledgerFlow(item)==='EXPENSE'){const method=item.data.ledgerMethod||'OTHER';payments.set(method,(payments.get(method)||0)+(item.data.amount||0));}
- const trend=Array.from({length:3},(_,index)=>{const d=new Date(month+'-01T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+index-2);const key=d.toISOString().slice(0,7),summary=ledgerMonth(items,key,members,{status:includePending?'ALL':'DONE'});return {month:key,income:summary.income,expense:summary.expense};});
+ const trend=Array.from({length:3},(_,index)=>{const d=new Date(month+'-01T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+index-2);const key=d.toISOString().slice(0,7),summary=ledgerMonth(items,key,members,filter);return {month:key,income:summary.income,expense:summary.expense};});
  return {...data,payments:[...payments].map(([method,amount])=>({label:ledgerMethodLabels[method as keyof typeof ledgerMethodLabels],amount})).sort((a,b)=>b.amount-a.amount),trend};
 }
 /** Reuse drafts only; each repeating record appears once across loaded months. */
