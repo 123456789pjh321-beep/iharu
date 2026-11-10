@@ -22,7 +22,12 @@ export function guestSamples(month:string,today:string){
  ]);
  const fees=months.flatMap(m=>[
   ['piano','피아노 학원비',150000,'sample-hajun','05'],['english','영어 학원비',220000,'sample-minseo','12'],['sport','태권도 학원비',170000,'sample-minseo','20'],
- ].map(([id,title,amount,assigneeId,day])=>{const fee=item(m+'-'+id,'FEE',data(String(title),m+'-'+day,{amount:Number(amount),assigneeId:String(assigneeId),feeFrequency:'MONTHLY',feePayerId:'sample-parent'}));fee.fee={month:m,dueDate:fee.data.date,paid:id==='piano',payerId:'sample-parent',payerName:'일반사용자',canMarkPaid:false};return fee;}));
+ ].map(([id,title,amount,assigneeId,day])=>{const fee=item(m+'-'+id,'FEE',data(String(title),m+'-'+day,{amount:Number(amount),assigneeId:String(assigneeId),feeFrequency:'MONTHLY',feePayerId:'sample-parent'}));fee.fee={month:m,dueDate:fee.data.date,paid:id==='piano',payerId:'sample-parent',payerName:'지우',canMarkPaid:false};return fee;}));
+ for(const m of months){
+  for(const [id,title,amount,day,ledgerFlow,ledgerCategory] of [['salary','월급',3500000,'25','INCOME','SALARY'],['grocery','마트 장보기',86000,'08','EXPENSE','GROCERIES']] as const){
+   const row=item(m+'-'+id,'FEE',data(title,m+'-'+day,{amount,assigneeId:'sample-parent',feeFrequency:'MONTHLY',feePayerId:'sample-parent',ledgerFlow,ledgerCategory,ledgerMethod:id==='salary'?'TRANSFER':'CARD'}));row.fee={month:m,dueDate:row.data.date,paid:true,payerId:'sample-parent',payerName:'지우',canMarkPaid:false};fees.push(row);
+  }
+ }
  const notes=[item('note-bag','NOTE',data('내일 준비물 챙기기',month+'-10',{note:'물병과 실내화를 가방에 챙겨요. 가상 예시 메모입니다.'})),item('note-pickup','NOTE',data('학원 끝나고 만나요',month+'-15',{note:'수업이 끝나면 단체 대화에서 알려 주세요. 가상 예시 메모입니다.'}))];
  return {repeats,events,fees,notes};
 }

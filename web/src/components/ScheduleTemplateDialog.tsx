@@ -10,7 +10,7 @@ import {Loading,ErrorState} from './Common';
 export function ScheduleTemplateDialog({childrenOptions,childId,close,saved}:{childrenOptions:{id:string;nickname:string}[];childId:string;close:()=>void;saved:(message:string)=>void}){
  const [child,setChild]=useState(childId),[busy,setBusy]=useState(false);
  return <Dialog title="서준 시간표 가져오기" busy={busy} close={close}>
-  <p className="auth-notice">제공받은 서준 시간표예요. 등록할 아이·실제 적용 기간·필요한 일정만 선택해 주세요. 생년월일, 서하 일정과 학원비는 추가하지 않아요.</p>
+  <p className="auth-notice">제공받은 서준 시간표예요. 등록할 아이·실제 적용 기간·필요한 일정만 선택해 주세요. 생년월일, 서하 일정과 가계부는 추가하지 않아요.</p>
   <label className="form-field">등록할 아이<select value={child} disabled={busy} onChange={e=>setChild(e.target.value)}><option value="">아이를 선택해 주세요</option>{childrenOptions.map(c=><option key={c.id} value={c.id}>{c.nickname}</option>)}</select></label>
   {child&&<TemplateSelection key={child} childId={child} saved={saved} busyChanged={setBusy}/>}
  </Dialog>;

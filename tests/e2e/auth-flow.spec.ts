@@ -18,7 +18,7 @@ test('browser signup → mail proof → login → timetable → account → logo
   await page.getByLabel('암호',{exact:true}).fill('browser-parent-password-2026');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page).toHaveURL(/\/timetable$/);
-  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','대화','학원비','전체메뉴']);await expect(nav.getByRole('link',{name:'오늘',exact:true})).toHaveCount(0);
+  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','대화','가계부','전체메뉴']);await expect(nav.getByRole('link',{name:'오늘',exact:true})).toHaveCount(0);
   await expect(page.locator('.personal-timetable')).toBeVisible();
   await page.reload();
   await expect(page.locator('.personal-timetable')).toBeVisible();

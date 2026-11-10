@@ -73,7 +73,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.all('/api/v1/*', async c => {
     const principal = await resolvePrincipal(c.req.raw, authRuntime());
     if (!isAuthenticated(principal)) return c.json({ error:{ code:'AUTH_REQUIRED', message:'로그인이 필요해요.' }, requestId:c.get('requestId') }, 401);
-    if (principal.assurance !== 'HIGH' || !principal.emailVerified || !principal.accessReady) return c.json({ error:{ code:'ACCESS_NOT_READY', message:'계정 확인과 가족 연결이 필요해요.' }, requestId:c.get('requestId') }, 403);
+    if (principal.assurance !== 'HIGH' || !principal.emailVerified || !principal.accessReady) return c.json({ error:{ code:'ACCESS_NOT_READY', message:'계정 확인과 그룹 연결이 필요해요.' }, requestId:c.get('requestId') }, 403);
     return c.json({ error:{ code:'NOT_IMPLEMENTED', message:'이 기능을 준비하고 있어요.' }, requestId:c.get('requestId') }, 501);
   });
   app.notFound(c => c.json({ error:{ code:'NOT_FOUND', message:'요청한 경로를 찾을 수 없어요.' }, requestId:c.get('requestId') }, 404));

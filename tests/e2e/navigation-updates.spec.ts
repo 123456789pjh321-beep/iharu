@@ -19,8 +19,8 @@ test('new family content dots clear after the destination loads and the replaced
   const now=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Seoul'});
   await call(other,'items.create',{kind:'NOTE',data:{title:'새 메모 알림',date:now,note:'확인 후 사라져요'}});
   await expect(more.locator('.workspace-nav-update')).toHaveCount(0);await more.click();
-  const menu=page.getByRole('navigation',{name:'더보기 메뉴',exact:true});await expect(menu.getByRole('link',{name:'메모',exact:true})).toHaveCount(0);await expect(menu.getByRole('link',{name:'알림설정',exact:true})).toBeVisible();
-  await menu.getByRole('link',{name:'알림설정',exact:true}).click();await expect(page.getByRole('heading',{name:'알림설정',exact:true})).toBeVisible();
+  const menu=page.getByRole('navigation',{name:'더보기 메뉴',exact:true});await expect(menu.getByRole('link',{name:'메모',exact:true})).toHaveCount(0);await expect(menu.getByRole('link',{name:'알림',exact:true})).toBeVisible();
+  await menu.getByRole('link',{name:'알림',exact:true}).click();await expect(page.getByRole('heading',{name:'알림설정',exact:true})).toBeVisible();
   await page.goto('/records');await expect(page.getByRole('heading',{name:'새 메모 알림',exact:true})).toBeVisible();
 
  }finally{await other.dispose();}

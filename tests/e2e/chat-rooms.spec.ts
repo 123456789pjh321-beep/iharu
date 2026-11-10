@@ -16,6 +16,7 @@ test('creates and switches individual and selected-member rooms without mixing d
   for(const context of contexts.slice(1)){const invitation=await command(contexts[0].request,'invite.issue',{consent:true});await command(context.request,'family.join',{code:invitation.code});}
   const host=await contexts[0].newPage();await host.goto('/chat');await expect(host.locator('.chat-room-meta')).toBeVisible();
   await host.getByRole('button',{name:'대화방 만들기',exact:true}).click();const dialog=host.getByRole('dialog',{name:'대화방 만들기'});
+  await expect(dialog.getByText(/같은 그룹의 구성원을 선택하세요/)).toHaveCount(0);await expect(dialog.getByText(/나를 포함해/)).toHaveCount(0);await host.screenshot({path:'test-results/ui132-chat-dialog.png',animations:'disabled'});
   await dialog.getByRole('checkbox',{name:/지우/}).check();await dialog.getByRole('button',{name:'대화 시작하기'}).click();await expect(dialog).not.toBeVisible();
   await expect(host.locator('.chat-room-meta')).toHaveText('지우 · 2명');const input=host.getByRole('textbox',{name:'참여자에게 전할 말'});
   await input.fill('지우에게만 보이는 메시지');await host.getByRole('button',{name:'메시지 보내기',exact:true}).click();await expect(host.getByRole('button',{name:'메시지 수정: 지우에게만 보이는 메시지',exact:true})).toBeVisible();

@@ -36,7 +36,7 @@ for(const width of [390,820])test(`finger-follow, snap-back, cancellation and to
    });
    await start();for(let i=1;i<=8;i++)await drag(-Math.min(210,bounds.width*.46)*i/8);await end();await expect(month).toHaveValue('2026-12');await expect.poll(()=>page.evaluate(()=>(window as unknown as {releaseStillAnimating?:boolean}).releaseStillAnimating)).toBe(true);await settled(page);
    const day=route==='/tuition'?page.locator('[data-pager-current] .tuition-date[data-date="2026-12-01"]'):page.locator('[data-pager-current] .calendar-cell[data-date="2026-12-01"] .calendar-day-target');
-   if(route==='/tuition'){await day.tap();await page.waitForTimeout(650);await expect(page.locator('.tuition-day-sheet')).toBeVisible();await page.getByRole('button',{name:'날짜 학원비 닫기'}).tap();}
+   if(route==='/tuition'){await day.tap();await page.waitForTimeout(650);await expect(page.locator('.tuition-day-sheet')).toBeVisible();await page.getByRole('button',{name:'날짜 가계부 닫기'}).tap();}
    else{await day.tap();await page.waitForTimeout(650);await expect(page.locator('.calendar-day-sheet')).toBeVisible();await page.keyboard.press('Escape');}
    await expect(page.getByRole('dialog')).toHaveCount(0);
    await start();await drag(100);await drag(180);await end();await expect(month).toHaveValue('2026-11');await settled(page);

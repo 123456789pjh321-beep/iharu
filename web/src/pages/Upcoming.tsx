@@ -8,7 +8,7 @@ const info:Record<string,{title:string;body:string;icon:IconName}> = {
   '/records':{title:'차곡차곡 쌓이는 하루',body:'도착·출발 기록과 학습 메모를 이곳에 모아요. 기록 작성 기능을 준비하고 있어요.',icon:'book'},
   '/repeats':{title:'한 번 등록해, 매주 편하게',body:'학교와 학원 일정을 요일별로 반복하고 휴강·보강을 따로 관리할 수 있어요. 지금은 화면을 준비하고 있어요.',icon:'repeat'},
   '/notifications':{title:'그룹의 새로운 소식',body:'일정과 대화의 새 소식을 이곳에서 확인해요. 알림 수신 기능을 준비하고 있어요.',icon:'bell'},
-  '/tuition':{title:'한눈에 보는 학원비',body:'매달 학원비와 납부 기록을 모아 볼 수 있도록 준비하고 있어요. 현재 금액을 입력하거나 결제하는 기능은 제공하지 않아요.',icon:'wallet'},
+  '/tuition':{title:'한눈에 보는 가계부',body:'매달 가계부와 납부 기록을 모아 볼 수 있도록 준비하고 있어요. 현재 금액을 입력하거나 결제하는 기능은 제공하지 않아요.',icon:'wallet'},
   '/settings':{title:'우리 그룹에게 맞게',body:'그룹 연결, 기기 관리와 알림 설정을 준비하고 있어요.',icon:'settings'},
 };
 export function Upcoming() {

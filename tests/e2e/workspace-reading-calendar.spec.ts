@@ -18,7 +18,7 @@ test('app guides, notices and blog keep list, search, article and return navigat
  try{
   await signIn(context,'reader-parent@example.test');await page.goto('/more');
   await page.getByRole('navigation',{name:'더보기 메뉴'}).getByRole('link',{name:'사용 가이드',exact:true}).click();await noMarketing(page);
-  await page.getByRole('navigation',{name:'사용 가이드 목차'}).getByRole('link',{name:'학원비',exact:true}).click();await expect(page.locator('#fees')).toBeInViewport();
+  await page.getByRole('navigation',{name:'사용 가이드 목차'}).getByRole('link',{name:'가계부',exact:true}).click();await expect(page.locator('#fees')).toBeInViewport();
   await page.getByRole('link',{name:'더보기로 돌아가기',exact:true}).click();
   for(const section of ['notices','blog'] as const){
    const label=section==='notices'?'공지사항':'블로그',post=publicPosts.find(item=>item.section===section)!;
