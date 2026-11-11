@@ -5,6 +5,7 @@ import {Icon} from './Icon';
 
 type InviteSummary={id:string;expiresAt:string};
 type IssuedInvite=InviteSummary&{url:string};
+const appInviteLink='https://myiharu.com/timetable';
 const formatExpiry=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});
 
 export function GroupInviteManager({canInvite,refresh}:{canInvite:boolean;refresh:()=>Promise<void>}){
@@ -14,7 +15,6 @@ export function GroupInviteManager({canInvite,refresh}:{canInvite:boolean;refres
  const [error,setError]=useState('');
  const [message,setMessage]=useState('');
  const [revision,setRevision]=useState(0);
- const appLink=new URL('/signup',window.location.origin).href;
 
  useEffect(()=>{
   if(!canInvite)return;
@@ -92,10 +92,10 @@ export function GroupInviteManager({canInvite,refresh}:{canInvite:boolean;refres
   </section>
   <section className="group-invite-option" aria-labelledby="invite-app-title">
    <h3 id="invite-app-title">일반 초대</h3>
-   <p>아이하루 앱 가입 링크를 공유해요. 받는 사람은 가입 후 개인으로 시작해요.</p>
+   <p>아이하루 시간표를 열어 앱을 둘러볼 수 있어요.</p>
    <div className="group-invite-issued">
-    <input aria-label="일반 초대 링크" value={appLink} readOnly onFocus={e=>e.target.select()}/>
-    <div className="group-invite-actions">{typeof navigator.share==='function'&&<button className="button" onClick={()=>void share(appLink,'아이하루 앱 초대')}>일반 초대 공유</button>}<button className="button" onClick={()=>void copy(appLink,'일반 초대 링크')}>일반 초대 링크 복사</button></div>
+    <input aria-label="일반 초대 링크" value={appInviteLink} readOnly onFocus={e=>e.target.select()}/>
+    <div className="group-invite-actions">{typeof navigator.share==='function'&&<button className="button" onClick={()=>void share(appInviteLink,'아이하루 앱 초대')}>일반 초대 공유</button>}<button className="button" onClick={()=>void copy(appInviteLink,'일반 초대 링크')}>일반 초대 링크 복사</button></div>
    </div>
   </section>
  </section>;
