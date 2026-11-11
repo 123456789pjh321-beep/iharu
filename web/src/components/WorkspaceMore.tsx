@@ -18,7 +18,7 @@ function MoreGuides(){
 export function WorkspaceMore({me}:{me:WorkspaceMe|null}){
  const gate=useOptionalWorkspaceGate();
  const shortcuts:{to:string;label:string;icon:IconName}[]=[
-  {to:'/records',label:'메모',icon:'book'},{to:'/family',label:'그룹관리',icon:'users'},{to:'/settings',label:'설정',icon:'settings'},
+  {to:'/help',label:'사용 가이드',icon:'book'},{to:'/family',label:'그룹관리',icon:'users'},{to:'/settings',label:'설정',icon:'settings'},
   {to:'/more/notices',label:'공지사항',icon:'calendar'},{to:'/notification-settings',label:'알림',icon:'bell'},
   gate?.adminAllowed?{to:'/admin',label:'시스템관리',icon:'shield'}:{to:'/more/blog',label:'블로그',icon:'sun'},
  ];

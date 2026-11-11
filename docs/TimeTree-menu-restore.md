@@ -55,6 +55,7 @@ UI144 위에 패치 ZIP을 원래 경로대로 덮어쓰고 `npm ci`, `npm run c
 | 수정 | `tests/e2e/tuition-touch.spec.ts` | 복원된 메뉴 및 기존 기능 검증 |
 | 수정 | `tests/e2e/usability.spec.ts` | 복원된 메뉴 및 기존 기능 검증 |
 | 수정 | `tests/entry-intent.test.ts` | 복원된 메뉴 및 기존 기능 검증 |
+| 수정 | `tests/store/store-screenshots.spec.ts` | 현재 진입 경로와 복원된 가계부 화면에서 가상 가족 예시 확인 |
 | 수정 | `web/public/briefing/ATTRIBUTION.txt` | 브리핑 주제 사진과 출처 |
 | 수정 | `web/src/briefing.css` | 브리핑 카드, 예시, 제스처 또는 화면 표시 |
 | 수정 | `web/src/components/AuthLayout.tsx` | 대상 메뉴에 공통 화면 규격 적용 |
@@ -75,5 +76,5 @@ UI144 위에 패치 ZIP을 원래 경로대로 덮어쓰고 `npm ci`, `npm run c
 ## 검증 범위
 
 - TypeScript 검사와 운영 빌드를 실행했다. Vitest의 39개 파일, 335개 검사를 통과했다.
-- 브라우저에서 달력·대화·AI 브리핑·가계부·더보기의 주요 동작과 시간표로 복귀했을 때의 화면 크기를 확인했다.
-- 격리 Chromium에서 Google 로그인 뒤로가기의 페이지 캐시 복원 검사는 브라우저가 해당 페이지를 캐시에 보존하지 않아 재현하지 못했다.
+- 브라우저에서 달력·대화·AI 브리핑·가계부·더보기의 주요 동작과 시간표로 복귀했을 때의 화면 크기를 확인했다. 운영의 알림·사용 가이드 바로가기와 가상 가족 화면 검사도 통과했다.
+- 격리 Chromium에서 Google 로그인 뒤로가기의 페이지 캐시 복원 검사는 브라우저가 해당 페이지를 캐시에 보존하지 않아 재현하지 못했다. 운영 기준 UI144도 같은 결과였다.

@@ -12,7 +12,7 @@ import {entryReturnPath} from '../../../shared/entry-intent';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
-const timeTreeRoutes=new Set(['/calendar','/today/calendar','/chat','/child/chat','/briefing','/tuition','/more','/settings','/records']);
+const timeTreeRoutes=new Set(['/calendar','/today/calendar','/chat','/child/chat','/briefing','/tuition','/more','/settings']);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
 export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
 export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><BriefingLocationProvider><StableWorkspaceFrame/></BriefingLocationProvider></EntryAccessProvider></WorkspaceGateProvider>;}
