@@ -117,6 +117,30 @@ test('native Back from Google restores a cached login sheet that can retry or cl
  }finally{await context.close();await browser.close();}
 });
 
+test('Google Back restores the selected calendar date and login sheet without a cached page',async({browser})=>{
+ const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce',ignoreHTTPSErrors:true,extraHTTPHeaders:{'x-fixture-oauth-return':'1'}});
+ const page=await context.newPage();
+ try{
+  await page.addInitScript(()=>window.addEventListener('pageshow',event=>{document.documentElement.dataset.restoredFromCache=String(event.persisted);}));
+  await page.goto('/today/calendar');await ready(page);
+  await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');
+  await page.locator('[data-pager-current] .calendar-cell[data-date="2027-02-19"] .calendar-day-target').click();
+  await page.getByRole('button',{name:'Google로 계속하기',exact:true}).click();
+  await expect(page).toHaveURL('https://127.0.0.1:4274/authorize');
+  await page.goBack();
+  await expect(page).toHaveURL(origin+'/today/calendar?signin=1');
+  await expect(page.locator('html')).toHaveAttribute('data-restored-from-cache','false');
+  const sheet=page.getByRole('dialog');
+  await expect(sheet).toContainText('2027-02-19');
+  await expect(sheet.getByRole('button',{name:'Google로 계속하기',exact:true})).toBeEnabled();
+  await sheet.getByRole('button',{name:'로그인 창 닫기',exact:true}).click();
+  await expect(page).toHaveURL(origin+'/today/calendar');
+  await expect(sheet).not.toBeVisible();
+  await expect(page.getByLabel('달력 월 선택',{exact:true})).toHaveValue('2027-02');
+  expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();
+ }finally{await context.close();}
+});
+
 test('TimeTree menus keep their own shell while returning to the existing timetable', async ({page}) => {
  await page.setViewportSize({width:390,height:844});
  await page.goto('/timetable');await ready(page);
