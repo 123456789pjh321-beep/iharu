@@ -23,6 +23,7 @@
 | 수정 | `web/src/App.tsx`, `web/src/components/WorkspaceGate.tsx`, `web/src/pages/Login.tsx` | 시스템, 로그인, 테스트 진입 연결 |
 | 수정 | `web/src/pages/PersonalWorkspace.tsx`, `web/index.html` | 편집 팝업과 첫 진입 화면 표시 순서 조정 |
 | 수정 | `tests/e2e/launch-brand.spec.ts`, `tests/e2e/test-workspace.spec.ts` | 기기별 재생, 재생 실패, 탭 단위 동작과 포커스 검증 |
+| 수정 | `tests/e2e/workspace-reading-calendar.spec.ts`, `tests/e2e/legal-content-save.spec.ts` | 인트로 종료 후 터치와 입력 검증 |
 | 추가 | `docs/UI141-launch-intro.md`, `docs/UI142-launch-video.md`, `docs/UI143-responsive-intro.md` | 이전 시안과 이번 적용 기록 |
 
 UI142를 이미 적용한 작업본에서는 `web/public/assets/iharu-intro-light-v1.mp4`와 `web/public/assets/iharu-intro-dark-v1.mp4`를 삭제한다.
