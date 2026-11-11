@@ -368,3 +368,69 @@ it('keeps remaining selections after family disconnection and restores child com
  // Deleted targets are excluded even if their IDs remain in the stored array.
  await query(database.db,'UPDATE app_private.workspace_profiles SET timetable_member_ids=$1 WHERE id=$2',[[crypto.randomUUID()],am.id]);expect((await a.ok('me')).timetableMemberIds).toEqual([am.id]);
 });
+
+it('issues independent adult links, resumes after login, and switches groups only on explicit acceptance',async()=>{
+ const host=await parent('link-host'),guest=new Browser(),other=await parent('link-other');
+ const own=await other.ok('invite.link.issue',{kind:'PARENT',consent:true});
+ const first=await host.ok('invite.link.issue',{kind:'PARENT',consent:true});
+ const second=await host.ok('invite.link.issue',{kind:'PARENT',consent:true});
+ const secretOf=(url:string)=>new URL(url).hash.slice(1);
+ expect(first.url).toMatch(/^http:\/\/localhost:4173\/invite#[A-Za-z0-9_-]{43}$/);
+ expect((await host.ok('invite.link.options')).pending.map((i:{id:string})=>i.id)).toEqual(expect.arrayContaining([first.id,second.id]));
+ const response=await guest.req(api+'invite.link.inspect',{token:secretOf(first.url)});
+ expect(response.status).toBe(200);
+ expect(response.headers.get('Cache-Control')).toBe('no-store');
+ expect(response.headers.getSetCookie().join(';')).toMatch(/HttpOnly; SameSite=Lax/i);
+ const preview=await response.json();
+ expect(preview).toMatchObject({id:first.id,kind:'PARENT',viewer:'GUEST'});
+ expect(preview).not.toHaveProperty('familyName');
+ expect((await guest.req(api+'invite.link.accept',{inviteId:first.id})).status).toBe(401);
+ expect((await guest.req(api+'invite.link.inspect',{token:secretOf(first.url)},{Origin:'https://another.example'})).status).toBe(403);
+ guest.cookies.forEach((value,key)=>other.cookies.set(key,value));
+ const before=await other.ok('me');
+ expect((await other.ok('invite.link.inspect')).familyName).toBeDefined();
+ expect((await other.req(api+'invite.link.accept',{inviteId:second.id})).status).toBe(404);
+ expect((await other.req(api+'invite.link.accept',{inviteId:first.id})).status).toBe(400);
+ expect((await other.ok('me')).family.id).toBe(before.family.id);
+ await other.ok('invite.link.accept',{inviteId:first.id,leaveCurrent:{familyId:before.family.id,version:before.family.members[0].version}});
+ expect((await other.ok('me')).family.id).toBe((await host.ok('me')).family.id);
+ expect((await guest.req(api+'invite.link.inspect',{token:secretOf(first.url)})).status).toBe(404);
+ expect((await guest.req(api+'invite.link.inspect',{token:secretOf(own.url)})).status).toBe(404);
+ await guest.ok('invite.link.inspect',{token:secretOf(second.url)});
+ expect((await guest.req(api+'invite.link.signup',{inviteId:second.id,name:'가상 아이',loginId:'badrole',password:'fixture-password'})).status).toBe(404);
+ await host.ok('invite.link.revoke',{inviteId:second.id});
+ expect((await guest.req(api+'invite.link.inspect',{token:secretOf(second.url)})).status).toBe(404);
+ const expired=await host.ok('invite.link.issue',{kind:'PARENT',consent:true});
+ await query(database.db,"UPDATE app_private.workspace_invites SET expires_at=now()-interval '1 second' WHERE id=$1",[expired.id]);
+ expect((await guest.req(api+'invite.link.inspect',{token:secretOf(expired.url)})).status).toBe(404);
+});
+
+it('binds child signup to verified legal guardian evidence and atomically consumes it',async()=>{
+ const host=await parent('link-guardian'),reviewer=await parent('link-reviewer'),other=await parent('link-unrelated'),child=new Browser();
+ const [applicant]=await query<{id:string}>(database.db,'SELECT id FROM iharu_auth.members WHERE auth_user_id IN (SELECT id FROM iharu_auth."user" WHERE email=$1)',['link-guardian@example.test']);
+ const [verifier]=await query<{id:string}>(database.db,'SELECT id FROM iharu_auth.members WHERE auth_user_id IN (SELECT id FROM iharu_auth."user" WHERE email=$1)',['link-reviewer@example.test']);
+ expect(reviewer.cookies.size).toBeGreaterThan(0);
+ const [guardian]=await query<{id:string}>(database.db,`INSERT INTO app_private.guardian_applications
+  (applicant_id,request_key,target_label,relationship,state,reviewer_id,evidence_ref,verified_subject_ref,verified_birth_date)
+  VALUES($1,gen_random_uuid(),'가상 아이','LEGAL_GUARDIAN','APPROVED',$2,'review:fixture','child:fixture',DATE '2018-03-02') RETURNING id`,[applicant.id,verifier.id]);
+ const data={kind:'CHILD',guardianApplicationId:guardian.id,consent:true};
+ expect((await host.ok('invite.link.options')).childRegistrationReady).toBe(false);
+ expect((await host.req(api+'invite.link.issue',data)).status).toBe(400);
+ await query(database.db,"UPDATE app_private.family_release SET child_deletion_verified_at=now(),verification_reference='fixture-deletion-only'");
+ try{
+  expect((await host.ok('invite.link.options')).children).toEqual([{id:guardian.id,label:'가상 아이'}]);
+  expect((await other.req(api+'invite.link.issue',data)).status).toBe(400);
+  const link=await host.ok('invite.link.issue',data),token=new URL(link.url).hash.slice(1);
+  expect(await child.ok('invite.link.inspect',{token})).toMatchObject({id:link.id,kind:'CHILD',viewer:'GUEST'});
+  await other.ok('invite.link.inspect',{token});
+  expect((await other.req(api+'invite.link.accept',{inviteId:link.id})).status).toBe(404);
+  await child.ok('invite.link.signup',{inviteId:link.id,name:'가상 서준',loginId:'linked_child',password:'fixture-password'});
+  expect(await child.ok('me')).toMatchObject({name:'가상 서준',role:'CHILD',family:{id:(await host.ok('me')).family.id}});
+  const [consent]=await query<{evidence_ref:string;policy_version:string}>(database.db,"SELECT evidence_ref,policy_version FROM app.child_consents WHERE consenter_id=$1",[applicant.id]);
+  expect(consent).toEqual({evidence_ref:'review:fixture',policy_version:'guardian-link-1'});
+  expect((await host.ok('invite.link.options')).children).toEqual([]);
+  expect((await new Browser().req(api+'invite.link.inspect',{token})).status).toBe(404);
+ }finally{
+  await query(database.db,"UPDATE app_private.family_release SET child_deletion_verified_at=NULL,verification_reference=NULL");
+ }
+});

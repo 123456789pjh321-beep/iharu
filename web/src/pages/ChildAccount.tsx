@@ -10,9 +10,20 @@ export function ChildAccountPage({inline=false,returnTo,onAuthenticated,onBusy}:
  const location=useLocation(),signup=!inline&&location.pathname==='/signup',navigate=useNavigate(),next=entryReturnPath(returnTo||new URLSearchParams(location.search).get('next'));
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[parentHere,setParentHere]=useState(false);
  useEffect(()=>{let alive=true;workspaceRequest<WorkspaceMe>('me').then(me=>{if(!alive)return;if(me.role==='CHILD'&&!inline)navigate(next,{replace:true});else if(me.role==='PARENT')setParentHere(true);}).catch(()=>{});return()=>{alive=false;};},[navigate,next,inline]);
- async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(busy)return;const data=new FormData(e.currentTarget);setBusy(true);onBusy?.(true);setError('');try{await workspaceRequest(signup?'child.signup':'child.login',{loginId:String(data.get('loginId')).trim(),password:data.get('password'),...(signup?{name:String(data.get('name')).trim(),code:String(data.get('code')).trim()}:{} )});if(onAuthenticated)await onAuthenticated();else navigate(next+(signup?'?joined=1':''),{replace:true});}catch(e){setError((e as Error).message);}finally{setBusy(false);onBusy?.(false);}}
- return <AuthLayout>{signup&&<div className="auth-title"><h1>어린이 회원가입</h1><p>내 아이디와 일반사용자가 발급한 승인번호로 가입해요.</p></div>}<FormNotice error={error}/>{parentHere&&<p className="auth-notice" role="status">일반사용자가 로그인한 기기예요. 어린이 기기에서 가입·로그인해 주세요.</p>}
- <form className={`auth-form child-account-form ${signup?'':'auth-login-form'}`} onSubmit={submit}><fieldset disabled={busy||parentHere}><legend className="sr-only">{signup?'회원가입':'로그인'}</legend><div className="form-field"><label htmlFor="child-login-id">아이디</label><input id="child-login-id" name="loginId" autoComplete="username" autoCapitalize="none" spellCheck={false} required minLength={4} maxLength={20} pattern="[A-Za-z0-9][A-Za-z0-9_]{3,19}" placeholder={signup?'영문·숫자·밑줄, 4~20자':'아이디를 입력해 주세요'}/></div>{signup&&<div className="form-field"><label htmlFor="child-display-name">이름</label><input id="child-display-name" name="name" autoComplete="name" required maxLength={24} placeholder="예: 서준"/></div>}<PasswordField fresh={signup} minimum={signup?8:1}/>{signup&&<div className="form-field"><label htmlFor="parent-approval-number">일반사용자 승인번호</label><input id="parent-approval-number" name="code" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="일반사용자가 발급한 6자리 번호"/><small>일반사용자가 로그인한 뒤 그룹 관리에서 발급해요. 가입하면 그 일반사용자의 그룹으로 바로 연결돼요.</small></div>}{signup?<button className="button primary full" type="submit">{busy?'확인하고 있어요':'가입하고 그룹 연결'}</button>:<LoginActions busy={busy} child next={next}/>}</fieldset></form>
- {signup&&<Link className="auth-back" to={'/login?role=child&next='+encodeURIComponent(next)}>이미 가입했어요 · 로그인 <Icon name="arrow"/></Link>}
+ async function submit(e:FormEvent<HTMLFormElement>){
+  e.preventDefault();if(busy)return;
+  const data=new FormData(e.currentTarget);setBusy(true);onBusy?.(true);setError('');
+  try{
+   await workspaceRequest('child.login',{loginId:String(data.get('loginId')).trim(),password:data.get('password')});
+   if(onAuthenticated)await onAuthenticated();else navigate(next,{replace:true});
+  }catch(e){setError((e as Error).message);}
+  finally{setBusy(false);onBusy?.(false);}
+ }
+ if(signup)return <AuthLayout><div className="auth-title"><h1>어린이 회원가입</h1><p>보호자가 보낸 아이하루 초대 링크를 카카오톡이나 문자에서 열어 주세요. 링크에서 내 아이디와 암호를 만들 수 있어요.</p></div><Link className="button full" to={'/login?role=child&next='+encodeURIComponent(next)}>이미 가입했어요 · 어린이 로그인</Link></AuthLayout>;
+ return <AuthLayout><FormNotice error={error}/>{parentHere&&<p className="auth-notice" role="status">일반사용자가 로그인한 기기예요. 어린이 기기에서 로그인해 주세요.</p>}
+  <form className="auth-form child-account-form auth-login-form" onSubmit={submit}><fieldset disabled={busy||parentHere}><legend className="sr-only">로그인</legend>
+   <div className="form-field"><label htmlFor="child-login-id">아이디</label><input id="child-login-id" name="loginId" autoComplete="username" autoCapitalize="none" spellCheck={false} required minLength={4} maxLength={20} pattern="[A-Za-z0-9][A-Za-z0-9_]{3,19}" placeholder="아이디를 입력해 주세요"/></div>
+   <PasswordField minimum={1}/><LoginActions busy={busy} child next={next}/>
+  </fieldset></form>
  </AuthLayout>;
 }

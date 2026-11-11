@@ -2,8 +2,8 @@
 export type PublicPost={slug:string;section:'notices'|'blog';category:string;date:string;title:string;summary:string;art:'chat'|'calendar'|'wallet'|'users';sections:{heading:string;paragraphs:string[];steps?:string[]}[];guide:string};
 export const publicPosts:PublicPost[]=[
  {slug:'choose-your-account',section:'notices',category:'업데이트',date:'2026-11-09',title:'회원가입에서 일반사용자와 어린이를 먼저 선택해요',summary:'가입할 대상을 먼저 고르고, 계정에 맞는 안내로 시작하세요. 소개 화면과 로그인 화면의 상단·하단 메뉴도 하나로 맞췄어요.',art:'users',guide:'/guide#start',sections:[
-  {heading:'누가 사용할 계정인지 먼저 골라요',paragraphs:['시작하기 또는 회원가입을 누르면 일반사용자와 어린이 선택 화면이 열려요. 일반사용자는 이메일로 가입하고 인증 메일을 확인해 주세요. 어린이는 아이디와 암호, 일반사용자 승인번호로 가입합니다.']},
-  {heading:'어린이 가입에는 일반사용자 승인번호가 필요해요',paragraphs:['일반사용자가 먼저 가입한 뒤 전체메뉴 → 그룹 관리에서 6자리 일반사용자 승인번호를 발급해 주세요. 어린이 가입 화면에 번호를 입력하면 우리 그룹에 연결돼요. 다른 일반사용자는 본인 계정으로 로그인한 뒤 그룹 관리에서 번호로 합류합니다.']},
+  {heading:'누가 사용할 계정인지 먼저 골라요',paragraphs:['시작하기 또는 회원가입을 누르면 일반사용자와 어린이 선택 화면이 열려요. 일반사용자는 이메일로 가입하고 인증 메일을 확인해 주세요. 어린이는 보호자가 보낸 초대 링크에서 아이디와 암호를 만들어요.']},
+  {heading:'어린이 가입은 보호자가 보낸 초대에서 시작해요',paragraphs:['그룹 관리에서 초대 대상을 선택하고 초대 링크를 카카오톡이나 문자로 보내세요. 일반사용자는 로그인 후 초대를 수락하고, 보호자 확인이 끝난 어린이는 링크에서 자신의 계정을 만들어요.']},
   {heading:'메뉴 위치는 그대로, 내용만 바뀌어요',paragraphs:['서비스·활용방법·공지사항·블로그와 로그인·회원가입은 같은 상단과 하단 메뉴를 사용해요. 가운데 콘텐츠만 스크롤되므로 읽던 글에서 로그인으로 이동해도 메뉴 위치가 유지됩니다.']}
  ]},
  {slug:'menu-update-dots',section:'notices',category:'업데이트',date:'2026-11-09',title:'그룹의 새 소식, 메뉴의 알림 점으로 확인해요',summary:'새 일정과 대화, 가계부·메모 변경을 메뉴에서 확인하세요. 내용을 확인하면 점이 사라져요.',art:'chat',guide:'/guide#updates',sections:[
@@ -36,7 +36,7 @@ export const publicPosts:PublicPost[]=[
  {slug:'welcome-guide',section:'notices',category:'서비스 안내',date:'2026-11-08',title:'아이하루를 처음 만나는 그룹을 위한 안내',summary:'서비스 소개부터 활용방법, 공지사항과 블로그까지. 로그인 전에도 아이하루를 둘러볼 수 있어요.',art:'users',guide:'/guide#start',sections:[
   {heading:'필요한 기능을 먼저 둘러보세요',paragraphs:['서비스 소개에서는 달력, 시간표, 가계부, 그림 대화를 예시 화면으로 살펴볼 수 있습니다. 예시의 이름과 일정, 금액은 설명을 위해 만든 가상 정보예요.']},
   {heading:'그룹의 사용 흐름을 따라가요',paragraphs:['활용방법에서는 그룹 연결과 일정 등록 순서를 안내합니다. 공지사항에는 서비스 변경 내용을, 블로그에는 일상에서 사용하는 방법을 정리합니다.']},
-  {heading:'가입하고 첫 일정을 시작해요',paragraphs:['회원가입에서 일반사용자를 선택하고 이메일 확인을 마친 뒤 그룹 관리에서 승인번호를 발급하세요. 다른 일반사용자는 그룹 관리에서, 어린이는 어린이 회원가입에서 번호를 입력해 연결할 수 있습니다.']}
+  {heading:'가입하고 첫 일정을 시작해요',paragraphs:['그룹 관리에서 초대 링크를 만들어 함께 사용할 사람에게 보내세요. 일반사용자는 로그인 후 초대를 수락하고, 어린이는 보호자가 보낸 링크에서 가입할 수 있어요.']}
  ]},
  {slug:'shared-morning',section:'blog',category:'그룹 일정',date:'2026-11-08',title:'“오늘 몇 시에 끝나?”를 줄이는 우리 집 일정표',summary:'바쁜 아침, 서로 묻기 전에 같은 일정을 확인하는 작은 습관을 만들어 보세요.',art:'calendar',guide:'/guide#schedule',sections:[
   {heading:'자주 반복되는 일정부터 모아보세요',paragraphs:['학교와 학원처럼 매주 돌아오는 일정은 반복으로 등록해 두면 편해요. 제목은 그룹 모두 알아볼 수 있게 짧게 쓰고, 대상과 시작·종료 시간을 함께 정해 보세요.'],steps:['시간표에서 등록할 요일의 빈 시간 칸을 눌러요.','반복 일정 등록에서 제목을 적고 그룹 구성원을 버튼으로 선택한 뒤 시간을 정해요.','반복할 요일을 한 개 이상 선택하고 저장해요. 시작일과 종료일 없이 매주 반복됩니다.']},

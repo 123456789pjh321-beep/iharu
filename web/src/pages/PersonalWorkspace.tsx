@@ -4,10 +4,11 @@ import {shiftMonth} from '../components/PeriodPager';
 import type {MenuReceipt} from '../../../shared/workspace-updates';
 import {legalRequest} from '../legal-api';
 import type {LegalState} from '../../../shared/legal';
-import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {Link,Navigate,useLocation} from 'react-router-dom';
 import {AuthLayout,FormNotice} from '../components/AuthLayout';
 import {Loading,ErrorState} from '../components/Common';
+import {GroupInviteManager} from '../components/GroupInviteManager';
 import {GuestWorkspace} from '../components/GuestWorkspace';
 import {resumeEntry} from '../entry-session';
 import {useLaunchVideoActive} from '../components/LaunchVideo';
@@ -97,15 +98,26 @@ function SignedInPersonalWorkspace({mode}:{mode:PersonalMode}){
  </AuthLayout>;
 }
 function PersonalFamily({me,refresh}:{me:WorkspaceMe;refresh:()=>Promise<void>}){
- const [switchFamily,setSwitchFamily]=useState(false),[code,setCode]=useState(''),[issued,setIssued]=useState<{code:string;expiresAt:string}|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
- const count=me.family?.members.length||0;
- const previousCount=useRef(count);
- useEffect(()=>{if(count!==previousCount.current&&!(previousCount.current===0&&count===1))setIssued(null);previousCount.current=count;},[count]);
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
  async function run(fn:()=>Promise<void>){if(busy)return;setBusy(true);setError('');setMessage('');try{await fn();await refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
- async function issue(e:FormEvent<HTMLFormElement>){e.preventDefault();const consent=new FormData(e.currentTarget).get('consent')==='on';await run(async()=>{setIssued(await workspaceRequest<{code:string;expiresAt:string}>('invite.issue',{consent}));});}
- async function join(e:FormEvent){e.preventDefault();await run(async()=>{const r=await workspaceRequest<{familyName:string}>('family.join',{code,...(me.family&&switchFamily?{leaveCurrent:{familyId:me.family.id,version:me.family.members.find(m=>m.id===me.id)!.version}}:{})});setCode('');setSwitchFamily(false);setMessage(r.familyName+'에 연결됐어요. 내 자료도 그룹과 공유돼요.');});}
  async function remove(member:WorkspaceMember){if(!me.family||!window.confirm(member.name+'님을 그룹에서 제외할까요? 서로 자료가 보이지 않지만 각자의 원본은 유지돼요.'))return;await run(async()=>{await workspaceRequest('family.remove',{familyId:me.family!.id,profileId:member.id,version:member.version});setMessage(member.name+'님의 그룹 연결을 해제했어요.');});}
- return <><FormNotice error={error} message={message}/><div className="personal-family-layout"><section className="account-card"><div className="card-title"><h2><Icon name="key"/>일반사용자 호스트 승인번호</h2></div>{me.role==='PARENT'&&(!me.family||me.family.isHost)?<><p>발급한 일반사용자가 호스트가 됩니다. 번호를 입력한 일반사용자·어린이는 이 그룹으로 바로 연결돼요.</p><form className="auth-form" onSubmit={issue}><label className="check-option"><input type="checkbox" name="consent" required/><span>일반사용자이며 번호를 전달한 구성원과 그룹으로 연결하고 자료를 공유하는 데 동의합니다.</span></label><button className="button primary full" disabled={busy}>일반사용자 승인번호 발급</button></form>{issued&&<div className="personal-invite-code"><span>한 사람 · 한 번 · 15분 동안 사용</span><strong>{issued.code}</strong><small>{new Date(issued.expiresAt).toLocaleTimeString('ko-KR',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'})}까지</small><button className="button" onClick={()=>run(async()=>{await navigator.clipboard.writeText(issued.code);setMessage('승인번호를 복사했어요.');})}>번호 복사</button></div>}</>:<p>{me.role==='CHILD'?'어린이는 번호를 발급할 수 없어요.':'현재 그룹의 호스트만 번호를 발급할 수 있어요.'} 일반사용자 호스트에게 번호를 받아 주세요.</p>}</section><section className="account-card"><div className="card-title"><h2><Icon name="home"/>번호로 그룹 합류</h2></div>{(!me.family||me.role==='PARENT')?<><p>로그인한 상태에서 다른 일반사용자가 발급한 6자리 승인번호를 입력해 주세요.</p><form className="auth-form" onSubmit={join}><fieldset disabled={busy||!!(me.family?.isHost&&me.family.members.length>1)}><legend className="sr-only">다른 일반사용자의 그룹으로 합류</legend><div className="form-field"><label htmlFor="personal-family-code">일반사용자 호스트 승인번호</label><input id="personal-family-code" inputMode="numeric" pattern="[0-9]{6}" minLength={6} maxLength={6} autoComplete="one-time-code" required value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,''))} placeholder="6자리 번호"/></div>{me.family&&<label className="check-option"><input type="checkbox" checked={switchFamily} onChange={e=>setSwitchFamily(e.target.checked)} required/><span>{me.family.name} 연결을 종료하고 새 그룹에 합류합니다. 내 자료는 유지됩니다.</span></label>}<button className="button primary full" disabled={busy||code.length!==6||!!(me.family&&!switchFamily)}>승인번호로 그룹 합류</button></fieldset></form>{me.family?.isHost&&me.family.members.length>1&&<p className="auth-notice">현재 그룹의 호스트입니다. 연결된 구성원을 먼저 정리해야 다른 그룹에 합류할 수 있어요.</p>}</>:<><h3>{me.family.name}</h3><p>{me.family.isHost?'내가 호스트예요. 연결된 구성원을 언제든 제외할 수 있어요.':'호스트가 그룹 연결을 관리해요. 내 자료의 소유자는 계속 나예요.'}</p><button className="button full" disabled={busy||me.family.isHost&&me.family.members.length>1} onClick={()=>{if(!window.confirm('그룹 공유를 끝내고 개인으로 사용할까요? 내 자료는 유지돼요.'))return;void run(async()=>{const self=me.family!.members.find(m=>m.id===me.id)!;await workspaceRequest('family.leave',{familyId:me.family!.id,version:self.version});});}}>그룹 나가기 · 내 자료 유지</button>{me.family.isHost&&me.family.members.length>1&&<small>호스트는 구성원을 먼저 제외한 뒤 나갈 수 있어요.</small>}</>}</section></div>
- {me.family&&<section className="account-card personal-roster">{me.role==='PARENT'&&<button className="button compact family-leave" disabled={busy||me.family.isHost&&me.family.members.length>1} onClick={()=>{if(!window.confirm('그룹 연결을 해제할까요? 내 자료는 유지됩니다.'))return;void run(async()=>{await workspaceRequest('family.leave',{familyId:me.family!.id,version:me.family!.members.find(m=>m.id===me.id)!.version});});}}>그룹 나가기</button>}<div className="card-title"><h2>연결된 그룹</h2><span className="badge neutral">호스트 → 연결된 구성원</span></div>{me.family.members.map(member=><article className="personal-member" key={member.id}><span className="personal-member-avatar"><Icon name={member.kind==='CHILD'?'sun':'shield'}/></span><div><strong>{member.name}{member.id===me.id?' · 나':''}</strong><small>{member.host?'일반사용자 호스트 · 번호 발급과 연결 관리':member.kind==='CHILD'?'어린이 · 일반사용자 번호로 가입':'연결된 일반사용자'}</small></div>{member.host?<span className="badge green">호스트</span>:me.family!.isHost?<button className="button compact" disabled={busy} onClick={()=>remove(member)} aria-label={'그룹에서 제외: '+member.name}>그룹에서 제외</button>:null}</article>)}</section>}
+ const canInvite=me.role==='PARENT'&&(!me.family||me.family.isHost);
+ async function leave(){
+  const family=me.family,self=family?.members.find(member=>member.id===me.id);
+  if(!family||!self||!window.confirm('그룹 연결을 해제할까요? 내 자료는 유지돼요.'))return;
+  await run(async()=>{await workspaceRequest('family.leave',{familyId:family.id,version:self.version});});
+ }
+ return <><FormNotice error={error} message={message}/>
+ <div className="personal-family-layout">
+  <GroupInviteManager canInvite={canInvite} refresh={refresh}/>
+  <section className="account-card">
+   <div className="card-title"><h2><Icon name="home"/>내 그룹</h2></div>
+   {me.family?<><h3>{me.family.name}</h3><p>{me.family.isHost?'내가 호스트예요. 그룹 초대와 구성원을 관리할 수 있어요.':'그룹에서 일정과 공유 자료를 함께 볼 수 있어요.'}</p>
+    <button className="button full" disabled={busy||me.family.isHost&&me.family.members.length>1} onClick={()=>void leave()}>그룹 나가기</button>
+    {me.family.isHost&&me.family.members.length>1&&<small>호스트는 구성원을 먼저 제외한 뒤 나갈 수 있어요.</small>}
+   </>:<p>초대 링크를 받았다면 카카오톡이나 문자에서 열어 참여해 주세요.</p>}
+  </section>
+ </div>
+ {me.family&&<section className="account-card personal-roster"><div className="card-title"><h2>연결된 그룹</h2><span className="badge neutral">호스트 → 연결된 구성원</span></div>{me.family.members.map(member=><article className="personal-member" key={member.id}><span className="personal-member-avatar"><Icon name={member.kind==='CHILD'?'sun':'shield'}/></span><div><strong>{member.name}{member.id===me.id?' · 나':''}</strong><small>{member.host?'일반사용자 호스트 · 초대와 연결 관리':member.kind==='CHILD'?'연결된 어린이':'연결된 일반사용자'}</small></div>{member.host?<span className="badge green">호스트</span>:me.family!.isHost?<button className="button compact" disabled={busy} onClick={()=>remove(member)} aria-label={'그룹에서 제외: '+member.name}>그룹에서 제외</button>:null}</article>)}</section>}
 </>;
 }

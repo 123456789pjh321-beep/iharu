@@ -29,6 +29,7 @@ import { Guardian } from './pages/Guardian';
 import { ChildHome } from './pages/ChildHome';
 import { Upcoming } from './pages/Upcoming';
 import { LoginPage, PhonePage } from './pages/Login';
+import {GroupInvitePage} from './pages/GroupInvite';
 import { FamilyPage,FamilyInvitePage } from './pages/Family';
 import { DeviceConnectPage,ConnectedChildPage } from './pages/Device';
 import { AccountPage, ReauthPage, EmailLinkPage } from './pages/Account';
@@ -73,6 +74,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
 }
 export default function App(){return <BrowserRouter><LaunchVideoProvider><RouteEffects/><Routes>
   <Route element={<PublicFrame/>}>
+  <Route path="/invite" element={<GroupInvitePage/>}/>
   {['/service','/guide','/notices','/notices/:slug','/blog','/blog/:slug'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
   </Route>
