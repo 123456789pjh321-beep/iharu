@@ -109,7 +109,8 @@ test('an existing ID still signs in through the common form and keeps its group'
   await guest.emulateMedia({reducedMotion:'reduce'});
   await guest.goto('/login');
   const identifier=guest.getByLabel('아이디',{exact:true});
-  await identifier.fill(loginId);
+  await identifier.click();
+  await guest.keyboard.type(loginId);
   await expect(identifier).toHaveValue(loginId);
   await guest.getByLabel('암호',{exact:true}).fill(password);
   const [response]=await Promise.all([
