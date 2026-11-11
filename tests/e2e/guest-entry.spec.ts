@@ -157,3 +157,59 @@ test('timetable and calendar share member chips and the TimeTree bottom navigati
  expect(await grid.boundingBox()).toEqual(timetableSize);
  expect(await nav.boundingBox()).toEqual(timetableNav);
 });
+
+test('all signed-in menus use the timetable bottom bar at every size and theme', async ({page,playwright}) => {
+ test.setTimeout(90000);
+ const account=await parent(playwright,'bottom-navigation');
+ await account.client.dispose();
+ expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email:account.email,password}})).ok()).toBe(true);
+ await page.addInitScript(()=>sessionStorage.setItem('iharu:launch-video:v2','seen'));
+
+ const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
+ const appearance=()=>nav.evaluate(element=>{
+  const bar=getComputedStyle(element);
+  const active=element.querySelector('[aria-current=page]')!;
+  const tab=getComputedStyle(active);
+  const capsule=getComputedStyle(active.querySelector('.rail-icon')!);
+  const icon=getComputedStyle(active.querySelector('.icon')!);
+  return {
+   position:bar.position,height:bar.height,background:bar.backgroundColor,border:bar.borderTopColor,
+   text:tab.color,textSize:tab.fontSize,tabBackground:tab.backgroundColor,
+   capsuleWidth:capsule.width,capsuleHeight:capsule.height,capsuleRadius:capsule.borderRadius,
+   capsuleBackground:capsule.backgroundColor,iconWidth:icon.width,
+  };
+ });
+ const mainMenus=[
+  ['/today/calendar','달력'],['/chat','대화'],['/briefing','AI 브리핑'],['/tuition','가계부'],['/more','더보기'],
+ ];
+ const moreMenus=[
+  '/family','/account','/settings','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',
+ ];
+ for(const [width,height] of [[320,844],[820,1000],[1440,900],[844,390]]){
+  await page.setViewportSize({width,height});
+  await page.goto('/timetable');
+  await expect(nav.getByRole('link',{name:'시간표',exact:true})).toHaveAttribute('aria-current','page');
+  const reference=await appearance();
+  expect(reference).toMatchObject({
+   position:'fixed',height:height<500?'64px':'80px',tabBackground:'rgba(0, 0, 0, 0)',
+   capsuleWidth:width<=360?'46px':'56px',capsuleHeight:'34px',capsuleRadius:'20px',iconWidth:'20px',
+  });
+  const routes=width===320?[...mainMenus,...moreMenus.map(path=>[path,'더보기'])]:[['/account','더보기'],['/chat','대화']];
+  for(const [path,label] of routes){
+   await page.goto(path);
+   await expect(nav.getByRole('link',{name:label,exact:true})).toHaveAttribute('aria-current','page');
+   expect(await appearance(),path).toEqual(reference);
+   expect(await nav.evaluate(element=>element.scrollWidth<=element.clientWidth),path).toBe(true);
+  }
+ }
+
+ await page.goto('/settings');
+ await page.getByRole('button',{name:'어둡게',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await page.goto('/timetable');
+ const darkReference=await appearance();
+ expect(darkReference).toMatchObject({background:'rgb(25, 28, 27)',capsuleBackground:'rgb(37, 75, 56)'});
+ await page.goto('/account');
+ await expect(nav.getByRole('link',{name:'더보기',exact:true})).toHaveAttribute('aria-current','page');
+ expect(await appearance()).toEqual(darkReference);
+});

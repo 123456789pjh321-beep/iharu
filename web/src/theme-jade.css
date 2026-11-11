@@ -15,7 +15,7 @@ html[data-theme=dark]{
  --shadow:0 2px 6px #0002;--shadow-raised:0 10px 30px #0004;
  --holiday-ink:#efaab5;--weekend-ink:#a5c1d5;
 }
-.workspace-page .auth-header,.workspace-mobile-nav{box-shadow:0 1px 8px #253e2f05}
+.workspace-page .auth-header{box-shadow:0 1px 8px #253e2f05}
 .workspace-nav-update{background:var(--primary)}
 .brandmark{background:linear-gradient(145deg,#3b9d7d,#27664f)}
 .art-family-badge,.art-message-icon{background:var(--mint);color:var(--primary)}
@@ -25,7 +25,6 @@ html[data-theme=dark]{
 html[data-theme=dark] .art-family-badge{background:var(--mint);color:var(--primary)}
 .art-calendar-days .selected{color:var(--on-primary)}
 .workspace-page .tuition-month-summary{background:linear-gradient(115deg,var(--surface-sub),var(--surface));border-color:var(--line)}
-.workspace-page .workspace-mobile-nav a.active,.workspace-page .workspace-mobile-nav>button.active{background:var(--mint);color:var(--primary)}
 .calendar-weekdays>span:last-child,.tuition-weekdays>span:last-child,.calendar-cell.saturday .calendar-date,.timetable-day-headings .saturday-date{color:var(--weekend-ink)}
 .calendar-day-sheet::backdrop,.direct-editor::backdrop,.workspace-guide-dialog::backdrop,.member-filter-dialog::backdrop{background:#15261d66}
 .entry-redesign .entry-editor-header .registration-action,.entry-redesign .entry-weekdays input:checked+span,.entry-redesign .entry-picker-grid .is-selected,.tuition-date[aria-current=date]>span,.is-today .calendar-day-target>span,.group-chat .chat-send{color:var(--on-primary)}
