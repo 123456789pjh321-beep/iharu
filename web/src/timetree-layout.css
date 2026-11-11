@@ -82,6 +82,32 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .preference-save-row{display:flex;justify-content:flex-end;margin:12px 0}
 .preference-save-row .button{min-height:44px;font-size:14px}
 
+/* The timetable uses the calendar header and date treatment above its hourly grid. */
+.workspace-page .timetable-weekly>.workspace-toolbar{justify-content:space-between}
+.workspace-page .timetable-weekly .workspace-toolbar-actions{min-width:0;max-width:calc(100% - 116px)}
+.workspace-page .timetable-weekly .timetable-current-summary{max-width:100%;align-items:center}
+.workspace-page .timetable-weekly .timetable-day-headings{border-bottom:1px solid var(--line)}
+.workspace-page .timetable-weekly .timetable-day-headings>button{
+ display:grid;grid-template-rows:var(--workspace-weekday-height,26px) 24px;justify-items:center;align-items:center;
+ padding:0;gap:0;border-radius:0;color:var(--ink);font-weight:400;
+}
+.workspace-page .timetable-weekly .timetable-day-headings:has(.calendar-holiday)>button{grid-template-rows:var(--workspace-weekday-height,26px) 24px 18px}
+.workspace-page .timetable-weekly .timetable-day-headings>button>span{font-size:12px;font-weight:400;color:var(--calendar-secondary-ink,var(--muted))}
+.workspace-page .timetable-weekly .timetable-day-headings>button>time{width:20px;height:20px;border-radius:50%;line-height:20px;font-size:clamp(10px,1.5vw,12px);font-variant-numeric:tabular-nums}
+.workspace-page .timetable-weekly .timetable-day-headings>.holiday-date>time{color:var(--holiday-ink)}
+.workspace-page .timetable-weekly .timetable-day-headings>.saturday-date>time{color:var(--weekend-ink)}
+.workspace-page .timetable-weekly .timetable-day-headings>.is-today>time{background:var(--ink);color:var(--surface);font-weight:700}
+.workspace-page .timetable-weekly .timetable-day-headings>button[aria-pressed=true]{background:linear-gradient(var(--surface) var(--workspace-weekday-height,26px),var(--accent-soft) 0)}
+.workspace-page .timetable-weekly .timetable-day-headings .calendar-holiday{width:calc(100% - 4px);padding:1px 2px;box-sizing:border-box;border-radius:3px;background:var(--calendar-holiday-fill,#ed3130);color:#fff}
+.workspace-page:where([data-timetree]) .timetable-weekly .timetable-day-column{
+ background-image:repeating-linear-gradient(to bottom,var(--workspace-grid-line) 0 1px,transparent 1px 48px);
+ box-shadow:inset 0 -1px 0 var(--workspace-grid-line);background-color:var(--surface);
+}
+.workspace-page:where([data-timetree]) .timetable-weekly .timetable-day-column[data-selected]{background-color:color-mix(in srgb,var(--accent-soft) 65%,var(--surface))}
+.workspace-page:where([data-timetree]) .timetable-weekly .timetable-day-column::after{background:var(--workspace-grid-line)}
+.workspace-page:where([data-timetree]) .timetable-weekly .timetable-card{border-radius:4px;border-block-color:transparent;border-right-color:transparent;background:color-mix(in srgb,var(--event-color) 12%,var(--surface))}
+.workspace-page:where([data-timetree]) .timetable-weekly .timetable-card:hover{background:color-mix(in srgb,var(--event-color) 20%,var(--surface))}
+
 /* Horizontal week rules replace the boxed grid. Dates use a regular weight. */
 .workspace-page:where([data-timetree]) .direct-calendar{background:var(--surface)}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-view-menu>summary svg{width:21px;height:21px}
@@ -254,5 +280,9 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 }
 @media(prefers-reduced-motion:reduce){.more-guide-strip{scroll-behavior:auto}}
 @media(max-height:500px){.workspace-page:where([data-timetree]){--workspace-nav-height:64px}.workspace-page:where([data-timetree]) .workspace-mobile-nav :is(a,button){min-height:50px}}
+@media(max-height:500px){
+ .auth-app.workspace-page[data-timetree='/timetable'] .auth-main.auth-wide>.auth-panel:has(.timetable-weekly){flex:0 0 auto;height:auto;overflow:visible}
+ .workspace-page[data-timetree='/timetable'] .guest-schedule{height:auto}
+}
 
 .workspace-page[data-timetree] :is(.chat-workspace,.guest-chat-sample){padding-top:0}
