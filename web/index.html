@@ -118,7 +118,7 @@
           firstView=sessionStorage.getItem('iharu:launch-intro')!=='seen';
           if(firstView)sessionStorage.setItem('iharu:launch-intro','seen');
         }catch(e){}
-        if(/^\/(?:login|phone)\/?$|^\/test(?:\/|$)/.test(location.pathname))firstView=false;
+        if(!/^\/(?:service|guide|notices|blog)(?:\/|$)/.test(location.pathname))firstView=false;
         boot.dataset.intro=firstView?'welcome':'compact';
         try{var pref=JSON.parse(localStorage.getItem('iharu:appearance')||'null');if(pref&&pref.theme==='dark')html.dataset.theme='dark';quiet=!!(pref&&pref.quiet);if(/^\/(service|guide|notices|blog|login|signup)(\/|$)/.test(location.pathname)&&localStorage.getItem('iharu-public-motion')==='off')quiet=true;}catch(e){}
         function reduced(){return quiet||media.matches;}

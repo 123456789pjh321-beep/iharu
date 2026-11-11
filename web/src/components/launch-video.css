@@ -23,13 +23,13 @@
 html:has(.launch-video[open]) { overflow: hidden; }
 .launch-video[data-theme=dark] { --film-background: #10231e; --film-brand: #b3d7c4; }
 .launch-video[data-phase=leaving] { opacity: 0; }
-.launch-video__stage { position: relative; width: min(600px, 100vw, 100dvh); aspect-ratio: 1; }
-.launch-video__stage video { display: block; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.launch-video__stage { position: absolute; inset: 0; }
+.launch-video__stage video { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; pointer-events: none; }
 .launch-video__stage .launch-video__wordmark {
   position: absolute;
-  top: 36%;
+  top: 50%;
   left: 50%;
-  width: 67%;
+  width: clamp(160px, 52vw, 440px);
   height: auto;
   transform: translate(-50%, -50%);
 }

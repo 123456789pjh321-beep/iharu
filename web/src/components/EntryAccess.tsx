@@ -5,7 +5,6 @@ import {rememberEntry,forgetEntry} from '../entry-session';
 import {sessionSchema} from '../auth';
 import {InlineLogin} from '../pages/Login';
 import {useWorkspaceGate} from './WorkspaceGate';
-import {useLaunchVideoRequest} from './LaunchVideo';
 import {Icon} from './Icon';
 
 type LoginRequest={intent:EntryIntent;title:string;description:string};
@@ -14,7 +13,6 @@ export function useEntryAccess(){const value=useContext(EntryContext);if(!value)
 
 export function EntryAccessProvider({children}:{children:ReactNode}){
  const location=useLocation(),navigate=useNavigate(),gate=useWorkspaceGate();
- const showLaunchVideo=useLaunchVideoRequest();
  const [request,setRequest]=useState<LoginRequest|null>(null),[busy,setBusy]=useState(false),dialog=useRef<HTMLDialogElement>(null),completed=useRef(false),historyOpen=useRef(false),opening=useRef(false),generation=useRef(0);
  const signInParam=new URLSearchParams(location.search).get('signin')==='1',open=!!request&&signInParam;
  const requestLogin=useCallback((value:Partial<LoginRequest>={})=>{
@@ -45,7 +43,6 @@ export function EntryAccessProvider({children}:{children:ReactNode}){
   if(version!==generation.current){gate.session.refresh();void gate.refreshAccess();return;}
   const setup=session.authenticated&&(session.assurance==='LOW'||session.emailVerified!==true);
   if(setup){completed.current=true;window.location.assign(session.assurance==='LOW'?'/account':'/account/email');return;}
-  if(session.authenticated)showLaunchVideo?.('login');
   if(!setup&&!await gate.refreshAccess())throw new Error('로그인은 완료됐지만 자료 연결을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
   if(version!==generation.current){gate.session.refresh();return;}
   completed.current=true;opening.current=false;gate.session.refresh();setBusy(false);setRequest(null);

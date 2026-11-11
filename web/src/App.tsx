@@ -110,7 +110,7 @@ function AccountEntry(){const {session:s}=useWorkspaceGate();if(s.loading)return
 function TestWorkspaceEntry(){
  const health=useApi('/api/health',healthResponse);
  const enabled=!health.loading&&health.data?.data.environment!=='production'&&health.data?.data.demoEnabled;
- useLaunchVideo(enabled?'test':null);
+ useLaunchVideo(Boolean(enabled));
  if(health.loading)return <Loading/>;
  return enabled?<Suspense fallback={<Loading/>}><TestWorkspace/></Suspense>:<Navigate to="/login" replace/>;
 }

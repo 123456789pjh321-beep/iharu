@@ -7,6 +7,7 @@ import {useApi} from '../api';
 import {workspaceRequest} from '../workspace-api';
 import type {WorkspaceMe} from '../../../shared/workspace';
 import {useLaunchVideo} from './LaunchVideo';
+import {useLocation} from 'react-router-dom';
 const healthResponse=envelope(healthSchema);
 type WorkspaceAccess={status:'checking'|'guest'|'member'|'restricted'|'error';identity:WorkspaceMe|null;error?:string};
 function useGateState(){
@@ -34,8 +35,9 @@ function useGateState(){
 }
 const GateContext=createContext<ReturnType<typeof useGateState>|null>(null);
 export function WorkspaceGateProvider({children}:{children:ReactNode}){
- const gate=useGateState(),session=gate.session.data;
- useLaunchVideo(!gate.health.loading&&!gate.health.error&&!gate.health.data?.data.demoEnabled&&session?.authenticated&&session.assurance==='HIGH'?'login':null);
+ const gate=useGateState(),{pathname}=useLocation();
+ const directTask=/^\/(?:legal|privacy|account\/(?:reauth|email)|family\/(?:invite|verification))(?:\/|$)/.test(pathname);
+ useLaunchVideo(!directTask&&!gate.health.loading&&!gate.health.error&&Boolean(gate.health.data));
  return <GateContext.Provider value={gate}>{children}</GateContext.Provider>;
 }
 export function useWorkspaceGate(){const gate=useContext(GateContext);if(!gate)throw new Error('WORKSPACE_GATE_REQUIRED');return gate;}

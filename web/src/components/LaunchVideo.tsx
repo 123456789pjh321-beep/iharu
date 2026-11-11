@@ -4,55 +4,59 @@ import {BrandWordmark} from './BrandWordmark';
 import {useExperience} from './Experience';
 import './launch-video.css';
 
-type Entry = 'login' | 'test';
 type Theme = 'light' | 'dark';
-const LaunchVideoContext = createContext<((entry: Entry) => void) | null>(null);
+type FilmFormat = 'pc' | 'mobile' | 'tablet';
+type Film = {theme: Theme; format: FilmFormat};
+const LaunchVideoContext = createContext<(() => void) | null>(null);
 const LaunchVideoActiveContext = createContext(false);
 const motionQuery = '(prefers-reduced-motion: reduce)';
-const startupLimit = 900;
-const playbackLimit = 3400;
+const sessionKey = 'iharu:launch-video:v2';
+const startupLimit = 1500;
+const playbackLimit = 4800;
 const fadeDuration = 230;
+
+function filmFormat(): FilmFormat {
+  const {innerWidth, innerHeight} = window;
+  const width = matchMedia('(pointer: coarse)').matches ? Math.min(innerWidth, innerHeight) : innerWidth;
+  if (width < 600) return 'mobile';
+  return width < 1100 ? 'tablet' : 'pc';
+}
 
 export function LaunchVideoProvider({children}: {children: ReactNode}) {
   const {preferences} = useExperience();
-  const seen = useRef(new Set<Entry>());
-  const [theme, setTheme] = useState<Theme | null>(null);
-  const close = useCallback(() => setTheme(null), []);
-  const show = useCallback((entry: Entry) => {
-    if (seen.current.has(entry)) return;
-    seen.current.add(entry);
-    const key = 'iharu:launch-video:' + entry;
+  const seen = useRef(false);
+  const [film, setFilm] = useState<Film | null>(null);
+  const close = useCallback(() => setFilm(null), []);
+  const show = useCallback(() => {
+    if (seen.current || document.hidden) return;
+    seen.current = true;
     try {
-      if (sessionStorage.getItem(key) === 'seen') return;
-      sessionStorage.setItem(key, 'seen');
+      if (sessionStorage.getItem(sessionKey) === 'seen') return;
+      sessionStorage.setItem(sessionKey, 'seen');
     } catch { /* The in-memory guard still covers this document. */ }
-    if (preferences.quiet || matchMedia(motionQuery).matches || document.hidden) return;
+    if (preferences.quiet || matchMedia(motionQuery).matches) return;
     try {
       if (location.pathname === '/login' && localStorage.getItem('iharu-public-motion') === 'off') return;
     } catch { /* Public motion settings are optional. */ }
-    setTheme(current => current ?? preferences.theme);
+    setFilm({theme: preferences.theme, format: filmFormat()});
   }, [preferences.quiet, preferences.theme]);
 
   return <LaunchVideoContext.Provider value={show}>
-    <LaunchVideoActiveContext.Provider value={theme !== null}>{children}</LaunchVideoActiveContext.Provider>
-    {theme && createPortal(<LaunchVideo theme={theme} onFinished={close}/>, document.body)}
+    <LaunchVideoActiveContext.Provider value={film !== null}>{children}</LaunchVideoActiveContext.Provider>
+    {film && createPortal(<LaunchVideo film={film} onFinished={close}/>, document.body)}
   </LaunchVideoContext.Provider>;
 }
 
-export function useLaunchVideo(entry: Entry | null) {
-  const show = useLaunchVideoRequest();
-  useLayoutEffect(() => { if (entry) show?.(entry); }, [entry, show]);
-}
-
-export function useLaunchVideoRequest() {
-  return useContext(LaunchVideoContext);
+export function useLaunchVideo(enabled: boolean) {
+  const show = useContext(LaunchVideoContext);
+  useLayoutEffect(() => { if (enabled) show?.(); }, [enabled, show]);
 }
 
 export function useLaunchVideoActive() {
   return useContext(LaunchVideoActiveContext);
 }
 
-function LaunchVideo({theme, onFinished}: {theme: Theme; onFinished: () => void}) {
+function LaunchVideo({film, onFinished}: {film: Film; onFinished: () => void}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const video = useRef<HTMLVideoElement>(null);
 
@@ -125,11 +129,11 @@ function LaunchVideo({theme, onFinished}: {theme: Theme; onFinished: () => void}
     };
   }, [onFinished]);
 
-  return <dialog ref={dialog} className="launch-video" data-theme={theme} aria-label="아이하루 소개"
+  return <dialog ref={dialog} className="launch-video" data-theme={film.theme} data-format={film.format} aria-label="아이하루 소개"
     onCancel={event => { event.preventDefault(); onFinished(); }} onContextMenu={event => event.preventDefault()}>
     <div className="launch-video__stage" aria-hidden="true">
       <BrandWordmark className="launch-video__wordmark"/>
-      <video ref={video} src={'/assets/iharu-intro-' + theme + '-v1.mp4'} muted playsInline
+      <video ref={video} src={'/assets/iharu-intro-' + film.format + '-v2.mp4'} muted playsInline
         disablePictureInPicture disableRemotePlayback tabIndex={-1}/>
     </div>
   </dialog>;
