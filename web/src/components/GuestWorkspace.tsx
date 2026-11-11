@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {Link,useLocation} from 'react-router-dom';
 import {entryReturnPath,type EntryIntent} from '../../../shared/entry-intent';
+import {pendingEntry} from '../entry-session';
 import {koreaToday} from '../../../shared/schedules';
 import {guestSamples,sampleMembers,sampleChildIds} from '../../../shared/guest-samples';
 import type {WorkspaceItem} from '../../../shared/workspace';
@@ -46,13 +47,30 @@ export function RequireWorkspaceAccount({children}:{children:ReactNode}){
  return <>{children}</>;
 }
 function AccessError(){const gate=useWorkspaceGate();return <ErrorState message={gate.access.error||'계정 상태를 확인하지 못했어요.'} retry={()=>{void gate.refreshAccess();}}/>;}
+type CreateIntent=Extract<EntryIntent,{type:'create'}>;
+const createPaths={EVENT:'/today/calendar',REPEAT:'/timetable',FEE:'/tuition',NOTE:'/records'};
+function createLoginRequest(intent:CreateIntent){
+ const names={EVENT:'일정을',REPEAT:'시간표를',FEE:'가계부를',NOTE:'메모를'};
+ const {kind,date,time}=intent;
+ return {intent,title:names[kind]+' 입력하려면 로그인해 주세요',description:time?`${date} ${time}부터 내 계정에서 이어서 입력해요.`:`${date}에 내 계정으로 새 내용을 입력해요.`};
+}
 export function GuestWorkspace({mode}:{mode:PersonalMode}){
- const today=koreaToday(),[day,setDay]=useState(today),[month,setMonth]=useState(today.slice(0,7)),{pathname}=useLocation(),{requestLogin}=useEntryAccess();
+ const {pathname,search}=useLocation(),{requestLogin}=useEntryAccess(),today=koreaToday();
+ const [initialIntent]=useState(()=>{
+  if(new URLSearchParams(search).get('signin')!=='1')return null;
+  const intent=pendingEntry(pathname==='/today/repeats'?createPaths.REPEAT:pathname);
+  return intent?.type==='create'?intent:null;
+ });
+ const [day,setDay]=useState(initialIntent?.date??today),[month,setMonth]=useState(day.slice(0,7));
+ const intentToRestore=useRef(initialIntent);
+ useEffect(()=>{
+  if(!intentToRestore.current)return;
+  requestLogin(createLoginRequest(intentToRestore.current));
+  intentToRestore.current=null;
+ },[requestLogin]);
  const samples=guestSamples(month,today),preview={preview:true,members:sampleMembers,defaultMemberIds:sampleChildIds};
- const create=(kind:'EVENT'|'REPEAT'|'FEE'|'NOTE',date:string,time?:string)=>{
-  const paths={EVENT:'/today/calendar',REPEAT:'/timetable',FEE:'/tuition',NOTE:'/records'},names={EVENT:'일정을',REPEAT:'시간표를',FEE:'가계부를',NOTE:'메모를'};
-  const intent:EntryIntent={type:'create',kind,path:paths[kind],date,...(time?{time}:{})};
-  requestLogin({intent,title:names[kind]+' 입력하려면 로그인해 주세요',description:time?`${date} ${time}부터 내 계정에서 이어서 입력해요.`:`${date}에 내 계정으로 새 내용을 입력해요.`});
+ const create=(kind:CreateIntent['kind'],date:string,time?:string)=>{
+  requestLogin(createLoginRequest({type:'create',kind,path:createPaths[kind],date,...(time?{time}:{})}));
  };
  // Only the input position continues after login. Sample titles, people and amounts never do.
  const edit=(item:WorkspaceItem)=>{if(item.kind==='EVENT'||item.kind==='REPEAT'||item.kind==='FEE'||item.kind==='NOTE')create(item.kind,item.data.date,item.data.startTime);};

@@ -22,9 +22,10 @@ export function EntryAccessProvider({children}:{children:ReactNode}){
   const intent=value.intent||{type:'page',path:entryReturnPath(destination)===destination?destination:entryReturnPath(location.pathname)};
   rememberEntry(intent);completed.current=false;historyOpen.current=false;setBusy(false);
   setRequest({intent,title:value.title||'우리 그룹의 하루를 이어보세요',description:value.description||'로그인하면 내 계정에 맞는 기능과 그룹 자료를 사용할 수 있어요.'});
+  if(signInParam)return;
   const params=new URLSearchParams(location.search);params.set('signin','1');
   navigate({pathname:location.pathname,search:'?'+params.toString(),hash:location.hash},{state:{...location.state,iharuSignIn:true}});
- },[location,navigate]);
+ },[location,navigate,signInParam]);
  const dismiss=useCallback(()=>{
   if(busy)return;forgetEntry();
   if(location.state?.iharuSignIn)navigate(-1);

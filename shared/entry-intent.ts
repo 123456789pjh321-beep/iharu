@@ -25,12 +25,16 @@ export function saveEntryIntent(storage:EntryStorage,intent:EntryIntent,now=Date
 }
 export function clearEntryIntent(storage:EntryStorage){storage.removeItem(entryIntentKey);}
 /** Contains only an input position; never a password, message, personal record, or write request. */
-export function takeEntryIntent(storage:EntryStorage,path:string,now=Date.now()):EntryIntent|null{
+export function readEntryIntent(storage:EntryStorage,path:string,now=Date.now()):EntryIntent|null{
  try{
   const raw=storage.getItem(entryIntentKey);if(!raw)return null;
   const value=JSON.parse(raw),parsed=entryIntentSchema.safeParse(value.intent);
   if(!parsed.success||!Number.isFinite(value.expiresAt)||value.expiresAt<=now||value.expiresAt>now+entryIntentLifetime){clearEntryIntent(storage);return null;}
-  if(parsed.data.path!==path)return null;
-  clearEntryIntent(storage);return parsed.data;
+  return parsed.data.path===path?parsed.data:null;
  }catch{clearEntryIntent(storage);return null;}
+}
+export function takeEntryIntent(storage:EntryStorage,path:string,now=Date.now()):EntryIntent|null{
+ const intent=readEntryIntent(storage,path,now);
+ if(intent)clearEntryIntent(storage);
+ return intent;
 }
