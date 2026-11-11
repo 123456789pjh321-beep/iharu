@@ -11,6 +11,31 @@ export type BriefingPost={id:string;day:string;kind:'REGULAR'|'URGENT';region:st
 export type BriefingFeed={updateReceipt?:MenuReceipt;preferences:BriefingPreferences;available:boolean;posts:BriefingPost[];hasMore:boolean;nextCursor:{updatedAt:string;id:string}|null;serverDay:string};
 export type BriefingSystem={enabled:boolean;model:string;dailyCallLimit:number;version:number;callsToday:number;queued:number;failed:number};
 export const briefingSystemInput=z.object({enabled:z.boolean(),dailyCallLimit:z.number().int().min(2).max(1000),version:z.number().int().min(0)}).strict();
+export const briefingReportReasons = ['INACCURATE', 'OUTDATED', 'SOURCE', 'OTHER'] as const;
+export const briefingReportReasonNames = {
+  INACCURATE: '내용이 원문과 달라요',
+  OUTDATED: '날짜나 적용 기간이 틀려요',
+  SOURCE: '출처가 맞지 않아요',
+  OTHER: '그 밖의 정보 오류',
+} satisfies Record<(typeof briefingReportReasons)[number], string>;
+export const briefingReportInput = z.object({
+  postId: z.uuid(),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  contentHash: z.string().regex(/^[a-f0-9]{64}$/),
+  sourceUrl: z.url({protocol: /^https$/}).max(2048),
+  reason: z.enum(briefingReportReasons),
+}).strict();
+export const briefingReviewInput = z.object({
+  reportId: z.uuid(),
+  decision: z.enum(['DISMISS', 'WITHDRAW']),
+}).strict();
+export type BriefingReportReason = z.infer<typeof briefingReportInput>['reason'];
+export type BriefingReviewDecision = z.infer<typeof briefingReviewInput>['decision'];
+export type BriefingReport = Pick<BriefingItem, 'title' | 'summary' | 'sourceUrl' | 'sourceName' | 'validFrom' | 'validUntil'> & {
+  id: string;
+  reason: BriefingReportReason;
+  createdAt: string;
+};
 // Coarse suggestions only, evaluated on this device; coordinates never leave the browser.
 const cities:[string,number,number][]=[['서울특별시',37.57,126.98],['경기도 수원시',37.26,127.03],['경기도 용인시',37.24,127.18],['경기도 화성시',37.20,126.83],['경기도 성남시',37.42,127.13],['경기도 군포시',37.36,126.94],['경기도 안양시',37.39,126.96],['경기도 안산시',37.32,126.83],['경기도 시흥시',37.38,126.80],['인천광역시',37.46,126.71],['경기도 부천시',37.50,126.77],['경기도 광명시',37.48,126.86],['경기도 고양시',37.66,126.83],['경기도 김포시',37.62,126.72],['경기도 의정부시',37.74,127.03],['경기도 양주시',37.79,127.05],['경기도 남양주시',37.64,127.22],['경기도 오산시',37.15,127.07],['경기도 평택시',36.99,127.11],['경기도 광주시',37.43,127.26],['경기도 이천시',37.28,127.44],['전북특별자치도 전주시',35.82,127.15],['대전광역시',36.35,127.38],['세종특별자치시',36.48,127.29],['충청북도 청주시',36.64,127.49],['충청남도 천안시',36.82,127.15],['강원특별자치도 춘천시',37.88,127.73],['부산광역시',35.18,129.08],['대구광역시',35.87,128.60],['울산광역시',35.54,129.31],['광주광역시',35.16,126.85],['제주특별자치도 제주시',33.50,126.53]];
 export function suggestBriefingRegion(latitude:number,longitude:number){if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return null;const sorted=cities.map(([name,lat,lon])=>({name,distance:Math.hypot((lat-latitude)*111,(lon-longitude)*88)})).sort((a,b)=>a.distance-b.distance);return sorted[0].distance<=30?sorted[0].name:null;}

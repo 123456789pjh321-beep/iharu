@@ -1,5 +1,5 @@
 import {briefingWorkerCommand} from '../../server/briefing/worker.js';
-import type {BriefingFeed} from '../../shared/briefing.js';
+import type {BriefingFeed, BriefingReport} from '../../shared/briefing.js';
 import {sealOpenAiKey} from '../../server/admin/ai-credentials.js';
 import {childPasswordHash} from '../../server/child-accounts/routes.js';
 // CI-only disposable PostgreSQL. Never run against a Supabase/Preview/production database.
@@ -486,6 +486,36 @@ try{
   const feed=await family1.command<BriefingFeed>(a,'briefing.read');assert.equal(feed.posts.length,1);assert.equal(feed.posts[0].items.length,1);
   await assert.rejects(family2.command(b,'briefing.feedback',{postId:feed.posts[0].id,action:'saved',value:true}),{message:'NOT_FOUND'});
   await family1.command(a,'briefing.feedback',{postId:feed.posts[0].id,action:'saved',value:true});assert.equal((await family2.command<BriefingFeed>(a,'briefing.read',{saved:true})).posts.length,1);
+ });
+ await check('UI140 moderation and a competing worker completion cannot republish withdrawn evidence', async () => {
+  const [post] = (await family1.command<BriefingFeed>(a, 'briefing.read')).posts;
+  const [item] = post.items;
+  const report = {postId: post.id, fingerprint: item.fingerprint, contentHash: item.contentHash, sourceUrl: item.sourceUrl, reason: 'INACCURATE'};
+  await Promise.all([family1, family2].map(family => family.command(a, 'briefing.report', report)));
+  const {reports} = await family1.command<{reports: BriefingReport[]}>(a, 'briefing.admin.reports');
+  assert.equal(reports.length, 1);
+  await assert.rejects(family2.command(b, 'briefing.admin.reports'), {message: 'ADMIN_REQUIRED'});
+  for (const db of [db1, worker1]) {
+   await assert.rejects(query(db, 'SELECT * FROM app_private.briefing_reports'), {code: '42501'});
+   await assert.rejects(query(db, 'SELECT * FROM app_private.briefing_withdrawals'), {code: '42501'});
+  }
+  await assert.rejects(query(db1, "SELECT app_private.briefing_command_v139('briefing.admin.read','{}')"), {code: '42501'});
+  await assert.rejects(query(worker1, "SELECT app_private.briefing_worker_v139('claim','{}')"), {code: '42501'});
+
+  await family2.command(b, 'briefing.preferences.save', {enabled: true, region: post.region, consent: true, version: 0});
+  const {id: profile} = await family2.command<{id: string}>(b, 'workspace.me');
+  await admin.query("UPDATE app_private.briefing_preferences SET enabled_at=now()-interval '2 days' WHERE profile_id=$1", [profile]);
+  await briefingWorkerCommand(worker2, 'enqueue');
+  const lease = await briefingWorkerCommand<{id: string; token: string}>(worker2, 'claim');
+  const results = await Promise.all([
+   family1.command(a, 'briefing.admin.report.resolve', {reportId: reports[0].id, decision: 'WITHDRAW'}),
+   briefingWorkerCommand<{state: string}>(worker2, 'complete', {id: lease.id, token: lease.token, items: [item]}),
+  ]);
+  assert.deepEqual(results[0], {reviewed: true});
+  assert.equal(results[1].state, 'DONE');
+  assert.deepEqual((await family1.command<BriefingFeed>(a, 'briefing.read', {saved: true})).posts, []);
+  assert.deepEqual((await family2.command<BriefingFeed>(b, 'briefing.read')).posts, []);
+  await family2.command(b, 'briefing.preferences.save', {enabled: false, region: post.region, consent: false, version: 1});
  });
  await check('UI139 withdrawal racing a leased completion cannot deadlock or retain readable analysis',async()=>{
   await admin.query('DELETE FROM app_private.briefing_jobs');await briefingWorkerCommand(worker1,'enqueue');

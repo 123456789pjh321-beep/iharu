@@ -17,3 +17,12 @@
 .admin-reauth-panel{margin:18px 0;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--mint);color:var(--ink)}.admin-reauth-panel h3{font-size:1rem;margin:0 0 10px}.admin-reauth-panel p{font-size:.82rem;line-height:1.75}.admin-reauth-social{display:flex;flex-wrap:wrap;gap:10px}.admin-reauth-social .button{min-height:44px}.admin-reauth-panel .auth-form{margin-top:16px}
 
 .admin-briefing-operations{border-top:1px solid var(--line);padding-top:22px;margin-top:24px}.admin-briefing-operations>h3{font-size:1rem}.admin-briefing-operations>p{font-size:.8rem;color:var(--muted);line-height:1.8}.admin-briefing-operations fieldset{border:0;padding:0}.admin-briefing-operations .briefing-check-label{display:flex;gap:10px;align-items:center;margin-bottom:14px}.admin-briefing-operations input[type=checkbox]{accent-color:var(--primary);width:18px;height:18px}
+
+.briefing-reports-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.briefing-reports-heading h3{font-size:1rem;margin:0}
+.briefing-reports-list{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:12px}
+.briefing-reports-list li{padding:16px;border:1px solid var(--line);border-radius:12px;overflow-wrap:anywhere}
+.briefing-reports-list h4{margin:6px 0;font-size:.95rem}
+.briefing-reports-list p{margin:4px 0;font-size:.8rem;line-height:1.65}
+.briefing-reports-list a{display:inline-block;margin-top:8px;color:var(--primary);font-size:.8rem}
+.briefing-review-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
