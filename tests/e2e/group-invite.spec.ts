@@ -2,6 +2,7 @@ import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 
 const origin='http://127.0.0.1:4174';
 const password='group-invite-browser-password';
+const timetableInvite='https://myiharu.com/timetable';
 test.use({baseURL:origin,viewport:{width:390,height:844},actionTimeout:10000});
 
 async function register(page:Page,request:APIRequestContext,email:string,name:string,invite=false){
@@ -51,14 +52,22 @@ test('group link resumes after email verification and requires explicit acceptan
   await guest.getByRole('link',{name:'그룹 관리 열기'}).click();
   await expect(guest.locator('.personal-member')).toHaveCount(2);
   await expect(guest.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
-  await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(origin+'/signup');
+  await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(timetableInvite);
   await guest.goto(link);
   await expect(guest.getByRole('alert')).toContainText('이미 사용');
  }finally{await context.close();}
 });
 
-test('general invitation opens shared signup and leaves the new account independent',async({page,browser,request})=>{
+test('general invitation shares the public timetable and leaves the new account independent',async({page,browser,request})=>{
  test.setTimeout(60000);
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'share',{value:async ({url}:ShareData)=>{
+   document.documentElement.dataset.inviteShared=url;
+  }});
+  Object.defineProperty(navigator.clipboard,'writeText',{value:async (url:string)=>{
+   document.documentElement.dataset.inviteCopied=url;
+  }});
+ });
  await register(page,request,'app-link-host@example.test','가상 앱 초대자');
  await page.goto('/family');
  await expect(page.getByRole('region',{name:'그룹 초대',exact:true})).toBeVisible();
@@ -66,11 +75,19 @@ test('general invitation opens shared signup and leaves the new account independ
  await expect(general.getByRole('button',{name:'일반 초대 링크 복사'})).toBeVisible();
  await expect(page.getByLabel('초대 대상')).toHaveCount(0);
  const link=await general.getByLabel('일반 초대 링크',{exact:true}).inputValue();
- expect(link).toBe(origin+'/signup');
+ expect(link).toBe(timetableInvite);
+ await general.getByRole('button',{name:'일반 초대 링크 복사'}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-invite-copied',timetableInvite);
+ await general.getByRole('button',{name:'일반 초대 공유'}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-invite-shared',timetableInvite);
  const context=await browser.newContext({baseURL:origin,viewport:{width:320,height:844}});
  try{
   const guest=await context.newPage();
-  await guest.goto(link);
+  await guest.goto(new URL(link).pathname);
+  await expect(guest).toHaveURL(origin+'/timetable');
+  await expect(guest.locator('[data-guest-workspace]')).toBeVisible();
+  await guest.locator('.timetable-day-column').first().locator('[data-time="16:30"]').click();
+  await guest.getByRole('dialog').getByRole('link',{name:'회원가입',exact:true}).click();
   await expect(guest.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
   await expect(guest.getByLabel('이메일',{exact:true})).toBeVisible();
   await expect(guest.getByRole('navigation',{name:'회원가입 대상'})).toHaveCount(0);

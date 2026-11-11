@@ -1,9 +1,9 @@
 /** Public editorial content only. Never put family or account data in this catalog. */
 export type PublicPost={slug:string;section:'notices'|'blog';category:string;date:string;title:string;summary:string;art:'chat'|'calendar'|'wallet'|'users';sections:{heading:string;paragraphs:string[];steps?:string[]}[];guide:string};
 export const publicPosts:PublicPost[]=[
- {slug:'choose-your-account',section:'notices',category:'업데이트',date:'2026-11-09',title:'그룹 초대와 일반 초대 링크로 시작해요',summary:'그룹에 연결하거나 아이하루 가입 링크를 공유할 수 있어요.',art:'users',guide:'/guide#start',sections:[
+ {slug:'choose-your-account',section:'notices',category:'업데이트',date:'2026-11-09',title:'그룹 초대와 일반 초대 링크로 시작해요',summary:'그룹에 연결하거나 아이하루 시간표를 공유할 수 있어요.',art:'users',guide:'/guide#start',sections:[
   {heading:'그룹 초대로 함께 연결해요',paragraphs:['그룹 관리에서 그룹 초대 링크를 만들고 카카오톡이나 문자로 보내세요. 받은 사람이 로그인하고 초대를 수락하면 그룹의 일정과 대화를 함께 볼 수 있어요.']},
-  {heading:'일반 초대로 가입 링크를 보내요',paragraphs:['일반 초대 링크를 열면 아이하루 회원가입 화면으로 이동해요. 가입을 마치면 개인으로 시작할 수 있어요.']}
+  {heading:'일반 초대로 시간표를 공유해요',paragraphs:['일반 초대 링크를 열면 아이하루 시간표에서 앱을 둘러볼 수 있어요.']}
  ]},
  {slug:'menu-update-dots',section:'notices',category:'업데이트',date:'2026-11-09',title:'그룹의 새 소식, 메뉴의 알림 점으로 확인해요',summary:'새 일정과 대화, 가계부·메모 변경을 메뉴에서 확인하세요. 내용을 확인하면 점이 사라져요.',art:'chat',guide:'/guide#updates',sections:[
   {heading:'새 내용이 있는 메뉴를 알려드려요',paragraphs:['연결된 그룹이 일정이나 대화, 가계부·메모를 등록하거나 바꾸면 관련 메뉴에 작은 알림 점이 표시돼요. 그룹 연결 변경은 그룹 관리에 표시합니다. 메모·그룹 관리에 새 내용이 있으면 전체메뉴에도 점이 나타나요. 내가 직접 작성한 내용은 내 메뉴의 새 소식으로 표시하지 않아요.']},
