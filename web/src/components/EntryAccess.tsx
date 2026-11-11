@@ -17,7 +17,9 @@ export function EntryAccessProvider({children}:{children:ReactNode}){
  const signInParam=new URLSearchParams(location.search).get('signin')==='1',open=!!request&&signInParam;
  const requestLogin=useCallback((value:Partial<LoginRequest>={})=>{
   if(opening.current)return;opening.current=true;++generation.current;
-  const intent=value.intent||{type:'page',path:entryReturnPath(location.pathname)};
+  const returnParams=new URLSearchParams(location.search);returnParams.delete('signin');
+  const destination=location.pathname+(returnParams.size?'?'+returnParams.toString():'');
+  const intent=value.intent||{type:'page',path:entryReturnPath(destination)===destination?destination:entryReturnPath(location.pathname)};
   rememberEntry(intent);completed.current=false;historyOpen.current=false;setBusy(false);
   setRequest({intent,title:value.title||'우리 그룹의 하루를 이어보세요',description:value.description||'로그인하면 내 계정에 맞는 기능과 그룹 자료를 사용할 수 있어요.'});
   const params=new URLSearchParams(location.search);params.set('signin','1');

@@ -3,8 +3,8 @@ import {entryReturnPath,entryIntentSchema,entryIntentKey,entryIntentLifetime,sav
 function storage():EntryStorage{const values=new Map<string,string>();return {getItem:key=>values.get(key)||null,setItem:(key,value)=>{values.set(key,value);},removeItem:key=>{values.delete(key);}};}
 describe('guest authentication continuations',()=>{
  it('permits only known internal destinations',()=>{
-  for(const path of ['/today/calendar','/timetable','/family','/more/notices/menu-update-dots'])expect(entryReturnPath(path)).toBe(path);
-  for(const path of ['https://evil.example','//evil.example','/\\evil.example','/login','/signup','/admin?act=delete','/timetable#script','/%2f%2fevil.example','/timetable\n',null])expect(entryReturnPath(path)).toBe('/timetable');
+  for(const path of ['/today/calendar','/timetable','/family','/more/notices/menu-update-dots','/briefing?settings=1','/briefing?view=saved'])expect(entryReturnPath(path)).toBe(path);
+  for(const path of ['https://evil.example','//evil.example','/\\evil.example','/login','/signup','/admin?act=delete','/briefing?view=all','/briefing?settings=1&next=//evil.example','/briefing?view=saved#script','/timetable#script','/%2f%2fevil.example','/timetable\n',null])expect(entryReturnPath(path)).toBe('/timetable');
  });
  it('resumes an input position once and only on its own page',()=>{
   const store=storage(),intent={type:'create' as const,path:'/today/calendar',kind:'EVENT' as const,date:'2027-02-18',time:'16:30'};

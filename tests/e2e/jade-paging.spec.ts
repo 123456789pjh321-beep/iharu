@@ -1,6 +1,8 @@
+import {selectCalendarView,skipEntryFilm} from '../helpers/workspace-ui';
 import {test,expect,type Page,type BrowserContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='jade-paging-fixture-2026';
 async function signIn(context:BrowserContext,email:string){
+ await skipEntryFilm(context);
  expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'디자인 확인',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await context.request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);
  expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
@@ -16,7 +18,7 @@ for(const width of [390,820])test(`finger-follow, snap-back, cancellation and to
    ['/tuition','.calendar-page-track','조회 월','[data-pager-current] .tuition-date-grid'],
    ['/today/calendar','.calendar-page-track','달력 월 선택','[data-pager-current] .calendar-grid'],
   ]){
-   await page.goto(route);const month=page.getByLabel(inputLabel,{exact:true});await month.fill('2026-11');await settled(page);
+   await page.goto(route);await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});const month=page.getByLabel(inputLabel,{exact:true});await month.fill('2026-11');await settled(page);
    const area=page.locator(areaSelector),grid=page.locator(gridSelector);
    const bounds=(await grid.boundingBox())!,x=bounds.x+bounds.width*.5,y=bounds.y+40;
    const start=()=>cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});
@@ -44,7 +46,7 @@ for(const width of [390,820])test(`finger-follow, snap-back, cancellation and to
    await start();await drag(2,-40);await drag(3,-100);await end();await expect(month).toHaveValue('2026-11');await settled(page);
   }
   // The same controller handles calendar day paging, but never the fixed weekly timetable.
-  await page.getByRole('group',{name:'달력 보기'}).getByRole('button',{name:'일간',exact:true}).tap();await page.getByLabel('달력 날짜 선택').fill('2026-12-31');
+  await selectCalendarView(page,'일간');await page.getByLabel('달력 날짜 선택').fill('2026-12-31');
   await page.locator('[data-pager-current] .timetable-scroll').hover();await page.mouse.wheel(300,0);await expect(page.getByLabel('달력 날짜 선택')).toHaveValue('2027-01-01');await settled(page);
   await page.goto('/timetable');await expect(page.locator('[data-timetable-date]')).toHaveCount(7);const days=await page.locator('[data-timetable-date]').evaluateAll(els=>els.map(el=>el.getAttribute('data-timetable-date')));
   await page.locator('.timetable-scroll').hover();await page.mouse.wheel(300,0);await settled(page);expect(await page.locator('[data-timetable-date]').evaluateAll(els=>els.map(el=>el.getAttribute('data-timetable-date')))).toEqual(days);
@@ -79,7 +81,7 @@ test('jade palette remains readable and aligned in light and dark at phone, tabl
 test('calendar slides in the chosen direction, survives fast navigation and respects reduced motion',async({browser})=>{
  const context=await browser.newContext({baseURL:origin}),page=await context.newPage();
  try{
- await page.setViewportSize({width:390,height:844});await signIn(context,'calendar-motion@example.test');await page.goto('/today/calendar');
+ await page.setViewportSize({width:390,height:844});await signIn(context,'calendar-motion@example.test');await page.goto('/today/calendar');await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});
  const month=page.getByLabel('달력 월 선택');await month.fill('2026-11');
  async function swipe(delta:number){
   const bounds=(await page.locator('.calendar-viewport').boundingBox())!,x=bounds.x+bounds.width*(delta>0?.8:.2),y=bounds.y+40;
@@ -93,8 +95,8 @@ test('calendar slides in the chosen direction, survives fast navigation and resp
  await swipe(1);await swipe(-1);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(month).toHaveValue('2026-11');await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.emulateMedia({reducedMotion:'reduce'});await swipe(1);await expect(month).toHaveValue('2026-12');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
  expect(await page.locator('.calendar-page-track').evaluate(el=>el.getAnimations().length)).toBe(0);
- await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:'주간',exact:true}).click();await swipe(1);await expect(page.locator('[data-pager-current] .calendar-grid .calendar-cell')).toHaveCount(7);
- await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await month.fill('2026-11');await swipe(1);await expect(month).toHaveValue('2026-12');
+ await selectCalendarView(page,'주간');await swipe(1);await expect(page.locator('[data-pager-current] .calendar-grid .calendar-cell')).toHaveCount(7);
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});await month.fill('2026-11');await swipe(1);await expect(month).toHaveValue('2026-12');
  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-page-track').evaluate(el=>el.getAnimations().length)).toBe(0);
  }finally{await context.close();}
 });

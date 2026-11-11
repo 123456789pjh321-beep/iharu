@@ -1,3 +1,4 @@
+import {selectCalendarView,setCalendarTheme} from '../helpers/workspace-ui';
 import {test,expect} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 test('calendar merges adjacent identical schedules while dates, overflow and original editors remain available',async({page,request})=>{
@@ -24,8 +25,8 @@ test('calendar merges adjacent identical schedules while dates, overflow and ori
   await week.locator('.calendar-event').filter({hasText:'중복된 준비 일정'}).click();await expect(page.locator('.calendar-day-sheet .day-sheet-event')).toHaveCount(3);await page.getByRole('button',{name:'날짜 일정 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   await week.locator('[data-date="2026-11-02"] .calendar-overflow').click();await expect(page.locator('.calendar-day-sheet .day-sheet-event')).toHaveCount(6);await page.getByRole('button',{name:'날짜 일정 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   await week.locator('[data-date="2026-11-03"] .calendar-day-target>span').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();await expect(page.getByLabel('시작일',{exact:true})).toHaveValue('2026-11-03');await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.getByRole('group',{name:'달력 보기'}).getByRole('button',{name:'주간',exact:true}).click();await expect(page.locator('.calendar-grid.week-view .calendar-event').filter({hasText:'그룹 여행'})).toHaveCount(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await selectCalendarView(page,'주간');await expect(page.locator('.calendar-grid.week-view .calendar-event').filter({hasText:'그룹 여행'})).toHaveCount(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
  const after=await api('items.list',{from:'2026-11-01',to:'2026-11-30'});expect(after.items).toEqual(before.items);
- await page.getByRole('button',{name:'어둡게',exact:true}).click();await page.screenshot({path:'test-results/ui98-calendar-merged-dark.png',animations:'disabled'});
+ await setCalendarTheme(page,'어둡게');await page.getByLabel('달력 월 선택').fill('2026-11');await page.screenshot({path:'test-results/ui98-calendar-merged-dark.png',animations:'disabled'});
 });
