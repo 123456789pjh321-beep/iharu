@@ -11,14 +11,25 @@ async function holdBundle(page:Page){
  return release;
 }
 
-test('first paint displays the centered outlined logo before the app bundle, then reveals the public page',async({page})=>{
+test('first paint displays the original wordmark and animates the feature introduction before the app bundle',async({page})=>{
  const release=await holdBundle(page);
  try{
   await page.goto('/service',{waitUntil:'commit'});
   await expect(page.locator('#app-launch')).toBeVisible();await expect(page.locator('.launch-logo path')).toHaveAttribute('d',wordmarkPath);
+  await expect(page.locator('#app-launch')).toHaveAttribute('data-intro','welcome');
+  const features=page.getByRole('list',{name:'아이하루 주요 기능'}).getByRole('listitem');
+  await expect(features).toHaveText(['시간표','가족 달력','가족 대화']);
+  const delays=await features.evaluateAll(elements=>elements.map(node=>getComputedStyle(node).animationDelay));
+  expect(delays).toEqual(['0.18s','0.27s','0.36s']);
   const center=await page.locator('.launch-logo').boundingBox();expect(center).not.toBeNull();expect(Math.abs(center!.x+center!.width/2-195)).toBeLessThan(2);expect(center!.width).toBeGreaterThan(200);
   await expect(page.locator('#root')).toHaveAttribute('inert','');
-  await page.screenshot({path:'test-results/ui127-launch-mobile.png',animations:'disabled'});
+  await page.setViewportSize({width:320,height:740});
+  const featureBounds=await page.locator('.launch-features').boundingBox();
+  expect(featureBounds!.x).toBeGreaterThanOrEqual(16);
+  expect(featureBounds!.x+featureBounds!.width).toBeLessThanOrEqual(304);
+  await page.screenshot({path:'test-results/ui141-launch-mobile.png',animations:'disabled'});
+  await page.setViewportSize({width:1440,height:900});
+  await page.screenshot({path:'test-results/ui141-launch-desktop.png',animations:'disabled'});
  }finally{release();}
  await ready(page);await expect(page.locator('.market-hero h1')).toBeVisible();
  await expect(page.locator('.market-brand .iharu-wordmark path')).toHaveAttribute('d',wordmarkPath);
@@ -54,21 +65,37 @@ test('public navigation, login, and narrow screens share the wordmark without re
  await page.screenshot({path:'test-results/ui127-login-wordmark-320.png',animations:'disabled'});
 });
 
+test('reloading in the same tab uses only the normal loading state',async({page})=>{
+ await page.goto('/service');await ready(page);
+ const release=await holdBundle(page);
+ try{
+  await page.reload({waitUntil:'commit'});
+  await expect(page.locator('#app-launch')).toHaveAttribute('data-intro','compact');
+  await expect(page.locator('.launch-features')).toBeHidden();
+  await expect(page.locator('.launch-brand')).toHaveCSS('animation-name','none');
+  await expect(page.getByRole('status')).toHaveText('나의 하루를 준비하고 있어요');
+ }finally{release();}
+ await ready(page);
+ await expect(page.locator('.market-hero h1')).toBeVisible();
+});
+
 test('reduced motion and stored dark appearance apply before React starts',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.addInitScript(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));
  const release=await holdBundle(page);
  try{
   await page.goto('/login',{waitUntil:'commit'});await expect(page.locator('#app-launch')).toHaveAttribute('data-motion','reduced');
-  await expect(page.locator('.launch-art')).toHaveCSS('animation-name','none');await expect(page.locator('#app-launch')).toHaveCSS('background-color','rgb(16, 35, 30)');
-  await page.screenshot({path:'test-results/ui127-launch-dark-reduced.png',animations:'disabled'});
+  await expect(page.locator('.launch-brand')).toHaveCSS('animation-name','none');
+  await expect(page.locator('.launch-feature').first()).toHaveCSS('animation-name','none');
+  await expect(page.locator('#app-launch')).toHaveCSS('background-color','rgb(16, 35, 30)');
+  await page.screenshot({path:'test-results/ui141-launch-dark-reduced.png',animations:'disabled'});
  }finally{release();}
  await ready(page);await expect(page.locator('.market-brand')).toBeVisible();
 });
 
 test('failed app bundle provides a retry and recovers instead of trapping the user behind the logo',async({page})=>{
  await page.route(mainBundle,route=>route.abort('failed'));
- await page.goto('/service');await expect(page.locator('#launch-recovery')).toBeVisible({timeout:12000});await expect(page.locator('#launch-message')).toHaveText('화면을 불러오지 못했어요');
+ await page.goto('/service');await expect(page.locator('#launch-recovery')).toBeVisible({timeout:12000});await expect(page.locator('#launch-message')).toHaveText('화면을 불러오지 못했어요');await expect(page.locator('.launch-features')).toBeHidden();
  await page.unroute(mainBundle);await page.getByRole('button',{name:'다시 시도',exact:true}).click();await ready(page);await expect(page.locator('.market-hero h1')).toBeVisible();
 });
 
