@@ -1,4 +1,5 @@
 import {BriefingOperations} from '../components/BriefingOperations';
+import {BriefingReports} from '../components/BriefingReports';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import type {AiSettings} from '../../../shared/ai-settings';
 import {adminRequest} from '../admin-api';
@@ -27,6 +28,7 @@ export function AiBriefingSettings({revision}:{revision:number}){
  <form className="auth-form" onSubmit={submit}><fieldset disabled={busy||!settings.encryptionReady}><legend>{settings.configured?'API 키 교체':'API 키 등록'}</legend><label className="form-field">OpenAI API 키<input type="password" name="openai-api-key" aria-label="OpenAI API 키" value={apiKey} onChange={e=>setApiKey(e.target.value)} autoComplete="off" autoCapitalize="none" spellCheck={false} minLength={20} maxLength={512} required placeholder="sk-…"/></label><p className="account-caption">등록한 키 원문은 다시 표시되지 않습니다. 이 입력란은 저장 시 비워지며 브라우저 저장소에 보관하지 않습니다.</p><button type="submit" className="button primary" disabled={reauth}>{busy?'처리 중…':settings.configured?'암호화해 교체':'암호화해 등록'}</button></fieldset></form>
  <div className="ai-settings-actions"><button type="button" className="button" disabled={busy||reauth||!settings.configured||!settings.encryptionReady} onClick={()=>void perform('ai.check')}><Icon name="repeat"/>연결 확인</button><button type="button" className="button danger" disabled={busy||!settings.configured} onClick={()=>{setRemove(true);setError('');}}>등록 키 삭제</button></div><p className="admin-footnote">키는 최고관리자만 관리할 수 있으며 등록·교체·삭제·연결 확인 이력이 기록됩니다. 연결 확인은 OpenAI의 모델 목록을 조회합니다. 연결 확인은 위치나 일정 자료를 보내지 않습니다. 자동 브리핑은 사용자가 별도로 동의한 일정의 시설·장소와 기준 지역만 분석합니다.</p>
  <BriefingOperations beforeSocial={clearBeforeSocial}/>
+ <BriefingReports beforeSocial={clearBeforeSocial}/>
  <dialog ref={dialog} className="personal-editor" aria-labelledby="ai-key-remove-title" onCancel={event=>{event.preventDefault();if(!busy)setRemove(false);}}><header><h2 id="ai-key-remove-title">등록한 API 키를 삭제할까요?</h2></header><p>아이하루의 암호화된 등록 키를 삭제합니다. OpenAI에서 발급된 키 자체를 폐기하려면 OpenAI 설정에서 처리해 주세요.</p><FormNotice error={error} message={notice}/>{reauth&&remove&&<AdminReauthentication returnTo="/admin?section=ai" verified={confirmed} redirecting={clearBeforeSocial} disabled={busy}/>}<footer><button type="button" className="button" disabled={busy} onClick={()=>setRemove(false)}>취소</button><button type="button" className="button danger" disabled={busy||reauth} onClick={()=>void perform('ai.remove')}>삭제</button></footer></dialog>
  </section>;
 }

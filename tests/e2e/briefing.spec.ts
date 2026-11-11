@@ -13,3 +13,49 @@ test('a single photo post supports multiple topics, accessible controls, source 
  for(const width of [320,820,1440]){await page.setViewportSize({width,height:1000});await page.locator('#auth-main').evaluate(node=>{node.scrollTop=0;});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);const navLabel=page.locator(".workspace-mobile-nav a[href='/briefing']>span:nth-child(2)");expect((await navLabel.boundingBox())!.height).toBeLessThan(20);await expect(card.locator('.briefing-photo img')).toBeVisible();expect(await card.locator('.briefing-photo img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);await page.screenshot({path:'test-results/ui139-briefing-'+width+'.png',fullPage:true,animations:'disabled'});}
  await card.getByRole('button',{name:'소식 메뉴',exact:true}).click();await card.getByRole('button',{name:'이 소식 숨기기',exact:true}).click();await expect(card).toHaveCount(0);
 });
+test('a report targets the visible topic and a superadmin can review and withdraw it', async ({page, browser}) => {
+  const email = 'ui140-reporter@example.test';
+  await login(page, email);
+  await page.setViewportSize({width: 320, height: 850});
+  await open(page);
+  expect((await page.request.post('/__test__/briefing-seed', {data: {email}})).ok()).toBe(true);
+  await page.reload();
+  const card = page.locator('.briefing-card');
+  await card.getByRole('button', {name: '다음 주제', exact: true}).click();
+  await card.getByRole('button', {name: '소식 메뉴', exact: true}).click();
+  await card.getByRole('button', {name: '잘못된 정보 신고', exact: true}).click();
+  const dialog = page.getByRole('dialog', {name: '잘못된 정보 신고'});
+  const topic = '우리 지역 문화 프로그램을 확인해 보세요';
+  await expect(dialog).toContainText(topic);
+  await expect(dialog.getByRole('button', {name: '신고 접수'})).toBeDisabled();
+  expect((await dialog.boundingBox())!.width).toBeLessThanOrEqual(320);
+  await dialog.getByLabel('신고 사유').selectOption('OUTDATED');
+  await dialog.getByRole('button', {name: '신고 접수'}).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(card).toContainText('신고를 접수했어요.');
+  await expect(card.getByRole('button', {name: '소식 메뉴', exact: true})).toBeFocused();
+
+  const adminContext = await browser.newContext({baseURL: origin});
+  try {
+    const admin = await adminContext.newPage();
+    const adminEmail = 'ui140-moderator@example.test';
+    await login(admin, adminEmail);
+    expect((await admin.request.post('/__test__/system-admin', {data: {email: adminEmail}})).ok()).toBe(true);
+    await admin.goto('/admin?section=ai');
+    const reports = admin.getByRole('region', {name: '브리핑 신고 검토'});
+    const row = reports.getByRole('listitem').filter({hasText: topic});
+    await expect(row).toContainText('날짜나 적용 기간이 틀려요');
+    await expect(row.getByRole('link', {name: /원문 열기/})).toHaveAttribute('href', /^https:\/\//);
+    await row.getByRole('button', {name: '주제 철회', exact: true}).click();
+    const review = admin.getByRole('dialog', {name: '이 주제를 철회할까요?'});
+    await review.getByRole('button', {name: '철회 확정', exact: true}).click();
+    await expect(reports).toContainText('해당 근거를 사용한 주제를 철회했어요.');
+    await expect(row).toHaveCount(0);
+  } finally {
+    await adminContext.close();
+  }
+  await page.getByRole('button', {name: '브리핑 새로고침'}).click();
+  await expect(card.getByRole('heading', {name: '방문 전에 도서관 이용 시간을 확인하세요'})).toBeVisible();
+  await expect(card.getByRole('heading', {name: topic})).toHaveCount(0);
+  await expect(card.getByRole('button', {name: '다음 주제', exact: true})).toHaveCount(0);
+});

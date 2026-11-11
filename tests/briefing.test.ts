@@ -10,7 +10,7 @@ import {runBriefingTick,briefingWorkerCommand,type BriefingDependencies} from '.
 import {prepareBriefingContext,selectBriefingItems,type RawContext} from '../server/briefing/analysis';
 import {officialSourceUrl,publicIPv4,plainText} from '../server/briefing/sources';
 import {addDays,koreaToday} from '../shared/schedules';
-import type {BriefingFeed} from '../shared/briefing';
+import type {BriefingFeed, BriefingReport} from '../shared/briefing';
 const origin='http://localhost:4173',secret='ui139-isolated-auth-secret-no-production',password='ui139-isolated-password',key='sk-proj-ui139-isolated-provider-key-not-real',master='c7'.repeat(32);
 let database:Awaited<ReturnType<typeof testDatabase>>,app:ReturnType<typeof createApp>,family:FamilyService;const mail:{to:string;url:string}[]=[];
 class Browser{cookies=new Map<string,string>();async req(path:string,data:object={}){const r=await app.request(origin+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',Cookie:[...this.cookies].map(([k,v])=>k+'='+v).join('; ')},body:JSON.stringify(data)});for(const c of r.headers.getSetCookie()){const [v]=c.split(';'),i=v.indexOf('=');if(v.slice(i+1))this.cookies.set(v.slice(0,i),v.slice(i+1));else this.cookies.delete(v.slice(0,i));}return r;}async api<T=Record<string,unknown>>(op:string,data:object={}):Promise<T>{const r=await this.req('/api/v1/briefing/'+op,data);expect(r.status,await r.clone().text()).toBe(200);return r.json();}}
@@ -34,5 +34,58 @@ it('denies app and worker direct table access and keeps key-bearing worker capab
 it('caps regular posts at one with three topics and safety posts at one more per day',async()=>{const {b}=await enable();await worker('enqueue');const lease=await worker<{id:string;token:string;day:string}>('claim');const make=(i:number,urgent=false)=>({fingerprint:i.toString(16).padStart(64,'0'),contentHash:(i+100).toString(16).padStart(64,'0'),category:urgent?'SAFETY':'NOTICE',title:'격리 공지 '+i,summary:'격리된 게시 상한 검증용 요약입니다.',reason:'검증용',action:'원문 확인',sourceUrl:'https://www.suwon.go.kr/notice/'+i,sourceName:'격리 공식 출처',evidenceQuote:'격리된 근거',validFrom:lease.day,validUntil:addDays(lease.day,6),matchKey:'수원중앙도서관',score:99,urgent});await worker('complete',{id:lease.id,token:lease.token,items:Array.from({length:6},(_,i)=>make(i))});let feed=await b.api<BriefingFeed>('read');expect(feed.posts).toHaveLength(1);expect(feed.posts[0].items).toHaveLength(3);await query(database.db,'DELETE FROM app_private.briefing_jobs');await worker('enqueue');const next=await worker<{id:string;token:string}>('claim');await worker('complete',{id:next.id,token:next.token,items:[make(20,true),make(21,true),make(22,true),make(23,true)]});feed=await b.api<BriefingFeed>('read');expect(feed.posts).toHaveLength(2);expect(feed.posts.find(p=>p.kind==='URGENT')?.items).toHaveLength(3);});
 it('removes access to derived child content when the sharing relationship ends',async()=>{const {b}=await enable();const invite=await(await b.req('/api/v1/workspace/invite.issue',{consent:true})).json();const child=new Browser();expect((await child.req('/api/v1/workspace/child.signup',{loginId:'ui139child',name:'어린이검사',password,code:invite.code})).ok).toBe(true);expect((await child.req('/api/v1/workspace/items.create',{kind:'REPEAT',data:{title:'어린이 독서',date:koreaToday(),place:'수원중앙도서관',weekdays:[0,1,2,3,4,5,6],startTime:'15:00',endTime:'16:00'}})).ok).toBe(true);const fake=fakes();await tick(fake.deps);await tick(fake.deps);expect((await b.api<BriefingFeed>('read')).posts).toHaveLength(1);await query(database.db,"UPDATE app_private.workspace_links SET active=false,version=version+1 WHERE profile_id IN (SELECT id FROM app_private.workspace_profiles WHERE kind='CHILD')");expect((await b.api<BriefingFeed>('read')).posts).toHaveLength(0);});
 it('uses the 03:00 Korea boundary, with the daily trigger at 18:00 UTC',async()=>{const rows=await query<{day:string}>(database.db,"SELECT to_char(((v AT TIME ZONE 'Asia/Seoul')-interval '3 hours')::date,'YYYY-MM-DD') AS day FROM (VALUES('2026-11-10 17:59:59+00'::timestamptz),('2026-11-10 18:00:00+00'::timestamptz)) x(v)");expect(rows.map(x=>x.day)).toEqual(['2026-11-10','2026-11-11']);const vercel=JSON.parse(await readFile('vercel.json','utf8'));expect(vercel.crons).toContainEqual({path:'/api/cron/briefing',schedule:'0 18 * * *'});});
+it('reviews only owned, visible evidence versions and withdraws matching topics without removing others', async () => {
+  const reader = await enable();
+  const other = await parent('other');
+  const moderator = await parent('moderator');
+  await query(database.db, 'INSERT INTO app_private.system_admins(member_id) VALUES($1)', [moderator.member]);
+  const fake = fakes();
+  await tick(fake.deps);
+  await tick(fake.deps);
+  const post = (await reader.b.api<BriefingFeed>('read')).posts[0];
+  const [item] = post.items;
+  const report = {postId: post.id, fingerprint: item.fingerprint, contentHash: item.contentHash, sourceUrl: item.sourceUrl, reason: 'INACCURATE'};
+  const keep = {...item, fingerprint: 'a'.repeat(64), title: '같이 게시한 다른 주제'};
+  await other.b.api('preferences.save', {enabled: true, region: '경기도 수원시', consent: true, version: 0});
+  await query(database.db, "INSERT INTO app_private.briefing_posts(profile_id,day,kind,region,items,owners) VALUES($1,$2,'REGULAR',$3,$4::jsonb,ARRAY[$1::uuid])",
+    [other.profile, post.day, post.region, JSON.stringify([item, keep])]);
+  const otherPost = (await other.b.api<BriefingFeed>('read')).posts[0];
+
+  expect((await other.b.req('/api/v1/briefing/report', report)).status).toBe(404);
+  expect((await reader.b.req('/api/v1/briefing/report', {...report, contentHash: 'b'.repeat(64)})).status).toBe(404);
+  expect((await reader.b.req('/api/v1/briefing/report', {...report, title: 'forged'})).status).toBe(400);
+  expect(await reader.b.api('report', report)).toEqual({received: true});
+  await reader.b.api('report', report);
+  await other.b.api('report', {...report, postId: otherPost.id, reason: 'SOURCE'});
+  expect((await reader.b.req('/api/v1/briefing/admin.reports')).status).toBe(403);
+  const {reports} = await moderator.b.api<{reports: BriefingReport[]}>('admin.reports');
+  expect(reports).toHaveLength(2);
+  expect(reports[0]).toMatchObject({title: item.title, sourceUrl: item.sourceUrl});
+  expect(Object.keys(reports[0]).sort()).toEqual(['createdAt', 'id', 'reason', 'sourceName', 'sourceUrl', 'summary', 'title', 'validFrom', 'validUntil']);
+  const retained = reports.find(entry => entry.reason === 'SOURCE')!;
+  const withdrawn = reports.find(entry => entry.reason === 'INACCURATE')!;
+  expect((await reader.b.req('/api/v1/briefing/admin.report.resolve', {reportId: withdrawn.id, decision: 'WITHDRAW'})).status).toBe(403);
+  await query(database.db, "UPDATE iharu_auth.session_guard SET reauthenticated_at=now()-interval '10 minutes'");
+  expect((await moderator.b.req('/api/v1/briefing/admin.report.resolve', {reportId: retained.id, decision: 'DISMISS'})).status).toBe(403);
+  expect((await moderator.b.req('/api/account/reauthenticate', {password})).ok).toBe(true);
+  await moderator.b.api('admin.report.resolve', {reportId: retained.id, decision: 'DISMISS'});
+  expect((await moderator.b.req('/api/v1/briefing/admin.report.resolve', {reportId: retained.id, decision: 'WITHDRAW'})).status).toBe(409);
+  expect((await other.b.api<BriefingFeed>('read')).posts[0].items).toHaveLength(2);
+  await moderator.b.api('admin.report.resolve', {reportId: withdrawn.id, decision: 'WITHDRAW'});
+  expect((await moderator.b.api<{reports: BriefingReport[]}>('admin.reports')).reports).toEqual([]);
+  expect((await reader.b.api<BriefingFeed>('read')).posts).toEqual([]);
+  expect((await other.b.api<BriefingFeed>('read')).posts[0].items).toEqual([keep]);
+
+  await query(database.db, 'DELETE FROM app_private.briefing_jobs');
+  await worker('enqueue');
+  const lease = await worker<{id: string; token: string}>('claim');
+  const correction = {...item, contentHash: 'c'.repeat(64), title: '근거가 바뀐 정정 주제'};
+  expect(await worker('complete', {id: lease.id, token: lease.token, items: [item, correction]}))
+    .toMatchObject({state: 'DONE', changed: true});
+  expect((await reader.b.api<BriefingFeed>('read')).posts[0].items).toEqual([correction]);
+  await reader.b.api('report', {...report, postId: (await reader.b.api<BriefingFeed>('read')).posts[0].id, contentHash: correction.contentHash});
+  await reader.b.api('preferences.save', {enabled: false, region: post.region, consent: false, version: 1});
+  expect((await moderator.b.api<{reports: BriefingReport[]}>('admin.reports')).reports).toEqual([]);
+});
 it('rejects nonofficial sources, private IPs and script content',()=>{for(const url of ['http://www.suwon.go.kr/a','https://suwon.go.kr.attacker.test/a','https://user:pass@www.suwon.go.kr/a','https://www.suwon.go.kr:444/a','https://127.0.0.1/a'])expect(officialSourceUrl(url)).toBeNull();for(const ip of ['127.0.0.1','10.0.0.1','169.254.169.254','192.168.1.1','100.64.1.1','::1','::ffff:127.0.0.1'])expect(publicIPv4(ip)).toBe(false);expect(publicIPv4('8.8.8.8')).toBe(true);expect(plainText('<script>evil()</script><p>공식 안내 &amp; 변경</p>')).toBe('공식 안내 & 변경');});
 it('strips names, notes, exact times, contact details and expired occurrences from the external context',()=>{const raw={region:'경기도 수원시',day:'2026-11-10',names:['아이이름'],owners:[],scope:'fixture',items:[{id:crypto.randomUUID(),ownerId:crypto.randomUUID(),kind:'REPEAT',version:1,changed:true,data:{title:'아이이름 독서',date:'2026-11-10',weekdays:[2],place:'수원중앙도서관',note:'private-note',startTime:'16:00',endTime:'17:00',paid:false}},{id:crypto.randomUUID(),ownerId:crypto.randomUUID(),kind:'EVENT',version:1,changed:true,data:{title:'도서관',date:'2026-10-01',weekdays:[],place:'지난 도서관',note:'',paid:false}}]} as RawContext;const clean=prepareBriefingContext(raw);expect(clean.topics).toHaveLength(1);expect(JSON.stringify(clean)).not.toMatch(/아이이름|private-note|16:00|17:00|지난 도서관/);const source={id:'s1',url:'https://www.suwon.go.kr/a',title:'수원 공지',text:'수원중앙도서관 공식 공지 2026-11-10 ~ 2026-11-16 휴관 안내',checkedAt:new Date().toISOString()};const candidate={sourceId:'s1',category:'FACILITY',title:'도서관 변경 안내',summary:'등록한 일정 전에 공식 공지를 확인해 주세요.',reason:'도서관 일정이 있어요.',action:'출발 전에 원문을 확인해 주세요.',matchKey:'수원중앙도서관',evidenceQuote:source.text,validFrom:'2026-11-10',validUntil:'2026-11-16',score:99,urgent:false};expect(selectBriefingItems({items:[candidate,candidate]},clean,[source])).toHaveLength(1);expect(selectBriefingItems({items:[{...candidate,evidenceQuote:'근거 없이 만든 허위 안내 문구입니다.'}]},clean,[source])).toHaveLength(0);expect(selectBriefingItems({items:[{...candidate,validUntil:'2026-11-09'}]},clean,[source])).toHaveLength(0);});
