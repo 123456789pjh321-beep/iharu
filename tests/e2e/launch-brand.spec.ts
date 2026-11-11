@@ -4,7 +4,7 @@ import {wordmarkPath} from '../../shared/brand';
 const origin='http://127.0.0.1:4174';
 test.use({baseURL:origin,viewport:{width:390,height:844}});
 const mainBundle=/\/assets\/index-[^/]+\.js$/;
-const introAsset=/\/assets\/iharu-intro-(pc|mobile|tablet)-v2\.mp4$/;
+const introAsset=/\/assets\/iharu-intro-(pc|mobile|tablet)-v3\.mp4$/;
 const introDialog=(page:Page)=>page.getByRole('dialog',{name:'아이하루 소개'});
 async function ready(page:Page){await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});await expect(page.locator('#root')).not.toHaveAttribute('inert');}
 async function holdBundle(page:Page){
@@ -130,7 +130,10 @@ test('first login entry plays the full four-second mobile film and fades into th
  await expect(video).toHaveJSProperty('playsInline',true);
  await expect(dialog.getByRole('button')).toHaveCount(0);
  expect((await dialog.boundingBox())?.width).toBe(320);
+ await expect(dialog.locator('.launch-video__caption').first()).toBeInViewport({ratio:1});
  expect(await page.evaluate(()=>document.querySelector('.launch-video')?.matches(':modal'))).toBe(true);
+ await expect(dialog.locator('.launch-video__end-mark')).toHaveCSS('opacity','1');
+ await expect(dialog.locator('.launch-video__end-mark')).toBeInViewport({ratio:1});
  const finish=await video.evaluate((element:HTMLVideoElement)=>new Promise<{time:number;phase:string|undefined}>(resolve=>{
   element.addEventListener('ended',()=>resolve({time:element.currentTime,phase:element.closest('dialog')?.dataset.phase}),{once:true});
  }));
@@ -154,9 +157,9 @@ test('test workspace entry selects the tablet film and does not replay across te
  await expect(dialog).toHaveAttribute('data-phase','playing');
  await expect(dialog).toHaveAttribute('data-theme','dark');
  await expect(dialog).toHaveAttribute('data-format','tablet');
- await expect(dialog.locator('video')).toHaveAttribute('src','/assets/iharu-intro-tablet-v2.mp4');
- await expect(dialog.locator('video')).toHaveJSProperty('videoWidth',1200);
- await expect(dialog.locator('video')).toHaveJSProperty('videoHeight',900);
+ await expect(dialog.locator('video')).toHaveAttribute('src','/assets/iharu-intro-tablet-v3.mp4');
+ await expect(dialog.locator('video')).toHaveJSProperty('videoWidth',1080);
+ await expect(dialog.locator('video')).toHaveJSProperty('videoHeight',1080);
  await expect(dialog).toHaveCount(0);
  await expect(page.getByRole('heading',{name:'그룹의 하루를 자유롭게 테스트해요'})).toBeVisible();
  await page.goto('http://127.0.0.1:4173/test/calendar');
@@ -217,7 +220,7 @@ test('desktop home entry chooses only the wide asset and opens the timetable',as
  await expect(dialog.locator('video')).toHaveJSProperty('videoHeight',1080);
  await expect(dialog).toHaveCount(0,{timeout:6500});
  await expect(page).toHaveURL(/\/timetable$/);
- expect([...requested]).toEqual(['/assets/iharu-intro-pc-v2.mp4']);
+ expect([...requested]).toEqual(['/assets/iharu-intro-pc-v3.mp4']);
 });
 
 test.describe('touch screen selection',()=>{
@@ -225,6 +228,40 @@ test.describe('touch screen selection',()=>{
  test('a large landscape tablet uses the tablet film',async({page})=>{
   await page.goto('/login');
   await expect(introDialog(page)).toHaveAttribute('data-format','tablet');
-  await expect(introDialog(page).locator('video')).toHaveAttribute('src','/assets/iharu-intro-tablet-v2.mp4');
+  await expect(introDialog(page).locator('video')).toHaveAttribute('src','/assets/iharu-intro-tablet-v3.mp4');
+ });
+});
+
+for(const [label,width,height,format] of [
+ ['wide desktop',1915,900,'pc'],
+ ['short portrait',500,726,'mobile'],
+ ['tall phone',360,808,'mobile'],
+ ['near-square tablet',760,730,'tablet'],
+] as const)test(`the intro fills a ${label} viewport without cropping captions`,async({page})=>{
+ await page.setViewportSize({width,height});
+ await page.goto('/login');
+ const dialog=introDialog(page),video=dialog.locator('video');
+ await expect(dialog).toHaveAttribute('data-phase','playing');
+ await expect(dialog).toHaveAttribute('data-format',format);
+ await expect(video).toHaveCSS('object-fit','cover');
+ expect(await dialog.boundingBox()).toEqual({x:0,y:0,width,height});
+ expect(await video.boundingBox()).toEqual({x:0,y:0,width,height});
+ await expect(dialog.locator('.launch-video__caption').first()).toBeInViewport({ratio:1});
+});
+
+test.describe('rotated phone',()=>{
+ test.use({hasTouch:true,isMobile:true,viewport:{width:844,height:390}});
+ test('uses the wide film and refits it after rotation without requesting another file',async({page})=>{
+  const requested=new Set<string>();
+  page.on('request',request=>{if(introAsset.test(request.url()))requested.add(new URL(request.url()).pathname);});
+  await page.goto('/login');
+  const dialog=introDialog(page),video=dialog.locator('video');
+  await expect(dialog).toHaveAttribute('data-phase','playing');
+  await expect(dialog).toHaveAttribute('data-format','pc');
+  expect(await video.boundingBox()).toEqual({x:0,y:0,width:844,height:390});
+  await page.setViewportSize({width:390,height:844});
+  expect(await video.boundingBox()).toEqual({x:0,y:0,width:390,height:844});
+  await expect(dialog.locator('.launch-video__caption').first()).toBeInViewport({ratio:1});
+  expect([...requested]).toEqual(['/assets/iharu-intro-pc-v3.mp4']);
  });
 });

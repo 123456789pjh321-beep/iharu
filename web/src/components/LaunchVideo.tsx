@@ -14,12 +14,22 @@ const sessionKey = 'iharu:launch-video:v2';
 const startupLimit = 1500;
 const playbackLimit = 4800;
 const fadeDuration = 230;
+const captionCues = [
+  {title: '회의', detail: '생각을 모으다', frames: [-3, 6, 22, 29]},
+  {title: '소통', detail: '마음을 잇다', frames: [31, 39, 49, 55]},
+  {title: '대화', detail: '하루를 나누다', frames: [58, 66, 77, 84]},
+] as const;
 
 function filmFormat(): FilmFormat {
   const {innerWidth, innerHeight} = window;
   const width = matchMedia('(pointer: coarse)').matches ? Math.min(innerWidth, innerHeight) : innerWidth;
-  if (width < 600) return 'mobile';
-  return width < 1100 ? 'tablet' : 'pc';
+  if (width < 600) return innerWidth <= innerHeight ? 'mobile' : 'pc';
+  return width < 1100 || innerWidth < innerHeight ? 'tablet' : 'pc';
+}
+
+function ease(frame: number, start: number, end: number) {
+  const progress = Math.max(0, Math.min(1, (frame - start) / (end - start)));
+  return progress * progress * (3 - 2 * progress);
 }
 
 export function LaunchVideoProvider({children}: {children: ReactNode}) {
@@ -59,19 +69,39 @@ export function useLaunchVideoActive() {
 function LaunchVideo({film, onFinished}: {film: Film; onFinished: () => void}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const graphics = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const modal = dialog.current!;
     const media = video.current!;
+    const layers = graphics.current!;
+    const captions = layers.querySelectorAll<HTMLElement>('.launch-video__caption');
     const motion = matchMedia(motionQuery);
     let active = true;
     let started = false;
     let leaving = false;
     let timer = 0;
+    let animationFrame = 0;
+
+    function syncGraphics() {
+      const frame = media.currentTime * 30;
+      captions.forEach((caption, index) => {
+        const [start, arrive, leave, end] = captionCues[index].frames;
+        const entering = ease(frame, start, arrive);
+        const exiting = ease(frame, leave, end);
+        caption.style.opacity = String(entering * (1 - exiting));
+        caption.style.transform = `translateY(${14 * (1 - entering) - 8 * exiting}px)`;
+      });
+      layers.style.setProperty('--brand-wash', String(ease(frame, 82, 91)));
+      layers.style.setProperty('--brand-mark', String(ease(frame, 87, 95)));
+      layers.style.setProperty('--brand-copy', String(ease(frame, 91, 99)));
+      if (frame < 99) animationFrame = requestAnimationFrame(syncGraphics);
+    }
 
     function remove() {
       if (!active) return;
       active = false;
+      cancelAnimationFrame(animationFrame);
       modal.close();
       if (!document.hidden) {
         requestAnimationFrame(() => {
@@ -98,6 +128,7 @@ function LaunchVideo({film, onFinished}: {film: Film; onFinished: () => void}) {
       started = true;
       clearTimeout(timer);
       modal.dataset.phase = 'playing';
+      syncGraphics();
       timer = window.setTimeout(finish, playbackLimit);
     }
     function motionChanged() { if (motion.matches) remove(); }
@@ -118,6 +149,7 @@ function LaunchVideo({film, onFinished}: {film: Film; onFinished: () => void}) {
     return () => {
       active = false;
       clearTimeout(timer);
+      cancelAnimationFrame(animationFrame);
       media.removeEventListener('playing', playing);
       media.removeEventListener('ended', finish);
       media.removeEventListener('error', finish);
@@ -133,8 +165,20 @@ function LaunchVideo({film, onFinished}: {film: Film; onFinished: () => void}) {
     onCancel={event => { event.preventDefault(); onFinished(); }} onContextMenu={event => event.preventDefault()}>
     <div className="launch-video__stage" aria-hidden="true">
       <BrandWordmark className="launch-video__wordmark"/>
-      <video ref={video} src={'/assets/iharu-intro-' + film.format + '-v2.mp4'} muted playsInline
+      <video ref={video} src={'/assets/iharu-intro-' + film.format + '-v3.mp4'} muted playsInline
         disablePictureInPicture disableRemotePlayback tabIndex={-1}/>
+      <div ref={graphics} className="launch-video__graphics">
+        {captionCues.map(cue => <div className="launch-video__caption" key={cue.title}>
+          <strong>{cue.title}</strong>
+          <span>{cue.detail}</span>
+        </div>)}
+        <div className="launch-video__end-card">
+          <div className="launch-video__signature">
+            <BrandWordmark className="launch-video__end-mark"/>
+            <p>가족의 하루를 한곳에</p>
+          </div>
+        </div>
+      </div>
     </div>
   </dialog>;
 }
