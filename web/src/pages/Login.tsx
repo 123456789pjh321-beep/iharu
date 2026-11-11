@@ -8,6 +8,7 @@ import { Loading, ErrorState } from '../components/Common';
 import { Icon } from '../components/Icon';
 import {entryReturnPath} from '../../../shared/entry-intent';
 import {forgetEntry} from '../entry-session';
+import {useLaunchVideo} from '../components/LaunchVideo';
 
 export function InlineLogin({returnTo,onAuthenticated,onBusy}:{returnTo:string;onAuthenticated:()=>Promise<void>;onBusy:(busy:boolean)=>void}){
  const providers=useLoginProviders(),[child,setChild]=useState(false),[busy,setBusy]=useState(false);
@@ -20,8 +21,10 @@ export function LoginPage() {
   // Public login methods and the entry frame belong to the page, not to a role tab.
   const providers=useLoginProviders();
   const entry=['/login','/signup'].includes(pathname);
-  const role=new URLSearchParams(search).get('role'),child=entry&&role==='child',chooseRole=pathname==='/signup'&&!['parent','child'].includes(role||'');
-  const reauthenticate=!child&&new URLSearchParams(search).get('reauth')==='1';
+  const params=new URLSearchParams(search);
+  const role=params.get('role'),child=entry&&role==='child',chooseRole=pathname==='/signup'&&!['parent','child'].includes(role||'');
+  const reauthenticate=!child&&params.get('reauth')==='1';
+  useLaunchVideo(pathname==='/login'&&!reauthenticate&&!params.has('error')&&!params.has('verified')?'login':null);
   return <AuthEntryFrame>
     {((pathname==='/login'&&!reauthenticate)||(pathname==='/signup'&&!chooseRole))&&<LoginRoleTabs child={child} signup={pathname==='/signup'}/>}
     {entry&&!reauthenticate?<LoginEntry child={child} chooseRole={chooseRole} providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
@@ -124,6 +127,7 @@ export function PhonePage() {
   const providers = useApi('/api/account/providers',providersSchema); const navigate=useNavigate();
   const link = new URLSearchParams(useLocation().search).get('link') === '1';
   const [phone,setPhone]=useState('');const [code,setCode]=useState('');const [sent,setSent]=useState(false);const [seconds,setSeconds]=useState(0);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+  useLaunchVideo(link?null:'login');
   const enabled=providers.data?.providers.find(p=>p.id==='phone')?.enabled===true;
   useEffect(()=>{if(seconds<=0)return; const timer=window.setTimeout(()=>setSeconds(s=>s-1),1000);return()=>clearTimeout(timer);},[seconds]);
   async function send(){setBusy(true);setError('');try{await authPost('/api/auth/phone-number/send-otp',{phoneNumber:phone});setSent(true);setSeconds(60);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}

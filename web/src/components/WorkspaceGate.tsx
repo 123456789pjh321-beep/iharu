@@ -6,6 +6,7 @@ import {sessionSchema} from '../auth';
 import {useApi} from '../api';
 import {workspaceRequest} from '../workspace-api';
 import type {WorkspaceMe} from '../../../shared/workspace';
+import {useLaunchVideo} from './LaunchVideo';
 const healthResponse=envelope(healthSchema);
 type WorkspaceAccess={status:'checking'|'guest'|'member'|'restricted'|'error';identity:WorkspaceMe|null;error?:string};
 function useGateState(){
@@ -32,7 +33,11 @@ function useGateState(){
  return {...menuUpdates,health,session,access,refreshAccess,workspaceRole,setWorkspaceRole,adminAllowed:adminAllowed&&access.status==='member'&&access.identity?.role==='PARENT',adminLoading,adminError,refreshAdmin:()=>setAdminRevision(n=>n+1)};
 }
 const GateContext=createContext<ReturnType<typeof useGateState>|null>(null);
-export function WorkspaceGateProvider({children}:{children:ReactNode}){return <GateContext.Provider value={useGateState()}>{children}</GateContext.Provider>;}
+export function WorkspaceGateProvider({children}:{children:ReactNode}){
+ const gate=useGateState(),session=gate.session.data;
+ useLaunchVideo(!gate.health.loading&&!gate.health.error&&!gate.health.data?.data.demoEnabled&&session?.authenticated&&session.assurance==='HIGH'?'login':null);
+ return <GateContext.Provider value={gate}>{children}</GateContext.Provider>;
+}
 export function useWorkspaceGate(){const gate=useContext(GateContext);if(!gate)throw new Error('WORKSPACE_GATE_REQUIRED');return gate;}
 export function useOptionalWorkspaceGate(){return useContext(GateContext);}
 export function useSharedSession(){const shared=useContext(GateContext),local=useApi('/api/account/session',sessionSchema,undefined,!shared);return shared?.session||local;}
