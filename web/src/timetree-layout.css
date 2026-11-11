@@ -1,0 +1,258 @@
+/* Archived TimeTree layout, scoped to the restored menus. */
+.workspace-page:where([data-timetree]){
+ --surface:#fff;--surface-sub:#f8f8f8;--canvas:#f8f8f8;
+ --ink:#242424;--muted:#727272;--line:#ededed;
+ --primary:#147d64;--primary-hover:#10634f;--on-primary:#fff;
+ --mint:#e3fbed;--accent-soft:#f0f0f0;--focus:#147d64;
+ --holiday-ink:#c5474e;--weekend-ink:#376bb5;
+ --calendar-secondary-ink:#999;--calendar-holiday-fill:#ed3130;--calendar-observance-fill:#8f8f8f;
+ --guide-cloud:#e6f5fa;--guide-line:#b7e5d1;--guide-person:#e7cda8;--guide-accent:#31c48e;
+ color:var(--ink);background:var(--surface);font-weight:400;
+ --workspace-toolbar-height:52px;--workspace-member-height:40px;--workspace-weekday-height:26px;
+ --workspace-nav-height:80px;--workspace-inset:16px;--workspace-title-size:clamp(18px,2vw,22px);
+ --workspace-grid-line:color-mix(in srgb,var(--line) 68%,var(--surface));
+}
+html[data-theme=dark] .workspace-page:where([data-timetree]){
+ --surface:#191c1b;--surface-sub:#222624;--canvas:#111513;
+ --ink:#f1f3f2;--muted:#b4bcb7;--line:#303632;
+ --primary:#a1dfbf;--primary-hover:#bee9d2;--on-primary:#153c2c;
+ --mint:#254b38;--accent-soft:#2c302e;--focus:#a1dfbf;
+ --holiday-ink:#f3a1a8;--weekend-ink:#a1bfff;--calendar-secondary-ink:#b1b6b3;
+ --guide-cloud:#243d41;--guide-line:#447762;--guide-person:#bca180;--guide-accent:#57bb93;
+}
+/* UI153: one viewport contract for every workspace menu. */
+.auth-app.workspace-page:where([data-timetree]){padding-top:env(safe-area-inset-top);box-sizing:border-box}
+.auth-app.workspace-page:where([data-timetree]) .auth-main.auth-wide{display:flex;flex-direction:column;align-items:stretch;gap:0;overflow:hidden;background:var(--surface);scrollbar-gutter:auto;margin-bottom:calc(var(--workspace-nav-height) + env(safe-area-inset-bottom))}
+.auth-app.workspace-page:where([data-timetree]) .auth-main.auth-wide>.auth-panel{display:flex;flex-direction:column;flex:1 1 0;min-height:0;height:auto;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;color:var(--ink);background:var(--surface)}
+.auth-app.workspace-page:where([data-timetree]) .auth-panel:is(:has(>.direct-calendar),:has(>.guest-workspace>.direct-calendar),:has(>.chat-workspace.full),:has(>.guest-workspace>.guest-chat-sample)){overflow:hidden}
+.workspace-page:where([data-timetree]) .workspace-toolbar{height:var(--workspace-toolbar-height);min-height:var(--workspace-toolbar-height);padding:4px var(--workspace-inset);box-sizing:border-box;gap:6px;flex-wrap:nowrap}
+.workspace-page:where([data-timetree]) .workspace-toolbar-title{font-size:var(--workspace-title-size);font-weight:750;line-height:44px;margin:0;letter-spacing:-.025em;white-space:nowrap}
+.workspace-page:where([data-timetree]) .workspace-date-navigation{flex:1 1 auto;min-width:0}
+.workspace-page:where([data-timetree]) .workspace-date-picker{font-size:var(--workspace-title-size);letter-spacing:-.025em;min-height:44px}
+.workspace-page:where([data-timetree]) .workspace-date-picker>span{font-weight:750}
+.workspace-page:where([data-timetree]) .workspace-date-picker>.icon{width:13px;height:13px;color:var(--muted)}
+.workspace-page:where([data-timetree]) .workspace-toolbar-actions{gap:4px;flex-shrink:0}
+.workspace-page:where([data-timetree]) :is(.icon-button,.calendar-view-menu>summary){color:var(--ink);border:0;background:transparent;box-shadow:none}
+.workspace-page:where([data-timetree]) :is(a,button,input,summary,select,textarea):focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* Only the icon gets the active capsule; labels stay black and outside it. */
+.workspace-page:where([data-timetree]) .workspace-mobile-nav{height:calc(var(--workspace-nav-height) + env(safe-area-inset-bottom));min-height:calc(var(--workspace-nav-height) + env(safe-area-inset-bottom));padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));gap:0;border-top:1px solid var(--line);box-shadow:none;background:var(--surface)}
+.workspace-page:where([data-timetree]) .workspace-mobile-nav :is(a,button){gap:3px;min-height:58px;padding:0 1px;border-radius:0;font-size:11px;font-weight:650;line-height:1.3;letter-spacing:-.025em;color:var(--ink);background:transparent}
+.workspace-page:where([data-timetree]) .workspace-mobile-nav :is(a.active,button.active){color:var(--ink);background:transparent}
+.workspace-page:where([data-timetree]) .workspace-mobile-nav .rail-icon{display:flex;align-items:center;justify-content:center;width:56px;height:34px;border-radius:20px;color:var(--ink)}
+.workspace-page:where([data-timetree]) .workspace-mobile-nav .active .rail-icon{background:var(--mint);color:var(--ink)}
+.workspace-page:where([data-timetree]) .workspace-mobile-nav .rail-icon .icon{width:20px;height:20px;stroke-width:1.8}
+.workspace-page:where([data-timetree]) .workspace-mobile-nav .active>span:last-of-type{font-weight:750}
+.workspace-page:where([data-timetree]) .workspace-mobile-nav a[href='/briefing']>span:nth-child(2){font-size:11px;white-space:nowrap;letter-spacing:-.045em}
+.workspace-page:where([data-timetree]) .workspace-nav-update{top:0;right:5px;background:var(--primary);border-color:var(--surface)}
+
+/* Calendar view controls live behind the small stacked-view icon. */
+.calendar-view-menu{position:relative;z-index:12;flex-shrink:0}
+.calendar-view-menu>summary{display:grid;place-items:center;width:44px;height:44px;padding:0;cursor:pointer;list-style:none;border-radius:10px}
+.calendar-view-menu>summary::-webkit-details-marker{display:none}
+.calendar-view-menu>summary svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2.4}
+.calendar-view-menu>summary svg circle{fill:currentColor;stroke:none}
+.calendar-view-menu[open]>summary{background:var(--surface-sub)}
+.calendar-view-options{position:absolute;right:0;top:48px;min-width:160px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 8px 24px #00000015}
+.calendar-view-options button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;font-size:15px;cursor:pointer}
+.calendar-view-options button[aria-pressed=true]{background:var(--mint)}
+.calendar-view-options button>.icon{width:18px;height:18px}
+.calendar-view-options button>.icon:last-child:not(:first-child){margin-left:auto}
+
+/* A single row of people. Selection/default management moves into its dialog. */
+.workspace-page:where([data-timetree]) .member-preference{flex-shrink:0;padding:0 12px 0 8px;margin:0;background:var(--surface)}
+.workspace-page:where([data-timetree]) .member-preference-row{display:flex;align-items:center;gap:4px;min-width:0;padding:0;height:var(--workspace-member-height);min-height:var(--workspace-member-height)}
+.workspace-page:where([data-timetree]) .member-preference-row>.member-filter-bar{flex:1 1 auto;min-width:0;padding:0;margin:0;max-width:none}
+.workspace-page:where([data-timetree]) .member-preference-row .member-filters{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding:4px 1px;gap:8px;height:var(--workspace-member-height);min-height:var(--workspace-member-height);scroll-padding-inline:2px}
+.workspace-page:where([data-timetree]) .member-preference-row .member-filters>button{flex:0 0 auto;width:auto;min-width:84px;max-width:168px;min-height:32px;height:32px;padding:3px 10px 3px 4px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:650;gap:6px;box-shadow:0 0 0 1px color-mix(in srgb,var(--line) 45%,transparent)}
+.workspace-page:where([data-timetree]) .member-preference-row .member-filters>button[aria-pressed=true]{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.workspace-page:where([data-timetree]) .member-preference-row .member-filter-marker{width:26px;height:24px;flex:0 0 26px;border-radius:5px;background:color-mix(in srgb,var(--member-color) 16%,var(--surface));border:0;color:var(--surface)}
+.workspace-page:where([data-timetree]) .member-preference-row [aria-pressed=true] .member-filter-marker{background:var(--member-color)}
+.workspace-page:where([data-timetree]) .member-preference-row .member-filter-marker>.icon{width:17px;height:17px;stroke-width:3}
+.workspace-page:where([data-timetree]) .member-filter-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-page:where([data-timetree]) .member-preference-options{flex:0 0 36px;width:36px;min-width:36px;height:var(--workspace-member-height);padding:0;color:var(--muted)}
+.member-preference-options>span{display:grid;gap:0;justify-items:center}
+.member-preference-options>span>.icon{height:12px;width:15px;transform:rotate(90deg);stroke-width:2.4}
+.member-preference-options>span>.icon+ .icon{margin-top:-5px}
+.workspace-page:where([data-timetree]) .member-preference .guest-sample-badge{flex-shrink:0;font-size:10px;padding:3px 5px;background:var(--surface-sub);color:var(--muted);border:0}
+.workspace-page:where([data-timetree]) .preference-dialog{padding:20px;max-width:min(480px,calc(100vw - 32px));border-radius:18px}
+.preference-dialog .member-filter-bar{padding:0;margin:12px 0}
+.preference-dialog .member-filters{justify-content:flex-start}
+.preference-dialog .preference-selected-names{margin:12px 0;color:var(--muted);font-size:14px}
+.preference-save-row{display:flex;justify-content:flex-end;margin:12px 0}
+.preference-save-row .button{min-height:44px;font-size:14px}
+
+/* Horizontal week rules replace the boxed grid. Dates use a regular weight. */
+.workspace-page:where([data-timetree]) .direct-calendar{background:var(--surface)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-view-menu>summary svg{width:21px;height:21px}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--muted)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-weekdays>span{color:var(--calendar-secondary-ink)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-grid{gap:0;border:0;background:var(--surface)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-month-content .calendar-week-row{--calendar-week-header:44px;border:0;background:var(--surface)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-month-content .calendar-week-row:is(.has-holiday,.has-day-badge){--calendar-week-header:62px}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row::after{height:1px;background:var(--workspace-grid-line)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row>.calendar-cell{padding:var(--calendar-week-header) 2px 4px;border:0;border-radius:0;box-shadow:none;background:var(--surface);min-height:0}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row>.calendar-cell.outside{background:var(--surface)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row>.calendar-cell.selected{background:var(--accent-soft)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-target{padding:3px 0 0;justify-content:center;align-items:flex-start;gap:0;background:transparent}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-target>span{width:20px;height:20px;font-size:clamp(10px,1.5vw,12px);font-weight:400;line-height:20px;color:var(--ink)}
+.workspace-page:where([data-timetree]) .direct-calendar .holiday-date .calendar-day-target>span{color:var(--holiday-ink)}
+.workspace-page:where([data-timetree]) .direct-calendar .saturday-date .calendar-day-target>span{color:var(--weekend-ink)}
+.workspace-page:where([data-timetree]) .direct-calendar .outside .calendar-day-target>span{opacity:.28}
+.workspace-page:where([data-timetree]) .direct-calendar .is-today .calendar-day-target>span{background:var(--ink);color:var(--surface);font-weight:700}
+.calendar-lunar{position:absolute;left:0;right:0;top:25px;z-index:1;text-align:center;font-size:clamp(9px,1.3vw,11px);font-weight:400;line-height:14px;color:var(--calendar-secondary-ink,var(--muted));pointer-events:none;font-variant-numeric:tabular-nums}
+.calendar-cell.outside .calendar-lunar{opacity:.3}
+/* UI152: holiday and eve labels share a solid, compact calendar lane. */
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-badge{position:absolute;left:1px;right:1px;top:38px;z-index:1;display:block;height:20px;padding:1px 2px;border-radius:3px;background:var(--calendar-holiday-fill);color:#fff;text-align:center;font-size:12px;line-height:18px;letter-spacing:-.035em;font-weight:750;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-badge.calendar-observance{background:var(--calendar-observance-fill)}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-events{top:var(--calendar-week-header);grid-auto-rows:24px;row-gap:4px}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-events>.calendar-event{margin-inline:2px;border:0;border-radius:3px;padding:2px 4px;gap:3px;background:color-mix(in srgb,var(--event-color) 12%,var(--surface));color:var(--ink);min-height:24px;height:24px}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-event strong{font-size:12px;font-weight:500;line-height:1.4}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-event .event-time{font-size:10px}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-event[data-all-day=true]{background:var(--event-color);color:#fff}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-event[data-all-day=true] .event-time{display:none}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-overflow{font-size:11px;font-weight:400;color:var(--muted);min-height:28px}
+
+/* Shared date sheet and row-like editor use the same white, quiet surfaces. */
+.workspace-page:where([data-timetree]) .calendar-day-sheet{max-width:560px;border:0;border-radius:22px;padding:0;background:var(--surface);color:var(--ink);box-shadow:0 12px 48px #0002}
+.workspace-page:where([data-timetree]) .calendar-day-sheet::before{content:"";display:block;width:36px;height:3px;border-radius:3px;background:var(--line);margin:8px auto 0}
+.workspace-page:where([data-timetree]) .calendar-day-sheet header{padding:20px 20px 14px;border:0;align-items:flex-start}
+.workspace-page:where([data-timetree]) .calendar-day-sheet h2{font-size:20px;font-weight:750;letter-spacing:-.02em}
+.workspace-page:where([data-timetree]) .calendar-day-sheet .day-sheet-lunar{margin:4px 0 0;color:var(--muted);font-size:14px}
+.workspace-page:where([data-timetree]) .calendar-day-sheet-body{padding:0 20px;min-height:0}
+.workspace-page:where([data-timetree]) .day-sheet-event{padding:17px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.workspace-page:where([data-timetree]) .day-sheet-event strong{font-size:16px;font-weight:600}
+.workspace-page:where([data-timetree]) .day-sheet-event small{font-size:13px}
+.workspace-page:where([data-timetree]) .day-sheet-empty{min-height:150px;font-size:14px;font-weight:500;color:var(--muted)}
+.workspace-page:where([data-timetree]) .calendar-day-sheet footer{padding:12px 20px 20px;border:0}
+.workspace-page:where([data-timetree]) .calendar-day-sheet footer .registration-action{background:var(--ink);border-color:var(--ink);color:var(--surface);border-radius:12px;min-height:44px;box-shadow:none}
+.workspace-page:where([data-timetree]) .direct-editor.entry-redesign{background:var(--surface);border:0;border-radius:20px;color:var(--ink)}
+.workspace-page:where([data-timetree]) .entry-editor-header{background:var(--surface);border-color:var(--line);min-height:60px}
+.workspace-page:where([data-timetree]) .entry-editor-header h2{font-size:15px;font-weight:500;color:var(--muted)}
+.workspace-page:where([data-timetree]) .entry-editor-header .registration-action{background:transparent;border:0;color:var(--primary);font-size:16px;font-weight:650;box-shadow:none}
+.workspace-page:where([data-timetree]) .entry-intro{display:none}
+.workspace-page:where([data-timetree]) .entry-editor-body{padding:0 20px 20px}
+.workspace-page:where([data-timetree]) .entry-title-field>label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.workspace-page:where([data-timetree]) .direct-editor #personal-title{font-size:25px;font-weight:650;min-height:74px;padding:12px 0;border:0;background:transparent}
+.workspace-page:where([data-timetree]) .entry-section{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:16px 0;background:transparent;box-shadow:none}
+.workspace-page:where([data-timetree]) .entry-section-heading h3{font-size:15px;font-weight:500;color:var(--ink)}
+.workspace-page:where([data-timetree]) .entry-section-heading .icon{color:var(--primary);width:19px;height:19px}
+.workspace-page:where([data-timetree]) .entry-choice-field{padding:14px 0;border-bottom:1px solid var(--line);gap:12px}
+.workspace-page:where([data-timetree]) .entry-choice-field>span{font-size:14px;font-weight:400;color:var(--muted)}
+.workspace-page:where([data-timetree]) .entry-segments{background:var(--surface-sub);border:0;border-radius:18px;padding:3px}
+.workspace-page:where([data-timetree]) .entry-segments>button{min-height:34px;border-radius:16px;font-size:13px;font-weight:500}
+.workspace-page:where([data-timetree]) .entry-segments>button[aria-pressed=true]{background:var(--mint);color:var(--primary);box-shadow:none}
+.workspace-page:where([data-timetree]) .entry-quick-row button{background:var(--surface-sub);border-color:transparent;border-radius:18px;font-size:13px}
+.workspace-page:where([data-timetree]) .direct-editor :is(.form-field input,.form-field textarea,.entry-date-card,.entry-clock-control){box-shadow:none;border-radius:8px;background:var(--surface);border-color:var(--line)}
+
+/* More: white illustrated guide, 3-column grid, neutral account rows. */
+.workspace-page:where([data-timetree])[data-timetree='/more'] .auth-main.auth-wide{background:var(--canvas)}
+.workspace-page:where([data-timetree]) .more-screen:not(.settings-screen){max-width:760px;margin:0 auto;padding:0 0 28px;background:var(--canvas)}
+.more-guide-area{padding:10px 16px 12px;background:var(--surface)}
+.more-guide-strip{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:14px}
+.more-guide-strip::-webkit-scrollbar{display:none}
+.workspace-page:where([data-timetree]) .more-guide-banner{display:flex;flex:0 0 100%;scroll-snap-align:start;align-items:center;gap:10px;min-width:0;min-height:112px;margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);box-sizing:border-box}
+.more-guide-artwork{width:122px;max-width:42%;height:94px;flex-shrink:0}
+.workspace-page:where([data-timetree]) .more-guide-banner>span:last-child{display:grid;gap:5px;min-width:0}
+.workspace-page:where([data-timetree]) .more-guide-banner strong{font-size:18px;line-height:1.5;font-weight:750;letter-spacing:-.04em}
+.workspace-page:where([data-timetree]) .more-guide-banner small{font-size:13px;line-height:1.6;font-weight:400;color:var(--muted)}
+.more-guide-pages{display:flex;align-items:center;justify-content:center;height:30px;gap:0}
+.more-guide-pages>button{display:grid;place-items:center;width:24px;height:28px;border:0;padding:0;background:transparent;cursor:pointer}
+.more-guide-pages>button>span{width:5px;height:5px;border-radius:50%;background:var(--line)}
+.more-guide-pages>button[aria-pressed=true]>span{background:var(--ink)}
+.workspace-page:where([data-timetree]) .more-shortcuts{margin:16px 16px 0;border:0;border-radius:14px;background:var(--surface)}
+.workspace-page:where([data-timetree]) .more-shortcuts>a{min-height:94px;gap:7px;padding:14px 6px;box-sizing:border-box;font-size:14px;color:var(--ink);border-color:var(--line)}
+.workspace-page:where([data-timetree]) .more-shortcuts>a>span{width:30px;height:30px;border-radius:0;background:transparent;color:var(--ink)}
+.workspace-page:where([data-timetree]) .more-shortcuts .icon{width:25px;height:25px;stroke-width:1.8}
+.workspace-page:where([data-timetree]) .more-shortcuts>a:nth-child(2) .icon,.workspace-page:where([data-timetree]) .more-shortcuts>a:nth-child(3) .icon{fill:var(--mint)}
+.workspace-page:where([data-timetree]) .more-shortcuts strong{font-weight:700}
+.workspace-page:where([data-timetree]) .more-section{margin:30px 16px 0}
+.workspace-page:where([data-timetree]) .more-section h2{margin:0 0 10px 16px;font-size:14px;font-weight:400;color:var(--muted)}
+.workspace-page:where([data-timetree]) .more-group{border:0;border-radius:14px;background:var(--surface)}
+.workspace-page:where([data-timetree]) .more-account{min-height:76px;padding:15px 16px;gap:12px;border-color:var(--line)}
+.workspace-page:where([data-timetree]) .more-avatar{width:40px;height:40px;border-radius:50%;background:#c5c7c6;color:#fff}
+.workspace-page:where([data-timetree]) .more-avatar>.icon{width:26px;height:26px}
+.workspace-page:where([data-timetree]) .more-account strong{font-size:16px;font-weight:600}
+.workspace-page:where([data-timetree]) .more-account small{font-size:12px;font-weight:400;overflow-wrap:anywhere}
+.workspace-page:where([data-timetree]) .more-row{min-height:56px;padding:15px 16px;font-size:16px;font-weight:550;border-color:var(--line)}
+.workspace-page:where([data-timetree]) .more-row>.icon{width:18px;height:18px;color:var(--muted)}
+.more-privacy-group{margin-top:16px}
+.more-account-note{padding:0 16px;margin:10px 0 0;font-size:13px;line-height:1.7;color:var(--muted)}
+.workspace-page:where([data-timetree]) .more-signature{font-size:11px;color:var(--muted)}
+.workspace-page:where([data-timetree]) .settings-screen{padding:20px 16px;background:var(--canvas)}
+.workspace-page:where([data-timetree]) .settings-heading h1{font-size:24px;font-weight:750}
+.workspace-page:where([data-timetree]) .settings-row{background:var(--surface)}
+
+.workspace-page:where([data-timetree]) .group-chat .chat-room-header h2{font-size:17px;font-weight:650}
+.workspace-page:where([data-timetree]) .group-chat .chat-bubble{font-size:16px;line-height:1.6;box-shadow:none;border-color:var(--line)}
+.workspace-page:where([data-timetree]) .chat-time{font-size:11px}
+.workspace-page:where([data-timetree]) .chat-author-name{font-size:13px}
+.workspace-page:where([data-timetree]) .chat-rooms-heading h1{font-size:24px;color:var(--ink)}
+.workspace-page:where([data-timetree]) .ledger-controls{box-shadow:none}
+.workspace-page:where([data-timetree]) .ledger-tabs,.workspace-page:where([data-timetree]) .ledger-flow-filter{background:var(--surface-sub)}
+.workspace-page:where([data-timetree]) .briefing-page{color:var(--ink)}
+
+/* Shared positions and dividers use the calendar's measurements. */
+.workspace-page:where([data-timetree]) .auth-panel>.workspace-toolbar,.workspace-page:where([data-timetree]) .guest-workspace>.workspace-toolbar{position:sticky;top:0;z-index:16;flex-shrink:0}
+.workspace-page:where([data-timetree]) .workspace-page-heading{min-height:var(--workspace-toolbar-height);padding:4px var(--workspace-inset);box-sizing:border-box}
+.workspace-page:where([data-timetree]) .workspace-page-heading h1{font-size:var(--workspace-title-size)}
+.workspace-page:where([data-timetree]) .more-screen{width:100%;flex:0 0 auto}
+.workspace-page:where([data-timetree]) .settings-screen{padding:0 0 24px}
+.workspace-page:where([data-timetree]) .settings-heading{height:var(--workspace-toolbar-height);min-height:var(--workspace-toolbar-height);padding:4px var(--workspace-inset);margin:0 0 20px;box-sizing:border-box;background:var(--surface)}
+.workspace-page:where([data-timetree]) .settings-heading h1{font-size:var(--workspace-title-size)}
+.workspace-page:where([data-timetree]) .briefing-screen{padding:8px var(--workspace-inset) 24px;flex:0 0 auto}
+.workspace-page:where([data-timetree])[data-timetree='/briefing'] .guest-feature{padding:8px var(--workspace-inset) 24px}
+.workspace-page:where([data-timetree]) .location-access-prompt{flex:0 0 auto;padding-inline:var(--workspace-inset)}
+
+/* Keep the conversation composer inside the same reserved navigation space. */
+.workspace-page:where([data-timetree]) .chat-rooms{padding:0 var(--workspace-inset);min-height:var(--workspace-member-height);box-sizing:border-box}
+.workspace-page:where([data-timetree]) .chat-rooms-toolbar{min-height:var(--workspace-member-height)}
+.workspace-page:where([data-timetree]) .chat-workspace,.workspace-page:where([data-timetree]) .guest-chat-sample{--chat-control-height:32px}
+.workspace-page:where([data-timetree]) .chat-workspace>.group-chat.full{flex:1;min-height:0;height:auto}
+.workspace-page:where([data-timetree]) .guest-workspace:has(>.guest-chat-sample){display:flex;flex-direction:column;flex:1;min-height:0;height:100%}
+.workspace-page:where([data-timetree]) .guest-chat-sample{flex:1;min-height:0;height:100%;overflow:hidden}
+.workspace-page:where([data-timetree]) .guest-sample-messages{min-height:0;flex:1;overflow-y:auto;overscroll-behavior-y:contain}
+.workspace-page:where([data-timetree]) .guest-sample-compose,.workspace-page:where([data-timetree]) .group-chat-composer{flex-shrink:0}
+.workspace-page:where([data-timetree]) .group-chat .chat-room-header{min-height:var(--workspace-toolbar-height);padding:6px var(--workspace-inset);border-color:var(--line)}
+.workspace-page:where([data-timetree]) .guest-chat-actions{padding-inline:var(--workspace-inset)}
+
+/* Ledger controls remain on one row; only its calendar dividers are changed. */
+.auth-app.workspace-page:where([data-timetree]) .auth-panel .fee-workspace{padding:0;border:0}
+.workspace-page:where([data-timetree]) .ledger-content{padding:6px var(--workspace-inset) 24px}
+.workspace-page:where([data-timetree]) .ledger-controls{padding-inline:var(--workspace-inset);border-color:var(--line)}
+.workspace-page:where([data-timetree]) .tuition-weekdays{height:var(--workspace-weekday-height);padding:4px 0 3px;box-sizing:border-box;font-size:12px;line-height:18px}
+.workspace-page:where([data-timetree]) .tuition-weekdays>span{color:var(--calendar-secondary-ink)}
+.workspace-page:where([data-timetree]) .tuition-date-grid{gap:0;border-top:1px solid var(--line)}
+.workspace-page:where([data-timetree]) .tuition-date,.workspace-page:where([data-timetree]) .tuition-date-empty{border:0;border-bottom:1px solid var(--workspace-grid-line);border-radius:0;background:var(--surface);box-shadow:none}
+.workspace-page:where([data-timetree]) .tuition-date>span{width:20px;height:20px;font-size:clamp(10px,1.5vw,12px);font-weight:400;line-height:20px}
+.workspace-page:where([data-timetree]) .tuition-date>strong{max-width:100%;white-space:nowrap;font-size:clamp(9px,2.65vw,12px)}
+.workspace-page:where([data-timetree]) .tuition-date:nth-child(7n+1)>span{color:var(--holiday-ink)}
+.workspace-page:where([data-timetree]) .tuition-date:nth-child(7n)>span{color:var(--weekend-ink)}
+.workspace-page:where([data-timetree]) .tuition-date[aria-pressed=true]{background:var(--accent-soft);box-shadow:none;border-color:var(--workspace-grid-line)}
+.workspace-page:where([data-timetree]) .tuition-date[aria-current=date]>span{background:var(--ink);color:var(--surface)}
+
+@media(max-width:760px){
+ .workspace-page:where([data-timetree]) .workspace-date-picker{font-size:var(--workspace-title-size)}
+ .workspace-page:where([data-timetree]) .direct-calendar .calendar-event .event-time{display:none}
+ .workspace-page:where([data-timetree]) .direct-calendar .calendar-event strong{font-size:11px}
+ .workspace-page:where([data-timetree]) .calendar-day-sheet{margin:auto 0 0;width:100%;max-width:none;max-height:88dvh;border-radius:22px 22px 0 0}
+ .workspace-page:where([data-timetree]) .direct-editor.entry-redesign{margin:0;width:100%;height:100dvh;max-height:100dvh;max-width:none;border-radius:0}
+}
+@media(min-width:761px){
+ .workspace-page:where([data-timetree]) .more-guide-area{padding-top:16px}
+ .workspace-page:where([data-timetree]) .more-shortcuts>a{min-height:108px}
+}
+@media(max-width:360px){
+ .workspace-page:where([data-timetree]) .workspace-mobile-nav{padding-inline:2px}
+ .workspace-page:where([data-timetree]) .workspace-mobile-nav :is(a,button){font-size:10px}
+ .workspace-page:where([data-timetree]) .workspace-mobile-nav a[href='/briefing']>span:nth-child(2){font-size:10px}
+ .workspace-page:where([data-timetree]) .workspace-mobile-nav .rail-icon{width:46px}
+ .workspace-page:where([data-timetree]) .more-guide-banner strong{font-size:16px}
+ .workspace-page:where([data-timetree]) .more-guide-banner small{font-size:12px}
+ .more-guide-artwork{width:104px}
+ .workspace-page:where([data-timetree]) .workspace-date-picker{font-size:var(--workspace-title-size)}
+}
+@media(prefers-reduced-motion:reduce){.more-guide-strip{scroll-behavior:auto}}
+@media(max-height:500px){.workspace-page:where([data-timetree]){--workspace-nav-height:64px}.workspace-page:where([data-timetree]) .workspace-mobile-nav :is(a,button){min-height:50px}}
+
+.workspace-page[data-timetree] :is(.chat-workspace,.guest-chat-sample){padding-top:0}

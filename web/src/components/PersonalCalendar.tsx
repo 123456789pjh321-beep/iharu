@@ -2,10 +2,10 @@ import {CalendarWeekRow} from './CalendarWeekRow';
 import {CalendarDaySheet} from './CalendarDaySheet';
 import {useHolidays} from './useHolidays';
 import {useState} from 'react';
-import {MemberPreferenceFilter,useMemberPreference,type MemberPreferenceProps} from './MemberPreferenceFilter';
+import {useMemberPreference,type MemberPreferenceProps} from './MemberPreferenceFilter';
+import {CalendarMemberPreferenceFilter} from './CalendarMemberPreferenceFilter';
 import {DateNavigator,WorkspaceToolbar} from './WorkspaceToolbar';
 import {PersonalTimetable} from './PersonalTimetable';
-import {calendarColors} from './scheduleColors';
 export {calendarColors,eventColor} from './scheduleColors';
 import {addDays,koreaToday} from '../../../shared/schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
@@ -13,6 +13,7 @@ import {dailySchedules,matchesMember} from '../../../shared/workspace-schedules'
 export {visibleOn} from '../../../shared/workspace-schedules';
 import {PeriodPager,shiftMonth} from './PeriodPager';
 import {calendarWeekLayout} from '../../../shared/calendar-layout';
+import {Icon} from './Icon';
 const weekdays=['일','월','화','수','목','금','토'];
 export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,preview=false,month,day,items,members,loading=false,setMonth,setDay,create,edit,guestCreate=false}:MemberPreferenceProps&{month:string;day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading?:boolean;guestCreate?:boolean;setMonth:(v:string)=>void;setDay:(v:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays(month),[detail,setDetail]=useState<string|null>(null);
@@ -31,18 +32,20 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
   // Reserve the same date/holiday and event space for every row. A short viewport
   // scrolls the complete grid instead of letting a holiday row enlarge and clip it.
   const lanes=Math.max(...weeks.map(week=>week.layout.runs.length?week.layout.rows:0)),overflow=weeks.some(week=>week.layout.hidden.some(Boolean));
-  const rowMinimum=Math.max(view==='week'?300:0,56+lanes*32+(overflow?32:4));
+  const rowMinimum=Math.max(view==='week'?300:0,64+lanes*28+(overflow?28:4));
   return <div className="calendar-month-content" key={dates[0]}><div className="calendar-weekdays">{weekdays.map(d=><span key={d}>{d}</span>)}</div><div className={'calendar-grid '+(view==='week'?'week-view':'')} style={{gridTemplateRows:`repeat(${weeks.length},minmax(${rowMinimum}px,1fr))`}}>
    {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={date=>{selectDay(date);if(guestCreate)create(date);else setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
   </div></div>;
  };
  return <section className="direct-calendar" aria-label="일정 달력">
  <WorkspaceToolbar title="달력" navigation={<DateNavigator type={view==='day'?'date':'month'} value={view==='day'?day:month} inputLabel={view==='day'?'달력 날짜 선택':'달력 월 선택'} onChange={value=>selectDay(view==='day'?value:value+'-01')}/> }>
-  <div className="calendar-view-switch" role="group" aria-label="달력 보기">{([['month','월간'],['week','주간'],['day','일간']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</div>
+  <details className="calendar-view-menu" onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))e.currentTarget.open=false;}} onKeyDown={e=>{if(e.key==='Escape'){e.currentTarget.open=false;e.currentTarget.querySelector('summary')?.focus();}}}>
+   <summary aria-label="달력 보기 선택" title="달력 보기 선택"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="7" rx="3"/><rect x="5" y="14" width="14" height="7" rx="3"/><circle cx="10" cy="6.5" r="1"/><circle cx="14" cy="17.5" r="1"/></svg></summary>
+   <div className="calendar-view-options" role="group" aria-label="달력 보기">{([['month','월간'],['week','주간'],['day','일간']] as const).map(([key,label])=><button type="button" key={key} aria-pressed={view===key} onClick={e=>{setView(key);const menu=e.currentTarget.closest('details');if(menu){menu.open=false;menu.querySelector('summary')?.focus();}}}><Icon name={key==='month'?'calendar':'clock'}/>{label}{view===key&&<Icon name="check"/>}</button>)}</div>
+  </details>
  </WorkspaceToolbar>
- {!!members.length&&<MemberPreferenceFilter preview={preview} members={members} selection={selection} label="달력 구성원 필터"/>}
+ {!!members.length&&<CalendarMemberPreferenceFilter preview={preview} members={members} selection={selection} label="달력 구성원 필터"/>}
  <PeriodPager period={view==='month'?month:view==='week'?weekStart:day} view={view} onMove={move} renderPage={renderPage}/>
- <div className="calendar-legend">{members.map((m,n)=><span key={m.id}><i style={{background:calendarColors[n%calendarColors.length]}}/>{m.name}</span>)}</div>
  {holidays.unavailable&&<p className="holiday-status" role="status">이 연도의 공휴일 정보를 확인하지 못했어요.</p>}
  {detail&&<CalendarDaySheet date={detail} holiday={holidays.name(detail)} items={dailySchedules(shown,detail)} members={members} loading={loading} close={()=>setDetail(null)} create={()=>{setDetail(null);create(detail);}} edit={item=>{setDetail(null);edit(item);}}/>}
  </section>;

@@ -17,7 +17,7 @@ test('root shows fictional samples without a logo top bar and never requests pri
  const privateRequests:string[]=[],errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/\/api\/v1\/workspace\/(items\.|chat\.|updates\.|push\.)/.test(r.url()))privateRequests.push(r.url());});
  await page.goto('/');await ready(page);await expect(page).toHaveURL(/\/timetable$/);await expect(page.locator('[data-guest-workspace]')).toBeVisible();await expect(page.locator('.timetable-day-column')).toHaveCount(7);await expect(page.locator('.guest-sample-badge')).toHaveText('샘플 데이터');expect(await page.locator('[data-timetable-item]').count()).toBeGreaterThan(0);await expect(page.locator('.guest-entry-header')).toHaveCount(0);await expect(page.getByRole('dialog')).not.toBeVisible();
  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'달력',exact:true}).click();await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await expect(page.locator('.calendar-cell[data-date="2027-02-19"]')).toBeVisible();
- await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await page.getByRole('navigation',{name:'더보기 메뉴'}).getByRole('link',{name:'사용 가이드',exact:true}).click();await expect(page.locator('.workspace-reader')).toBeVisible();await expect(page.getByRole('dialog')).not.toBeVisible();
+ await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await page.getByRole('link',{name:/빠른 시작 가이드/}).click();await expect(page.locator('.workspace-reader')).toBeVisible();await expect(page.getByRole('dialog')).not.toBeVisible();
  expect(privateRequests).toEqual([]);expect(errors).toEqual([]);
  for(const width of [320,820,1440]){await page.setViewportSize({width,height:900});await page.goto('/timetable');await ready(page);await expect(page.locator('.timetable-grid')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/ui129-guest-timetable-${width}.png`,animations:'disabled'});}
 });
@@ -115,4 +115,34 @@ test('native Back from Google restores a cached login sheet that can retry or cl
   const sheet=page.locator('.entry-login-sheet');await expect(sheet).toBeVisible();await expect(sheet.getByRole('button',{name:'Google로 계속하기',exact:true})).toBeEnabled();await expect(sheet.getByLabel('아이디',{exact:true})).toBeEnabled();await expect(page.getByRole('button',{name:'로그인 창 닫기'})).toBeEnabled();
   await page.getByRole('button',{name:'로그인 창 닫기'}).click();await expect(sheet).not.toBeVisible();await expect(page.getByLabel('달력 월 선택',{exact:true})).toHaveValue('2027-02');expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();
  }finally{await context.close();await browser.close();}
+});
+
+test('TimeTree menus keep their own shell while returning to the existing timetable', async ({page}) => {
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/timetable');await ready(page);
+ const workspace=page.locator('.auth-app.workspace-page');
+ const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
+ const grid=page.locator('.timetable-grid');
+ await expect(grid).toBeVisible();
+ const timetableSize=await grid.boundingBox();
+ const timetableNav=await nav.boundingBox();
+ await expect(workspace).not.toHaveAttribute('data-timetree');
+ for(const [label,route,content] of [
+  ['달력','/today/calendar','.direct-calendar'],
+  ['대화','/chat','.guest-chat-sample'],
+  ['가계부','/tuition','.ledger-workspace'],
+  ['더보기','/more','.more-guide-area'],
+ ]) {
+  await nav.getByRole('link',{name:label,exact:true}).click();
+  await expect(workspace).toHaveAttribute('data-timetree',route);
+  await expect(page.locator(content)).toBeVisible();
+  await expect(nav.getByRole('link',{name:label,exact:true})).toHaveAttribute('aria-current','page');
+  await expect(nav).toHaveCSS('height','80px');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+ await nav.getByRole('link',{name:'시간표',exact:true}).click();
+ await expect(workspace).not.toHaveAttribute('data-timetree');
+ await expect(grid).toBeVisible();
+ expect(await grid.boundingBox()).toEqual(timetableSize);
+ expect(await nav.boundingBox()).toEqual(timetableNav);
 });

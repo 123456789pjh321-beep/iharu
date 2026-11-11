@@ -1,3 +1,4 @@
+import {selectCalendarView} from '../helpers/workspace-ui';
 import {test,expect,type Page} from '@playwright/test';
 import {koreaToday} from '../../shared/schedules';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
@@ -26,7 +27,7 @@ test('calendar defaults to same-day and saves an inclusive multi-day range acros
  await page.getByLabel('시작 시간 시',{exact:true}).selectOption('10');await page.getByLabel('종료 시간 오전·오후',{exact:true}).selectOption('AM');await page.getByLabel('종료 시간 시',{exact:true}).selectOption('4');await expect(page.locator('.entry-time-section [role="alert"]')).toHaveCount(0);
  await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);const rows=await items(page,'EVENT','2027-01-01','2027-01-31');expect(rows[0].data).toMatchObject({date:'2026-12-31',endDate:'2027-01-02',startTime:'22:00',endTime:'04:00',calendarFrequency:'ONCE'});
  await page.getByLabel('달력 월 선택').fill('2027-01');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);const bar=page.locator('[data-pager-current] .calendar-grid>.calendar-week-row .calendar-event').filter({hasText:'연말 그룹 여행'});await expect(bar).toHaveCount(1);await expect(bar).toHaveAttribute('data-dates','2026-12-31 2027-01-01 2027-01-02');await screenshot(page,'ui111-calendar-range');await bar.click();await expect(page.getByLabel('종료일',{exact:true})).toHaveValue('2027-01-02');await page.getByRole('button',{name:'편집 닫기',exact:true}).click();
- await page.getByRole('button',{name:'일간',exact:true}).click();await page.getByLabel('달력 날짜 선택').fill('2027-01-01');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);const card=page.locator('[data-pager-current] .calendar-daily [data-timetable-item]');await expect(card).toHaveAttribute('data-start-minute','0');await expect(card).toHaveAttribute('data-end-minute','1440');await expect(card).toContainText('00:00 – 24:00');
+ await selectCalendarView(page,'일간');await page.getByLabel('달력 날짜 선택').fill('2027-01-01');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);const card=page.locator('[data-pager-current] .calendar-daily [data-timetable-item]');await expect(card).toHaveAttribute('data-start-minute','0');await expect(card).toHaveAttribute('data-end-minute','1440');await expect(card).toContainText('00:00 – 24:00');
  await page.getByLabel('달력 날짜 선택').fill('2027-01-02');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(card).toHaveAttribute('data-end-minute','240');await expect(card).toContainText('00:00 – 04:00');
 });
 test('calendar event end date stays separate from the optional recurrence cutoff',async({page})=>{

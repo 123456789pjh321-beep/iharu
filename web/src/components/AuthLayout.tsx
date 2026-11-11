@@ -12,6 +12,7 @@ import {entryReturnPath} from '../../../shared/entry-intent';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
+const timeTreeRoutes=new Set(['/calendar','/today/calendar','/chat','/child/chat','/briefing','/tuition','/more','/settings','/records']);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
 export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
 export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><BriefingLocationProvider><StableWorkspaceFrame/></BriefingLocationProvider></EntryAccessProvider></WorkspaceGateProvider>;}
@@ -25,16 +26,26 @@ function StableWorkspaceFrame(){
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false,showNavigation=true }: { children: ReactNode; wide?: boolean;personalChild?:boolean;showNavigation?:boolean }) {
   const { pathname } = useLocation(),inPublicFrame=useInPublicFrame();
   const panel=useRef<HTMLDivElement>(null),{preferences}=useExperience();
-  useLayoutEffect(()=>{const node=panel.current;if(!node||preferences.quiet||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;const motion=node.animate([{opacity:.7,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'}],{duration:160,easing:'cubic-bezier(.2,.8,.2,1)'});return()=>motion.cancel();},[pathname,preferences.quiet]);
   const wide=requestedWide||['/account','/family','/device','/child','/phone'].some(p=>pathname.startsWith(p));
-  useEffect(() => { const names:Record<string,string>={'/help':'사용 가이드','/more/notices':'공지사항','/more/blog':'블로그','/more':'더보기','/settings':'설정','/today':'오늘','/today/calendar':'달력','/timetable':'시간표','/today/repeats':'반복 일정','/tuition':'가계부','/records':'메모','/notification-settings':'알림설정','/chat':'대화','/child/chat':'대화','/family':'그룹 관리','/admin':'시스템 관리','/location':'위치','/account':'내 계정'};document.title = `${names[pathname]||(pathname.startsWith('/family')?'우리 그룹':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정')} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
-  return <div className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
+  const route=pathname.replace(/\/+$/,'');
+  const timeTree=wide&&showNavigation&&timeTreeRoutes.has(route);
+  useLayoutEffect(()=>{if(timeTree)panel.current?.scrollTo(0,0);},[pathname,timeTree]);
+  useLayoutEffect(()=>{
+    const node=panel.current;
+    if(!node)return;
+    if(preferences.quiet||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const frames=timeTree?[{opacity:.7},{opacity:1}]:[{opacity:.7,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'}];
+    const motion=node.animate(frames,{duration:160,easing:'cubic-bezier(.2,.8,.2,1)'});
+    return()=>motion.cancel();
+  },[pathname,timeTree,preferences.quiet]);
+  useEffect(() => { const names:Record<string,string>={'/help':'사용 가이드','/more/notices':'공지사항','/more/blog':'블로그','/more':'더보기','/settings':'설정','/today':'오늘','/today/calendar':'달력','/timetable':'시간표','/today/repeats':'반복 일정','/tuition':'가계부','/records':'메모','/notification-settings':'알림설정','/chat':'대화','/child/chat':'대화','/briefing':'AI 브리핑','/family':'그룹 관리','/admin':'시스템 관리','/location':'위치','/account':'내 계정'};document.title = `${names[pathname]||(pathname.startsWith('/family')?'우리 그룹':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정')} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
+  return <div data-timetree={timeTree?route:undefined} className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
     {!wide&&!inPublicFrame&&<PublicHeader/>}
     {wide&&showNavigation&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }
-    {wide&&showNavigation&&<LocationAccessPrompt/>}
+    {wide&&showNavigation&&!timeTree&&<LocationAccessPrompt/>}
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
       {!wide && <aside className="auth-intro"><span className="eyebrow">그룹의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>그룹이 함께하는 하루를 시작하세요.</p><FamilyArtwork/></aside>}
-      <div ref={panel} className="auth-panel">{children}</div>
+      <div ref={panel} className="auth-panel">{timeTree&&route==='/briefing'&&<LocationAccessPrompt/>}{children}</div>
     </main>{!inPublicFrame&&<footer className="auth-footer"><span className="auth-footer-brand">아이하루 · 그룹의 하루를 잇다</span> <Link to="/service">서비스 소개</Link><Link to="/guide">활용방법</Link><Link to="/notices">공지사항</Link><Link to="/blog">블로그</Link><Link to="/legal/terms">이용약관</Link><Link to="/legal/privacy">개인정보처리방침</Link><Link to="/privacy">개인정보 관리</Link></footer>}
   </div>;
 }

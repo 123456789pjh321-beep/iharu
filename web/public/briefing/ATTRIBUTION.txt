@@ -15,3 +15,8 @@ https://images.unsplash.com/photo-1679232709188-0f033301d36e
 All three source pages identify the files as free under the Unsplash License (checked 2026-11-10).
 https://unsplash.com/license
 UI labels them "주제 사진" and links the respective author/source. No runtime request goes to an image vendor.
+
+UI147 food.jpg - Liang Chuang / Unsplash, tempura meal (Japan; illustrative theme, not the featured restaurant)
+https://unsplash.com/photos/a-japanese-meal-with-tempura-rice-and-soup-fZ5qgJXTWAM
+https://images.unsplash.com/photo-1776145674807-7b1558e760ed
+Free under the Unsplash License; source and license checked 2026-11-10.
