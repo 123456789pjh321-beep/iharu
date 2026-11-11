@@ -18,7 +18,7 @@ export function childAccountRoutes(auth:()=>AuthService|null,runtime:()=>Promise
  const specs:Record<string,z.ZodType>={register:z.object({name:z.string().trim().min(1).max(24),password}).strict(),login:z.object({loginId,password}).strict(),status:empty,renew:empty,finish:empty,parent:empty,resolve:z.object({code}).strict(),approve:z.object({code,requestId:z.uuid(),familyId:z.uuid().optional(),consent:z.literal(true)}).strict()};
  for(const op of Object.keys(specs))app.post(`/api/v1/child-accounts/${op}`,async c=>{
   const fail=(key:string,status:400|401|403|429|503=400)=>c.json({error:{code:key,message:messages[key]||'연결을 준비하고 있어요. 잠시 후 다시 확인해 주세요.'},requestId:c.get('requestId')},status);
-  if(['register','renew','resolve','approve','finish'].includes(op))return c.json({error:{code:'FLOW_REPLACED',message:'일반사용자 호스트가 발급한 승인번호로 어린이 회원가입을 진행해 주세요.'}},410);
+  if(['register','renew','resolve','approve','finish'].includes(op))return c.json({error:{code:'FLOW_REPLACED',message:'받은 그룹 초대 링크나 아이하루 가입 링크를 열어 주세요.'}},410);
   const svc=auth();if(!svc)return fail('UNAVAILABLE',503);
   if(c.req.header('Origin')!==svc.settings.origin)return fail('FORBIDDEN',403);
   const parsed=specs[op].safeParse(await c.req.json().catch(()=>null));if(!parsed.success)return fail('INVALID_INPUT');

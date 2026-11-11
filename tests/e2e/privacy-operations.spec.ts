@@ -10,8 +10,7 @@ test('login copy is concise and location is absent from production navigation an
   for(const child of [false,true]){
    await page.goto(child?'/login?role=child':'/login');
    await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
-   const tabs=page.getByRole('navigation',{name:'로그인 대상'});
-   await expect(tabs.getByRole('link',{name:child?'어린이':'일반사용자',exact:true})).toHaveAttribute('aria-current','page');
+   await expect(page.getByRole('navigation',{name:'로그인 대상'})).toHaveCount(0);
    await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
    await expect(page.getByLabel('암호',{exact:true})).toBeVisible();
    for(const text of ['일반사용자 계정','다시 만나 반가워요','내 하루에 로그인해요','직접 정한 어린이 ID와 비밀번호를 입력해요.','어린이 로그인','이메일·플랫폼'])await expect(page.getByText(text,{exact:true})).toHaveCount(0);

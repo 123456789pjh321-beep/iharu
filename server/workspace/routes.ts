@@ -10,8 +10,10 @@ import type {FamilyService,FamilyActor} from '../family/service.js';
 import {childPasswordHash,childPasswordMatches} from '../child-accounts/routes.js';
 import {workspaceMenus} from '../../shared/workspace-updates.js';
 import {chatRoomInput,memberFilterScopes,workspaceItemInput,workspaceKind,workspaceValidationMessage} from '../../shared/workspace.js';
-const errors:Record<string,string>={INVITE_LINK_INVALID:'초대 링크가 만료되었거나 이미 사용·취소됐어요. 그룹 호스트에게 새 링크를 받아 주세요.',GUARDIAN_REQUIRED:'보호자 확인과 어린이 계정 등록 준비가 끝난 대상만 초대할 수 있어요.',INVITE_LIMIT:'사용할 수 있는 초대 링크가 20개 있어요. 기존 링크를 취소한 뒤 다시 발급해 주세요.',GROUP_REQUIRED:'그룹을 연결한 뒤 대화방을 만들 수 있어요.',ROOM_MEMBER_INVALID:'현재 그룹에 연결된 구성원을 선택해 주세요.',ROOM_READ_ONLY:'대화할 참여자가 남아 있지 않아요. 새로운 대화방을 만들어 주세요.',LEGAL_ACCEPTANCE_REQUIRED:'개인정보 관리에서 게시된 이용약관과 개인정보처리방침을 먼저 확인해 주세요.',FEE_PARENT_REQUIRED:'가계부는 일반사용자만 이용할 수 있어요.',FEE_PAYER_INVALID:'현재 연결된 일반사용자를 처리 담당자로 선택해 주세요.',FEE_PAYER_ONLY:'작성자 또는 지정된 담당자만 거래 상태를 바꿀 수 있어요.',ASSIGNEE_INVALID:'현재 연결된 그룹 구성원을 선택해 주세요.',AUTH_REQUIRED:'먼저 로그인해 주세요.',PARENT_REQUIRED:'일반사용자만 승인번호를 발급할 수 있어요.',HOST_ONLY:'이 그룹의 호스트만 번호 발급과 구성원 제외를 할 수 있어요.',HOST_HAS_MEMBERS:'먼저 연결된 구성원을 제외한 뒤 그룹을 나갈 수 있어요.',OWN_CODE:'내가 발급한 번호로 내 그룹에 참여할 수 없어요.',ALREADY_LINKED:'이미 다른 그룹에 연결되어 있어요. 현재 그룹을 나온 뒤 새 번호를 입력해 주세요.',INVITE_INVALID:'승인번호가 만료되었거나 이미 사용됐어요. 일반사용자 호스트에게 새 번호를 받아 주세요.',ID_TAKEN:'이미 사용 중인 어린이 ID예요. 다른 ID를 사용하거나 로그인해 주세요.',LOGIN_INVALID:'어린이 ID 또는 비밀번호가 맞지 않아요.',ROLE_CONFLICT:'일반사용자가 로그인한 기기예요. 어린이 기기에서 가입·로그인해 주세요.',AUTHOR_ONLY:'작성한 사람만 수정·삭제할 수 있어요. 호스트도 다른 사람의 자료를 변경할 수 없어요.',VERSION_CONFLICT:'자료가 먼저 변경됐어요. 새로고침 후 다시 확인해 주세요.',NOT_FOUND:'자료가 없거나 그룹 공유가 해제되었어요.',INVALID_INPUT:'입력한 날짜·시간·금액과 항목을 확인해 주세요.',RATE_LIMITED:'시도 횟수가 많아요. 잠시 후 다시 이용해 주세요.'};
-export function workspaceRoutes(auth:()=>AuthService|null,runtime:()=>Promise<FamilyService|null>){
+const errors:Record<string,string>={INVITE_LINK_INVALID:'초대 링크가 만료되었거나 이미 사용·취소됐어요. 그룹 호스트에게 새 링크를 받아 주세요.',GUARDIAN_REQUIRED:'보호자 확인과 어린이 계정 등록 준비가 끝난 대상만 초대할 수 있어요.',INVITE_LIMIT:'사용할 수 있는 초대 링크가 20개 있어요. 기존 링크를 취소한 뒤 다시 발급해 주세요.',GROUP_REQUIRED:'그룹을 연결한 뒤 대화방을 만들 수 있어요.',ROOM_MEMBER_INVALID:'현재 그룹에 연결된 구성원을 선택해 주세요.',ROOM_READ_ONLY:'대화할 참여자가 남아 있지 않아요. 새로운 대화방을 만들어 주세요.',LEGAL_ACCEPTANCE_REQUIRED:'개인정보 관리에서 게시된 이용약관과 개인정보처리방침을 먼저 확인해 주세요.',FEE_PARENT_REQUIRED:'가계부는 일반사용자만 이용할 수 있어요.',FEE_PAYER_INVALID:'현재 연결된 일반사용자를 처리 담당자로 선택해 주세요.',FEE_PAYER_ONLY:'작성자 또는 지정된 담당자만 거래 상태를 바꿀 수 있어요.',ASSIGNEE_INVALID:'현재 연결된 그룹 구성원을 선택해 주세요.',AUTH_REQUIRED:'먼저 로그인해 주세요.',PARENT_REQUIRED:'이메일 확인을 마친 계정으로 로그인해 주세요.',HOST_ONLY:'그룹 호스트만 초대 링크 발급과 구성원 제외를 할 수 있어요.',HOST_HAS_MEMBERS:'먼저 연결된 구성원을 제외한 뒤 그룹을 나갈 수 있어요.',OWN_CODE:'내가 발급한 링크로 내 그룹에 참여할 수 없어요.',ALREADY_LINKED:'이미 다른 그룹에 연결되어 있어요. 새 그룹에 참여하려면 기존 연결 종료를 확인해 주세요.',INVITE_INVALID:'승인번호가 만료되었거나 이미 사용됐어요. 일반사용자 호스트에게 새 번호를 받아 주세요.',ID_TAKEN:'이미 사용 중인 어린이 ID예요. 다른 ID를 사용하거나 로그인해 주세요.',LOGIN_INVALID:'아이디 또는 비밀번호가 맞지 않아요.',ROLE_CONFLICT:'다른 계정으로 로그인되어 있어요. 로그아웃한 뒤 다시 로그인해 주세요.',AUTHOR_ONLY:'작성한 사람만 수정·삭제할 수 있어요. 호스트도 다른 사람의 자료를 변경할 수 없어요.',VERSION_CONFLICT:'자료가 먼저 변경됐어요. 새로고침 후 다시 확인해 주세요.',NOT_FOUND:'자료가 없거나 그룹 공유가 해제되었어요.',INVALID_INPUT:'입력한 날짜·시간·금액과 항목을 확인해 주세요.',RATE_LIMITED:'시도 횟수가 많아요. 잠시 후 다시 이용해 주세요.'};
+const retiredInviteOperations=new Set(['invite.issue','family.join','child.signup','invite.link.signup']);
+
+export function workspaceRoutes(auth:()=>AuthService|null,runtime:()=>Promise<FamilyService|null>,legacyInviteFixtures=false){
  const app=new Hono<{Variables:{requestId:string}}>();app.use('/api/v1/workspace/*',bodyLimit({maxSize:16384,onError:c=>c.json({error:{code:'INVALID_INPUT',message:errors.INVALID_INPUT}},413)}));
  const empty=z.object({}).strict(),loginId=z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9_]{3,19}$/),password=z.string().max(128),code=z.string().regex(/^\d{6}$/),version=z.number().int().positive();
  const inviteToken=z.string().regex(/^[A-Za-z0-9_-]{43}$/),inviteId=z.uuid();
@@ -19,8 +21,8 @@ export function workspaceRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Fa
  const childSignup={loginId,name:z.string().trim().min(1).max(24),password:password.min(8)};
  const inviteSpecs={
   'invite.link.options':empty,
-  'invite.link.issue':z.discriminatedUnion('kind',[
-   z.object({kind:z.literal('PARENT'),consent:z.literal(true)}).strict(),
+  'invite.link.issue':z.union([
+   z.object({kind:z.literal('PARENT').default('PARENT'),consent:z.literal(true)}).strict(),
    z.object({kind:z.literal('CHILD'),consent:z.literal(true),guardianApplicationId:z.uuid()}).strict()
   ]),
   'invite.link.inspect':z.object({token:inviteToken.optional()}).strict(),
@@ -33,9 +35,12 @@ export function workspaceRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Fa
  for(const op of Object.keys(specs))app.post('/api/v1/workspace/'+op,async c=>{
   const linkOp=op.startsWith('invite.link.'),inspect=op==='invite.link.inspect',linkSignup=op==='invite.link.signup';
   if(linkOp)c.header('Cache-Control','no-store');
+  const retired=()=>c.json({error:{code:'FLOW_REPLACED',message:'받은 그룹 초대 링크나 아이하루 가입 링크를 열어 주세요.'},requestId:c.get('requestId')},410);
+  if(!legacyInviteFixtures&&retiredInviteOperations.has(op))return retired();
   const fail=(key:string,status:400|401|403|404|409|429|503=400)=>c.json({error:{code:key,message:errors[key]||'자료를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.'},requestId:c.get('requestId')},status);
   const svc=auth();if(!svc)return fail(op.startsWith('child.')?'UNAVAILABLE':'AUTH_REQUIRED',op.startsWith('child.')?503:401);if(c.req.header('Origin')!==svc.settings.origin)return fail('INVALID_INPUT',403);
   const parsed=specs[op].safeParse(await c.req.json().catch(()=>null));if(!parsed.success)return op==='items.create'||op==='items.update'?c.json({error:{code:'INVALID_INPUT',message:workspaceValidationMessage(parsed.error.issues)},requestId:c.get('requestId')},400):fail('INVALID_INPUT');const input=parsed.data as Record<string,unknown>;
+  if(!legacyInviteFixtures&&op==='invite.link.issue'&&input.kind==='CHILD')return retired();
   if((op==='push.subscribe'||op==='push.test')&&!pushConfig())return fail('UNAVAILABLE',503);
   try{
    const session=await currentSession(svc,c.req.raw),childAuth=op==='child.signup'||op==='child.login'||linkSignup;
@@ -84,6 +89,13 @@ export function workspaceRoutes(auth:()=>AuthService|null,runtime:()=>Promise<Fa
    let issued='';if(op==='invite.issue'){issued=String(randomInt(1000000)).padStart(6,'0');data={...data,codeHash:family.digest(`workspace-code:${issued}`)};}
    let result:Record<string,unknown>;
    for(let attempt=0;;attempt++){try{result=await family.command(actor,'workspace.'+op,data);break;}catch(e){if((e as {code?:string}).code!=='23505'||attempt>=2||op!=='invite.issue')throw e;issued=String(randomInt(1000000)).padStart(6,'0');data.codeHash=family.digest(`workspace-code:${issued}`);}}
+   if(!legacyInviteFixtures){
+    if(inspect&&result.kind!=='PARENT')return fail('INVITE_LINK_INVALID',404);
+    if(op==='invite.link.options'){
+     const pending=(result.pending as {kind:string}[]).filter(invite=>invite.kind==='PARENT');
+     result={...result,pending,children:[],childRegistrationReady:false};
+    }
+   }
    if(inspect&&input.token){
     const remaining=Math.floor((Date.parse(String(result.expiresAt))-Date.now())/1000);
     setCookie(c,inviteCookieName,linkSecret,{...inviteCookie,maxAge:Math.max(1,Math.min(86400,remaining))});

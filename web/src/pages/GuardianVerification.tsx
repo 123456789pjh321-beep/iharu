@@ -30,7 +30,7 @@ function VerificationWorkspace({review}:{review:boolean}){
  {!review&&<section className="account-card"><h2>신청 전에 확인해 주세요</h2><ol><li>실명 대신 아이를 구분할 이름으로 신청해 주세요. 예: 첫째, 둘째.</li><li>담당자가 신청인과 아이의 관계를 확인한 뒤 심사해요.</li><li>결과와 반려 사유는 이 화면에서 확인할 수 있어요.</li></ol>
  <p className="auth-notice">주민등록번호·증명서 원본·아이의 생년월일을 이 화면에 입력하지 마세요. 서류 접수 경로와 확인 기준은 운영 안내가 마련된 뒤 별도로 안내해요.</p>
  {!list.data!.reviewAvailable&&<p role="status" className="auth-notice">신청 접수는 가능하지만 담당 심사자가 아직 지정되지 않았어요. 담당자 지정과 증빙 확인 안내 후 심사가 진행돼요.</p>}
- <p>접수·심사는 신청 후 14일, 승인은 승인 후 30일 동안 유효해요. 만료되면 다시 신청해 주세요. 어린이 초대를 준비 중이라면 관계를 법정대리인으로 선택해 주세요. 데이터 삭제 기능 준비와 등록용 대상 확인이 끝나면 그룹 관리에서 어린이 초대 링크를 만들 수 있어요.</p>
+ <p>접수·심사는 신청 후 14일, 승인은 승인 후 30일 동안 유효해요. 만료되면 다시 신청해 주세요. 승인 결과는 기존 보호자 확인과 그룹 공유 관리에 사용돼요.</p>
  <form className="auth-form" onSubmit={submit}><fieldset disabled={busy}><legend>새 신청</legend><div className="form-field"><label htmlFor="guardian-target">아이 구분 이름</label><input id="guardian-target" name="targetLabel" maxLength={24} required placeholder="예: 첫째"/></div><div className="form-field"><label htmlFor="guardian-relationship">아이와의 관계</label><select id="guardian-relationship" name="relationship"><option value="PARENT">부모</option><option value="LEGAL_GUARDIAN">법정대리인 (법정대리인인 부모 포함)</option></select></div><button className="button primary full" disabled={busy}>{busy?'접수하고 있어요…':'일반사용자 확인 신청'}</button></fieldset></form>
  <FormNotice error={error} message={message}/>{error&&<Link to="/account/reauth">본인 인증 다시 하기</Link>}
  </section>}

@@ -64,9 +64,10 @@ for(const width of [320,820,1440])test(`public header and footer stay fixed thro
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
  await header.getByRole('link',{name:'로그인',exact:true}).click();await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
- await page.getByRole('link',{name:'회원가입',exact:true}).click();await expect(page.getByRole('link',{name:'일반사용자로 회원가입'})).toBeVisible();await expect(page.getByRole('link',{name:'어린이로 회원가입'})).toBeVisible();
+ await page.getByRole('link',{name:'회원가입',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
+ await expect(page.getByLabel('이메일',{exact:true})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'회원가입 대상'})).toHaveCount(0);
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
- await page.getByRole('link',{name:'어린이로 회원가입'}).click();await expect(page.getByText(/보호자가 보낸 아이하루 초대 링크/)).toBeVisible();
- await page.getByRole('navigation',{name:'회원가입 대상'}).getByRole('link',{name:'일반사용자',exact:true}).click();await expect(page.getByRole('heading',{name:'일반사용자 회원가입'})).toBeVisible();await expect(page.getByLabel('일반사용자 승인번호',{exact:true})).toHaveCount(0);
  await page.locator('.public-content').evaluate(el=>{el.scrollTop=el.scrollHeight;});expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
 });

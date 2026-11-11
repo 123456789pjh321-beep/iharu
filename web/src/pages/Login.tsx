@@ -1,4 +1,3 @@
-import {ChildAccountPage,LoginRoleTabs} from './ChildAccount';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../api';
@@ -7,49 +6,38 @@ import { AuthEntryFrame, AuthLayout, FormNotice, LoginActions, PasswordField } f
 import { Loading, ErrorState } from '../components/Common';
 import { Icon } from '../components/Icon';
 import {entryReturnPath} from '../../../shared/entry-intent';
+import {workspaceRequest} from '../workspace-api';
 import {forgetEntry} from '../entry-session';
 import {useLaunchVideo} from '../components/LaunchVideo';
 
 export function InlineLogin({returnTo,onAuthenticated,onBusy}:{returnTo:string;onAuthenticated:()=>Promise<void>;onBusy:(busy:boolean)=>void}){
- const providers=useLoginProviders(),[child,setChild]=useState(false),[busy,setBusy]=useState(false);
- const reportBusy=(value:boolean)=>{setBusy(value);onBusy(value);};
- return <AuthEntryFrame inline><div className="auth-role-tabs" role="group" aria-label="로그인 대상"><button type="button" aria-pressed={!child} disabled={busy} onClick={()=>setChild(false)}><Icon name="shield"/>일반사용자</button><button type="button" aria-pressed={child} disabled={busy} onClick={()=>setChild(true)}><Icon name="sun"/>어린이</button></div>{child?<ChildAccountPage inline returnTo={returnTo} onAuthenticated={onAuthenticated} onBusy={reportBusy}/>:<LoginForm providers={providers} inline returnTo={returnTo} onAuthenticated={onAuthenticated} onBusy={reportBusy}/>}</AuthEntryFrame>;
+ const providers=useLoginProviders();
+ return <AuthEntryFrame inline><LoginForm providers={providers} inline returnTo={returnTo} onAuthenticated={onAuthenticated} onBusy={onBusy}/></AuthEntryFrame>;
 }
 
 export function LoginPage() {
   const {pathname,search}=useLocation();
-  // Public login methods and the entry frame belong to the page, not to a role tab.
   const providers=useLoginProviders();
-  const entry=['/login','/signup'].includes(pathname);
+  const entry=pathname==='/login'||pathname==='/signup';
   const params=new URLSearchParams(search);
-  const role=params.get('role'),child=entry&&role==='child',chooseRole=pathname==='/signup'&&!['parent','child'].includes(role||'');
-  const reauthenticate=!child&&params.get('reauth')==='1';
-  useLaunchVideo(/^\/login\/?$/.test(pathname)&&!reauthenticate&&!params.has('error')&&!params.has('verified'));
+  const reauthenticate=params.get('reauth')==='1';
+  const next=entryReturnPath(params.get('next'));
+  useLaunchVideo(pathname==='/login'&&!reauthenticate&&next!=='/invite'&&!params.has('error')&&!params.has('verified'));
   return <AuthEntryFrame>
-    {((pathname==='/login'&&!reauthenticate)||(pathname==='/signup'&&!chooseRole))&&<LoginRoleTabs child={child} signup={pathname==='/signup'}/>}
-    {entry&&!reauthenticate?<LoginEntry child={child} chooseRole={chooseRole} providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
-    {pathname==='/login'&&!reauthenticate&&<Link className="auth-browse-link" to={entryReturnPath(new URLSearchParams(search).get('next'))} onClick={forgetEntry}>로그인 없이 먼저 둘러보기 <Icon name="arrow"/></Link>}
+    {entry&&!reauthenticate?<LoginEntry providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
+    {pathname==='/login'&&!reauthenticate&&next!=='/invite'&&<Link className="auth-browse-link" to={next} onClick={forgetEntry}>로그인 없이 먼저 둘러보기 <Icon name="arrow"/></Link>}
   </AuthEntryFrame>;
 }
 function useLoginProviders(){return useApi('/api/account/providers',providersSchema);}
-function LoginEntry({child,chooseRole,providers}:{child:boolean;chooseRole:boolean;providers:ReturnType<typeof useLoginProviders>}) {
+function LoginEntry({providers}:{providers:ReturnType<typeof useLoginProviders>}) {
   const {search}=useLocation();
   const session=useApi('/api/account/session',sessionSchema);
   useEffect(()=>{const refresh=()=>session.refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[session.refresh]);
-  if(child)return <ChildAccountPage/>;
   if(session.loading)return <Loading label="로그인 상태를 확인하고 있어요"/>;
   if(session.error)return <ErrorState message={session.error} retry={session.retry}/>;
   if(session.data?.authenticated)return <Navigate to={session.data.assurance==='LOW'?'/account':entryReturnPath(new URLSearchParams(search).get('next'))} replace/>;
-  return chooseRole?<SignupChoice/>:<LoginForm providers={providers}/>;
+  return <LoginForm providers={providers}/>;
 }
-function SignupChoice(){const next=entryReturnPath(new URLSearchParams(useLocation().search).get('next'));return <section className="signup-choice" aria-labelledby="signup-choice-title">
- <div className="auth-title"><h1 id="signup-choice-title">회원가입</h1><p>누가 사용할 계정인가요?<br/>가입할 대상을 먼저 선택해 주세요.</p></div>
- <div className="signup-role-options">
-  <Link className="signup-role-option" to={'/signup?role=parent&next='+encodeURIComponent(next)} aria-label="일반사용자로 회원가입"><span className="signup-role-icon"><Icon name="shield"/></span><span><strong>일반사용자</strong><small>이메일로 가입하고 그룹을 연결해요.</small></span><Icon name="arrow"/></Link>
-  <Link className="signup-role-option" to={'/signup?role=child&next='+encodeURIComponent(next)} aria-label="어린이로 회원가입"><span className="signup-role-icon"><Icon name="sun"/></span><span><strong>어린이</strong><small>보호자가 보낸 초대 링크로 가입해요.</small></span><Icon name="arrow"/></Link>
- </div><p className="signup-choice-note">어린이 계정은 보호자 확인이 끝난 뒤 받은 초대 링크에서 만들 수 있어요.</p>
- <Link className="auth-back" to={'/login?next='+encodeURIComponent(next)}>이미 가입했어요 · 로그인 <Icon name="arrow"/></Link>
- </section>;}
 function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthenticated,onBusy}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean;inline?:boolean;returnTo?:string;onAuthenticated?:()=>Promise<void>;onBusy?:(busy:boolean)=>void}) {
   const { pathname, search } = useLocation(); const navigate = useNavigate();
   const [busy,setBusy] = useState(false); const [error,setError] = useState(''); const [message,setMessage] = useState('');
@@ -66,14 +54,19 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
   const requestedNext=returnTo||new URLSearchParams(search).get('next');
   const next=reauthenticate&&!requestedNext?'/account':entryReturnPath(requestedNext);
   const callback='/login?verified=1&next='+encodeURIComponent(next);
-  const titles = { login:'로그인', signup:'일반사용자 회원가입', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
-  const subtitles = { login:'', signup:'이메일로 일반사용자 계정을 만들어요. 이메일 확인 후 그룹 관리에서 초대 링크를 만들 수 있어요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
+  const titles = { login:'로그인', signup:'회원가입', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
+  const subtitles = { login:'', signup:'이메일로 아이하루 계정을 만들어요. 그룹 초대를 받았다면 가입 후 초대를 수락할 수 있어요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
   const accountNotLinked = mode === 'login' && new URLSearchParams(search).get('error') === 'account_not_linked';
   const enabled = providers.data?.providers.find(p=>p.id==='email')?.enabled === true;
+  const acceptsExistingId=mode==='login'&&!reauthenticate;
+  const credentialFormReady=enabled||acceptsExistingId;
   const waiting = providers.data?.providers.every(p=>!p.enabled) === true;
   const loginOrigin=providers.data?.loginOrigin;
   const canonicalLogin=(mode==='login'||mode==='signup') && loginOrigin && new URL(loginOrigin).origin!==window.location.origin;
-  const canonicalPath=(mode==='signup'?'/signup?role=parent':reauthenticate?'/login?reauth=1':'/login?entry=1')+'&next='+encodeURIComponent(next);
+  const canonicalQuery=new URLSearchParams();
+  if(reauthenticate)canonicalQuery.set('reauth','1');
+  if(!reauthenticate||requestedNext)canonicalQuery.set('next',next);
+  const canonicalPath=(mode==='signup'?'/signup':'/login')+'?'+canonicalQuery;
   useEffect(()=>{
     if(canonicalLogin)window.location.replace(new URL(canonicalPath,loginOrigin).href);
   },[canonicalLogin,loginOrigin,canonicalPath]);
@@ -82,7 +75,11 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
     event.preventDefault();if(busy)return; const form = new FormData(event.currentTarget); setBusy(true);onBusy?.(true);setError('');setMessage('');
     try {
       const email = String(form.get('email') || '').trim(); const password = String(form.get('password') || '');
-      if (mode === 'login') { await authPost('/api/auth/sign-in/email',{email,password});if(onAuthenticated)await onAuthenticated();else navigate(next,{replace:true}); }
+      if (mode === 'login') {
+        if(acceptsExistingId&&/^[a-z0-9][a-z0-9_]{3,19}$/i.test(email))await workspaceRequest('child.login',{loginId:email,password});
+        else await authPost('/api/auth/sign-in/email',{email,password});
+        if(onAuthenticated)await onAuthenticated();else navigate(next,{replace:true});
+      }
       if (mode === 'signup') { await authPost('/api/auth/sign-up/email',{email,password,name:String(form.get('name')).trim(),callbackURL:callback});setMessage('가입을 진행할 수 있는 이메일이면 인증 메일이 도착해요. 메일함과 스팸함을 확인해 주세요.'); }
       if (mode === 'forgot') { await authPost('/api/auth/request-password-reset',{email,redirectTo:'/reset-password'});setMessage('일치하는 이메일 계정이 있으면 재설정 링크를 보내드려요. 메일함을 확인해 주세요.'); }
       if (mode === 'verify') { await authPost('/api/auth/send-verification-email',{email,callbackURL:callback});setMessage('인증이 필요한 계정이면 메일을 보내드려요. 메일함과 스팸함을 확인해 주세요.'); }
@@ -110,11 +107,11 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
       </section>}
       <FormNotice error={error} message={message}/>
       {mode==='reset'&&!token?<div className="auth-notice">재설정 메일의 링크를 다시 열어 주세요.</div>:<form onSubmit={submit} className={`auth-form ${mode==='login'?'auth-login-form':''}`}>
-        <fieldset disabled={busy||!enabled}><legend className="sr-only">{titles[mode]}</legend>
+        <fieldset disabled={busy||!credentialFormReady}><legend className="sr-only">{titles[mode]}</legend>
           {mode==='signup'&&<div className="form-field"><label htmlFor="name">이름</label><input id="name" name="name" required minLength={2} maxLength={30} autoComplete="name" placeholder="이름을 입력해 주세요"/></div>}
-          {mode!=='reset'&&<div className="form-field"><label htmlFor="email">{mode==='login'||mode==='signup'?'아이디':'이메일'}</label><input id="email" name="email" required type="email" maxLength={254} autoComplete={mode==='login'?'username':'email'} inputMode="email" placeholder="이메일 주소" autoCapitalize="none" spellCheck={false}/></div>}
+          {mode!=='reset'&&<div className="form-field"><label htmlFor="email">{mode==='login'?'아이디':'이메일'}</label><input id="email" name="email" required type={acceptsExistingId?'text':'email'} maxLength={254} autoComplete={mode==='login'?'username':'email'} inputMode={acceptsExistingId?'text':'email'} placeholder={acceptsExistingId?'이메일 또는 아이디':'이메일 주소'} autoCapitalize="none" spellCheck={false}/></div>}
           {['login','signup','reset'].includes(mode)&&<PasswordField fresh={mode!=='login'}/>}
-          {mode==='login'?<LoginActions busy={busy} ready={enabled} next={next}/>:<button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!enabled?'이메일 로그인 준비 중':mode==='signup'?'인증 메일 보내기':mode==='reset'?'새 암호 저장':'링크 다시 받기'}</button>}
+          {mode==='login'?<LoginActions busy={busy} ready={credentialFormReady} next={next}/>:<button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!enabled?'이메일 로그인 준비 중':mode==='signup'?'인증 메일 보내기':mode==='reset'?'새 암호 저장':'링크 다시 받기'}</button>}
         </fieldset>
       </form>}
       {mode==='login'&&<div className="form-links auth-login-help"><Link to={'/verify-email?next='+encodeURIComponent(next)}>이메일 인증 안내</Link><Link to={'/forgot-password?next='+encodeURIComponent(next)}>암호 찾기</Link></div>}

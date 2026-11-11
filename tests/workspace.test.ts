@@ -14,7 +14,15 @@ const payload=(title:string,kind='EVENT')=>({kind,data:{title,date:'2026-11-07',
 async function readUpdates(b:Browser,menu:string,revision:number){return b.ok('updates.read',{profileId:(await b.ok('me')).id,menu,revision});}
 const listing={from:'2026-11-01',to:'2026-11-30'};
 beforeAll(async()=>{database=await testDatabase();for(const file of (await readdir('db/migrations')).filter(n=>/^\d+_[a-z0-9_]+\.sql$/.test(n)).sort())await database.engine.exec(await readFile('db/migrations/'+file,'utf8'));},30000);
-beforeEach(async()=>{await database.engine.exec('TRUNCATE app.families,iharu_auth."user",iharu_auth.verification,iharu_auth.rate_buckets CASCADE');mail.length=0;const svc=createAuthService({origin,secret,databaseUrl:'unused',mail:{key:'fixture',from:'test@example.test'},sms:null,social:{}},database.db,{sendMail:async m=>{mail.push(m);},sendSms:async()=>{}});app=createApp({environment:'local',demoEnabled:false},()=>svc,async()=>new FamilyService(database.db,secret,'app_runtime'));});
+function workspaceApp(legacyInviteFixtures:boolean){
+ const svc=createAuthService({origin,secret,databaseUrl:'unused',mail:{key:'fixture',from:'test@example.test'},sms:null,social:{}},database.db,{sendMail:async m=>{mail.push(m);},sendSms:async()=>{}});
+ return createApp({environment:'local',demoEnabled:false},()=>svc,async()=>new FamilyService(database.db,secret,'app_runtime'),undefined,undefined,{legacyInviteFixtures});
+}
+beforeEach(async()=>{
+ await database.engine.exec('TRUNCATE app.families,iharu_auth."user",iharu_auth.verification,iharu_auth.rate_buckets CASCADE');
+ mail.length=0;
+ app=workspaceApp(true);
+});
 afterAll(async()=>{await database.db.destroy();});
 it('isolates monthly budgets by account and exact member selection, checks access and rejects lost updates',async()=>{
  const a=await parent('budget-a'),b=await parent('budget-b'),x=await parent('budget-x'),child=new Browser(),guest=new Browser();
@@ -367,6 +375,27 @@ it('keeps remaining selections after family disconnection and restores child com
  expect((await a.req(api+'timetable.preference.save',{memberIds:[am.id,cm.id]})).status).toBe(400);
  // Deleted targets are excluded even if their IDs remain in the stored array.
  await query(database.db,'UPDATE app_private.workspace_profiles SET timetable_member_ids=$1 WHERE id=$2',[[crypto.randomUUID()],am.id]);expect((await a.ok('me')).timetableMemberIds).toEqual([am.id]);
+});
+
+it('retires approval-number and role-specific public signup while accepting group links',async()=>{
+ app=workspaceApp(false);
+ const host=await parent('unified-host'),guest=await parent('unified-guest');
+ for(const [op,input] of [
+  ['invite.issue',{consent:true}],['family.join',{code:'123456'}],['child.signup',{}],['invite.link.signup',{}],
+  ['invite.link.issue',{kind:'CHILD',guardianApplicationId:crypto.randomUUID(),consent:true}]
+ ] as const){
+  const response=await host.req(api+op,input);
+  expect(response.status).toBe(410);
+  expect((await response.json()).error.code).toBe('FLOW_REPLACED');
+ }
+ expect((await guest.ok('me')).family).toBeNull();
+ const link=await host.ok('invite.link.issue',{consent:true});
+ expect(new URL(link.url).pathname).toBe('/invite');
+ expect((await host.ok('invite.link.options')).pending).toMatchObject([{id:link.id}]);
+ await guest.ok('invite.link.inspect',{token:new URL(link.url).hash.slice(1)});
+ expect((await guest.ok('me')).family).toBeNull();
+ await guest.ok('invite.link.accept',{inviteId:link.id});
+ expect((await guest.ok('me')).family.id).toBe((await host.ok('me')).family.id);
 });
 
 it('issues independent adult links, resumes after login, and switches groups only on explicit acceptance',async()=>{
