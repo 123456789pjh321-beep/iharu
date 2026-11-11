@@ -5,6 +5,7 @@ import {LegalPage,PrivacyPage} from './pages/Legal';
 import {PersonalWorkspace,type PersonalMode} from './pages/PersonalWorkspace';
 import {useWorkspaceGate} from './components/WorkspaceGate';
 import {RouteEffects} from './components/RouteEffects';
+import {LaunchVideoProvider,useLaunchVideo} from './components/LaunchVideo';
 import {GuardianVerificationPage} from './pages/GuardianVerification';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -70,7 +71,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
     </div>{dialog&&<PreviewDialog title={dialog} onClose={()=>setDialog(null)}/>}
   </div>;
 }
-export default function App(){return <BrowserRouter><RouteEffects/><Routes>
+export default function App(){return <BrowserRouter><LaunchVideoProvider><RouteEffects/><Routes>
   <Route element={<PublicFrame/>}>
   {['/service','/guide','/notices','/notices/:slug','/blog','/blog/:slug'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
@@ -96,7 +97,7 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   </Route>
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/><Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="*" element={<Shell/>}/>
-</Routes></BrowserRouter>;}
+</Routes></LaunchVideoProvider></BrowserRouter>;}
 function WorkspaceLanding(){const {health}=useWorkspaceGate();return health.data?.data.demoEnabled?<Shell/>:<Navigate to="/timetable" replace/>;}
 function ScheduleAlias({repeats=false}:{repeats?:boolean}){const {health}=useWorkspaceGate();if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
 
@@ -106,4 +107,10 @@ function WorkspaceEntry({mode}:{mode:PersonalMode}){const {search}=useLocation()
 function AccountEntry(){const {session:s}=useWorkspaceGate();if(s.loading)return <AuthLayout wide><Loading/></AuthLayout>;return s.data?.authenticated?<AccountPage/>:<PersonalWorkspace mode="account"/>;}
 
 // Local demo fixtures are unavailable in production, including direct /test URLs.
-function TestWorkspaceEntry(){const health=useApi('/api/health',healthResponse);if(health.loading)return <Loading/>;return health.data?.data.environment!=='production'&&health.data?.data.demoEnabled?<Suspense fallback={<Loading/>}><TestWorkspace/></Suspense>:<Navigate to="/login" replace/>;}
+function TestWorkspaceEntry(){
+ const health=useApi('/api/health',healthResponse);
+ const enabled=!health.loading&&health.data?.data.environment!=='production'&&health.data?.data.demoEnabled;
+ useLaunchVideo(Boolean(enabled));
+ if(health.loading)return <Loading/>;
+ return enabled?<Suspense fallback={<Loading/>}><TestWorkspace/></Suspense>:<Navigate to="/login" replace/>;
+}

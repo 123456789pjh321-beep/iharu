@@ -211,8 +211,8 @@ test("content pane scrolls by keyboard while shell stays fixed", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 640 });
   await page.goto("/test/family");
-  const main = page.locator("main");
-  await main.focus();
+  const main = page.getByRole("main");
+  await expect(main).toBeFocused({ timeout: 7000 });
   await page.keyboard.press("Control+End");
   await expect
     .poll(() =>
