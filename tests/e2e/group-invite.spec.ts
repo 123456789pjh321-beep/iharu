@@ -9,6 +9,10 @@ async function register(page:Page,request:APIRequestContext,email:string,name:st
   headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'+(invite?'&next=%2Finvite':'')}
  });
  expect(response.ok(),await response.text()).toBe(true);
+ await verifyAndSignIn(page,request,email,invite);
+}
+
+async function verifyAndSignIn(page:Page,request:APIRequestContext,email:string,invite=false){
  const mail=await(await request.get('/__test__/mail')).json();
  await page.goto(mail.find((item:{to:string})=>item.to===email).url);
  const login=await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
@@ -21,13 +25,13 @@ async function register(page:Page,request:APIRequestContext,email:string,name:st
 
 async function issue(page:Page){
  await page.getByRole('checkbox',{name:/동의합니다/}).check();
- await page.getByRole('button',{name:'초대 링크 만들기'}).click();
- const field=page.getByLabel('발급한 초대 링크');
+ await page.getByRole('button',{name:'그룹 초대 링크 만들기'}).click();
+ const field=page.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();
  return field.inputValue();
 }
 
-test('adult link resumes after email verification and requires explicit acceptance',async({page,browser,request})=>{
+test('group link resumes after email verification and requires explicit acceptance',async({page,browser,request})=>{
  test.setTimeout(60000);
  await register(page,request,'group-link-host@example.test','가상 초대 호스트');
  await page.goto('/family');
@@ -38,60 +42,84 @@ test('adult link resumes after email verification and requires explicit acceptan
   await guest.goto(link);
   await expect(guest.getByRole('heading',{name:'그룹에 초대받았어요'})).toBeVisible();
   await expect(guest).toHaveURL(origin+'/invite');
-  await expect(guest.getByRole('link',{name:'로그인하고 계속'})).toHaveAttribute('href','/login?role=parent&next=%2Finvite');
-  await guest.getByRole('link',{name:'일반사용자 회원가입'}).click();
+  await expect(guest.getByRole('link',{name:'로그인하고 계속'})).toHaveAttribute('href','/login?next=%2Finvite');
+  await guest.getByRole('link',{name:'회원가입',exact:true}).click();
   await register(guest,request,'group-link-guest@example.test','가상 초대 손님',true);
   await expect(guest.getByRole('button',{name:'초대 수락'})).toBeVisible();
   await expect(page.locator('.personal-member')).toHaveCount(1);
   await guest.getByRole('button',{name:'초대 수락'}).click();
   await guest.getByRole('link',{name:'그룹 관리 열기'}).click();
   await expect(guest.locator('.personal-member')).toHaveCount(2);
+  await expect(guest.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
+  await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(origin+'/signup');
   await guest.goto(link);
   await expect(guest.getByRole('alert')).toContainText('이미 사용');
  }finally{await context.close();}
 });
 
-test('verified guardian can share a child link to a separate browser for signup',async({page,browser,request})=>{
- test.setTimeout(90000);
- await register(page,request,'child-link-host@example.test','가상 보호자');
- const targetLabel='초대용 가상 첫째';
- const guardianPath='/api/v1/guardian-verification/';
- const submit=await page.request.post(guardianPath+'submit',{headers:{Origin:origin},data:{
-  requestKey:crypto.randomUUID(),targetLabel,relationship:'LEGAL_GUARDIAN'
- }});
- expect(submit.ok(),await submit.text()).toBe(true);
- const {id}=await submit.json();
- const review=await browser.newContext({baseURL:origin}),child=await browser.newContext({baseURL:origin,viewport:{width:390,height:844}});
+test('general invitation opens shared signup and leaves the new account independent',async({page,browser,request})=>{
+ test.setTimeout(60000);
+ await register(page,request,'app-link-host@example.test','가상 앱 초대자');
+ await page.goto('/family');
+ await expect(page.getByRole('region',{name:'그룹 초대',exact:true})).toBeVisible();
+ const general=page.getByRole('region',{name:'일반 초대',exact:true});
+ await expect(general.getByRole('button',{name:'일반 초대 링크 복사'})).toBeVisible();
+ await expect(page.getByLabel('초대 대상')).toHaveCount(0);
+ const link=await general.getByLabel('일반 초대 링크',{exact:true}).inputValue();
+ expect(link).toBe(origin+'/signup');
+ const context=await browser.newContext({baseURL:origin,viewport:{width:320,height:844}});
  try{
-  const reviewer=await review.newPage();
-  await register(reviewer,request,'child-link-reviewer@example.test','가상 심사자');
-  expect((await request.post('/__test__/reviewer',{data:{email:'child-link-reviewer@example.test'}})).ok()).toBe(true);
-  const queue=await reviewer.request.get(guardianPath+'queue');
-  expect(queue.ok(),await queue.text()).toBe(true);
-  const application=(await queue.json()).applications.find((row:{id:string})=>row.id===id);
-  expect(application).toBeDefined();
-  const reviewRequest=async(action:string,data:object)=>{
-   const result=await reviewer.request.post(guardianPath+action,{headers:{Origin:origin},data});
-   expect(result.ok(),await result.text()).toBe(true);
-  };
-  await reviewRequest('review',{id,expectedVersion:application.version,state:'REVIEWING'});
-  await reviewRequest('review',{id,expectedVersion:application.version+1,state:'APPROVED',
-   targetId:application.targetId,evidenceRef:'invite-review-fixture',subjectRef:'invite-subject-fixture',evidenceChecked:true});
-  await reviewRequest('birth-date',{id,expectedVersion:application.version+2,targetId:application.targetId,
-   birthDate:'2018-03-02',evidenceChecked:true});
-  await page.goto('/family');
-  await page.getByLabel('초대 대상').selectOption('CHILD');
-  await page.getByLabel('보호자 확인이 끝난 어린이').selectOption({label:targetLabel});
-  const link=await issue(page);
-  const guest=await child.newPage();
-  guest.setDefaultTimeout(12000);
+  const guest=await context.newPage();
   await guest.goto(link);
-  await expect(guest.getByRole('heading',{name:'어린이 계정 만들기'})).toBeVisible();
-  await guest.getByLabel('그룹에서 쓸 이름').fill('가상 서준');
-  await guest.getByLabel('아이디',{exact:true}).fill('group_link_child');
-  await guest.getByLabel('암호',{exact:true}).fill('group-link-child-password');
-  await guest.getByRole('button',{name:'가입하고 그룹 연결'}).click();
-  await expect(guest).toHaveURL(origin+'/family');
-  await expect(guest.locator('.personal-member')).toHaveCount(2);
- }finally{await review.close();await child.close();}
+  await expect(guest.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
+  await expect(guest.getByLabel('이메일',{exact:true})).toBeVisible();
+  await expect(guest.getByRole('navigation',{name:'회원가입 대상'})).toHaveCount(0);
+  const email='app-link-guest@example.test';
+  await guest.getByLabel('이름',{exact:true}).fill('가상 앱 가입자');
+  await guest.getByLabel('이메일',{exact:true}).fill(email);
+  await guest.getByLabel('암호',{exact:true}).fill(password);
+  const [signup]=await Promise.all([
+   guest.waitForResponse(response=>response.url().endsWith('/api/auth/sign-up/email')),
+   guest.getByRole('button',{name:'인증 메일 보내기'}).click()
+  ]);
+  expect(signup.ok(),await signup.text()).toBe(true);
+  await verifyAndSignIn(guest,request,email);
+  await guest.goto('/family');
+  await expect(guest.locator('.personal-member')).toHaveCount(0);
+  const me=await guest.request.post('/api/v1/workspace/me',{headers:{Origin:origin},data:{}});
+  expect(await me.json()).toMatchObject({name:'가상 앱 가입자',family:null});
+  expect(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }finally{await context.close();}
+});
+
+test('an existing ID still signs in through the common form and keeps its group',async({page,browser,request})=>{
+ test.setTimeout(60000);
+ await register(page,request,'legacy-login-host@example.test','가상 기존 그룹');
+ const headers={Origin:origin};
+ const invitation=await page.request.post('/api/v1/workspace/invite.issue',{headers,data:{consent:true}});
+ expect(invitation.ok(),await invitation.text()).toBe(true);
+ const {code}=await invitation.json();
+ const context=await browser.newContext({baseURL:origin});
+ try{
+  const loginId='existing_group_id';
+  const seed=await context.request.post('/api/v1/workspace/child.signup',{headers,data:{code,loginId,name:'가상 기존 사용자',password}});
+  expect(seed.ok(),await seed.text()).toBe(true);
+  await context.clearCookies();
+  const guest=await context.newPage();
+  await guest.emulateMedia({reducedMotion:'reduce'});
+  await guest.goto('/login');
+  const identifier=guest.getByLabel('아이디',{exact:true});
+  await identifier.fill(loginId);
+  await expect(identifier).toHaveValue(loginId);
+  await guest.getByLabel('암호',{exact:true}).fill(password);
+  const [response]=await Promise.all([
+   guest.waitForResponse(r=>r.url().endsWith('/api/v1/workspace/child.login')),
+   guest.getByRole('button',{name:'로그인',exact:true}).click()
+  ]);
+  expect(response.ok(),await response.text()).toBe(true);
+  await expect(guest).toHaveURL(origin+'/timetable');
+  const me=await guest.request.post('/api/v1/workspace/me',{headers,data:{}});
+  const host=await page.request.post('/api/v1/workspace/me',{headers,data:{}});
+  expect(await me.json()).toMatchObject({loginId,family:{id:(await host.json()).family.id}});
+ }finally{await context.close();}
 });

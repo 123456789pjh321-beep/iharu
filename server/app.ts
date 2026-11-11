@@ -27,7 +27,7 @@ import {messageCatalog} from '../shared/message-catalog.js';
 import { dailyRoutes } from './daily/routes.js';
 import {aiCredentialDefaults,type AiCredentialDependencies} from './admin/ai-credentials.js';
 
-export function createApp(config: AppConfig = readConfig(), authRuntime: () => AuthService | null = getAuthRuntime, familyRuntime: () => Promise<FamilyService | null> = getFamilyRuntime, realtimeConfig:()=>RealtimeConfig|null=readRealtimeConfig, aiDependencies:AiCredentialDependencies=aiCredentialDefaults) {
+export function createApp(config: AppConfig = readConfig(), authRuntime: () => AuthService | null = getAuthRuntime, familyRuntime: () => Promise<FamilyService | null> = getFamilyRuntime, realtimeConfig:()=>RealtimeConfig|null=readRealtimeConfig, aiDependencies:AiCredentialDependencies=aiCredentialDefaults, fixtureOptions?:{legacyInviteFixtures?:boolean}) {
   const app = new Hono<{ Variables: { requestId: string } }>();
   app.use('*', secureHeaders());
   app.use('*', async (c, next) => {
@@ -64,7 +64,8 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.route('/', adminRoutes(authRuntime,familyRuntime,aiDependencies));
   app.route('/', briefingRoutes(authRuntime,familyRuntime));
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
-  app.route('/', workspaceRoutes(authRuntime,familyRuntime));
+  // Isolated fixtures use retired operations to construct pre-existing accounts.
+  app.route('/', workspaceRoutes(authRuntime,familyRuntime,config.environment==='local'&&fixtureOptions?.legacyInviteFixtures===true));
   app.route('/', childAccountRoutes(authRuntime,familyRuntime));
   app.route('/', familyRoutes(authRuntime,familyRuntime));
   app.route('/', scheduleRoutes(authRuntime,familyRuntime));

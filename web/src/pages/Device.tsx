@@ -13,7 +13,7 @@ const storageKey='iharu-pairing-progress';
 // proofs and device session tokens remain exclusively in HttpOnly cookies.
 function restorePair():Pairing|null{try{return pairingSchema.parse(JSON.parse(sessionStorage.getItem(storageKey)||'null'));}catch{return null;}}
 function savePair(pair:Pairing|null){try{if(pair)sessionStorage.setItem(storageKey,JSON.stringify(pair));else sessionStorage.removeItem(storageKey);}catch{/* Pairing still works when browser storage is disabled. */}}
-export function DeviceConnectPage(){const {search}=useLocation();return new URLSearchParams(search).get('legacy')==='1'?<LegacyDeviceConnectPage/>:<Navigate to="/login?role=child" replace/>;}
+export function DeviceConnectPage(){const {search}=useLocation();return new URLSearchParams(search).get('legacy')==='1'?<LegacyDeviceConnectPage/>:<Navigate to="/login" replace/>;}
 function LegacyDeviceConnectPage(){
  const childSession=useApi('/api/v1/child-session',childSessionSchema),guardian=useApi('/api/account/session',sessionSchema);
  const [pair,setPair]=useState<Pairing|null>(restorePair),[status,setStatus]=useState<PairingStatus|null>(null);

@@ -25,3 +25,7 @@
 .group-invite-pending ul{margin:0;padding:0;list-style:none}
 .group-invite-pending li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
 .group-invite-pending small,.group-invite-issued small{display:block;color:var(--muted)}
+
+.group-invite-option + .group-invite-option{border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
+.group-invite-option>p{color:var(--muted);margin-bottom:12px}
+.group-invite-pending h4{margin-bottom:8px}

@@ -21,7 +21,7 @@ const privatePages:Record<string,{title:string;icon:IconName;description:string;
  '/briefing':{title:'AI 브리핑',icon:'sparkles',description:'내 시간표와 달력에 맞는 중요한 소식을 사진과 함께 확인해요.',action:'로그인하고 브리핑 보기'},
  '/chat':{title:'대화',icon:'chat',description:'우리 그룹과 연결해 글과 그림으로 소식을 나눠요.',action:'로그인하고 대화하기'},
  '/child/chat':{title:'대화',icon:'chat',description:'내 계정으로 그룹과 소식을 나눠요.',action:'로그인하고 대화하기'},
- '/tuition':{title:'가계부',icon:'wallet',description:'일반사용자 계정에서 받는 돈과 쓰는 돈을 쉽게 기록해요.',action:'로그인하고 가계부 관리'},
+ '/tuition':{title:'가계부',icon:'wallet',description:'받는 돈과 쓰는 돈을 쉽게 기록해요.',action:'로그인하고 가계부 관리'},
  '/records':{title:'메모',icon:'book',description:'그룹에게 전할 준비물과 중요한 내용을 남겨요.',action:'로그인하고 메모 남기기'},
  '/family':{title:'그룹 관리',icon:'users',description:'초대 링크를 열고 로그인한 뒤 그룹에 참여해요.',action:'로그인하고 그룹 연결'},
  '/family/invite':{title:'그룹 연결',icon:'users',description:'내 계정을 확인한 뒤 그룹과 연결할 수 있어요.',action:'로그인하고 그룹 연결'},

@@ -8,8 +8,8 @@ async function login(page:Page,request:APIRequestContext,email:string,name='가�
 }
 async function issue(page:Page){
  await page.goto('/family');await page.getByRole('checkbox',{name:/초대받은 사람과/}).check();
- await page.getByRole('button',{name:'초대 링크 만들기'}).click();
- const field=page.getByLabel('발급한 초대 링크');
+ await page.getByRole('button',{name:'그룹 초대 링크 만들기'}).click();
+ const field=page.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();
  return field.inputValue();
 }

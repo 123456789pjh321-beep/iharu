@@ -1,37 +1,16 @@
 import {test,expect} from '@playwright/test';
 test.use({baseURL:'http://127.0.0.1:4174'});
 
-for(const width of [390,1320])test(`login tabs keep the frame and ready requests when switching roles at ${width}px`,async({page})=>{
+for(const width of [390,1320])test(`one login form serves both regular and old bookmarks at ${width}px`,async({page})=>{
   await page.setViewportSize({width,height:900});
-  let sessions=0,providers=0,documents=0;
-  page.on('request',r=>{if(r.isNavigationRequest()&&r.frame()===page.mainFrame())documents++;});
-  await page.route('**/api/account/session',r=>{sessions++;return r.fulfill({json:{authenticated:false}});});
-  await page.route('**/api/account/providers',r=>{providers++;return r.fulfill({json:{providers:[{id:'email',name:'이메일',enabled:true}]}});});
-  for(const initialChild of [false,true]){
-    const expected={sessions:sessions+1,providers:providers+1};
-    await page.goto(initialChild?'/login?role=child':'/login');
+  await page.route('**/api/account/session',route=>route.fulfill({json:{authenticated:false}}));
+  await page.route('**/api/account/providers',route=>route.fulfill({json:{providers:[{id:'email',name:'이메일',enabled:true}]}}));
+  for(const path of ['/login','/login?role=child']){
+    await page.goto(path);
     await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeEnabled();
-    await expect.poll(()=>({sessions,providers})).toEqual(expected);
-    const counts={sessions,providers,documents};
-    const frame=await page.locator('.auth-app').elementHandle();
-    const tabs=await page.getByRole('navigation',{name:'로그인 대상'}).elementHandle();
-    for(const child of [!initialChild,initialChild,!initialChild,initialChild]){
-      await page.getByRole('link',{name:child?'어린이':'일반사용자',exact:true}).click();
-      await expect(page.getByRole('link',{name:child?'어린이':'일반사용자',exact:true})).toHaveAttribute('aria-current','page');
-      await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeEnabled();
-      await expect(page.getByText('로그인 상태를 확인하고 있어요',{exact:true})).toHaveCount(0);
-      await expect(page.getByText('로그인 방법을 확인하고 있어요',{exact:true})).toHaveCount(0);
-      expect(await frame!.evaluate(el=>el.isConnected)).toBe(true);
-      expect(await tabs!.evaluate(el=>el.isConnected)).toBe(true);
-      expect({sessions,providers,documents}).toEqual(counts);
-    }
-    await page.goBack();
-    await expect(page.getByRole('link',{name:initialChild?'일반사용자':'어린이',exact:true})).toHaveAttribute('aria-current','page');
-    await page.goForward();
-    await expect(page.getByRole('link',{name:initialChild?'어린이':'일반사용자',exact:true})).toHaveAttribute('aria-current','page');
-    expect(await frame!.evaluate(el=>el.isConnected)).toBe(true);
-    expect({sessions,providers,documents}).toEqual(counts);
-    await frame!.dispose();await tabs!.dispose();
+    await expect(page.getByLabel('아이디',{exact:true})).toHaveAttribute('placeholder','이메일 또는 아이디');
+    await expect(page.getByRole('navigation',{name:'로그인 대상'})).toHaveCount(0);
+    await expect(page.getByRole('link',{name:'회원가입',exact:true})).toHaveAttribute('href','/signup?next=%2Ftimetable');
   }
 });
 

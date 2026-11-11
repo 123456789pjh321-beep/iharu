@@ -49,8 +49,8 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
     </main>{!inPublicFrame&&<footer className="auth-footer"><span className="auth-footer-brand">아이하루 · 그룹의 하루를 잇다</span> <Link to="/service">서비스 소개</Link><Link to="/guide">활용방법</Link><Link to="/notices">공지사항</Link><Link to="/blog">블로그</Link><Link to="/legal/terms">이용약관</Link><Link to="/legal/privacy">개인정보처리방침</Link><Link to="/privacy">개인정보 관리</Link></footer>}
   </div>;
 }
-export function LoginActions({busy=false,ready=true,child=false,next}:{busy?:boolean;ready?:boolean;child?:boolean;next?:string}) {
-  const query=new URLSearchParams();if(child)query.set('role','child');if(next)query.set('next',entryReturnPath(next));
+export function LoginActions({busy=false,ready=true,next}:{busy?:boolean;ready?:boolean;next?:string}) {
+  const query=new URLSearchParams();if(next)query.set('next',entryReturnPath(next));
   return <div className="auth-login-actions"><button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!ready?'이메일 로그인 준비 중':'로그인'}</button><Link className="button full" aria-disabled={busy||undefined} onClick={e=>{if(busy)e.preventDefault();}} to={'/signup'+(query.size?'?'+query:'')}>회원가입</Link></div>;
 }
 export function PasswordField({ label='암호', name='password', fresh=false,minimum }: { label?:string; name?:string; fresh?:boolean;minimum?:number }) {
