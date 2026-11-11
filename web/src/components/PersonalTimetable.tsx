@@ -5,7 +5,9 @@ import {koreaToday} from '../../../shared/schedules';
 import {dailySchedules,scheduleTimeCaption,scheduleAssignee,schedulePhase,timetableRange,timetableLayout,timetableWeekDates,timeLabel,timeMinutes} from '../../../shared/workspace-schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {eventColor} from './scheduleColors';
-import {MemberPreferenceFilter,useMemberPreference} from './MemberPreferenceFilter';
+import {useMemberPreference} from './MemberPreferenceFilter';
+import {CalendarMemberPreferenceFilter} from './CalendarMemberPreferenceFilter';
+import {WorkspaceToolbar} from './WorkspaceToolbar';
 
 const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=.8;
@@ -34,12 +36,22 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,prev
  },[period,memberKey,loading,startMinute,endMinute,now,showToday]);
  const content=(item:WorkspaceItem,interval?:{start:number;end:number})=><><strong className="timetable-title">{item.data.title}</strong><span className="timetable-range">{embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)}</span></>;
  const label=(item:WorkspaceItem,interval?:{start:number;end:number})=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)} · ${item.mine?'수정':'상세'}`;
+ const currentCaption=currentEvents.map(item=>`${scheduleAssignee(item,members)} · ${item.data.title}`).join(' / ');
+ const currentSummary=showToday&&!loading?<div className={'timetable-current-summary'+(currentCaption?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span title={currentCaption||undefined}>{currentCaption||'등록된 일정이 없는 시간이에요'}</span></div>:null;
  return <section className={'personal-timetable'+(embedded?' calendar-daily':' timetable-weekly')} aria-label={embedded?'일간 일정':'주간 시간표'}>
-  {!embedded&&!!members.length&&<MemberPreferenceFilter preview={preview} members={members} selection={selection} className="timetable-filters" label="시간표 구성원 필터"/>}
-  <div className="timetable-summary">{embedded&&<span>{loading?'불러오는 중':`${events.length}개 일정`}</span>}
-   {showToday&&!loading&&<div className={'timetable-current-summary'+(currentEvents.length?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span>{currentEvents.length?currentEvents.map(i=>`${scheduleAssignee(i,members)} · ${i.data.title}`).join(' / '):'등록된 일정이 없는 시간이에요'}</span></div>}
-  </div>
-  {!embedded&&<div className="timetable-weekdays timetable-day-headings" aria-label="요일 선택">{dates.map(date=>{const dow=new Date(date+'T12:00:00Z').getUTCDay(),holiday=holidays.name(date);return <button type="button" key={date} data-timetable-date={date} aria-label={`${date} ${weekday[dow]}요일 시간표${holiday?' · '+holiday:''}`} aria-pressed={date===selectedDay} aria-current={date===today?'date':undefined} className={(date===today?'is-today ':'')+(holiday||dow===0?'holiday-date':dow===6?'saturday-date':'')} onClick={()=>setDay(date)}><span>{weekday[dow]}</span>{holiday&&<small className="calendar-holiday" title={holiday}>{holiday}</small>}</button>;})}</div>}
+  {embedded?<div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}</span>{currentSummary}</div>:<>
+   <WorkspaceToolbar title="시간표" navigation={<span className="workspace-toolbar-title">{Number(today.slice(0,4))}년 {Number(today.slice(5,7))}월</span>}>{currentSummary}</WorkspaceToolbar>
+   {!!members.length&&<CalendarMemberPreferenceFilter preview={preview} members={members} selection={selection} label="시간표 구성원 필터"/>}
+   <div className="timetable-weekdays timetable-day-headings" role="group" aria-label="요일 선택">
+    {dates.map(date=>{
+     const dow=new Date(date+'T12:00:00Z').getUTCDay(),holiday=holidays.name(date);
+     return <button type="button" key={date} data-timetable-date={date} aria-label={`${date} ${weekday[dow]}요일 시간표${holiday?' · '+holiday:''}`} aria-pressed={date===selectedDay} aria-current={date===today?'date':undefined} className={(date===today?'is-today ':'')+(holiday||dow===0?'holiday-date':dow===6?'saturday-date':'')} onClick={()=>setDay(date)}>
+      <span>{weekday[dow]}</span><time dateTime={date}>{Number(date.slice(8))}</time>
+      {holiday&&<small className="calendar-holiday" title={holiday}>{holiday}</small>}
+     </button>;
+    })}
+   </div>
+  </>}
   {holidays.name(day)&&<p className={'timetable-holiday holiday-label'+(embedded?'':' sr-only')}>{holidays.name(day)}</p>}
   <div className="calendar-viewport timetable-viewport"><div className="timetable-day" aria-busy={loading}>
    {lanes.some(lane=>lane.allDay.length>0)&&<div className="timetable-all-day"><span>종일</span><div className="timetable-all-day-columns" style={{gridTemplateColumns:`repeat(${dates.length},minmax(0,1fr))`}}>{lanes.map(lane=><div key={lane.date}>{lane.allDay.map(item=><button type="button" key={item.id} className="timetable-card timetable-all-day-card" style={{'--event-color':eventColor(item,members)} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} title={label(item)} data-timetable-item={item.id}>{content(item)}</button>)}</div>)}</div></div>}
@@ -47,7 +59,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,prev
     <div className="timetable-grid" data-start-minute={startMinute} data-end-minute={endMinute} style={{height:(endMinute-startMinute)*minuteHeight,'--timetable-line-offset':`${(60-startMinute%60)%60*minuteHeight}px`} as CSSProperties}>
      <div className="timetable-time-axis" aria-hidden="true">{ticks.map(minute=><span key={minute} className={showToday&&Math.floor(timeMinutes(now)/60)===Math.floor(minute/60)?'current-hour':''} style={{top:(minute-startMinute)*minuteHeight}}>{minute%60?timeLabel(minute):hourLabel(Math.floor(minute/60))}</span>)}</div>
      <div className="timetable-event-area" style={{gridTemplateColumns:`repeat(${dates.length},minmax(0,1fr))`}}>
-      {lanes.map(({date,layout})=><div key={date} className={'timetable-day-column'+(date===today?' today-column':'')} data-date={date}>
+      {lanes.map(({date,layout})=><div key={date} className={'timetable-day-column'+(date===today?' today-column':'')} data-date={date} data-selected={!embedded&&date===selectedDay?true:undefined}>
        <div className="timetable-slots" role="group" aria-label={`${date} 15분 단위 일정 등록`}>{Array.from({length:lastSlot-firstSlot+1},(_,offset)=>{
         const index=firstSlot+offset,minute=Math.max(startMinute,index*15),time=timeLabel(minute);
         return <button type="button" key={time} data-slot={index} data-time={time} tabIndex={date===selectedDay&&activeSlot===index?0:-1} className="timetable-slot" aria-label={`${date} ${time} 일정 등록`} style={{top:(minute-startMinute)*minuteHeight,height:(Math.min(endMinute,(index+1)*15)-minute)*minuteHeight}} onFocus={()=>setSlot(index)} onClick={()=>create(date,time)} onKeyDown={e=>{

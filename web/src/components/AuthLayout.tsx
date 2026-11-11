@@ -12,7 +12,7 @@ import {entryReturnPath} from '../../../shared/entry-intent';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
-const timeTreeRoutes=new Set(['/calendar','/today/calendar','/chat','/child/chat','/briefing','/tuition','/more','/settings']);
+const timeTreeRoutes=new Set(['/timetable','/calendar','/today/calendar','/chat','/child/chat','/briefing','/tuition','/more','/settings']);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
 export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
 export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><BriefingLocationProvider><StableWorkspaceFrame/></BriefingLocationProvider></EntryAccessProvider></WorkspaceGateProvider>;}
@@ -42,7 +42,7 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
   return <div data-timetree={timeTree?route:undefined} className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
     {!wide&&!inPublicFrame&&<PublicHeader/>}
     {wide&&showNavigation&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }
-    {wide&&showNavigation&&!timeTree&&<LocationAccessPrompt/>}
+    {wide&&showNavigation&&(!timeTree||route==='/timetable')&&<LocationAccessPrompt/>}
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
       {!wide && <aside className="auth-intro"><span className="eyebrow">그룹의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>그룹이 함께하는 하루를 시작하세요.</p><FamilyArtwork/></aside>}
       <div ref={panel} className="auth-panel">{timeTree&&route==='/briefing'&&<LocationAccessPrompt/>}{children}</div>

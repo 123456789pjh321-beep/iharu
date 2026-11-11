@@ -117,7 +117,7 @@ test('native Back from Google restores a cached login sheet that can retry or cl
  }finally{await context.close();await browser.close();}
 });
 
-test('TimeTree menus keep their own shell while returning to the existing timetable', async ({page}) => {
+test('timetable and calendar share member chips and the TimeTree bottom navigation', async ({page}) => {
  await page.setViewportSize({width:390,height:844});
  await page.goto('/timetable');await ready(page);
  const workspace=page.locator('.auth-app.workspace-page');
@@ -126,7 +126,13 @@ test('TimeTree menus keep their own shell while returning to the existing timeta
  await expect(grid).toBeVisible();
  const timetableSize=await grid.boundingBox();
  const timetableNav=await nav.boundingBox();
- await expect(workspace).not.toHaveAttribute('data-timetree');
+ await expect(workspace).toHaveAttribute('data-timetree','/timetable');
+ await expect(nav).toHaveCSS('height','80px');
+ const activeIcon=nav.locator('a[aria-current="page"] .rail-icon');
+ const timetableIcon=(await activeIcon.boundingBox())!;
+ const selectedChip=page.locator('.member-preference-row .member-filters>button[aria-pressed=true]').first();
+ const chipStyle=()=>selectedChip.evaluate(el=>{const style=getComputedStyle(el);return [style.height,style.borderRadius,style.fontSize,style.backgroundColor];});
+ const timetableChip=await chipStyle();
  for(const [label,route,content] of [
   ['달력','/today/calendar','.direct-calendar'],
   ['대화','/chat','.guest-chat-sample'],
@@ -138,10 +144,15 @@ test('TimeTree menus keep their own shell while returning to the existing timeta
   await expect(page.locator(content)).toBeVisible();
   await expect(nav.getByRole('link',{name:label,exact:true})).toHaveAttribute('aria-current','page');
   await expect(nav).toHaveCSS('height','80px');
+  if(label==='달력'){
+   const calendarIcon=(await activeIcon.boundingBox())!;
+   expect([calendarIcon.width,calendarIcon.height]).toEqual([timetableIcon.width,timetableIcon.height]);
+   expect(await chipStyle()).toEqual(timetableChip);
+  }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
  await nav.getByRole('link',{name:'시간표',exact:true}).click();
- await expect(workspace).not.toHaveAttribute('data-timetree');
+ await expect(workspace).toHaveAttribute('data-timetree','/timetable');
  await expect(grid).toBeVisible();
  expect(await grid.boundingBox()).toEqual(timetableSize);
  expect(await nav.boundingBox()).toEqual(timetableNav);
