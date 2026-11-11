@@ -54,30 +54,34 @@ test('adult link resumes after email verification and requires explicit acceptan
 test('verified guardian can share a child link to a separate browser for signup',async({page,browser,request})=>{
  test.setTimeout(90000);
  await register(page,request,'child-link-host@example.test','가상 보호자');
- await page.goto('/family/verification');
- await page.getByLabel('아이 구분 이름').fill('초대용 가상 첫째');
- await page.getByLabel('아이와의 관계').selectOption('LEGAL_GUARDIAN');
- await page.getByRole('button',{name:'일반사용자 확인 신청',exact:true}).click();
+ const targetLabel='초대용 가상 첫째';
+ const guardianPath='/api/v1/guardian-verification/';
+ const submit=await page.request.post(guardianPath+'submit',{headers:{Origin:origin},data:{
+  requestKey:crypto.randomUUID(),targetLabel,relationship:'LEGAL_GUARDIAN'
+ }});
+ expect(submit.ok(),await submit.text()).toBe(true);
+ const {id}=await submit.json();
  const review=await browser.newContext({baseURL:origin}),child=await browser.newContext({baseURL:origin,viewport:{width:390,height:844}});
  try{
   const reviewer=await review.newPage();
-  reviewer.setDefaultTimeout(12000);
   await register(reviewer,request,'child-link-reviewer@example.test','가상 심사자');
-  await request.post('/__test__/reviewer',{data:{email:'child-link-reviewer@example.test'}});
-  await reviewer.goto('/family/verification/review');
-  const card=reviewer.locator('.guardian-application').filter({hasText:'초대용 가상 첫째'});
-  await card.getByRole('button',{name:'심사 시작'}).click();
-  await card.getByLabel('증빙 심사 기록 번호').fill('invite-review-fixture');
-  await card.getByLabel('확인된 대상 참조 번호').fill('invite-subject-fixture');
-  await card.getByLabel('기록에서 신청인과').check();
-  await card.getByRole('button',{name:'승인',exact:true}).click();
-  await card.getByLabel('증빙에서 확인한 생년월일').fill('2018-03-02');
-  await card.getByLabel('승인한 대상과 생년월일이').check();
-  await card.getByRole('button',{name:'등록 정보 확인 완료'}).click();
-  await expect(card).toHaveCount(0);
+  expect((await request.post('/__test__/reviewer',{data:{email:'child-link-reviewer@example.test'}})).ok()).toBe(true);
+  const queue=await reviewer.request.get(guardianPath+'queue');
+  expect(queue.ok(),await queue.text()).toBe(true);
+  const application=(await queue.json()).applications.find((row:{id:string})=>row.id===id);
+  expect(application).toBeDefined();
+  const reviewRequest=async(action:string,data:object)=>{
+   const result=await reviewer.request.post(guardianPath+action,{headers:{Origin:origin},data});
+   expect(result.ok(),await result.text()).toBe(true);
+  };
+  await reviewRequest('review',{id,expectedVersion:application.version,state:'REVIEWING'});
+  await reviewRequest('review',{id,expectedVersion:application.version+1,state:'APPROVED',
+   targetId:application.targetId,evidenceRef:'invite-review-fixture',subjectRef:'invite-subject-fixture',evidenceChecked:true});
+  await reviewRequest('birth-date',{id,expectedVersion:application.version+2,targetId:application.targetId,
+   birthDate:'2018-03-02',evidenceChecked:true});
   await page.goto('/family');
   await page.getByLabel('초대 대상').selectOption('CHILD');
-  await page.getByLabel('보호자 확인이 끝난 어린이').selectOption({label:'초대용 가상 첫째'});
+  await page.getByLabel('보호자 확인이 끝난 어린이').selectOption({label:targetLabel});
   const link=await issue(page);
   const guest=await child.newPage();
   guest.setDefaultTimeout(12000);
