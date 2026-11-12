@@ -29,8 +29,15 @@ test('account deletion resumes after opening the password reset email and signin
 
  await page.goto(mail!.url);
  await expect(page).toHaveURL(origin+'/reset-password?next=%2Fprivacy%3Frequest%3Ddelete');
- await page.getByLabel('암호',{exact:true}).fill(newPassword);
- await page.getByRole('button',{name:'새 암호 저장',exact:true}).click();
+ await ready(page);
+ const resetPassword=page.getByLabel('암호',{exact:true});
+ await resetPassword.fill(newPassword);
+ await expect(resetPassword).toHaveValue(newPassword);
+ const [resetResponse]=await Promise.all([
+  page.waitForResponse(response=>new URL(response.url()).pathname==='/api/auth/reset-password'&&response.request().method()==='POST',{timeout:10000}),
+  resetPassword.press('Enter'),
+ ]);
+ expect(resetResponse.ok(),await resetResponse.text()).toBe(true);
  await expect(page.getByText('암호가 바뀌었어요.',{exact:false})).toBeVisible();
  await page.getByRole('link',{name:'로그인으로 돌아가기',exact:false}).click();
  await page.getByLabel('아이디',{exact:true}).fill(email);
