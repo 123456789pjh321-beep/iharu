@@ -104,5 +104,13 @@ test('records a deletion completion with a verified checklist and shows the refe
   const request=(await legal(requester,'state')).requests[0];
   expect(request.status).toBe('COMPLETED');
   expect(request).not.toHaveProperty('deletionVerification');
+
+  await item.getByRole('button',{name:'파기 보류 설정 없음'}).click();
+  const holdReference=crypto.randomUUID();
+  await item.getByLabel('보존 근거 기록 번호 (UUID)').fill(holdReference);
+  await item.getByRole('button',{name:'파기 보류 설정',exact:true}).click();
+  await expect(page.getByText('파기 보류 상태를 저장했습니다.',{exact:true})).toBeVisible();
+  const adminCases=await legal(page.request,'admin.requests');
+  expect(adminCases.items.find((entry:{id:string})=>entry.id===request.id)?.retentionHoldReference).toBe(holdReference);
  }finally{await requester.dispose();}
 });

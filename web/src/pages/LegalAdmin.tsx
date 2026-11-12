@@ -64,6 +64,8 @@ export function LegalAdmin(){
 }
 function RequestEditor({request:r,submit,saveHold,busy}:{request:LegalRequest;submit:(data:object)=>Promise<void>;saveHold:(data:{id:string;version:number;reference:string|null})=>Promise<void>;busy:boolean}){
  const [status,setStatus]=useState(r.status==='RECEIVED'?'REVIEWING':r.status);
+ const [holdOpen,setHoldOpen]=useState(false);
+ const holdPanelId='privacy-retention-'+r.id;
  const needsVerification=r.kind==='DELETE'&&status==='COMPLETED';
 
  function save(event:FormEvent<HTMLFormElement>){
@@ -85,8 +87,10 @@ function RequestEditor({request:r,submit,saveHold,busy}:{request:LegalRequest;su
    <p>{r.detail}</p>
    <small>{r.id} · {new Date(r.createdAt).toLocaleString('ko-KR')}</small>
    {r.deletionVerification&&<p>삭제 검증 {savedAt(r.deletionVerification.verifiedAt)} · {r.deletionVerification.reference}</p>}
-   <details>
-    <summary>파기 보류 {r.retentionHoldReference?'설정됨':'설정 없음'}</summary>
+   <button type="button" className="button compact" aria-expanded={holdOpen} aria-controls={holdPanelId} onClick={()=>setHoldOpen(open=>!open)}>
+    파기 보류 {r.retentionHoldReference?'설정됨':'설정 없음'}
+   </button>
+   <div id={holdPanelId} hidden={!holdOpen}>
     <p>완료 또는 처리 불가로 분류된 요청은 처리일로부터 90일 후 정리됩니다. 별도 보존 근거가 있는 요청에는 해당 근거를 기록한 내부 문서 번호를 등록하세요.</p>
     <form className="auth-form" onSubmit={event=>{
      event.preventDefault();
@@ -104,7 +108,7 @@ function RequestEditor({request:r,submit,saveHold,busy}:{request:LegalRequest;su
       <button className="button">{r.retentionHoldReference?'파기 보류 해제':'파기 보류 설정'}</button>
      </fieldset>
     </form>
-   </details>
+   </div>
    <form className="auth-form" onSubmit={save}>
     <fieldset disabled={busy}>
      <legend>처리 결과</legend>
