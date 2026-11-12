@@ -84,7 +84,8 @@ test('records a deletion completion with a verified checklist and shows the refe
   await launchReady(page);
   const item=page.locator('details.privacy-request').filter({hasText:'privacy-verify-requester'});
   await item.locator('summary').click();
-  await item.getByLabel('상태',{exact:true}).selectOption('COMPLETED');
+  await expect(item).toHaveAttribute('open','');
+  await item.getByRole('combobox',{name:'요청 처리 상태',exact:true}).selectOption('COMPLETED');
   await item.getByLabel('회원에게 보일 답변',{exact:true}).fill('요청한 범위의 계정과 자료 처리를 확인했습니다.');
   await item.getByLabel('내부 변경 사유',{exact:true}).fill('삭제 결과 확인');
   const proof=crypto.randomUUID();

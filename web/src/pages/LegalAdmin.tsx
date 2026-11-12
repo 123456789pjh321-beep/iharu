@@ -89,7 +89,7 @@ function RequestEditor({request:r,submit,busy}:{request:LegalRequest;submit:(dat
     <fieldset disabled={busy}>
      <legend>처리 결과</legend>
      <label className="form-field">상태
-      <select name="status" value={status} onChange={event=>setStatus(event.target.value)}>
+      <select name="status" aria-label="요청 처리 상태" value={status} onChange={event=>setStatus(event.target.value)}>
        <option value="REVIEWING">검토 중</option>
        <option value="COMPLETED">실제 처리 완료</option>
        <option value="REJECTED">처리 불가</option>
