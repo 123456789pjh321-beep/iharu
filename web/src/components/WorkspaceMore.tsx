@@ -26,7 +26,7 @@ export function WorkspaceMore({me}:{me:WorkspaceMe|null}){
   <MoreGuides/>
   <nav className="more-shortcuts" aria-label="더보기 메뉴">{shortcuts.map(item=><Link key={item.to} to={item.to}><span><Icon name={item.icon}/>{hasMenuUpdate(gate?.updates||null,menuForPath(item.to))&&<i className="more-update-dot" aria-label="새 업데이트"/>}</span><strong>{item.label}</strong></Link>)}</nav>
   <div className="more-section"><h2>계정</h2><div className="more-group"><Link to="/account" className="more-account"><span className="more-avatar"><Icon name="users"/></span><span><strong>{me?.name||'로그인하고 함께해요'}</strong><small>{me?'아이하루 계정'+(me.family?' · '+me.family.name:''):'내 계정과 그룹 정보를 확인하세요.'}</small></span></Link><Link to="/account" className="more-row">계정 관리<Icon name="chevron"/></Link></div><div className="more-group more-privacy-group"><Link to="/privacy" className="more-row">개인정보 관리<Icon name="chevron"/></Link></div><p className="more-account-note">내 정보와 그룹의 공유 범위를 확인하세요.</p></div>
-  <div className="more-section"><h2>아이하루 정보</h2><div className="more-group">{[{to:'/more/service',label:'서비스 소개'},{to:'/legal/terms',label:'이용약관'},{to:'/legal/privacy',label:'개인정보처리방침'}].map(item=><Link key={item.to} to={item.to} className="more-row">{item.label}<Icon name="chevron"/></Link>)}</div></div>
+  <div className="more-section"><h2>아이하루 정보</h2><div className="more-group">{[{to:'/more/service',label:'서비스 소개'},{to:'/legal/terms',label:'이용약관'},{to:'/legal/privacy',label:'개인정보처리방침'},{to:'/account-deletion',label:'계정 삭제 요청'}].map(item=><Link key={item.to} to={item.to} className="more-row">{item.label}<Icon name="chevron"/></Link>)}</div></div>
   <p className="more-signature">iHaru · 그룹의 하루를 잇다</p>
  </section></>;
 }

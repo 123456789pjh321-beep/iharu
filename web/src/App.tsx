@@ -1,7 +1,7 @@
 const BriefingPage=lazy(()=>import('./pages/Briefing'));
 import {NotificationSettings} from './pages/NotificationSettings';
 import {PublicFrame} from './components/PublicFrame';
-import {LegalPage,PrivacyPage} from './pages/Legal';
+import {AccountDeletionPage,LegalPage,PrivacyPage} from './pages/Legal';
 import {PersonalWorkspace,type PersonalMode} from './pages/PersonalWorkspace';
 import {useWorkspaceGate} from './components/WorkspaceGate';
 import {RouteEffects} from './components/RouteEffects';
@@ -82,6 +82,7 @@ export default function App(){return <BrowserRouter><LaunchVideoProvider><RouteE
   <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<Navigate to="/notification-settings" replace/>}/><Route path="/notification-settings" element={<RequireWorkspaceAccount><NotificationSettings/></RequireWorkspaceAccount>}/>
   <Route path="/more" element={<WorkspaceEntry mode="more"/>}/><Route path="/settings" element={<WorkspaceEntry mode="settings"/>}/>
   <Route path="/help" element={<WorkspaceEntry mode="guide"/>}/>
+  <Route path="/account-deletion" element={<AccountDeletionPage/>}/>
   <Route path="/more/service" element={<WorkspaceEntry mode="service"/>}/>
   {(['notices','blog'] as const).flatMap(mode=>[<Route key={mode} path={'/more/'+mode} element={<WorkspaceEntry mode={mode}/>}/>,<Route key={mode+'-post'} path={'/more/'+mode+'/:slug'} element={<WorkspaceEntry mode={mode}/>}/>])}
   <Route path="/admin" element={<RequireWorkspaceAccount><Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense></RequireWorkspaceAccount>}/>
