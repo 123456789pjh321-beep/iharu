@@ -2,6 +2,24 @@ import {test,expect,type APIRequestContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='privacy-fixture-password-2026';test.use({baseURL:origin});
 async function signup(client:APIRequestContext,email:string,name='검증 계정'){expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await client.get('/__test__/mail')).json();await client.get(mail.find((m:{to:string})=>m.to===email).url);expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);await api(client,'workspace/me');}
 async function api(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
+test('the public account deletion link leads to a signed-in deletion request',async({page})=>{
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.goto('/account-deletion');
+ await expect(page.getByRole('heading',{name:'아이하루 계정 및 데이터 삭제 요청'})).toBeVisible();
+ const continueRequest=page.getByRole('link',{name:'계정 삭제 요청 계속하기'});
+ await continueRequest.click();
+ await expect(page).toHaveURL(origin+'/login?next=%2Fprivacy%3Frequest%3Ddelete');
+
+ await signup(page.request,'deletion-route@example.test');
+ await page.goto('/account-deletion');
+ await continueRequest.click();
+ await expect(page).toHaveURL(origin+'/privacy?request=delete');
+ await expect(page.getByLabel('요청 종류')).toHaveValue('DELETE');
+ await page.getByLabel('요청 내용').fill('내 테스트 계정 삭제를 요청합니다.');
+ await page.getByRole('button',{name:'요청 접수',exact:true}).click();
+ await expect(page.getByText('요청을 접수했습니다.',{exact:false})).toBeVisible();
+ expect((await api(page.request,'legal/state')).requests[0]).toMatchObject({kind:'DELETE',status:'RECEIVED'});
+});
 test('login copy is concise and location is absent from production navigation and Today',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});
  for(const width of [320,768,1320]){
