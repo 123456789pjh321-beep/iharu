@@ -1,7 +1,7 @@
 import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Link,useSearchParams} from 'react-router-dom';
-import {suggestBriefingRegion,type BriefingPreferences} from '../../../shared/briefing';
+import {briefingConsentVersion,briefingRegions,suggestBriefingRegion,type BriefingPreferences} from '../../../shared/briefing';
 import {briefingRequest} from '../briefing-api';
 import {briefingCategoryNames,briefingPosterContent,type BriefingItem,type BriefingFeed,type BriefingPost} from '../briefing-poster';
 import {briefingCollectionStatus,createBriefingSample} from '../briefing-preview';
@@ -90,10 +90,37 @@ function BriefingSlide({item,current,urgent,sample}:{item:BriefingItem;current:b
 }
 
 function BriefingSettings({preferences,close,saved}:{preferences:BriefingPreferences;close:()=>void;saved:()=>void}){
- const ref=useRef<HTMLDialogElement>(null),lock=useRef(false),requested=useRef(false),location=useBriefingLocation(),[enabled,setEnabled]=useState(preferences.enabled),[region,setRegion]=useState(preferences.region),[consent,setConsent]=useState(preferences.enabled),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const ref=useRef<HTMLDialogElement>(null),lock=useRef(false),requested=useRef(false),location=useBriefingLocation(),[enabled,setEnabled]=useState(preferences.enabled),[region,setRegion]=useState(briefingRegions.includes(preferences.region)?preferences.region:''),[consent,setConsent]=useState(preferences.enabled),[busy,setBusy]=useState(false),[error,setError]=useState('');
  useEffect(()=>{ref.current?.showModal();},[]);
- useEffect(()=>{if(!requested.current||!location.point)return;requested.current=false;const next=suggestBriefingRegion(location.point.latitude,location.point.longitude);if(next){setRegion(next);setError('추천 지역이 맞는지 확인한 뒤 저장해 주세요.');}else setError('가까운 지역을 추천하지 못했어요. 시·구 지역을 직접 입력해 주세요.');},[location.point]);
- function recommendRegion(){const point=location.getBriefingLocation();if(point){const next=suggestBriefingRegion(point.latitude,point.longitude);if(next){setRegion(next);setError('추천 지역이 맞는지 확인한 뒤 저장해 주세요.');}else setError('시·구 지역을 직접 입력해 주세요.');}else{requested.current=true;location.enable();}}
- async function submit(e:FormEvent){e.preventDefault();if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await briefingRequest('preferences.save',{enabled,region,consent,version:preferences.version});saved();}catch(e){setError((e as Error).message);}finally{lock.current=false;setBusy(false);}}
- return <dialog ref={ref} className="personal-editor briefing-settings" aria-labelledby="briefing-settings-title" onCancel={e=>{e.preventDefault();if(!busy)close();}}><header><h2 id="briefing-settings-title">내 브리핑 설정</h2><button type="button" className="icon-button" aria-label="브리핑 설정 닫기" disabled={busy} onClick={close}><Icon name="close"/></button></header><form onSubmit={submit} className="auth-form"><fieldset disabled={busy}><label className="briefing-check-label"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>AI 브리핑 사용</label><label className="form-field">기준 지역<input aria-label="브리핑 기준 지역" value={region} onChange={e=>setRegion(e.target.value)} placeholder="예: 경기도 수원시" maxLength={60} required={enabled}/></label><button type="button" className="button" onClick={recommendRegion}>현재 위치로 지역 추천<Icon name="pin"/></button><p className="account-caption">추천은 기기에서만 계산해요. 좌표는 전송하지 않으며, 확인해 저장한 시·구 지역으로 매일 새벽 3시에 소식을 찾아요.</p>{location.status==='locating'&&<p role="status">위치를 확인하고 있어요…</p>}{location.message&&location.status==='error'&&<p role="alert">{location.message}</p>}<label className="briefing-check-label"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required={enabled}/><span>내 일정의 시설·장소와 기준 지역을 OpenAI 분석에 활용하는 데 동의해요.</span></label><p className="account-caption">내가 등록한 시간표·달력과 내가 연결한 어린이의 일정만 사용해요. 이름·연락처·메모·정확한 좌표는 보내지 않아요. 결과는 내 계정에만 표시해요. 브리핑을 끄면 저장된 브리핑도 삭제돼요. 외부 처리 범위는 <a href="https://openai.com/policies/privacy-policy/" target="_blank" rel="noopener noreferrer">OpenAI 개인정보 안내</a>에서 확인할 수 있어요.</p><FormNotice error={error}/><button className="button primary" type="submit">{busy?'저장 중…':'설정 저장'}</button></fieldset></form></dialog>;
+ useEffect(()=>{if(!requested.current||!location.point)return;requested.current=false;const next=suggestBriefingRegion(location.point.latitude,location.point.longitude);if(next){setRegion(next);setError('추천 지역이 맞는지 확인한 뒤 저장해 주세요.');}else setError('가까운 지역을 추천하지 못했어요. 목록에서 기준 지역을 선택해 주세요.');},[location.point]);
+ function recommendRegion(){const point=location.getBriefingLocation();if(point){const next=suggestBriefingRegion(point.latitude,point.longitude);if(next){setRegion(next);setError('추천 지역이 맞는지 확인한 뒤 저장해 주세요.');}else setError('목록에서 기준 지역을 선택해 주세요.');}else{requested.current=true;location.enable();}}
+ async function submit(e:FormEvent){e.preventDefault();if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await briefingRequest('preferences.save',{enabled,region,consent,consentVersion:briefingConsentVersion,version:preferences.version});saved();}catch(e){setError((e as Error).message);}finally{lock.current=false;setBusy(false);}}
+ return (
+  <dialog ref={ref} className="personal-editor briefing-settings" aria-labelledby="briefing-settings-title" onCancel={e=>{e.preventDefault();if(!busy)close();}}>
+   <header><h2 id="briefing-settings-title">내 브리핑 설정</h2><button type="button" className="icon-button" aria-label="브리핑 설정 닫기" disabled={busy} onClick={close}><Icon name="close"/></button></header>
+   <form onSubmit={submit} className="auth-form">
+    <fieldset disabled={busy}>
+     {preferences.lastState==='CONSENT_UPDATE'&&<p role="status">AI 처리 방식이 바뀌어 브리핑을 잠시 멈췄어요. 아래 안내를 확인하고 다시 켤 수 있어요.</p>}
+     <label className="briefing-check-label"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>AI 브리핑 사용</label>
+     <label className="form-field">기준 지역
+      <select aria-label="브리핑 기준 지역" value={region} onChange={e=>setRegion(e.target.value)} required={enabled}>
+       <option value="">지역 선택</option>
+       {briefingRegions.map(name=><option key={name}>{name}</option>)}
+      </select>
+     </label>
+     <button type="button" className="button" onClick={recommendRegion}>현재 위치로 지역 추천<Icon name="pin"/></button>
+     <p className="account-caption">지역 추천은 기기에서 계산해요. 아이하루는 저장한 시 단위 지역과 기준일로 정기적으로 공개 소식을 찾아요.</p>
+     {location.status==='locating'&&<p role="status">위치를 확인하고 있어요…</p>}
+     {location.message&&location.status==='error'&&<p role="alert">{location.message}</p>}
+     <label className="briefing-check-label">
+      <input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required={enabled}/>
+      <span>기준 지역과 기준일을 OpenAI의 공개 소식 검색에 사용하는 데 동의해요.</span>
+     </label>
+     <p className="account-caption">가족 일정과 공개 소식의 대조는 아이하루 서버에서만 해요. 브리핑은 선택 기능이며, 설정에서 끄면 이용 동의를 철회하고 계정에 저장한 브리핑을 삭제해요.</p>
+     <p className="account-caption"><a href="https://platform.openai.com/docs/guides/your-data" target="_blank" rel="noopener noreferrer">OpenAI API 데이터 처리 안내</a></p>
+     <FormNotice error={error}/><button className="button primary" type="submit">{busy?'저장 중…':'설정 저장'}</button>
+    </fieldset>
+   </form>
+  </dialog>
+ );
 }

@@ -62,4 +62,54 @@ export function LegalAdmin(){
  </>}
  </section>;
 }
-function RequestEditor({request:r,submit,busy}:{request:LegalRequest;submit:(data:object)=>Promise<void>;busy:boolean}){return <details className="privacy-request"><summary>{r.requesterName} · {privacyKinds[r.kind as keyof typeof privacyKinds]} · {r.status}</summary><p>{r.detail}</p><small>{r.id} · {new Date(r.createdAt).toLocaleString('ko-KR')}</small><form className="auth-form" onSubmit={event=>{event.preventDefault();const form=new FormData(event.currentTarget);void submit({id:r.id,version:r.version,status:form.get('status'),response:form.get('response'),reason:form.get('reason')});}}><fieldset disabled={busy}><legend>처리 결과</legend><label className="form-field">상태<select name="status" defaultValue={r.status==='RECEIVED'?'REVIEWING':r.status}><option value="REVIEWING">검토 중</option><option value="COMPLETED">실제 처리 완료</option><option value="REJECTED">처리 불가</option></select></label><label className="form-field">회원에게 보일 답변<textarea aria-label="회원에게 보일 답변" name="response" defaultValue={r.response} required minLength={10} maxLength={2000}/></label><label className="form-field">내부 변경 사유<input name="reason" required minLength={3} maxLength={300}/></label><button className="button">처리 결과 저장</button></fieldset></form></details>;}
+function RequestEditor({request:r,submit,busy}:{request:LegalRequest;submit:(data:object)=>Promise<void>;busy:boolean}){
+ const [status,setStatus]=useState(r.status==='RECEIVED'?'REVIEWING':r.status);
+ const needsVerification=r.kind==='DELETE'&&status==='COMPLETED';
+
+ function save(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();
+  const form=new FormData(event.currentTarget);
+  const data={id:r.id,version:r.version,status,response:form.get('response'),reason:form.get('reason')};
+  if(!needsVerification){void submit(data);return;}
+  void submit({...data,deletionVerification:{
+   reference:form.get('reference'),
+   authorityChecked:form.has('authorityChecked'),
+   deletionChecked:form.has('deletionChecked'),
+   copiesChecked:form.has('copiesChecked')
+  }});
+ }
+
+ return (
+  <details className="privacy-request">
+   <summary>{r.requesterName} · {privacyKinds[r.kind as keyof typeof privacyKinds]} · {r.status}</summary>
+   <p>{r.detail}</p>
+   <small>{r.id} · {new Date(r.createdAt).toLocaleString('ko-KR')}</small>
+   {r.deletionVerification&&<p>삭제 검증 {savedAt(r.deletionVerification.verifiedAt)} · {r.deletionVerification.reference}</p>}
+   <form className="auth-form" onSubmit={save}>
+    <fieldset disabled={busy}>
+     <legend>처리 결과</legend>
+     <label className="form-field">상태
+      <select name="status" value={status} onChange={event=>setStatus(event.target.value)}>
+       <option value="REVIEWING">검토 중</option>
+       <option value="COMPLETED">실제 처리 완료</option>
+       <option value="REJECTED">처리 불가</option>
+      </select>
+     </label>
+     {needsVerification&&<fieldset>
+      <legend>삭제 완료 확인</legend>
+      <label><input type="checkbox" name="authorityChecked" required/> 요청자 본인 또는 법정대리인의 권한을 확인했습니다.</label>
+      <label><input type="checkbox" name="deletionChecked" required/> 요청 범위의 원본과 가족 공유 자료의 처리 결과를 확인했습니다. 탈퇴인 경우 로그인과 기존 세션의 차단도 확인했습니다.</label>
+      <label><input type="checkbox" name="copiesChecked" required/> 해당하는 수탁사 사본과 백업의 파기 일정 및 복구 시 삭제 재적용 절차를 확인했습니다.</label>
+      <label className="form-field">내부 삭제 검증 기록 번호 (UUID)
+       <input name="reference" required maxLength={36} pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}"/>
+      </label>
+      <p className="account-caption">완료 처리에는 최근 본인 인증이 필요합니다. <Link to="/account/reauth">본인 인증</Link> · <Link to="/login?reauth=1">소셜 재로그인</Link></p>
+     </fieldset>}
+     <label className="form-field">회원에게 보일 답변<textarea aria-label="회원에게 보일 답변" name="response" defaultValue={r.response} required minLength={10} maxLength={2000}/></label>
+     <label className="form-field">내부 변경 사유<input name="reason" required minLength={3} maxLength={300}/></label>
+     <button className="button">처리 결과 저장</button>
+    </fieldset>
+   </form>
+  </details>
+ );
+}
