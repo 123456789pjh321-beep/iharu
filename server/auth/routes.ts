@@ -77,7 +77,8 @@ export function accountRoutes(resolve: () => AuthService | null = getAuthRuntime
       if (callback && !authRedirectAllowed(callback,svc.settings.origin,path,'callbackURL')) policyError('INVALID_CALLBACK', 'BAD_REQUEST');
     }
     if (c.req.method === 'GET' && path.startsWith('/reset-password/')) {
-      if (new URL(c.req.query('callbackURL') || '', svc.settings.origin).href !== `${svc.settings.origin}/reset-password`) policyError('INVALID_CALLBACK', 'BAD_REQUEST');
+      const callbacks=c.req.queries('callbackURL');
+      if(callbacks?.length!==1||!authRedirectAllowed(callbacks[0],svc.settings.origin,path,'redirectTo'))policyError('INVALID_CALLBACK', 'BAD_REQUEST');
     }
     if (c.req.method === 'POST') {
       const body: Record<string, unknown> = await c.req.raw.clone().json().catch(() => ({}));

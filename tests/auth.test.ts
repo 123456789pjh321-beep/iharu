@@ -7,6 +7,7 @@ import { createApp } from '../server/app';
 import { query } from '../server/auth/database';
 import { REAUTH_MS, IDLE_MS, normalizePhone } from '../server/auth/policy';
 import type { AuthSettings } from '../server/auth/config';
+import {accountDeletionRequestPath} from '../shared/entry-intent';
 
 const origin='http://localhost:4173';
 const settings:AuthSettings={origin,secret:'p02-isolated-tests-not-a-production-secret-001',databaseUrl:'unused',mail:{key:'test-only',from:'test@example.test'},sms:{key:'test-only',secret:'test-only',from:'01000000000',dailyBudget:100},social:{google:{clientId:'test',clientSecret:'test'},kakao:{clientId:'test',clientSecret:'test'},naver:{clientId:'test',clientSecret:'test'}}};
@@ -76,9 +77,18 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
   });
   it('resets with a one-use token and revokes every existing session',async()=>{
     const a=new Browser(),b=new Browser();await signup(a);await b.request('/api/auth/sign-in/email',{email:'parent@example.test',password});
-    await a.request('/api/auth/request-password-reset',{email:'parent@example.test',redirectTo:'/reset-password'});
+    const redirectTo='/reset-password?next='+encodeURIComponent(accountDeletionRequestPath);
+    expect((await a.request('/api/auth/request-password-reset',{email:'parent@example.test',redirectTo})).status).toBe(200);
     const url=[...mail].reverse().find(m=>m.kind==='reset')!.url;
     const token=new URL(url).pathname.split('/').at(-1);
+    const emailLink=await a.request(url);
+    expect(emailLink.status).toBe(302);
+    const resetPage=new URL(emailLink.headers.get('location')!,origin);
+    expect(resetPage.pathname).toBe('/reset-password');
+    expect(resetPage.searchParams.get('next')).toBe(accountDeletionRequestPath);
+    expect(resetPage.searchParams.get('token')).toBe(token);
+    const ambiguousLink=new URL(url);ambiguousLink.searchParams.append('callbackURL','/reset-password');
+    expect((await a.request(ambiguousLink.href)).status).toBe(400);
     expect((await a.request('/api/auth/reset-password',{token,newPassword:'replacement-password-2026'})).status).toBe(200);
     expect((await a.request('/api/auth/reset-password',{token,newPassword:'other-password-2026'})).status).toBe(400);
     expect(await(await a.request('/api/account/session')).json()).toEqual({authenticated:false});

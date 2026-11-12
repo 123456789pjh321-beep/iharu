@@ -5,7 +5,7 @@ import { providersSchema, sessionSchema, authPost, startSocial, socialErrorMessa
 import { AuthEntryFrame, AuthLayout, FormNotice, LoginActions, PasswordField } from '../components/AuthLayout';
 import { Loading, ErrorState } from '../components/Common';
 import { Icon } from '../components/Icon';
-import {entryReturnPath} from '../../../shared/entry-intent';
+import {accountDeletionRequestPath,entryReturnPath} from '../../../shared/entry-intent';
 import {workspaceRequest} from '../workspace-api';
 import {forgetEntry} from '../entry-session';
 import {useLaunchVideo} from '../components/LaunchVideo';
@@ -22,10 +22,11 @@ export function LoginPage() {
   const params=new URLSearchParams(search);
   const reauthenticate=params.get('reauth')==='1';
   const next=entryReturnPath(params.get('next'));
-  useLaunchVideo(pathname==='/login'&&!reauthenticate&&next!=='/invite'&&!params.has('error')&&!params.has('verified'));
+  const canBrowse=next!=='/invite'&&next!==accountDeletionRequestPath;
+  useLaunchVideo(pathname==='/login'&&!reauthenticate&&canBrowse&&!params.has('error')&&!params.has('verified'));
   return <AuthEntryFrame>
     {entry&&!reauthenticate?<LoginEntry providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
-    {pathname==='/login'&&!reauthenticate&&next!=='/invite'&&<Link className="auth-browse-link" to={next} onClick={forgetEntry}>로그인 없이 먼저 둘러보기 <Icon name="arrow"/></Link>}
+    {pathname==='/login'&&!reauthenticate&&canBrowse&&<Link className="auth-browse-link" to={next} onClick={forgetEntry}>로그인 없이 먼저 둘러보기 <Icon name="arrow"/></Link>}
   </AuthEntryFrame>;
 }
 function useLoginProviders(){return useApi('/api/account/providers',providersSchema);}
@@ -49,10 +50,15 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
     window.addEventListener('pageshow',restore);return()=>window.removeEventListener('pageshow',restore);
   },[onBusy]);
   const [token] = useState(() => new URLSearchParams(search).get('token') || '');
-  useEffect(()=>{ if (token) window.history.replaceState(null,'',pathname); },[token,pathname]);
   const mode = inline?'login':pathname === '/signup' ? 'signup' : pathname === '/forgot-password' ? 'forgot' : pathname === '/verify-email' ? 'verify' : pathname === '/reset-password' ? 'reset' : 'login';
   const requestedNext=returnTo||new URLSearchParams(search).get('next');
   const next=reauthenticate&&!requestedNext?'/account':entryReturnPath(requestedNext);
+  const nextQuery='?next='+encodeURIComponent(next);
+  const resetPath='/reset-password'+(next===accountDeletionRequestPath?nextQuery:'');
+  const forgotPath='/forgot-password'+nextQuery;
+  useEffect(()=>{
+    if(mode==='reset'&&token)window.history.replaceState(window.history.state,'',resetPath);
+  },[mode,token,resetPath]);
   const callback='/login?verified=1&next='+encodeURIComponent(next);
   const titles = { login:'로그인', signup:'회원가입', forgot:'암호를 잊으셨나요?', verify:'이메일을 확인해 주세요', reset:'새 암호 설정' };
   const subtitles = { login:'', signup:'이메일로 아이하루 계정을 만들어요. 그룹 초대를 받았다면 가입 후 초대를 수락할 수 있어요.', forgot:'가입한 이메일로 재설정 링크를 보내드려요.', verify:'인증 메일이 보이지 않으면 다시 요청할 수 있어요.', reset:'앞으로 사용할 암호를 입력해 주세요.' };
@@ -81,7 +87,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
         if(onAuthenticated)await onAuthenticated();else navigate(next,{replace:true});
       }
       if (mode === 'signup') { await authPost('/api/auth/sign-up/email',{email,password,name:String(form.get('name')).trim(),callbackURL:callback});setMessage('가입을 진행할 수 있는 이메일이면 인증 메일이 도착해요. 메일함과 스팸함을 확인해 주세요.'); }
-      if (mode === 'forgot') { await authPost('/api/auth/request-password-reset',{email,redirectTo:'/reset-password'});setMessage('일치하는 이메일 계정이 있으면 재설정 링크를 보내드려요. 메일함을 확인해 주세요.'); }
+      if (mode === 'forgot') { await authPost('/api/auth/request-password-reset',{email,redirectTo:resetPath});setMessage('일치하는 이메일 계정이 있으면 재설정 링크를 보내드려요. 메일함을 확인해 주세요.'); }
       if (mode === 'verify') { await authPost('/api/auth/send-verification-email',{email,callbackURL:callback});setMessage('인증이 필요한 계정이면 메일을 보내드려요. 메일함과 스팸함을 확인해 주세요.'); }
       if (mode === 'reset') { await authPost('/api/auth/reset-password',{token,newPassword:password});setMessage('암호가 바뀌었어요. 모든 기기에서 로그아웃했으니 새 암호로 로그인해 주세요.'); }
     } catch (e) {setError(e instanceof Error?e.message:'연결을 확인해 주세요.');} finally {setBusy(false);onBusy?.(false);}
@@ -102,7 +108,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
           <li>구글 로그인이라면 <strong>Google 연결</strong>을 누르고 사용할 구글 계정을 선택해 주세요.</li>
         </ol>
         <p>연결을 마치면 다음부터 Google로 바로 로그인할 수 있어요. 같은 이메일로 다시 가입할 필요는 없어요.</p>
-        <Link className="button full" to="/forgot-password">이메일 로그인 암호 찾기</Link>
+        <Link className="button full" to={forgotPath}>이메일 로그인 암호 찾기</Link>
         <p className="account-caption">카카오로 가입했다면 카카오로 먼저 로그인해 주세요. 본인 확인을 다시 요청하면 기존 방법으로 재로그인한 뒤 연결해 주세요.</p>
       </section>}
       <FormNotice error={error} message={message}/>
@@ -114,8 +120,8 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
           {mode==='login'?<LoginActions busy={busy} ready={credentialFormReady} next={next}/>:<button className="button primary full" type="submit">{busy?'잠시만 기다려 주세요':!enabled?'이메일 로그인 준비 중':mode==='signup'?'인증 메일 보내기':mode==='reset'?'새 암호 저장':'링크 다시 받기'}</button>}
         </fieldset>
       </form>}
-      {mode==='login'&&<div className="form-links auth-login-help"><Link to={'/verify-email?next='+encodeURIComponent(next)}>이메일 인증 안내</Link><Link to={'/forgot-password?next='+encodeURIComponent(next)}>암호 찾기</Link></div>}
-      {mode==='signup'&&<p className="auth-help"><Link to="/legal/terms">이용약관</Link> · <Link to="/legal/privacy">개인정보처리방침</Link><br/>이메일 확인 후 게시된 문서를 읽고 이용 동의를 기록합니다.</p>}{mode==='signup'&&message&&<Link className="button full" to={'/verify-email?next='+encodeURIComponent(next)}>인증 메일 다시 받기</Link>}{mode==='reset'&&<Link className="button full" to="/forgot-password">만료된 재설정 링크 다시 받기</Link>}{mode==='login'?<><div className="auth-divider"><span>다른 방법으로 이어가기</span></div><div className="social-buttons">{providers.data?.providers.filter(p=>['google','kakao','naver'].includes(p.id)).map(p=><button key={p.id} className={`button social-${p.id}`} disabled={!p.enabled||busy} onClick={()=>social(p.id)}>{p.name}로 계속하기{!p.enabled&&<span className="provider-state">준비 중</span>}</button>)}</div><Link className="button full phone-login" to="/phone"><Icon name="phone"/>휴대폰 번호로 로그인</Link></>:<Link className="auth-back" to={'/login?next='+encodeURIComponent(next)}>로그인으로 돌아가기 <Icon name="arrow"/></Link>}
+      {mode==='login'&&<div className="form-links auth-login-help"><Link to={'/verify-email'+nextQuery}>이메일 인증 안내</Link><Link to={forgotPath}>암호 찾기</Link></div>}
+      {mode==='signup'&&<p className="auth-help"><Link to="/legal/terms">이용약관</Link> · <Link to="/legal/privacy">개인정보처리방침</Link><br/>이메일 확인 후 게시된 문서를 읽고 이용 동의를 기록합니다.</p>}{mode==='signup'&&message&&<Link className="button full" to={'/verify-email'+nextQuery}>인증 메일 다시 받기</Link>}{mode==='reset'&&<Link className="button full" to={forgotPath}>만료된 재설정 링크 다시 받기</Link>}{mode==='login'?<><div className="auth-divider"><span>다른 방법으로 이어가기</span></div><div className="social-buttons">{providers.data?.providers.filter(p=>['google','kakao','naver'].includes(p.id)).map(p=><button key={p.id} className={`button social-${p.id}`} disabled={!p.enabled||busy} onClick={()=>social(p.id)}>{p.name}로 계속하기{!p.enabled&&<span className="provider-state">준비 중</span>}</button>)}</div><Link className="button full phone-login" to="/phone"><Icon name="phone"/>휴대폰 번호로 로그인</Link></>:<Link className="auth-back" to={'/login'+nextQuery}>로그인으로 돌아가기 <Icon name="arrow"/></Link>}
     </>}
   </AuthLayout>;
 }
