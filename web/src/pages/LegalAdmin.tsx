@@ -57,12 +57,12 @@ export function LegalAdmin(){
  <form className="auth-form" onSubmit={save}><fieldset disabled={busy||conflict==='legal'}><legend>운영 정보와 고지 초안</legend>{fields.map(([key,label,max])=><label className="form-field" key={key}>{label}<input type={key==='contactEmail'?'email':'text'} value={draft[key]} maxLength={max} onChange={event=>{setDraft({...draft,[key]:event.target.value});setReviewed(false);}}/></label>)}<p className="account-caption">법령·기능 대조 기준: {legalReviewDate}. 확인 필요 표시는 실제 운영 정보로 확정해야 합니다.</p><button type="button" className="button" onClick={fillReview}>미작성 항목에 검토 문구 채우기</button>
  {documents.map(([key,label])=><details key={key}><summary>{label}{gaps.some(gap=>gap.field===key)&&<span className="legal-gap-tag"> 확인 필요</span>}</summary><label className="form-field"><span className="sr-only">{label}</span><textarea aria-label={label} value={draft[key]} maxLength={['terms','privacy'].includes(key)?30000:10000} onChange={event=>{setDraft({...draft,[key]:event.target.value});setReviewed(false);}}/></label></details>)}<label className="form-field">저장·게시 사유<input required minLength={3} maxLength={300} value={reason} onChange={event=>setReason(event.target.value)}/></label><div className="legal-actions"><button className="button primary">초안 저장</button><button type="button" className="button" onClick={()=>setPreview(value=>value?null:'privacy')}>미리보기 {preview?'닫기':'열기'}</button></div></fieldset></form>
  {preview&&<section className="legal-preview" aria-label="고지 초안 미리보기"><p>공개 전 미리보기 · 확인 필요 항목이 포함될 수 있습니다.</p><div role="group" aria-label="미리보기 문서" className="legal-actions">{(['terms','privacy','children'] as const).map((value,index)=><button className="button compact" type="button" key={value} aria-pressed={preview===value} onClick={()=>setPreview(value)}>{['이용약관','개인정보처리방침','어린이 안내'][index]}</button>)}</div><LegalDocument publication={{id:'preview',version:(config.publication?.version||0)+1,document:draft,publishedAt:config.updatedAt}} section={preview}/></section>}
- <section className="legal-consent"><h3>검토 후 게시</h3><p>빈 항목이 있어도 초안은 저장할 수 있습니다. 게시하려면 필수 항목과 확인 필요 표시를 모두 해결해야 합니다. 프로그램의 입력 점검은 법률 적합성의 인증이 아닙니다.</p>{gaps.length>0&&<div className="legal-readiness" aria-label="게시 전 확인 항목"><strong>게시 전 확인할 항목 {gaps.length}개</strong><ul>{gaps.map(gap=><li key={gap.field}>{gap.label}: {gap.issue}</li>)}</ul></div>}{dirty&&<p>입력 내용을 먼저 초안으로 저장해 주세요.</p>}<label className="check-option"><input type="checkbox" checked={reviewed} disabled={busy} onChange={event=>setReviewed(event.target.checked)}/><span>운영자 정보·처리 현황·동의 근거·고지 내용을 검토했습니다.</span></label><button className="button" disabled={busy||!!conflict||!reviewed||dirty||gaps.length>0||reason.trim().length<3} onClick={()=>void action('admin.publish',{version:config.version,reviewed:true,reason},'새 버전을 게시했습니다. 이전 게시본과 동의 기록은 유지됩니다.','legal')}>저장한 초안 게시</button></section><details><summary>게시 이력 ({config.history.length})</summary>{config.history.map(history=><p key={history.id}>버전 {history.version} · {savedAt(history.publishedAt)}</p>)}</details></section>
- <p className="account-caption">게시 시 최근 본인 인증이 필요합니다. <Link to="/account/reauth">본인 인증</Link> · <Link to="/login?reauth=1">소셜 재로그인</Link></p><section><h3>개인정보 요청 처리 (최근 200건)</h3><p>본인·대리인 확인과 실제 조치 결과를 기록하세요. 상태 변경만으로 데이터가 삭제되지는 않습니다. 요청 처리 중에도 위의 편집 내용은 유지됩니다.</p>{requestError?<><FormNotice error={requestError}/><button className="button" onClick={()=>setRequestRevision(n=>n+1)}>요청 목록 다시 불러오기</button></>:requests.length?requests.map(request=><RequestEditor key={request.id+':'+request.version} request={request} submit={data=>action('admin.resolve',data,'요청 처리 결과를 저장했습니다.')} busy={busy}/>):<p>접수된 요청이 없습니다.</p>}</section>
+ <section className="legal-consent"><h3>검토 후 게시</h3><p>빈 항목이 있어도 초안은 저장할 수 있습니다. 게시하려면 필수 항목과 확인 필요 표시를 모두 해결해야 합니다. 프로그램의 입력 점검은 법률 적합성의 인증이 아닙니다.</p>{gaps.length>0&&<div className="legal-readiness" aria-label="게시 전 확인 항목"><strong>게시 전 확인할 항목 {gaps.length}개</strong><ul>{gaps.map(gap=><li key={gap.field}><strong>{gap.label}</strong> · {gap.issue}{gap.details.map((detail,index)=><div key={index}>{detail}</div>)}</li>)}</ul></div>}{dirty&&<p>입력 내용을 먼저 초안으로 저장해 주세요.</p>}<label className="check-option"><input type="checkbox" checked={reviewed} disabled={busy} onChange={event=>setReviewed(event.target.checked)}/><span>운영자 정보·처리 현황·동의 근거·고지 내용을 검토했습니다.</span></label><button className="button" disabled={busy||!!conflict||!reviewed||dirty||gaps.length>0||reason.trim().length<3} onClick={()=>void action('admin.publish',{version:config.version,reviewed:true,reason},'새 버전을 게시했습니다. 이전 게시본과 동의 기록은 유지됩니다.','legal')}>저장한 초안 게시</button></section><details><summary>게시 이력 ({config.history.length})</summary>{config.history.map(history=><p key={history.id}>버전 {history.version} · {savedAt(history.publishedAt)}</p>)}</details></section>
+ <p className="account-caption">게시 시 최근 본인 인증이 필요합니다. <Link to="/account/reauth">본인 인증</Link> · <Link to="/login?reauth=1">소셜 재로그인</Link></p><section><h3>개인정보 요청 처리 (최근 200건)</h3><p>본인·대리인 확인과 실제 조치 결과를 기록하세요. 상태 변경만으로 데이터가 삭제되지는 않습니다. 요청 처리 중에도 위의 편집 내용은 유지됩니다.</p>{requestError?<><FormNotice error={requestError}/><button className="button" onClick={()=>setRequestRevision(n=>n+1)}>요청 목록 다시 불러오기</button></>:requests.length?requests.map(request=><RequestEditor key={request.id+':'+request.version} request={request} submit={data=>action('admin.resolve',data,'요청 처리 결과를 저장했습니다.')} saveHold={data=>action('admin.retention.hold',data,'파기 보류 상태를 저장했습니다.')} busy={busy}/>):<p>접수된 요청이 없습니다.</p>}</section>
  </>}
  </section>;
 }
-function RequestEditor({request:r,submit,busy}:{request:LegalRequest;submit:(data:object)=>Promise<void>;busy:boolean}){
+function RequestEditor({request:r,submit,saveHold,busy}:{request:LegalRequest;submit:(data:object)=>Promise<void>;saveHold:(data:{id:string;version:number;reference:string|null})=>Promise<void>;busy:boolean}){
  const [status,setStatus]=useState(r.status==='RECEIVED'?'REVIEWING':r.status);
  const needsVerification=r.kind==='DELETE'&&status==='COMPLETED';
 
@@ -85,6 +85,26 @@ function RequestEditor({request:r,submit,busy}:{request:LegalRequest;submit:(dat
    <p>{r.detail}</p>
    <small>{r.id} · {new Date(r.createdAt).toLocaleString('ko-KR')}</small>
    {r.deletionVerification&&<p>삭제 검증 {savedAt(r.deletionVerification.verifiedAt)} · {r.deletionVerification.reference}</p>}
+   <details>
+    <summary>파기 보류 {r.retentionHoldReference?'설정됨':'설정 없음'}</summary>
+    <p>완료 또는 처리 불가로 분류된 요청은 처리일로부터 90일 후 정리됩니다. 별도 보존 근거가 있는 요청에는 해당 근거를 기록한 내부 문서 번호를 등록하세요.</p>
+    <form className="auth-form" onSubmit={event=>{
+     event.preventDefault();
+     const form=new FormData(event.currentTarget);
+     const reference=r.retentionHoldReference?null:String(form.get('holdReference')??'').trim();
+     void saveHold({id:r.id,version:r.version,reference});
+    }}>
+     <fieldset disabled={busy}>
+      <legend>파기 보류 관리</legend>
+      {r.retentionHoldReference?<p>보존 근거 기록 번호 {r.retentionHoldReference} · 보류를 해제하면 기존 처리일을 기준으로 만료 여부를 판단합니다.</p>:
+       <label className="form-field">보존 근거 기록 번호 (UUID)
+        <input name="holdReference" required maxLength={36} pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}"/>
+       </label>}
+      <p className="account-caption">최근 본인 인증이 필요합니다. <Link to="/account/reauth">본인 인증</Link> · <Link to="/login?reauth=1">소셜 재로그인</Link></p>
+      <button className="button">{r.retentionHoldReference?'파기 보류 해제':'파기 보류 설정'}</button>
+     </fieldset>
+    </form>
+   </details>
    <form className="auth-form" onSubmit={save}>
     <fieldset disabled={busy}>
      <legend>처리 결과</legend>

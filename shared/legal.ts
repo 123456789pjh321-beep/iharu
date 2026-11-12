@@ -6,7 +6,7 @@ export const legalDraftSchema=z.object({
 }).strict();
 export type LegalDraft=z.infer<typeof legalDraftSchema>;
 export type LegalPublication={id:string;version:number;document:LegalDraft;publishedAt:string};
-export type LegalRequest={id:string;kind:string;detail:string;status:string;response:string;version:number;createdAt:string;updatedAt:string;requesterName?:string;deletionVerification?:{reference:string;verifiedAt:string}};
+export type LegalRequest={id:string;kind:string;detail:string;status:string;response:string;version:number;createdAt:string;updatedAt:string;requesterName?:string;retentionHoldReference?:string;deletionVerification?:{reference:string;verifiedAt:string}};
 export type LegalState={publication:LegalPublication|null;accepted:boolean;role:'PARENT'|'CHILD';requests:LegalRequest[];consents:{version:number;acceptedAt:string;withdrawnAt:string|null}[]};
 export const privacyKinds={ACCESS:'열람 요청',CORRECTION:'정정 요청',DELETE:'삭제·회원 탈퇴 요청',STOP:'처리 정지 요청',WITHDRAW:'동의 철회 요청',GUARDIAN:'법정대리인 확인 요청',COMPLAINT:'개인정보 문의·신고'} as const;
 export const legacyLegalDraft:LegalDraft={operatorName:'',privacyOfficer:'',contactEmail:'',address:'',businessNumber:'',
@@ -17,7 +17,16 @@ processors:'',transfers:'',retention:'',reviewNotes:'게시 전 검토: 실제 �
 export const legalInitialDraft:LegalDraft={...legacyLegalDraft,...legalReviewedText};
 export const legalFieldLabels:Record<keyof LegalDraft,string>={operatorName:'운영자명',privacyOfficer:'개인정보 보호책임자',contactEmail:'공개 문의 이메일',address:'사업장 주소',businessNumber:'사업자 등록번호',terms:'이용약관',privacy:'개인정보처리방침',children:'어린이를 위한 안내',processors:'처리 위탁',transfers:'국외 이전',retention:'보유 기간과 파기',reviewNotes:'내부 검토 메모'};
 export const legalRequiredFields:ReadonlyArray<keyof LegalDraft>=['operatorName','privacyOfficer','contactEmail','terms','privacy','children','processors','transfers','retention'];
-export function legalPublicationGaps(draft:Partial<LegalDraft>){return legalRequiredFields.flatMap(field=>{const value=draft[field]?.trim()||'';const issue=value.length<3?'내용 입력 필요':/\[확인 필요|\bTODO\b|\bTBD\b/i.test(value)?'운영 사실 확인 필요':field==='contactEmail'&&!z.email().safeParse(value).success?'이메일 형식 확인 필요':'';return issue?[{field,label:legalFieldLabels[field],issue}]:[];});}
+export function legalPublicationGaps(draft:Partial<LegalDraft>){
+ return legalRequiredFields.flatMap(field=>{
+  const value=draft[field]?.trim()||'';
+  const hasPendingMarker=/\[확인 필요|\bTODO\b|\bTBD\b/i.test(value);
+  const issue=value.length<3?'내용 입력 필요':hasPendingMarker?'운영 사실 확인 필요':
+   field==='contactEmail'&&!z.email().safeParse(value).success?'이메일 형식 확인 필요':'';
+  const details=[...value.matchAll(/\[확인 필요\s*:\s*([^\]]+)\]/g)].map(match=>match[1].trim()).filter(Boolean);
+  return issue?[{field,label:legalFieldLabels[field],issue,details}]:[];
+ });
+}
 // Stable key ordering and trimming make dirty checks match what the API actually saves.
 export function normalizeLegalDraft(value:Partial<LegalDraft>):LegalDraft{return Object.fromEntries(Object.keys(legalInitialDraft).map(key=>[key,(value[key as keyof LegalDraft]??legalInitialDraft[key as keyof LegalDraft]).trim()])) as LegalDraft;}
 export const serviceIntroSchema=z.object({title:z.string().trim().max(120),body:z.string().trim().max(20000)}).strict();
