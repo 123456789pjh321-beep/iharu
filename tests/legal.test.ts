@@ -73,7 +73,9 @@ it('reports exact publication gaps and refuses unconfirmed text even through dir
  const result=await root.req('/api/v1/legal/admin.publish',{version:1,reviewed:true,reason:'미확인 문서 게시 시도'});expect(result.status).toBe(400);
  expect((await result.json()).error.fields).toEqual(['processors','transfers','retention']);
  expect((await(await app.request(origin+'/api/v1/legal/public')).json()).publication).toBeNull();
- expect(legalPublicationGaps({...draft,transfers:'[확인 필요: 국가]'}).map(g=>g.field)).toEqual(['transfers']);
+ expect(legalPublicationGaps({...draft,transfers:'[확인 필요: 처리 국가] [확인 필요: 보유기간]'})).toEqual([
+  {field:'transfers',label:'국외 이전',issue:'운영 사실 확인 필요',details:['처리 국가','보유기간']}
+ ]);
  expect(normalizeLegalDraft({...draft,operatorName:'  운영자  '}).operatorName).toBe('운영자');
 });
 it('independently versions service introduction and keeps private edits out of both public documents and acceptance',async()=>{
@@ -101,4 +103,52 @@ it('upgrades only untouched legacy defaults while preserving custom documents an
  expect((await query<{version:number}>(database.db,'SELECT version FROM app_private.legal_settings'))[0].version).toBe(6);
 });
 
+});
+
+it('purges expired resolved cases and deletion verification while preserving active and held requests',async()=>{
+ const {b:root}=await parent('retention-admin',true),{b:user}=await parent('retention-user');
+ const cases=await Promise.all(['DELETE','ACCESS','ACCESS','ACCESS'].map(kind=>
+  legal(user,'request.create',{kind,detail:'격리된 보유기간 확인용 개인정보 요청입니다.'})
+ ));
+ const [expired,held,recent,pending]=cases;
+ const holdReference=crypto.randomUUID(), verificationReference=crypto.randomUUID();
+ const hold={id:held.id,version:1,reference:holdReference};
+ const route='/api/v1/legal/admin.retention.hold';
+ expect((await user.req(route,hold)).status).toBe(403);
+ await query(database.db,"UPDATE iharu_auth.session_guard SET reauthenticated_at=now()-interval '10 minutes'");
+ expect((await root.req(route,hold)).status).toBe(403);
+ expect((await root.req('/api/account/reauthenticate',{password})).ok).toBe(true);
+ expect(await legal(root,'admin.retention.hold',hold)).toEqual({held:true});
+ expect((await root.req(route,{...hold,reference:null})).status).toBe(409);
+
+ const completion={status:'COMPLETED',response:'요청 사항에 대한 조치 결과를 기록했습니다.',reason:'격리된 처리 결과 검증'};
+ await legal(root,'admin.resolve',{...completion,id:expired.id,version:1,deletionVerification:{
+  reference:verificationReference,authorityChecked:true,deletionChecked:true,copiesChecked:true
+ }});
+ await legal(root,'admin.resolve',{...completion,id:held.id,version:2});
+ await legal(root,'admin.resolve',{...completion,id:recent.id,version:1,status:'REJECTED'});
+ await query(database.db,"UPDATE app_private.privacy_requests SET updated_at=now()-interval '91 days' WHERE id IN ($1,$2,$3)",[expired.id,held.id,pending.id]);
+ expect((await legal(root,'admin.requests')).items.find((r:{id:string})=>r.id===held.id).retentionHoldReference).toBe(holdReference);
+ expect((await legal(user,'state')).requests.find((r:{id:string})=>r.id===held.id)).not.toHaveProperty('retentionHoldReference');
+
+ const lease=crypto.randomUUID();
+ await query(database.db,"INSERT INTO app_private.cron_runs(slot,token,state,source,lease_until) VALUES(now(),$1,'RUNNING','manual',now()+interval '5 minutes')",[lease]);
+ const step=(token:string,role:'worker_runtime'|'app_runtime'='worker_runtime')=>database.db.transaction().execute(async tx=>{
+  await query(tx,'SET LOCAL ROLE '+role);
+  const [row]=await query<{data:{privacyRequestsPurged:number}}>(tx,"SELECT app_private.cron_step($1,'retention') AS data",[token]);
+  return row.data;
+ });
+ await expect(step(lease,'app_runtime')).rejects.toMatchObject({code:'42501'});
+ await expect(step(crypto.randomUUID())).rejects.toMatchObject({message:'STALE_LEASE'});
+ expect((await step(lease)).privacyRequestsPurged).toBe(1);
+ expect((await legal(user,'state')).requests.map((r:{id:string})=>r.id)).toEqual(expect.arrayContaining([held.id,recent.id,pending.id]));
+ expect((await legal(user,'state')).requests.map((r:{id:string})=>r.id)).not.toContain(expired.id);
+ expect(await query(database.db,'SELECT request_id FROM app_private.privacy_deletion_verifications WHERE request_id=$1',[expired.id])).toHaveLength(0);
+ expect(await query(database.db,'SELECT id FROM app_private.system_events WHERE target_id=$1',[expired.id])).toHaveLength(0);
+ expect(await query(database.db,"SELECT id FROM app_private.system_events WHERE action='legal.admin.resolve' AND actor_id IS NOT NULL AND target_id IS NULL AND reason=''")).toHaveLength(1);
+
+ expect(await legal(root,'admin.retention.hold',{id:held.id,version:3,reference:null})).toEqual({held:false});
+ expect((await step(lease)).privacyRequestsPurged).toBe(1);
+ expect((await step(lease)).privacyRequestsPurged).toBe(0);
+ expect((await legal(user,'state')).requests.map((r:{id:string})=>r.id)).toEqual(expect.arrayContaining([recent.id,pending.id]));
 });
