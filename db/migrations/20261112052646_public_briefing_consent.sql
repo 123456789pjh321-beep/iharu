@@ -66,7 +66,6 @@ BEGIN
  SELECT b.* FROM app_private.briefing_posts b LEFT JOIN app_private.briefing_feedback f ON f.post_id=b.id
  WHERE b.profile_id=who AND pref.enabled AND NOT coalesce(f.hidden,false) AND (NOT coalesce((p->>'saved')::boolean,false) OR f.saved)
  AND NOT EXISTS(SELECT 1 FROM unnest(b.owners) owner WHERE NOT app_private.briefing_can_use(who,owner))
- AND EXISTS(SELECT 1 FROM jsonb_array_elements(b.items) item WHERE (item->>'validUntil')::date>=today)
  AND (NOT (p?'cursor') OR (b.updated_at,b.id)<((p->'cursor'->>'updatedAt')::timestamptz,(p->'cursor'->>'id')::uuid))
  ORDER BY b.updated_at DESC,b.id DESC LIMIT 11
  ), numbered AS (SELECT b.*,row_number() OVER(ORDER BY b.updated_at DESC,b.id DESC) n FROM matching b)

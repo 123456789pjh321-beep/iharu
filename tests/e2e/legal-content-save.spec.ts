@@ -73,3 +73,35 @@ test('publishes service introduction to public and app readers, while incomplete
  await legal(page.request,'admin.save',{version:config.version,draft:verified,reason:'검증 문서 저장'});await legal(page.request,'admin.publish',{version:config.version+1,reviewed:true,reason:'검증된 문서 게시'});
  for(const [path,text] of [['terms','아이하루 이용약관'],['privacy','아이하루 개인정보처리방침']]){await page.goto('/legal/'+path);await expect(page.locator('.legal-document .legal-prose').first()).toContainText(text);await expect(page.locator('.legal-document')).not.toContainText('PRIVATE-REVIEW-NOTES');}
 });
+
+test('records a deletion completion with a verified checklist and shows the reference only to administrators',async({page,playwright})=>{
+ await signup(page.request,'privacy-verify-admin@example.test',true);
+ const requester=await playwright.request.newContext({baseURL:origin});
+ try{
+  await signup(requester,'privacy-verify-requester@example.test');
+  await legal(requester,'request.create',{kind:'DELETE',detail:'내 계정의 삭제와 회원 탈퇴를 요청합니다.'});
+  await page.goto('/admin?section=legal');
+  await launchReady(page);
+  const item=page.locator('details.privacy-request').filter({hasText:'privacy-verify-requester'});
+  await item.locator('summary').click();
+  await item.getByLabel('상태',{exact:true}).selectOption('COMPLETED');
+  await item.getByLabel('회원에게 보일 답변',{exact:true}).fill('요청한 범위의 계정과 자료 처리를 확인했습니다.');
+  await item.getByLabel('내부 변경 사유',{exact:true}).fill('삭제 결과 확인');
+  const proof=crypto.randomUUID();
+  await item.getByLabel('내부 삭제 검증 기록 번호 (UUID)').fill(proof);
+  const save=item.getByRole('button',{name:'처리 결과 저장'});
+  await save.click();
+  expect((await legal(requester,'state')).requests[0].status).toBe('RECEIVED');
+  for(const name of ['요청자 본인 또는 법정대리인의 권한','요청 범위의 원본과 가족 공유 자료','해당하는 수탁사 사본과 백업']){
+   await item.getByRole('checkbox',{name:new RegExp(name)}).check();
+  }
+  expect((await page.request.post('/api/account/reauthenticate',{headers:{Origin:origin},data:{password}})).ok()).toBe(true);
+  await save.click();
+  await expect(item.locator('summary')).toContainText('COMPLETED');
+  await item.locator('summary').click();
+  await expect(item.getByText(proof,{exact:false})).toBeVisible();
+  const request=(await legal(requester,'state')).requests[0];
+  expect(request.status).toBe('COMPLETED');
+  expect(request).not.toHaveProperty('deletionVerification');
+ }finally{await requester.dispose();}
+});
