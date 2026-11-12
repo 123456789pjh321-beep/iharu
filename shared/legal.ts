@@ -6,7 +6,7 @@ export const legalDraftSchema=z.object({
 }).strict();
 export type LegalDraft=z.infer<typeof legalDraftSchema>;
 export type LegalPublication={id:string;version:number;document:LegalDraft;publishedAt:string};
-export type LegalRequest={id:string;kind:string;detail:string;status:string;response:string;version:number;createdAt:string;updatedAt:string;requesterName?:string};
+export type LegalRequest={id:string;kind:string;detail:string;status:string;response:string;version:number;createdAt:string;updatedAt:string;requesterName?:string;deletionVerification?:{reference:string;verifiedAt:string}};
 export type LegalState={publication:LegalPublication|null;accepted:boolean;role:'PARENT'|'CHILD';requests:LegalRequest[];consents:{version:number;acceptedAt:string;withdrawnAt:string|null}[]};
 export const privacyKinds={ACCESS:'열람 요청',CORRECTION:'정정 요청',DELETE:'삭제·회원 탈퇴 요청',STOP:'처리 정지 요청',WITHDRAW:'동의 철회 요청',GUARDIAN:'법정대리인 확인 요청',COMPLAINT:'개인정보 문의·신고'} as const;
 export const legacyLegalDraft:LegalDraft={operatorName:'',privacyOfficer:'',contactEmail:'',address:'',businessNumber:'',

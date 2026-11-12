@@ -20,14 +20,24 @@ export function prepareBriefingContext(raw:RawContext):AnalysisContext{
 }
 const candidate=z.object({sourceId:z.string().max(20),category:z.enum(briefingCategories),title:z.string().min(5).max(100),summary:z.string().min(12).max(400),reason:z.string().min(5).max(160),action:z.string().min(6).max(160),matchKey:z.string().min(3).max(60),evidenceQuote:z.string().min(12).max(350),validFrom:z.iso.date(),validUntil:z.iso.date(),score:z.number().int().min(0).max(100),urgent:z.boolean()}).strict();
 export const briefingResultSchema=z.object({items:z.array(candidate).max(8)}).strict();
-export const briefingResultJsonSchema=z.toJSONSchema(briefingResultSchema,{target:'draft-7'});
+export const publicBriefingResultSchema = z.object({
+ items: z.array(candidate.omit({sourceId: true}).extend({sourceUrl: z.string().max(2048)})).max(8)
+}).strict();
+export const briefingResultJsonSchema = z.toJSONSchema(publicBriefingResultSchema, {
+ target: 'draft-7',
+ override: ({jsonSchema}) => {
+  // Apply string length limits locally. The provider accepts a subset of JSON Schema.
+  delete jsonSchema.minLength;
+  delete jsonSchema.maxLength;
+ }
+});
 const norm=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex');
 function mentionsDate(text:string,value:string){const [y,m,d]=value.split('-').map(Number);return new RegExp(`${y}\\s*[.년/\\-]\\s*0?${m}\\s*[.월/\\-]\\s*0?${d}(?:\\D|$)`).test(text)||new RegExp(`(?:^|\\D)0?${m}\\s*월\\s*0?${d}\\s*일`).test(text);}
 const areaAliases:Record<string,string>={suwon:'수원',seoul:'서울',gg:'경기',gunpo:'군포',anyang:'안양',yongin:'용인',hscity:'화성',goe:'경기'};
 export function selectBriefingItems(value:unknown,context:AnalysisContext,sources:BriefingEvidence[]):BriefingItem[]{
  const parsed=briefingResultSchema.safeParse(value);if(!parsed.success)throw Error('INVALID_RESULT');const chosen=new Map<string,BriefingItem>();
- for(const c of parsed.data.items){const source=sources.find(s=>s.id===c.sourceId),topic=context.topics.find(t=>t.key===c.matchKey),url=source&&officialSourceUrl(source.url);if(!source||!url||!topic||c.validUntil<c.validFrom||c.validUntil<context.day||c.validFrom>addDays(context.day,6)||c.validUntil>addDays(context.day,31))continue;
+ for(const c of parsed.data.items){const source=sources.find(s=>s.id===c.sourceId),topic=context.topics.find(t=>norm(t.key)===norm(c.matchKey)),url=source&&officialSourceUrl(source.url);if(!source||!url||!topic||c.validUntil<c.validFrom||c.validUntil<context.day||c.validFrom>addDays(context.day,6)||c.validUntil>addDays(context.day,31))continue;
   const quote=norm(c.evidenceQuote),body=norm(source.text),areaTokens=context.region.split(/\s+/).map(x=>x.replace(/특별자치도|특별자치시|특별시|광역시|도$|시$|군$|구$/g,'')).filter(x=>x.length>=2).slice(-1),hostArea=Object.entries(areaAliases).filter(([key])=>url.hostname.split('.').includes(key)).map(([,v])=>v);
   if(!body.includes(quote)||!body.includes(norm(topic.key))||!areaTokens.some(t=>body.includes(norm(t))||hostArea.includes(t)))continue;
   const recurring=c.category==='FACILITY'&&/매주|정기\s*휴관/.test(c.evidenceQuote)&&/[월화수목금토일]요일/.test(c.evidenceQuote);
