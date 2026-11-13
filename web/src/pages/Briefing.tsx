@@ -60,7 +60,7 @@ export default function BriefingPage(){
  :<>
  {!saved&&searchRegion&&<div className="briefing-instagram-search"><a className="button" href={'https://www.instagram.com/explore/search/keyword/?q='+encodeURIComponent(searchQuery)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><Icon name="search"/>인스타그램에서 {searchRegion} 소식 찾기</a></div>}
  {!saved&&(sample||showChannels&&!highlights.length||status.tone==='warning')&&<section className={'briefing-collection-status '+status.tone} role="status"><Icon name={status.tone==='warning'?'clock':'sparkles'}/><div><strong>{status.title}</strong><p>{status.description}</p><small>최근 수집: {timestamp(pref.lastCheckedAt)}</small></div></section>}
- {showChannels&&<InstagramChannelFeed key={pref.region} channels={channels} highlights={highlights}/>}
+ {!saved&&channels.length>0&&<InstagramChannelFeed key={pref.region} channels={channels} highlights={highlights}/>}
  {posts.map(post=><BriefingCard key={post.id} post={post} changed={update} hidden={()=>hide(post.id)}/>)}
  {sample&&<><section className="briefing-sample-notice" aria-label="샘플 브리핑 안내"><span>샘플 브리핑</span><h2>이런 소식을 모아 보여드려요</h2><p>아래는 가상 예시예요. 실제 공지·행사·날씨가 아니며, 내 소식으로 저장되지 않아요.</p></section><BriefingCard key="sample-briefing" post={createBriefingSample(feed.serverDay,pref.region)} sample/></>}
  {saved&&!posts.length&&<section className="briefing-empty"><span><Icon name="bookmark"/></span><h2>보관한 소식이 없어요</h2><p>다시 보고 싶은 실제 소식의 보관 버튼을 눌러 주세요.</p><Link to="/briefing" className="button">전체 소식 보기<Icon name="arrow"/></Link></section>}
