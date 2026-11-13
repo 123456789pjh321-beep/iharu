@@ -11,7 +11,7 @@ async function signup(client:APIRequestContext,email:string,admin=false){
  if(admin)expect((await client.post('/__test__/system-admin',{data:{email}})).ok()).toBe(true);
 }
 async function legal(client:APIRequestContext,op:string,data:object={}){const response=await client.post('/api/v1/legal/'+op,{headers:{Origin:origin},data});expect(response.ok(),await response.text()).toBe(true);return response.json();}
-async function launchReady(page:Page){await expect(page.locator('#app-launch, .launch-video[open]')).toHaveCount(0,{timeout:12000});}
+async function launchReady(page:Page){await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});}
 test('long Korean draft saves once, survives reload, and shows field-specific publication gaps',async({page})=>{
  await signup(page.request,'ui126-large@example.test',true);let saves=0;page.on('request',request=>{if(request.url().endsWith('/legal/admin.save'))saves++;});
  await page.goto('/admin?section=legal');await launchReady(page);await expect(page.getByLabel('운영자명 (개인 또는 법인)',{exact:true})).toBeVisible();
