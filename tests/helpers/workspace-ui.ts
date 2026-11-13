@@ -1,4 +1,4 @@
-import {expect,type BrowserContext,type Page} from '@playwright/test';
+import {expect,type Page} from '@playwright/test';
 
 export async function selectCalendarView(page:Page,view:'월간'|'주간'|'일간'){
  await page.locator('summary[aria-label="달력 보기 선택"]').click();
@@ -31,8 +31,4 @@ export async function setCalendarTheme(page:Page,theme:'밝게'|'어둡게'){
  await page.getByRole('button',{name:theme,exact:true}).click();
  await expect(page.locator('html')).toHaveAttribute('data-theme',theme==='어둡게'?'dark':'light');
  await page.goto('/today/calendar');
-}
-
-export async function skipEntryFilm(context:BrowserContext){
- await context.addInitScript(()=>sessionStorage.setItem('iharu:launch-video:v2','seen'));
 }

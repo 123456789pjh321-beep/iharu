@@ -8,7 +8,6 @@ import { Icon } from '../components/Icon';
 import {accountDeletionRequestPath,entryReturnPath} from '../../../shared/entry-intent';
 import {workspaceRequest} from '../workspace-api';
 import {forgetEntry} from '../entry-session';
-import {useLaunchVideo} from '../components/LaunchVideo';
 
 export function InlineLogin({returnTo,onAuthenticated,onBusy}:{returnTo:string;onAuthenticated:()=>Promise<void>;onBusy:(busy:boolean)=>void}){
  const providers=useLoginProviders();
@@ -23,7 +22,6 @@ export function LoginPage() {
   const reauthenticate=params.get('reauth')==='1';
   const next=entryReturnPath(params.get('next'));
   const canBrowse=next!=='/invite'&&next!==accountDeletionRequestPath;
-  useLaunchVideo(pathname==='/login'&&!reauthenticate&&canBrowse&&!params.has('error')&&!params.has('verified'));
   return <AuthEntryFrame>
     {entry&&!reauthenticate?<LoginEntry providers={providers}/>:<LoginForm providers={providers} reauthenticate={reauthenticate}/>}
     {pathname==='/login'&&!reauthenticate&&canBrowse&&<Link className="auth-browse-link" to={next} onClick={forgetEntry}>로그인 없이 먼저 둘러보기 <Icon name="arrow"/></Link>}
@@ -130,7 +128,6 @@ export function PhonePage() {
   const providers = useApi('/api/account/providers',providersSchema); const navigate=useNavigate();
   const link = new URLSearchParams(useLocation().search).get('link') === '1';
   const [phone,setPhone]=useState('');const [code,setCode]=useState('');const [sent,setSent]=useState(false);const [seconds,setSeconds]=useState(0);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
-  useLaunchVideo(!link);
   const enabled=providers.data?.providers.find(p=>p.id==='phone')?.enabled===true;
   useEffect(()=>{if(seconds<=0)return; const timer=window.setTimeout(()=>setSeconds(s=>s-1),1000);return()=>clearTimeout(timer);},[seconds]);
   async function send(){setBusy(true);setError('');try{await authPost('/api/auth/phone-number/send-otp',{phoneNumber:phone});setSent(true);setSeconds(60);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}

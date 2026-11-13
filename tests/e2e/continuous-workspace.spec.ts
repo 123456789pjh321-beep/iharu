@@ -1,4 +1,3 @@
-import {skipEntryFilm} from '../helpers/workspace-ui';
 import {test,expect,type BrowserContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='continuous-workspace-fixture-2026';
 async function setup(context:BrowserContext,email:string){
@@ -8,7 +7,7 @@ async function setup(context:BrowserContext,email:string){
 }
 test('real adjacent events, holidays and recurring fees remain present during drag and delayed revalidation',async({browser})=>{
  const context=await browser.newContext({baseURL:origin,hasTouch:true,isMobile:true,viewport:{width:390,height:900}}),page=await context.newPage();try{
-  await skipEntryFilm(context);await setup(context,'continuous-data@example.test');
+  await setup(context,'continuous-data@example.test');
   for(const [kind,data] of [['EVENT',{title:'다음 달 실제 일정',date:'2026-12-01',allDay:true}],['FEE',{title:'매월 피아노',date:'2026-11-01',amount:180000,feeFrequency:'MONTHLY'}]] as const)expect((await context.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind,data}})).ok()).toBe(true);
   const cdp=await context.newCDPSession(page);
   for(const [route,label] of [['/today/calendar','달력 월 선택'],['/tuition','조회 월']]){

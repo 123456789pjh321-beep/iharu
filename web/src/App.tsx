@@ -5,7 +5,6 @@ import {AccountDeletionPage,LegalPage,PrivacyPage} from './pages/Legal';
 import {PersonalWorkspace,type PersonalMode} from './pages/PersonalWorkspace';
 import {useWorkspaceGate} from './components/WorkspaceGate';
 import {RouteEffects} from './components/RouteEffects';
-import {LaunchVideoProvider,useLaunchVideo} from './components/LaunchVideo';
 import {GuardianVerificationPage} from './pages/GuardianVerification';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
@@ -72,7 +71,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
     </div>{dialog&&<PreviewDialog title={dialog} onClose={()=>setDialog(null)}/>}
   </div>;
 }
-export default function App(){return <BrowserRouter><LaunchVideoProvider><RouteEffects/><Routes>
+export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route element={<PublicFrame/>}>
   <Route path="/invite" element={<GroupInvitePage/>}/>
   {['/service','/guide','/notices','/notices/:slug','/blog','/blog/:slug'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
@@ -100,7 +99,7 @@ export default function App(){return <BrowserRouter><LaunchVideoProvider><RouteE
   </Route>
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/><Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="*" element={<Shell/>}/>
-</Routes></LaunchVideoProvider></BrowserRouter>;}
+</Routes></BrowserRouter>;}
 function WorkspaceLanding(){const {health}=useWorkspaceGate();return health.data?.data.demoEnabled?<Shell/>:<Navigate to="/timetable" replace/>;}
 function ScheduleAlias({repeats=false}:{repeats?:boolean}){const {health}=useWorkspaceGate();if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
 
@@ -113,7 +112,6 @@ function AccountEntry(){const {session:s}=useWorkspaceGate();if(s.loading)return
 function TestWorkspaceEntry(){
  const health=useApi('/api/health',healthResponse);
  const enabled=!health.loading&&health.data?.data.environment!=='production'&&health.data?.data.demoEnabled;
- useLaunchVideo(Boolean(enabled));
  if(health.loading)return <Loading/>;
  return enabled?<Suspense fallback={<Loading/>}><TestWorkspace/></Suspense>:<Navigate to="/login" replace/>;
 }

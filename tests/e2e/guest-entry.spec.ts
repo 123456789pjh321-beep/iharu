@@ -200,7 +200,6 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
  const account=await parent(playwright,'bottom-navigation');
  await account.client.dispose();
  expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email:account.email,password}})).ok()).toBe(true);
- await page.addInitScript(()=>sessionStorage.setItem('iharu:launch-video:v2','seen'));
 
  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
  const appearance=()=>nav.evaluate(element=>{
