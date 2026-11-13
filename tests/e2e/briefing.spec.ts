@@ -26,7 +26,7 @@ test('Dongtan Instagram cards link to the original and load the embed only on re
   available:true,posts:[post,{...post,id:'old-reel',items:[{...item,title:'지난 동탄 행사',validUntil:'2026-11-12'}]}],
   hasMore:false,nextCursor:null,serverDay:day
  }}));
- await page.route(reel+'embed/captioned/',route=>route.fulfill({contentType:'text/html',body:'<p>Instagram 공개 릴스</p>'}));
+ await page.route(reel+'embed/captioned/',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:'<p>Instagram 공개 릴스</p>'}));
  await open(page);
  const search=page.getByRole('link',{name:'인스타그램에서 동탄 소식 찾기'});
  await expect(search).toBeVisible();
