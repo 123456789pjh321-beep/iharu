@@ -5,6 +5,7 @@ import {addDays} from '../../shared/schedules.js';
 import type {WorkspaceItem} from '../../shared/workspace.js';
 import {briefingCategories,type BriefingItem} from '../../shared/briefing.js';
 import {officialSourceUrl,type BriefingEvidence} from './sources.js';
+import {instagramCandidateSchema} from './instagram.js';
 export type RawContext={region:string;day:string;items:(Pick<WorkspaceItem,'id'|'ownerId'|'kind'|'data'|'version'>&{changed:boolean})[];names:string[];owners:string[];scope:string};
 export type AnalysisContext={region:string;day:string;topics:{key:string;dates:string[];changed:boolean}[]};
 const forbidden=/[\w.+-]+@[\w.-]+|https?:|\d{6}|(?:010|011|016|017|018|019)[ -]?\d|(?:로|길)\s*\d|병원|진료|검사|상담|약물|비밀번호|주민번호/;
@@ -20,15 +21,19 @@ export function prepareBriefingContext(raw:RawContext):AnalysisContext{
 }
 const candidate=z.object({sourceId:z.string().max(20),category:z.enum(briefingCategories),title:z.string().min(5).max(100),summary:z.string().min(12).max(400),reason:z.string().min(5).max(160),action:z.string().min(6).max(160),matchKey:z.string().min(3).max(60),evidenceQuote:z.string().min(12).max(350),validFrom:z.iso.date(),validUntil:z.iso.date(),score:z.number().int().min(0).max(100),urgent:z.boolean()}).strict();
 export const briefingResultSchema=z.object({items:z.array(candidate).max(8)}).strict();
-export const publicBriefingResultSchema = z.object({
- items: z.array(candidate.omit({sourceId: true}).extend({sourceUrl: z.string().max(2048)})).max(8)
+const publicCandidate=candidate.omit({sourceId:true}).extend({sourceUrl:z.string().max(2048)});
+const publicBriefingResultSchema=z.object({
+ items:z.array(publicCandidate).max(8),
+ instagram:z.array(instagramCandidateSchema).max(8)
 }).strict();
-export const briefingResultJsonSchema = z.toJSONSchema(publicBriefingResultSchema, {
+export const briefingResultJsonSchema=z.toJSONSchema(publicBriefingResultSchema, {
  target: 'draft-7',
  override: ({jsonSchema}) => {
   // Apply string length limits locally. The provider accepts a subset of JSON Schema.
   delete jsonSchema.minLength;
   delete jsonSchema.maxLength;
+  delete jsonSchema.minItems;
+  delete jsonSchema.maxItems;
  }
 });
 const norm=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
@@ -52,4 +57,28 @@ export function selectBriefingItems(value:unknown,context:AnalysisContext,source
  const rows=[...chosen.values()].sort((a,b)=>b.score-a.score);return [...rows.filter(x=>!x.urgent).slice(0,3),...rows.filter(x=>x.urgent).slice(0,3)];
 }
 export function responseText(response:unknown){const r=response as {status?:string;output?:{type?:string;content?:{type?:string;text?:string}[]}[]};if(r.status!=='completed')throw Error('AI_UNAVAILABLE');return (r.output||[]).flatMap(o=>o.type==='message'?(o.content||[]).filter(c=>c.type==='output_text').map(c=>c.text||''):[]).join('\n');}
-export function responseSourceUrls(response:unknown){const r=response as {output?:{type?:string;action?:{sources?:{url?:string}[]};content?:{annotations?:{type?:string;url?:string}[]}[]}[]};return [...new Set((r.output||[]).flatMap(o=>[...(o.action?.sources||[]).map(s=>s.url||''),...(o.content||[]).flatMap(c=>(c.annotations||[]).filter(a=>a.type==='url_citation').map(a=>a.url||''))]).map(s=>officialSourceUrl(s)?.href).filter((s):s is string=>!!s))].slice(0,6);}
+export function responseSourceUrls(response:unknown){
+ const r=response as {output?:{type?:string;action?:{url?:string;sources?:{url?:string}[]};content?:{annotations?:{type?:string;url?:string}[]}[]}[]};
+ const urls=(r.output||[]).flatMap(o=>[
+  ...(o.content||[]).flatMap(c=>(c.annotations||[]).filter(a=>a.type==='url_citation').map(a=>a.url)),
+  o.action?.url,...(o.action?.sources||[]).map(s=>s.url)
+ ]);
+ return [...new Set(urls.filter((url):url is string=>typeof url==='string'&&url.length<=2048))].slice(0,80);
+}
+
+export function parsePublicBriefingResult(output:string){
+ let value:unknown;
+ try{value=JSON.parse(output);}catch{throw Error('INVALID_RESULT');}
+ const parsed=z.object({items:z.array(z.unknown()),instagram:z.array(z.unknown())}).safeParse(value);
+ if(!parsed.success)throw Error('INVALID_RESULT');
+ const items=parsed.data.items.slice(0,8).flatMap(item=>{
+  const candidate=publicCandidate.safeParse(item);
+  return candidate.success?[candidate.data]:[];
+ });
+ const instagram=parsed.data.instagram.slice(0,8).flatMap(item=>{
+  const candidate=instagramCandidateSchema.safeParse(item);
+  return candidate.success?[candidate.data]:[];
+ });
+ if(!items.length&&!instagram.length&&(parsed.data.items.length||parsed.data.instagram.length))throw Error('INVALID_RESULT');
+ return {items,instagram};
+}

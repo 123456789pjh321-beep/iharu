@@ -6,11 +6,13 @@ export type BriefingCollectionStatus={tone:'neutral'|'warning';title:string;desc
 export function briefingCollectionStatus(preferences:BriefingPreferences,available:boolean):BriefingCollectionStatus{
  if(!available)return {tone:'warning',title:'자동 브리핑 연결을 확인하고 있어요',description:'운영 연결이 준비되면 소식 수집을 다시 확인해요.'};
  switch(preferences.lastState){
-  case 'ERROR':return {tone:'warning',title:'최근 소식 수집에 실패했어요',description:'자동 수집을 다시 시도해요. 새로고침하면 현재 저장된 소식을 다시 불러와요.'};
+  case 'ERROR':return {tone:'warning',title:'최근 소식 수집에 실패했어요',description:'다음 자동 수집에서 다시 시도해요. 인스타그램에서 지역 소식을 바로 찾아볼 수 있어요.'};
+  case 'PARTIAL':return {tone:'warning',title:'일부 게시물을 확인하지 못했어요',description:'확인한 소식을 먼저 보여드려요. 다음 자동 수집에서 다시 확인해요.'};
+  case 'INVALID_REGION':return {tone:'warning',title:'기준 지역을 확인해 주세요',description:'브리핑 설정에서 목록에 있는 기준 지역을 저장해 주세요.'};
   case 'LIMIT':return {tone:'warning',title:'오늘의 자동 수집 한도에 도달했어요',description:'다음 자동 확인 때 다시 시도해요.'};
   case 'MISSING_KEY':return {tone:'warning',title:'자동 브리핑 연결을 확인하고 있어요',description:'운영 연결을 마치면 실제 소식을 수집할 수 있어요.'};
   case 'NO_CONTEXT':return {tone:'warning',title:'기준 지역을 확인해 주세요',description:'더보기 → 설정 → AI 브리핑에서 기준 지역을 저장해 주세요.'};
-  case 'EMPTY':return {tone:'neutral',title:'최근 수집에서 새로운 소식이 없었어요',description:'설정한 지역과 일정에 맞는 새 소식을 확인해요.'};
+  case 'EMPTY':return {tone:'neutral',title:'최근 수집에서 새로운 소식이 없었어요',description:'다음 자동 수집에서 설정한 지역의 공개 게시물과 공지를 다시 확인해요.'};
   case 'DONE':return {tone:'neutral',title:'지금 표시할 소식이 없어요',description:'새 소식이 준비되면 이곳에 보여드려요.'};
   default:return {tone:'neutral',title:'첫 브리핑을 준비하고 있어요',description:'실제 소식이 준비되면 샘플 대신 보여드려요.'};
  }

@@ -28,7 +28,7 @@ function fakes(){
   const item={sourceUrl:url,category:'FACILITY',title:changed?'도서관 운영시간 변경을 확인하세요':'도서관 임시 휴관을 확인하세요',summary:'공식 도서관 운영 공지를 확인해 주세요.',reason:'공식 도서관 이용 공지입니다.',action:'방문 전에 공식 공지의 운영 일정을 확인해 주세요.',matchKey:'수원중앙도서관',evidenceQuote:quote,validFrom:day,validUntil:addDays(day,6),score:99,urgent:false};
   return Response.json({status:'completed',output:[
    {type:'web_search_call',action:{sources:[{url}]}},
-   {type:'message',content:[{type:'output_text',text:JSON.stringify({items:[item]})}]}
+   {type:'message',content:[{type:'output_text',text:JSON.stringify({items:[item],instagram:[]})}]}
   ],usage:{input_tokens:100,output_tokens:150}});
  });
  const evidence=async(url:string,id:string)=>({id,url,title:'수원시 도서관 공지',text:quote+' 경기도 수원시에서 공식 확인한 공지입니다.',checkedAt:new Date().toISOString()});
@@ -65,7 +65,56 @@ it('withdrawal cancels an in-flight lease, deletes personal posts and cannot res
 it('enforces the shared daily call reservation and fences expired leases',async()=>{await enable('first');await enable('second');await query(database.db,'UPDATE app_private.briefing_system SET daily_call_limit=2');await worker('enqueue');const first=await worker<{id:string;token:string}>('claim.public');await query(database.db,"UPDATE app_private.briefing_jobs SET lease_until=now()-interval '1 second' WHERE id=$1",[first.id]);const second=await worker<{id:string;token:string}>('claim.public');expect(second.token).not.toBe(first.token);expect(await worker('complete',{id:first.id,token:first.token,items:[]})).toMatchObject({state:'STALE_LEASE'});expect((await worker('claim.public')).state).toBe('LIMIT');expect(await query(database.db,'SELECT * FROM app_private.briefing_usage')).toHaveLength(2);});
 it('does not publish after schedule changes, membership revocation or provider key rotation',async()=>{const {b,actor}=await enable();await worker('enqueue');const lease=await worker<{id:string;token:string}>('claim.public');const [item]=await query<{id:string}>(database.db,"SELECT id FROM app_private.workspace_items WHERE kind='REPEAT'");await query(database.db,'UPDATE app_private.workspace_items SET version=version+1 WHERE id=$1',[item.id]);expect((await worker('complete',{id:lease.id,token:lease.token,items:[]})).state).toBe('CANCELLED');await query(database.db,'DELETE FROM app_private.briefing_jobs');await worker('enqueue');const next=await worker<{id:string;token:string}>('claim.public');await query(database.db,'UPDATE app_private.ai_provider_settings SET version=version+1');expect((await worker('complete',{id:next.id,token:next.token,items:[]})).state).toBe('CANCELLED');expect((await b.api<BriefingFeed>('read')).posts).toHaveLength(0);expect(actor.memberId).toBeTruthy();});
 it('keeps administrative controls behind recent superadmin authentication',async()=>{const {b,member}=await parent();await query(database.db,'INSERT INTO app_private.system_admins(member_id) VALUES($1)',[member]);const s=await b.api<{version:number;dailyCallLimit:number}>('admin.read');expect(s.dailyCallLimit).toBe(100);await query(database.db,"UPDATE iharu_auth.session_guard SET reauthenticated_at=now()-interval '10 minutes'");expect((await b.req('/api/v1/briefing/admin.save',{enabled:false,dailyCallLimit:20,version:s.version})).status).toBe(403);expect((await b.req('/api/account/reauthenticate',{password})).ok).toBe(true);expect(await b.api('admin.save',{enabled:false,dailyCallLimit:20,version:s.version})).toMatchObject({enabled:false,dailyCallLimit:20});expect((await worker('claim.public')).state).toBe('DISABLED');});
-it('returns no-news without creating a post, and provider failures remain safe and distinguishable',async()=>{const {b}=await enable();const fake=fakes();fake.deps.fetcher=vi.fn(async()=>Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({items:[]})}]}]}));expect(await tick(fake.deps)).toMatchObject({state:'DONE',changed:false});expect((await b.api<BriefingFeed>('read')).preferences.lastState).toBe('EMPTY');await query(database.db,'DELETE FROM app_private.briefing_jobs');fake.deps.fetcher=vi.fn(async()=>new Response(key,{status:401}));expect(await tick(fake.deps)).toMatchObject({state:'FAILED',code:'AI_AUTH'});const feed=await b.api<BriefingFeed>('read');expect(feed.preferences.lastState).toBe('ERROR');expect(JSON.stringify(feed)).not.toContain(key);expect(feed.posts).toHaveLength(0);});
+it('returns no-news without creating a post, and provider failures remain safe and distinguishable',async()=>{const {b}=await enable();const fake=fakes();fake.deps.fetcher=vi.fn(async()=>Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({items:[],instagram:[]})}]}]}));expect(await tick(fake.deps)).toMatchObject({state:'DONE',changed:false});expect((await b.api<BriefingFeed>('read')).preferences.lastState).toBe('EMPTY');await query(database.db,'DELETE FROM app_private.briefing_jobs');fake.deps.fetcher=vi.fn(async()=>new Response(key,{status:401}));expect(await tick(fake.deps)).toMatchObject({state:'FAILED',code:'AI_AUTH'});const feed=await b.api<BriefingFeed>('read');expect(feed.preferences.lastState).toBe('ERROR');expect(JSON.stringify(feed)).not.toContain(key);expect(feed.posts).toHaveLength(0);});
+
+it('publishes cited, recent Dongtan Instagram posts without any private schedule',async()=>{
+ const {b,profile}=await parent();
+ const region='경기도 화성시 동탄구';
+ await b.api('preferences.save',{enabled:true,region,consent:true,consentVersion:briefingConsentVersion,version:0});
+ await query(database.db,"UPDATE app_private.briefing_preferences SET enabled_at=now()-interval '2 days' WHERE profile_id=$1",[profile]);
+ const day=koreaToday();
+ const post='https://www.instagram.com/reel/DongtanPost1/',withoutEmbed='https://www.instagram.com/p/DongtanPost2/';
+ const missing='https://www.instagram.com/p/DongtanPost3/',old='https://www.instagram.com/p/DongtanPost4/';
+ const elsewhere='https://www.instagram.com/p/DongtanPost5/',uncited='https://www.instagram.com/p/DongtanPost6/';
+ const candidate={sourceUrl:post,topic:'DATE',title:'동탄 주말 가족 체험',summary:'동탄에서 열리는 주말 가족 체험 안내입니다.',locationEvidence:'동탄호수공원',publishedAt:day,eventEndsOn:null};
+ const fetcher=vi.fn<typeof fetch>(async(input,init)=>{
+  const url=new URL(String(input));
+  if(url.hostname==='api.openai.com'){
+   const request=JSON.parse(init!.body as string);
+   expect(JSON.parse(request.input)).toEqual({region:'경기도 화성시',date:day});
+   expect(request.tools[0].user_location.city).toBe('경기도 화성시');
+   expect(request.text.format.schema.required).toContain('instagram');
+   return Response.json({status:'completed',output:[
+    {type:'web_search_call',action:{sources:[post,withoutEmbed,missing,old,elsewhere].map(url=>({url}))}},
+    {type:'message',content:[{type:'output_text',text:JSON.stringify({items:[{sourceUrl:'invalid official candidate'}],instagram:[
+     {...candidate,sourceUrl:'https://instagram.com/community/reel/DongtanPost1/?igsh=tracked'},candidate,
+     {...candidate,sourceUrl:withoutEmbed},{...candidate,sourceUrl:missing},{...candidate,sourceUrl:old,publishedAt:addDays(day,-22)},
+     {...candidate,sourceUrl:elsewhere,locationEvidence:'수원 호수공원'},{...candidate,sourceUrl:uncited}
+    ]})}]}
+   ]});
+  }
+  expect(new Headers(init?.headers).has('Authorization')).toBe(false);
+  if(url.hostname==='graph.facebook.com'){
+   if(url.searchParams.get('url')!==post)return Response.json({error:{code:24}},{status:400});
+   return Response.json({provider_name:'Instagram',type:'rich',html:`<blockquote data-instgrm-permalink="${post}"></blockquote>`});
+  }
+  if(url.href===withoutEmbed)return new Response(`<meta property="og:url" content="${withoutEmbed}"><meta property="og:description" content="동탄호수공원 가족 체험 안내">`,{headers:{'Content-Type':'text/html'}});
+  expect(url.href).toBe(missing);
+  return new Response(null,{status:404});
+ });
+ const deps={...fakes().deps,fetcher};
+ expect(await tick(deps)).toMatchObject({state:'DONE',changed:true});
+ const first=(await b.api<BriefingFeed>('read')).posts[0];
+ expect(first.region).toBe(region);
+ expect(first.items).toMatchObject([
+  {sourceUrl:post,editorialType:'INSTAGRAM',publishedAt:day,instagramEmbeddable:true,urgent:false},
+  {sourceUrl:withoutEmbed,editorialType:'INSTAGRAM',instagramEmbeddable:false}
+ ]);
+ expect(fetcher.mock.calls.filter(([url])=>String(url).includes('instagram_oembed'))).toHaveLength(3);
+ await query(database.db,'DELETE FROM app_private.briefing_jobs WHERE profile_id=$1',[profile]);
+ expect(await tick(deps)).toMatchObject({state:'DONE',changed:false});
+ expect((await b.api<BriefingFeed>('read')).posts.map(p=>p.id)).toEqual([first.id]);
+});
 it('denies app and worker direct table access and keeps key-bearing worker capabilities off the client role',async()=>{for(const role of ['app_runtime','worker_runtime'])await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE '+role);await query(tx,'SELECT * FROM app_private.briefing_jobs');})).rejects.toMatchObject({code:'42501'});await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await briefingWorkerCommand(tx as AuthDatabase,'claim.public');})).rejects.toMatchObject({code:'42501'});});
 it('caps each scan at one regular and one safety post with three topics each',async()=>{const {b}=await enable();await worker('enqueue');const lease=await worker<{id:string;token:string;day:string}>('claim.public');const make=(i:number,urgent=false)=>({fingerprint:i.toString(16).padStart(64,'0'),contentHash:(i+100).toString(16).padStart(64,'0'),category:urgent?'SAFETY':'NOTICE',title:'격리 공지 '+i,summary:'격리된 게시 상한 검증용 요약입니다.',reason:'검증용',action:'원문 확인',sourceUrl:'https://www.suwon.go.kr/notice/'+i,sourceName:'격리 공식 출처',evidenceQuote:'격리된 근거',validFrom:lease.day,validUntil:addDays(lease.day,6),matchKey:'수원중앙도서관',score:99,urgent});await worker('complete',{id:lease.id,token:lease.token,items:Array.from({length:6},(_,i)=>make(i))});let feed=await b.api<BriefingFeed>('read');expect(feed.posts).toHaveLength(1);expect(feed.posts[0].items).toHaveLength(3);await query(database.db,'DELETE FROM app_private.briefing_jobs');await worker('enqueue');const next=await worker<{id:string;token:string}>('claim.public');await worker('complete',{id:next.id,token:next.token,items:[make(20,true),make(21,true),make(22,true),make(23,true)]});feed=await b.api<BriefingFeed>('read');expect(feed.posts).toHaveLength(2);expect(feed.posts.find(p=>p.kind==='URGENT')?.items).toHaveLength(3);});
 it('removes access to derived child content when the sharing relationship ends',async()=>{const {b}=await enable();const invite=await(await b.req('/api/v1/workspace/invite.issue',{consent:true})).json();const child=new Browser();expect((await child.req('/api/v1/workspace/child.signup',{loginId:'ui139child',name:'어린이검사',password,code:invite.code})).ok).toBe(true);expect((await child.req('/api/v1/workspace/items.create',{kind:'REPEAT',data:{title:'어린이 독서',date:koreaToday(),place:'수원중앙도서관',weekdays:[0,1,2,3,4,5,6],startTime:'15:00',endTime:'16:00'}})).ok).toBe(true);const fake=fakes();await tick(fake.deps);expect((await b.api<BriefingFeed>('read')).posts).toHaveLength(1);expect(JSON.stringify(fake.fetcher.mock.calls[0][1]?.body)).not.toMatch(/어린이검사|어린이 독서|수원중앙도서관|15:00/);await query(database.db,"UPDATE app_private.workspace_links SET active=false,version=version+1 WHERE profile_id IN (SELECT id FROM app_private.workspace_profiles WHERE kind='CHILD')");expect((await b.api<BriefingFeed>('read')).posts).toHaveLength(0);});

@@ -49,6 +49,11 @@
 .briefing-details strong{display:block;font-size:.7rem;color:var(--primary);margin-bottom:2px}
 .briefing-source{display:flex;align-items:center;gap:5px;color:var(--primary);font-size:.88rem;line-height:1.8;margin-top:7px;overflow-wrap:anywhere}
 .briefing-source .icon{width:14px;height:14px;flex-shrink:0}
+.briefing-instagram-search{display:flex;justify-content:flex-end;margin:0 0 12px}
+.briefing-instagram-search .button{min-height:44px;font-size:.83rem;text-align:left}
+.briefing-instagram-search .icon{width:17px;height:17px;flex-shrink:0}
+.briefing-instagram-embed{display:grid;justify-items:start;gap:10px;margin:10px 0}
+.briefing-instagram-embed iframe{width:100%;max-width:658px;height:clamp(430px,110vw,720px);border:1px solid var(--line);border-radius:10px;background:white}
 .briefing-post-time{font-size:.8rem;color:var(--muted);line-height:1.8;margin-top:5px}
 .briefing-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:5px 12px;font-size:.7rem;line-height:1.8;color:var(--muted);margin-top:7px;overflow-wrap:anywhere}
 .briefing-share-notice{font-size:.75rem;color:var(--primary);margin:5px 0 0;line-height:1.7}.briefing-share-notice:empty{display:none}
