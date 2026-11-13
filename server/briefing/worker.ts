@@ -69,7 +69,9 @@ export async function runBriefingTick(db:AuthDatabase,deps:BriefingDependencies=
    selectOfficialItems(deps,parsed.items,context,sourceUrls),
    selectInstagramItems(deps.fetcher,parsed.instagram,sourceUrls,region,day)
   ]);
-  const items=[...instagram.items,...official.filter(item=>!item.urgent).slice(0,3-instagram.items.length),...official.filter(item=>item.urgent)];
+  const urgent=official.filter(item=>item.urgent);
+  const regular=[...instagram.items,...official.filter(item=>!item.urgent)].slice(0,6-urgent.length);
+  const items=[...regular,...urgent];
   const aiIssue=instagram.unavailable?'AI_UNAVAILABLE':undefined;
   if(aiIssue&&!items.length)throw Error(aiIssue);
   return await briefingWorkerCommand(db,'complete',{...identity,items,aiIssue,...usage(response)});

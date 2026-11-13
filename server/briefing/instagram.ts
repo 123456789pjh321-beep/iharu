@@ -80,7 +80,7 @@ export async function selectInstagramItems(
   const instagramEmbeddable=await confirmInstagramPost(fetcher,link);
   if(!instagramEmbeddable&&!await confirmPublicPost(fetcher,link,candidate.locationEvidence))return null;
   return {
-   fingerprint:hash('instagram:'+link.id),
+   fingerprint:hash(['instagram',region,link.id].join(':')),
    contentHash:hash(JSON.stringify([link.id,candidate.publishedAt,candidate.eventEndsOn,instagramEmbeddable])),
    category:'EVENT',collectionType:candidate.topic,editorialType:'INSTAGRAM',instagramEmbeddable,
    title:candidate.title,summary:candidate.summary,
