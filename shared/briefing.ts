@@ -13,15 +13,27 @@ export const briefingSystemInput=z.object({enabled:z.boolean(),dailyCallLimit:z.
 // Coarse suggestions only, evaluated on this device; coordinates never leave the browser.
 const cities:[string,number,number][]=[['서울특별시',37.57,126.98],['경기도 수원시',37.26,127.03],['경기도 용인시',37.24,127.18],['경기도 화성시',37.20,126.83],['경기도 성남시',37.42,127.13],['경기도 군포시',37.36,126.94],['경기도 안양시',37.39,126.96],['경기도 안산시',37.32,126.83],['경기도 시흥시',37.38,126.80],['인천광역시',37.46,126.71],['경기도 부천시',37.50,126.77],['경기도 광명시',37.48,126.86],['경기도 고양시',37.66,126.83],['경기도 김포시',37.62,126.72],['경기도 의정부시',37.74,127.03],['경기도 양주시',37.79,127.05],['경기도 남양주시',37.64,127.22],['경기도 오산시',37.15,127.07],['경기도 평택시',36.99,127.11],['경기도 광주시',37.43,127.26],['경기도 이천시',37.28,127.44],['전북특별자치도 전주시',35.82,127.15],['대전광역시',36.35,127.38],['세종특별자치시',36.48,127.29],['충청북도 청주시',36.64,127.49],['충청남도 천안시',36.82,127.15],['강원특별자치도 춘천시',37.88,127.73],['부산광역시',35.18,129.08],['대구광역시',35.87,128.60],['울산광역시',35.54,129.31],['광주광역시',35.16,126.85],['제주특별자치도 제주시',33.50,126.53]];
 const dongtanRegion='경기도 화성시 동탄구';
+const hwaseongRegion='경기도 화성시';
 export const briefingRegions = cities.map(([name]) => name);
-briefingRegions.splice(briefingRegions.indexOf('경기도 화성시')+1,0,dongtanRegion);
+briefingRegions.splice(briefingRegions.indexOf(hwaseongRegion)+1,0,dongtanRegion);
 
 export function briefingRegionKeyword(region:string){
  return (region.split(' ').at(-1)??'').replace(/(?:특별자치시|특별시|광역시|시|군|구)$/u,'');
 }
 
 export function briefingSearchCity(region:string){
- return region===dongtanRegion?'경기도 화성시':region;
+ return region===dongtanRegion?hwaseongRegion:region;
+}
+
+const hwaseongInstagramChannels=[
+ {name:'화성특례시',account:'hwaseong_city'},
+ {name:'동탄호수공원',account:'dongtanlakepark'},
+ {name:'보타닉가든 화성',account:'botanicgarden_hwaseong'}
+];
+
+export function briefingInstagramChannels(region:string){
+ if(briefingSearchCity(region)!==hwaseongRegion)return [];
+ return region===dongtanRegion?[hwaseongInstagramChannels[1],hwaseongInstagramChannels[0]]:hwaseongInstagramChannels;
 }
 
 export function instagramPostLink(value:string){
