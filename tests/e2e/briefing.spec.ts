@@ -13,3 +13,32 @@ test('a single photo post supports multiple topics, accessible controls, source 
  for(const width of [320,820,1440]){await page.setViewportSize({width,height:1000});await page.locator('#auth-main').evaluate(node=>{node.scrollTop=0;});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);const navLabel=page.locator(".workspace-mobile-nav a[href='/briefing']>span:nth-child(2)");expect((await navLabel.boundingBox())!.height).toBeLessThan(20);await expect(card.locator('.briefing-slide[aria-hidden=false] img')).toBeVisible();expect(await card.locator('.briefing-slide[aria-hidden=false] img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);await page.screenshot({path:'test-results/ui139-briefing-'+width+'.png',fullPage:true,animations:'disabled'});}
  await card.getByRole('button',{name:'소식 메뉴',exact:true}).click();await card.getByRole('button',{name:'이 소식 숨기기',exact:true}).click();await expect(card).toHaveCount(0);
 });
+
+test('Dongtan Instagram cards link to the original and load the embed only on request',async({page})=>{
+ await page.setViewportSize({width:320,height:850});
+ await login(page,'instagram-briefing@example.test');
+ const region='경기도 화성시 동탄구',day='2026-11-13';
+ const reel='https://www.instagram.com/reel/DongtanFixture/';
+ const item={fingerprint:'reel',contentHash:'reel',category:'EVENT',collectionType:'DATE',editorialType:'INSTAGRAM',instagramEmbeddable:true,title:'동탄 주말 가족 체험',summary:'동탄호수공원에서 열리는 주말 가족 체험이에요.',reason:'동탄 공개 게시물',action:'원문에서 일정 확인',sourceUrl:reel,sourceName:'Instagram',evidenceQuote:'동탄호수공원',publishedAt:day,validFrom:day,validUntil:'2026-11-28',matchKey:'동탄',score:90,urgent:false};
+ const post={id:'local-reel',day,kind:'REGULAR',region,createdAt:day+'T09:00:00+09:00',updatedAt:day+'T09:00:00+09:00',saved:false,helpful:false,items:[item]};
+ await page.route('**/api/v1/briefing/read',route=>route.fulfill({json:{
+  preferences:{enabled:true,region,version:1,lastCheckedAt:post.updatedAt,lastState:'DONE',newContentCount:1},
+  available:true,posts:[post,{...post,id:'old-reel',items:[{...item,title:'지난 동탄 행사',validUntil:'2026-11-12'}]}],
+  hasMore:false,nextCursor:null,serverDay:day
+ }}));
+ await page.route(reel+'embed/captioned/',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:'<p>Instagram 공개 릴스</p>'}));
+ await open(page);
+ const search=page.getByRole('link',{name:'인스타그램에서 동탄 소식 찾기'});
+ await expect(search).toBeVisible();
+ expect(new URL((await search.getAttribute('href'))!).searchParams.get('q')).toBe('동탄 지역 소식');
+ const card=page.locator('.briefing-card');
+ await expect(card).toHaveCount(1);
+ await expect(card.getByRole('heading',{name:item.title})).toBeVisible();
+ await expect(card.getByRole('link',{name:'인스타그램 릴스 열기'}).first()).toHaveAttribute('href',reel);
+ await expect(card.locator('iframe')).toHaveCount(0);
+ await card.getByRole('button',{name:'앱에서 게시물 보기'}).click();
+ await expect(card.frameLocator('iframe').getByText('Instagram 공개 릴스')).toBeVisible();
+ await card.getByRole('button',{name:'게시물 닫기'}).click();
+ await expect(card.locator('iframe')).toHaveCount(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

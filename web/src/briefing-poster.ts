@@ -7,7 +7,6 @@ export type BriefingItem=BaseItem&{
  topic?:RegionalTopic;
  posterSummary?:string;
  highlights?:string[];
- editorialType?:'REGIONAL_GUIDE'|'NEWS';
  sourceCheckedAt?:string;
  publishedAt?:string;
 };
