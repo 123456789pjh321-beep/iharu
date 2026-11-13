@@ -1,8 +1,9 @@
 import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {Link,useSearchParams} from 'react-router-dom';
-import {briefingConsentVersion,briefingRegionKeyword,briefingRegions,instagramPostLink,suggestBriefingRegion,type BriefingPreferences} from '../../../shared/briefing';
+import {briefingConsentVersion,briefingInstagramChannels,briefingRegionKeyword,briefingRegions,instagramPostLink,suggestBriefingRegion,type BriefingPreferences} from '../../../shared/briefing';
 import {briefingRequest} from '../briefing-api';
+import {briefingInstagramHighlights} from '../briefing-instagram';
 import {briefingCategoryNames,briefingPosterContent,type BriefingItem,type BriefingFeed,type BriefingPost} from '../briefing-poster';
 import {briefingCollectionStatus,createBriefingSample} from '../briefing-preview';
 import {Icon} from '../components/Icon';
@@ -31,7 +32,8 @@ export default function BriefingPage(){
  useEffect(()=>{void readFeed();return()=>{requestGeneration.current++;};},[readFeed,revision]);
  const pull=usePullToRefresh(readFeed,!!feed&&!loading&&!more&&!settings);
  const posts=feed?visibleBriefingPosts(feed,saved):[];
- const waitingForFirstPost=!!feed&&!saved&&feed.preferences.enabled&&feed.available&&!posts.some(post=>post.items.some(item=>item.editorialType==='INSTAGRAM'));
+ const hasInstagramPosts=posts.some(post=>post.items.some(item=>item.editorialType==='INSTAGRAM'));
+ const waitingForFirstPost=!!feed&&!saved&&feed.preferences.enabled&&feed.available&&!hasInstagramPosts;
  useEffect(()=>{
   if(!waitingForFirstPost||loading||settings)return;
   const refreshVisible=()=>{if(document.visibilityState==='visible')void readFeed();};
@@ -46,7 +48,10 @@ export default function BriefingPage(){
  if(loading&&!feed)return <Loading label="내 브리핑을 확인하고 있어요"/>;
  if(!feed)return <ErrorState message={error} retry={()=>setRevision(x=>x+1)}/>;
  const pref=feed.preferences;
- const sample=!saved&&pref.enabled&&!posts.length,status=briefingCollectionStatus(pref,feed.available);
+ const channels=briefingInstagramChannels(pref.region);
+ const showChannels=pref.enabled&&!saved&&channels.length>0&&!hasInstagramPosts;
+ const highlights=showChannels?briefingInstagramHighlights(pref.region,feed.serverDay):[];
+ const sample=!saved&&pref.enabled&&!posts.length&&!showChannels,status=briefingCollectionStatus(pref,feed.available);
  const searchRegion=briefingRegions.includes(pref.region)?pref.region==='경기도 화성시'?'화성·동탄':briefingRegionKeyword(pref.region):'';
  const searchQuery=searchRegion==='화성·동탄'?'동탄 화성 지역 소식':searchRegion+' 지역 소식';
  return <div ref={pull.ref} className="briefing-screen" aria-busy={loading||undefined} aria-keyshortcuts="Alt+R"><div className="briefing-pull-indicator" aria-hidden="true"><span><Icon name="repeat"/></span></div><span className="briefing-pull-status" role="status" aria-live="polite">{pull.phase==='armed'?'놓으면 새로고침해요':pull.phase==='refreshing'?'새 소식을 확인하고 있어요':''}</span><div className="briefing-pull-content">
@@ -54,7 +59,8 @@ export default function BriefingPage(){
  {!pref.enabled?<section className="briefing-onboarding"><img src="/briefing/library.jpg" alt="책과 햇살이 있는 독서 공간" width="1200" height="800"/><div><h2>우리 동네 갈 곳과 볼거리<br/>한눈에 챙겨보세요</h2><p>기준 지역의 공개 인스타그램 게시물과 내 일정에 맞는 공식 공지를 모아드려요.</p><button className="button primary" type="button" onClick={()=>setSettings(true)}>내 브리핑 시작하기<Icon name="arrow"/></button></div></section>
  :<>
  {!saved&&searchRegion&&<div className="briefing-instagram-search"><a className="button" href={'https://www.instagram.com/explore/search/keyword/?q='+encodeURIComponent(searchQuery)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><Icon name="search"/>인스타그램에서 {searchRegion} 소식 찾기</a></div>}
- {!saved&&(sample||status.tone==='warning')&&<section className={'briefing-collection-status '+status.tone} role="status"><Icon name={status.tone==='warning'?'clock':'sparkles'}/><div><strong>{status.title}</strong><p>{status.description}</p><small>최근 수집: {timestamp(pref.lastCheckedAt)}</small></div></section>}
+ {!saved&&(sample||showChannels&&!highlights.length||status.tone==='warning')&&<section className={'briefing-collection-status '+status.tone} role="status"><Icon name={status.tone==='warning'?'clock':'sparkles'}/><div><strong>{status.title}</strong><p>{status.description}</p><small>최근 수집: {timestamp(pref.lastCheckedAt)}</small></div></section>}
+ {!saved&&channels.length>0&&<InstagramChannelFeed key={pref.region} channels={channels} highlights={highlights}/>}
  {posts.map(post=><BriefingCard key={post.id} post={post} changed={update} hidden={()=>hide(post.id)}/>)}
  {sample&&<><section className="briefing-sample-notice" aria-label="샘플 브리핑 안내"><span>샘플 브리핑</span><h2>이런 소식을 모아 보여드려요</h2><p>아래는 가상 예시예요. 실제 공지·행사·날씨가 아니며, 내 소식으로 저장되지 않아요.</p></section><BriefingCard key="sample-briefing" post={createBriefingSample(feed.serverDay,pref.region)} sample/></>}
  {saved&&!posts.length&&<section className="briefing-empty"><span><Icon name="bookmark"/></span><h2>보관한 소식이 없어요</h2><p>다시 보고 싶은 실제 소식의 보관 버튼을 눌러 주세요.</p><Link to="/briefing" className="button">전체 소식 보기<Icon name="arrow"/></Link></section>}
@@ -63,6 +69,30 @@ export default function BriefingPage(){
  </section></div>
  </div>{settings&&<BriefingSettings preferences={pref} close={()=>setSettings(false)} saved={()=>{setSettings(false);setRevision(x=>x+1);}}/>}</div>;
 }
+
+function InstagramChannelFeed({channels,highlights}:{channels:ReturnType<typeof briefingInstagramChannels>;highlights:ReturnType<typeof briefingInstagramHighlights>}){
+ const [active,setActive]=useState('');
+ const channel=channels.find(entry=>entry.account===active);
+ return <section className="briefing-instagram-channels" aria-labelledby="briefing-instagram-channels-title">
+  <h2 id="briefing-instagram-channels-title">지역 인스타그램 소식</h2>
+  {highlights.length>0&&<div className="briefing-instagram-highlights">
+   {highlights.map(post=><article key={post.id} className="briefing-instagram-highlight">
+    <div>화성특례시 · {post.topic} · <time dateTime={post.publishedAt}>{post.publishedAt}</time></div>
+    <h3>{post.title}</h3>
+    <p>{post.summary}</p>
+    <a className="briefing-source" href={`https://www.instagram.com/${post.kind}/${post.id}/`} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{post.kind==='reel'?'인스타그램 릴스 보기':'인스타그램 게시물 보기'}<Icon name="arrow"/></a>
+   </article>)}
+  </div>}
+  <div className="briefing-instagram-channel-buttons">
+   {channels.map(entry=><button key={entry.account} type="button" className="button" aria-pressed={entry.account===active} onClick={()=>setActive(entry.account===active?'':entry.account)}>{entry.name}</button>)}
+  </div>
+  {channel&&<div className="briefing-instagram-embed">
+   <a className="briefing-source" href={`https://www.instagram.com/${channel.account}/`} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{channel.name} 인스타그램 열기<Icon name="arrow"/></a>
+   <iframe key={channel.account} title={`${channel.name} 인스타그램 최신 게시물`} src={`https://www.instagram.com/${channel.account}/embed/`} referrerPolicy="no-referrer" allow="fullscreen"/>
+  </div>}
+ </section>;
+}
+
 function BriefingCard({post,changed,hidden,sample=false}:{post:BriefingPost;changed?:(post:BriefingPost)=>void;hidden?:()=>void;sample?:boolean}){
  const carousel=useHorizontalCarousel(post.items.length),index=Math.min(carousel.index,post.items.length-1);
  const [expanded,setExpanded]=useState(false),[menu,setMenu]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');

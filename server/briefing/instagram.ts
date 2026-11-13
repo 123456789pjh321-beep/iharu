@@ -17,35 +17,7 @@ type InstagramCandidate=z.infer<typeof instagramCandidateSchema>;
 type InstagramLink=NonNullable<ReturnType<typeof instagramPostLink>>;
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 
-async function confirmPublicPost(fetcher:typeof fetch,link:InstagramLink,locationEvidence:string){
- const response=await fetcher(link.url,{redirect:'manual',signal:AbortSignal.timeout(6000)});
- if(response.status===429||response.status>=500){
-  await response.body?.cancel().catch(()=>{});
-  throw Error('INSTAGRAM_UNAVAILABLE');
- }
- if(!response.ok||!response.headers.get('Content-Type')?.includes('text/html')||!response.body){
-  await response.body?.cancel().catch(()=>{});
-  return false;
- }
- const decoder=new TextDecoder(),reader=response.body.getReader();
- let html='';
- try{
-  while(html.length<128000){
-   const {done,value}=await reader.read();
-   if(done)break;
-   html+=decoder.decode(value,{stream:true});
-   const canonical=/<meta\b[^>]*\bproperty="og:url"\s+content="([^"]+)"/i.exec(html)?.[1];
-   const caption=/<meta\b[^>]*\bproperty="og:description"\s+content="([^"]+)"/i.exec(html)?.[1];
-   if(canonical&&caption){
-    const normalize=(text:string)=>text.normalize('NFKC').replace(/[^\p{L}\p{N}]/gu,'').toLowerCase();
-    return instagramPostLink(canonical)?.id===link.id&&normalize(caption).includes(normalize(locationEvidence));
-   }
-  }
-  return false;
- }finally{await reader.cancel().catch(()=>{});}
-}
-
-async function confirmInstagramPost(fetcher:typeof fetch,link:InstagramLink){
+async function confirmInstagramEmbed(fetcher:typeof fetch,link:InstagramLink){
  const url=new URL('https://graph.facebook.com/v27.0/instagram_oembed');
  url.searchParams.set('url',link.url);
  url.searchParams.set('omitscript','true');
@@ -77,12 +49,11 @@ export async function selectInstagramItems(
   eligible.set(link.id,{candidate,link});
  }
  const results=await Promise.allSettled([...eligible.values()].slice(0,6).map(async({candidate,link})=>{
-  const instagramEmbeddable=await confirmInstagramPost(fetcher,link);
-  if(!instagramEmbeddable&&!await confirmPublicPost(fetcher,link,candidate.locationEvidence))return null;
+  if(!await confirmInstagramEmbed(fetcher,link))return null;
   return {
    fingerprint:hash(['instagram',region,link.id].join(':')),
-   contentHash:hash(JSON.stringify([link.id,candidate.publishedAt,candidate.eventEndsOn,instagramEmbeddable])),
-   category:'EVENT',collectionType:candidate.topic,editorialType:'INSTAGRAM',instagramEmbeddable,
+   contentHash:hash(JSON.stringify([link.id,candidate.publishedAt,candidate.eventEndsOn])),
+   category:'EVENT',collectionType:candidate.topic,editorialType:'INSTAGRAM',instagramEmbeddable:true,
    title:candidate.title,summary:candidate.summary,
    reason:`${keyword} 지역 공개 게시물이에요.`,action:'일정과 방문 조건은 인스타그램 원문에서 확인해 주세요.',
    sourceUrl:link.url,sourceName:'Instagram',evidenceQuote:candidate.locationEvidence,

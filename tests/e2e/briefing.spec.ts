@@ -42,3 +42,30 @@ test('Dongtan Instagram cards link to the original and load the embed only on re
  await expect(card.locator('iframe')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
+
+test('a quiet Dongtan search shows public local posts and an on-demand channel feed',async({page})=>{
+ await page.setViewportSize({width:320,height:850});
+ await login(page,'instagram-channels@example.test');
+ const region='경기도 화성시 동탄구',profile='https://www.instagram.com/dongtanlakepark/';
+ let serverDay='2026-11-13';
+ await page.route('**/api/v1/briefing/read',route=>route.fulfill({json:{
+  preferences:{enabled:true,region,version:1,lastCheckedAt:serverDay+'T19:00:00+09:00',lastState:'EMPTY',newContentCount:0},
+  available:true,posts:[],hasMore:false,nextCursor:null,serverDay
+ }}));
+ await page.route(profile+'embed/',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:'<p>동탄호수공원 공개 게시물</p>'}));
+ await open(page);
+ const channels=page.getByRole('region',{name:'지역 인스타그램 소식'});
+ const highlights=channels.getByRole('article');
+ await expect(highlights).toHaveCount(2);
+ await expect(highlights.first().getByRole('link')).toHaveAttribute('href','https://www.instagram.com/p/Dfq1Iwagp-n/');
+ await expect(highlights.last().getByRole('link')).toHaveAttribute('href','https://www.instagram.com/reel/Dfo5kwoBabR/');
+ await expect(channels.locator('iframe')).toHaveCount(0);
+ await channels.getByRole('button',{name:'동탄호수공원'}).click();
+ await expect(channels.getByRole('link',{name:'동탄호수공원 인스타그램 열기'})).toHaveAttribute('href',profile);
+ await expect(channels.frameLocator('iframe').getByText('동탄호수공원 공개 게시물')).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ serverDay='2026-12-05';
+ await page.reload();
+ await expect(channels).toBeVisible();
+ await expect(highlights).toHaveCount(0);
+});

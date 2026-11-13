@@ -98,17 +98,14 @@ it('publishes cited, recent Dongtan Instagram posts without any private schedule
    if(url.searchParams.get('url')!==post)return Response.json({error:{code:24}},{status:400});
    return Response.json({provider_name:'Instagram',type:'rich',html:`<blockquote data-instgrm-permalink="${post}"></blockquote>`});
   }
-  if(url.href===withoutEmbed)return new Response(`<meta property="og:url" content="${withoutEmbed}"><meta property="og:description" content="동탄호수공원 가족 체험 안내">`,{headers:{'Content-Type':'text/html'}});
-  expect(url.href).toBe(missing);
-  return new Response(null,{status:404});
+  throw Error('Unexpected provider URL');
  });
  const deps={...fakes().deps,fetcher};
  expect(await tick(deps)).toMatchObject({state:'DONE',changed:true});
  const first=(await b.api<BriefingFeed>('read')).posts[0];
  expect(first.region).toBe(region);
  expect(first.items).toMatchObject([
-  {sourceUrl:post,editorialType:'INSTAGRAM',publishedAt:day,instagramEmbeddable:true,urgent:false},
-  {sourceUrl:withoutEmbed,editorialType:'INSTAGRAM',instagramEmbeddable:false}
+  {sourceUrl:post,editorialType:'INSTAGRAM',publishedAt:day,instagramEmbeddable:true,urgent:false}
  ]);
  expect(fetcher.mock.calls.filter(([url])=>String(url).includes('instagram_oembed'))).toHaveLength(3);
  await query(database.db,'DELETE FROM app_private.briefing_jobs WHERE profile_id=$1',[profile]);
