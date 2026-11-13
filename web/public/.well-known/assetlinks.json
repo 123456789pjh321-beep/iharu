@@ -4,7 +4,11 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.myiharu.app",
-      "sha256_cert_fingerprints": ["4E:E3:A5:62:88:CB:1E:98:D2:00:81:5E:89:AD:03:6D:E0:C8:84:6A:2A:9E:09:D2:27:B8:A4:1B:48:3E:DF:BC"]
+      "sha256_cert_fingerprints": [
+        "4E:E3:A5:62:88:CB:1E:98:D2:00:81:5E:89:AD:03:6D:E0:C8:84:6A:2A:9E:09:D2:27:B8:A4:1B:48:3E:DF:BC",
+        "7C:7A:D8:AA:51:72:37:2D:5D:E3:77:86:E6:A3:87:1F:61:93:B0:BD:A0:3D:18:6B:BF:1C:F5:56:58:44:E4:C3",
+        "E2:3F:E0:94:F4:65:B4:7E:7A:27:CD:05:41:45:B8:1F:AE:DD:D6:6C:D9:08:A2:9E:C3:02:74:FC:4C:8F:C4:4B"
+      ]
     }
   }
 ]
