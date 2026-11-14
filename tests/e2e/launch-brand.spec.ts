@@ -22,13 +22,14 @@ test('first paint draws the blue sun rays clockwise around a fixed center',async
   await expect(launch).toHaveCSS('background-color','rgb(255, 255, 255)');
   await expect(mark).toHaveAttribute('width','104');
   await expect(mark).toHaveCSS('stroke-width','5.5px');
-  const center=mark.locator(':scope > use');
-  await expect.poll(()=>center.evaluate((element:SVGUseElement)=>element.getBBox().width)).toBe(28);
+  const center=mark.locator(':scope > circle');
+  await expect.poll(()=>center.evaluate((element:SVGCircleElement)=>element.getBBox().width)).toBe(28);
   await expect(center).toHaveCSS('animation-name','none');
 
   const rays=mark.locator('.iharu-loading-rays > use');
   await expect(rays).toHaveCount(8);
-  await expect(rays.first()).toHaveCSS('animation-name','iharu-loading-ray');
+  await expect(rays.first()).toHaveCSS('animation-name','iharu-launch-ray');
+  await expect(rays.first()).toHaveCSS('animation-iteration-count','1');
   const state=await rays.evaluateAll(elements=>{
    for(const ray of elements){
     const [animation]=ray.getAnimations();
@@ -119,19 +120,47 @@ test('reloading shows the same launch mark and opens the page once ready',async(
 });
 
 for(const preference of ['system','app'] as const){
- test(`loading stays white in dark mode and respects ${preference} reduced motion`,async({page})=>{
+ test(`loading stays white in dark mode with ${preference} reduced motion`,async({page})=>{
   await page.emulateMedia({reducedMotion:preference==='system'?'reduce':'no-preference'});
   await page.addInitScript(quiet=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet,font:'noto'})),preference==='app');
   const release=await holdBundle(page);
   try{
    await page.goto('/login',{waitUntil:'commit'});
    await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
-   await expect(page.locator('#app-launch .iharu-loading-rays > use').first()).toHaveCSS('animation-name','none');
-   await expect(page.locator('#app-launch')).toHaveCSS('background-color','rgb(255, 255, 255)');
+   const launch=page.locator('#app-launch');
+   await expect(launch).toHaveAttribute('data-state',preference==='system'?'complete':'drawing');
+   await expect(launch.locator('.iharu-loading-rays > use').first()).toHaveCSS('animation-name',preference==='system'?'none':'iharu-launch-ray');
+   await expect(launch).toHaveCSS('background-color','rgb(255, 255, 255)');
   }finally{release();}
   await ready(page);await expect(page.locator('.market-brand')).toBeVisible();
  });
 }
+
+test('completes one lap and displays the completed sun before opening the next screen',async({page})=>{
+ await page.addInitScript(()=>{
+  const events:string[]=[];
+  const observed=new MutationObserver(records=>{
+   const launch=document.getElementById('app-launch');
+   if(launch&&records.some(record=>record.target===launch||record.type==='childList')){
+    const state=launch.dataset.state!;
+    if(events.at(-1)!==state)events.push(state);
+    if(state==='complete'&&document.getElementById('root')?.inert){
+     const full=[...launch.querySelectorAll('.iharu-loading-rays > use')].every(ray=>getComputedStyle(ray).opacity==='1');
+     if(full&&events.at(-2)!=='complete')events.push('full');
+    }
+   }
+   if(!launch&&document.documentElement.dataset.launchState==='ready'){
+    document.documentElement.dataset.logoStates=events.join(',');
+    observed.disconnect();
+   }
+  });
+  observed.observe(document,{subtree:true,childList:true,attributes:true,attributeFilter:['data-state','data-launch-state']});
+ });
+ await page.goto('/service',{waitUntil:'commit'});
+ await ready(page);
+ await expect(page.locator('html')).toHaveAttribute('data-logo-states',/drawing,complete,full/);
+ await expect(page.locator('.market-hero h1')).toBeVisible();
+});
 
 test('failed app bundle provides a retry and recovers instead of trapping the user behind the logo',async({page})=>{
  await page.route(mainBundle,route=>route.abort('failed'));

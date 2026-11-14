@@ -54,10 +54,21 @@
         18%, 55% { opacity: 1; stroke-dashoffset: 0; }
         100% { opacity: 0; stroke-dashoffset: 0; }
       }
-      #app-launch:is([data-motion=reduced], [data-state=error]) .iharu-loading-rays > use,
-      html[data-motion=reduced] .iharu-loading-rays > use { animation: none; }
+      #app-launch[data-state=drawing] .iharu-loading-rays > use {
+        animation-name: iharu-launch-ray;
+        animation-duration: .24s;
+        animation-iteration-count: 1;
+        animation-fill-mode: both;
+      }
+      @keyframes iharu-launch-ray {
+        from { opacity: 0; stroke-dashoffset: 1; }
+        to { opacity: 1; stroke-dashoffset: 0; }
+      }
+      #app-launch:not([data-state=drawing]) .iharu-loading-rays > use,
+      html[data-motion=reduced] .loading-state .iharu-loading-rays > use { animation: none; }
       @media (prefers-reduced-motion: reduce) {
-        .iharu-loading-rays > use { animation: none; }
+        #app-launch[data-state=drawing] .iharu-loading-rays > use,
+        .loading-state .iharu-loading-rays > use { animation: none; }
       }
       #app-launch .launch-message {
         margin: 0;
@@ -84,16 +95,17 @@
     <div id="app-launch" role="region" aria-label="아이하루 시작" data-state="loading">
       <div class="launch-content">
         <svg class="iharu-loading-mark" viewBox="0 0 72 72" width="104" height="104" aria-hidden="true" focusable="false">
-          <use href="/brand/iharu-loading-mark.svg#sun-center" />
+          <circle cx="36" cy="36" r="14" />
+          <defs><path id="iharu-launch-ray-shape" pathLength="1" d="M36 12V5" /></defs>
           <g class="iharu-loading-rays">
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(0 36 36)" />
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(45 36 36)" />
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(90 36 36)" />
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(135 36 36)" />
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(180 36 36)" />
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(225 36 36)" />
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(270 36 36)" />
-            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(315 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(0 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(45 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(90 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(135 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(180 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(225 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(270 36 36)" />
+            <use href="#iharu-launch-ray-shape" transform="rotate(315 36 36)" />
           </g>
         </svg>
         <p class="launch-message" id="launch-message" role="status">아이하루를 불러오고 있어요</p>
@@ -110,20 +122,23 @@
         var boot = document.getElementById('app-launch');
         var root = document.getElementById('root');
         var html = document.documentElement;
-        var frame = 0, closed = false;
+        var frame = 0, closed = false, logoReady = false;
+        var logoFallback = 0, logoHold = 0;
+        var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        var lastRay = boot.querySelector('.iharu-loading-rays > use:last-child');
         try {
           var preference = JSON.parse(localStorage.getItem('iharu:appearance') || 'null');
           if (preference && preference.theme === 'dark') html.dataset.theme = 'dark';
-          var publicPage = /^\/(service|guide|notices|blog|login|signup)(\/|$)/.test(location.pathname);
-          if ((preference && preference.quiet) || (publicPage && localStorage.getItem('iharu-public-motion') === 'off')) {
-            boot.dataset.motion = 'reduced';
-          }
         } catch (error) {}
 
         function remove() {
           if (closed) return;
           closed = true;
           clearTimeout(watchdog);
+          clearTimeout(logoFallback);
+          clearTimeout(logoHold);
+          motion.removeEventListener('change', onMotionChange);
+          lastRay.removeEventListener('animationend', onLastRay);
           cancelAnimationFrame(frame);
           observer.disconnect();
           window.removeEventListener('error', bundleError, true);
@@ -137,11 +152,34 @@
         function queue() {
           cancelAnimationFrame(frame);
           frame = requestAnimationFrame(function () {
-            if (root.firstElementChild && !root.querySelector('[data-app-loading]')) remove();
+            if (logoReady && root.firstElementChild && !root.querySelector('[data-app-loading]')) remove();
           });
+        }
+        function finishLogo(hold) {
+          if (closed || boot.dataset.state === 'error' || logoReady) return;
+          clearTimeout(logoFallback);
+          clearTimeout(logoHold);
+          boot.dataset.state = 'complete';
+          if (!hold) {
+            logoReady = true;
+            queue();
+            return;
+          }
+          logoHold = setTimeout(function () {
+            logoReady = true;
+            queue();
+          }, 160);
+        }
+        function onLastRay(event) {
+          if (event.animationName === 'iharu-launch-ray') finishLogo(true);
+        }
+        function onMotionChange(event) {
+          if (event.matches) finishLogo(false);
         }
         function recovery() {
           if (closed) return;
+          clearTimeout(logoFallback);
+          clearTimeout(logoHold);
           boot.dataset.state = 'error';
           document.getElementById('launch-message').textContent = '화면을 불러오지 못했어요';
           document.getElementById('launch-recovery').hidden = false;
@@ -159,6 +197,13 @@
         // Yield to React for a slow API. A missing bundle needs its own retry control.
         var watchdog = setTimeout(function () { if (root.firstElementChild) remove(); else recovery(); }, 8000);
         html.dataset.launchState = 'loading';
+        if (motion.matches) finishLogo(false);
+        else {
+          motion.addEventListener('change', onMotionChange);
+          lastRay.addEventListener('animationend', onLastRay);
+          boot.dataset.state = 'drawing';
+          logoFallback = setTimeout(function () { finishLogo(true); }, 1800);
+        }
       })();
     </script>
     <script type="module" src="/src/main.tsx"></script>
