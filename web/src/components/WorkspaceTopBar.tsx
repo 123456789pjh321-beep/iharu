@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {useLocation} from 'react-router-dom';
 import './workspace-topbar.css';
 import {WorkspaceGroupFilter} from './WorkspaceGroupFilter';
+import {useWorkspaceGate} from './WorkspaceGate';
 
 type Slot='toolbar'|'members';
 type Entry={owner:symbol;content:ReactNode;active:boolean};
@@ -38,8 +39,8 @@ export function WorkspaceTopBarMount(){
 
 // Render from inside the page providers, preserving invitation/login contexts.
 export function WorkspaceTopBarHost(){
- const {pathname}=useLocation(),{bar,target}=useContext(State),route=routeKey(pathname);
- const active=routes.has(pathname),pending=!bar||bar.route!==route||!bar.toolbar?.active;
+ const {pathname}=useLocation(),{bar,target}=useContext(State),{groupBusy}=useWorkspaceGate(),route=routeKey(pathname);
+ const active=routes.has(pathname),pending=groupBusy||!bar||bar.route!==route||!bar.toolbar?.active;
  useLayoutEffect(()=>{
   if(!target)return;
   target.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(dialog=>dialog.close());
@@ -48,7 +49,7 @@ export function WorkspaceTopBarHost(){
  if(!active||!target)return null;
  return createPortal(<div className="workspace-topbar-content" data-topbar-route={bar?.route} aria-busy={pending} inert={pending}>
   {bar?.toolbar?.content}
-  <WorkspaceGroupFilter/>
+  <WorkspaceGroupFilter key={route}/>
   <Fragment key={bar?.route}>{bar?.members?.content}</Fragment>
  </div>,target);
 }
