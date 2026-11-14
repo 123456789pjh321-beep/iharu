@@ -38,6 +38,13 @@
 }
 .group-invite-shortcut:hover{background:var(--surface-sub);color:var(--primary)}
 .group-invite-shortcut>.icon{width:20px;height:20px}
+.member-preference-row>.group-invite-shortcut{
+ position:relative;box-sizing:border-box;width:var(--member-filter-height,32px);min-width:0;
+ height:var(--member-filter-height,32px);min-height:0;padding:0;
+}
+.member-preference-row>.group-invite-shortcut::after{
+ content:"";position:absolute;inset:50% 0 auto;height:44px;transform:translateY(-50%);
+}
 .workspace-invite-toolbar{
  display:flex;align-items:center;flex:none;padding:4px var(--workspace-inset,16px);
  background:var(--surface);
@@ -51,3 +58,5 @@
 .group-invite-dialog-content{padding:16px 18px 20px}
 .group-invite-dialog-content>header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
 .group-invite-dialog-content h2{margin:0;font-size:1.1rem}
+.group-invite-dialog-content .group-invite-issued{margin-top:0}
+.group-invite-issued>.auth-notice{margin-bottom:0}
