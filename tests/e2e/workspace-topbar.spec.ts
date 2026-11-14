@@ -40,7 +40,7 @@ test('keeps the same top and bottom chrome across all four menus without changin
  // Browser back closes a filter sheet owned by the previous menu.
  await page.goBack();await expect(page).toHaveURL(origin+'/timetable');await expect(page.getByRole('dialog',{name:'조회할 구성원'})).not.toBeVisible();await unchangedChrome(page);
  await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await page.setViewportSize({width:320,height:900});await rememberChrome(page);
- for(const label of ['달력','가계부','타임라인','시간표']){await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);await unchangedChrome(page);}
+ for(const [label,path] of [['달력','/today/calendar'],['가계부','/tuition'],['타임라인','/timeline'],['시간표','/timetable']]){await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);await unchangedChrome(page);}
  await page.screenshot({path:'test-results/topbar-dark-320.png',animations:'disabled'});expect(errors).toEqual([]);
  await nav(page).getByRole('link',{name:'더보기',exact:true}).click();await expect(bar(page)).toHaveCount(0);await expect(page.locator('.more-screen')).toBeVisible();
 });
