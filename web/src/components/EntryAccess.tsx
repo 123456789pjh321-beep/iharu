@@ -44,7 +44,7 @@ export function EntryAccessProvider({children}:{children:ReactNode}){
   const session=sessionSchema.parse(await response.json());
   if(version!==generation.current){gate.session.refresh();void gate.refreshAccess();return;}
   const setup=session.authenticated&&(session.assurance==='LOW'||session.emailVerified!==true);
-  if(setup){completed.current=true;window.location.assign(session.assurance==='LOW'?'/account':'/account/email');return;}
+  if(setup){completed.current=true;forgetEntry();window.location.assign('/timetable');return;}
   if(!setup&&!await gate.refreshAccess())throw new Error('로그인은 완료됐지만 자료 연결을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
   if(version!==generation.current){gate.session.refresh();return;}
   completed.current=true;opening.current=false;gate.session.refresh();setBusy(false);setRequest(null);
