@@ -82,16 +82,16 @@ test('workspace keeps the launch visible while loading and reuses the mark withi
  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();
  await expect(page.getByRole('heading',{name:'더보기',exact:true})).toBeVisible();await expect(page.locator('#app-launch')).toHaveCount(0);
  await page.screenshot({path:'test-results/ui127-more-navigation-mobile.png',animations:'disabled'});
- let releaseBriefing!:()=>void;
- const heldBriefing=new Promise<void>(resolve=>{releaseBriefing=resolve;});
- await page.route(/\/assets\/Briefing-[^/]+\.js$/,async route=>{await heldBriefing;await route.continue();});
+ let releaseTimeline!:()=>void;
+ const heldTimeline=new Promise<void>(resolve=>{releaseTimeline=resolve;});
+ await page.route(/\/assets\/Timeline-[^/]+\.js$/,async route=>{await heldTimeline;await route.continue();});
  try{
-  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'AI 브리핑',exact:true}).click();
-  const pending=page.locator('[data-app-loading]').filter({hasText:'브리핑을 열고 있어요'});
+  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'타임라인',exact:true}).click();
+  const pending=page.locator('[data-app-loading]').filter({hasText:'타임라인을 열고 있어요'});
   await expect(pending).toHaveCSS('background-color','rgb(255, 255, 255)');
   await expect(pending.locator('.iharu-loading-rays > use').first()).toHaveCSS('animation-name','iharu-loading-ray');
   await expect(page.locator('#app-launch')).toHaveCount(0);
- }finally{releaseBriefing();}
+ }finally{releaseTimeline();}
  await expect(page.locator('[data-app-loading]')).toHaveCount(0);
 
  // The standard mobile workspace has no header logo; check the shared brand in the legacy shell where it is rendered.

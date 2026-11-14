@@ -463,3 +463,41 @@ it('binds child signup to verified legal guardian evidence and atomically consum
   await query(database.db,"UPDATE app_private.family_release SET child_deletion_verified_at=NULL,verification_reference=NULL");
  }
 });
+
+it('keeps timeline notes and flags private, recurring dates separate, and prunes deleted entries',async()=>{
+ const host=await parent('timeline-host'),member=await parent('timeline-member'),outsider=await parent('timeline-outsider'),child=new Browser();
+ const invite=await host.ok('invite.issue',{consent:true});await member.ok('family.join',{code:invite.code});
+ const childInvite=await host.ok('invite.issue',{consent:true});
+ await child.ok('child.signup',{loginId:'timeline_child',name:'타임라인 테스트',password:'child-fixture-password',code:childInvite.code});
+ const oneOff=payload('공유 약속'),event=await host.ok('items.create',oneOff);
+ const repeat=await host.ok('items.create',payload('매주 일정','REPEAT'));
+ const fee=await host.ok('items.create',payload('거래','FEE'));
+ const target={itemId:event.id,date:'2026-11-07'};
+ expect((await outsider.ok('timeline.read',listing)).items).toEqual([]);
+ expect((await outsider.req(api+'timeline.annotate',{...target,saved:true})).status).toBe(404);
+ expect((await child.ok('timeline.read',listing)).items.map((item:{kind:string})=>item.kind)).not.toContain('FEE');
+ expect((await child.req(api+'timeline.annotate',{itemId:fee.id,date:target.date,saved:true})).status).toBe(404);
+ expect((await member.ok('timeline.read',listing)).items.map((item:{id:string})=>item.id)).toEqual([repeat.id,event.id,fee.id]);
+ await member.ok('timeline.annotate',{...target,reviewed:true});
+ await member.ok('timeline.annotate',{...target,saved:true});
+ expect(await member.ok('timeline.annotate',{...target,note:'나만의 메모'})).toMatchObject({reviewed:true,saved:true,note:'나만의 메모'});
+ expect((await host.ok('timeline.read',listing)).annotations).toEqual([]);
+ expect((await member.req(api+'timeline.annotate',{...target,date:'2026-11-10',saved:true})).status).toBe(400);
+ await member.ok('timeline.annotate',{itemId:repeat.id,date:'2026-11-09',note:'월요일 메모'});
+ expect((await member.req(api+'timeline.annotate',{itemId:repeat.id,date:'2026-11-10',saved:true})).status).toBe(400);
+ await member.ok('timeline.annotate',{itemId:repeat.id,date:'2026-11-16',reviewed:true});
+ expect((await member.ok('timeline.read',listing)).annotations).toEqual(expect.arrayContaining([
+  expect.objectContaining({itemId:repeat.id,date:'2026-11-09',reviewed:false,note:'월요일 메모'}),
+  expect.objectContaining({itemId:repeat.id,date:'2026-11-16',reviewed:true,note:''}),
+ ]));
+ await host.ok('items.update',{...oneOff,id:event.id,version:1,data:{...oneOff.data,date:'2026-11-11'}});
+ expect((await member.ok('timeline.read',listing)).annotations).toContainEqual({itemId:event.id,date:'2026-11-11',reviewed:true,saved:true,note:'나만의 메모'});
+ await member.ok('timeline.annotate',{itemId:event.id,date:'2026-11-11',note:''});
+ expect((await member.ok('timeline.read',listing)).annotations).toContainEqual({itemId:event.id,date:'2026-11-11',reviewed:true,saved:true,note:''});
+ await host.ok('items.delete',{id:event.id,version:2});
+ expect(await query(database.db,'SELECT item_id FROM app_private.workspace_timeline_annotations WHERE item_id=$1',[event.id])).toEqual([]);
+ const owner=await host.ok('me'),viewer=await member.ok('me');
+ await host.ok('family.remove',{familyId:owner.family.id,profileId:viewer.id,version:1});
+ expect((await member.ok('timeline.read',listing)).annotations).toEqual([]);
+ expect((await member.req(api+'timeline.annotate',{itemId:repeat.id,date:'2026-11-09',saved:true})).status).toBe(404);
+});

@@ -15,7 +15,7 @@ export {FormNotice} from './Common';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
-const timeTreeRoutes=new Set(['/timetable','/calendar','/today/calendar','/chat','/child/chat','/briefing','/tuition','/more','/settings']);
+const timeTreeRoutes=new Set(['/timetable','/calendar','/today/calendar','/chat','/child/chat','/timeline','/briefing','/tuition','/more','/settings']);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
 export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
 export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><BriefingLocationProvider><StableWorkspaceFrame/></BriefingLocationProvider></EntryAccessProvider></WorkspaceGateProvider>;}
@@ -41,7 +41,7 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
     const motion=node.animate(frames,{duration:160,easing:'cubic-bezier(.2,.8,.2,1)'});
     return()=>motion.cancel();
   },[pathname,timeTree,preferences.quiet]);
-  useEffect(() => { const names:Record<string,string>={'/help':'사용 가이드','/more/notices':'공지사항','/more/blog':'블로그','/more':'더보기','/settings':'설정','/today':'오늘','/today/calendar':'달력','/timetable':'시간표','/today/repeats':'반복 일정','/tuition':'가계부','/records':'메모','/notification-settings':'알림설정','/chat':'대화','/child/chat':'대화','/briefing':'AI 브리핑','/family':'그룹 관리','/invite':'그룹 초대','/admin':'시스템 관리','/location':'위치','/account':'내 계정'};document.title = `${names[pathname]||(pathname.startsWith('/family')?'우리 그룹':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정')} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
+  useEffect(() => { const names:Record<string,string>={'/help':'사용 가이드','/more/notices':'공지사항','/more/blog':'블로그','/more':'더보기','/settings':'설정','/today':'오늘','/today/calendar':'달력','/timetable':'시간표','/today/repeats':'반복 일정','/tuition':'가계부','/records':'메모','/notification-settings':'알림설정','/chat':'대화','/child/chat':'대화','/timeline':'타임라인','/briefing':'AI 브리핑','/family':'그룹 관리','/invite':'그룹 초대','/admin':'시스템 관리','/location':'위치','/account':'내 계정'};document.title = `${names[pathname]||(pathname.startsWith('/family')?'우리 그룹':pathname.startsWith('/device')||pathname.startsWith('/child')?'아이 기기':'로그인과 계정')} · 아이하루`; document.getElementById('auth-main')?.scrollTo(0,0); document.getElementById('auth-main')?.focus({preventScroll:true}); }, [pathname]);
   return <div data-timetree={timeTree?route:undefined} className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
     {!wide&&!inPublicFrame&&<PublicHeader/>}
     {wide&&showNavigation&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }

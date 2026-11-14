@@ -18,6 +18,7 @@ import {ErrorState,Loading} from './Common';
 import {Icon,type IconName} from './Icon';
 
 const privatePages:Record<string,{title:string;icon:IconName;description:string;action:string}>={
+ '/timeline':{title:'타임라인',icon:'timeline',description:'시간표·달력·가계부 기록을 모아 보고 확인, 메모, 보관을 할 수 있어요.',action:'로그인하고 타임라인 보기'},
  '/briefing':{title:'AI 브리핑',icon:'sparkles',description:'내 시간표와 달력에 맞는 중요한 소식을 사진과 함께 확인해요.',action:'로그인하고 브리핑 보기'},
  '/chat':{title:'대화',icon:'chat',description:'우리 그룹과 연결해 글과 그림으로 소식을 나눠요.',action:'로그인하고 대화하기'},
  '/child/chat':{title:'대화',icon:'chat',description:'내 계정으로 그룹과 소식을 나눠요.',action:'로그인하고 대화하기'},
