@@ -26,22 +26,21 @@ async function verifyAndSignIn(page:Page,request:APIRequestContext,email:string,
 }
 
 async function issue(page:Page){
- const cards=page.locator('.managed-group');
- const first=page.getByRole('button',{name:'기본그룹 만들기',exact:true});
- await expect(first.or(cards.first())).toBeVisible();
- if(await first.isVisible()){
-  await first.click();
-  await page.getByRole('dialog',{name:'새 그룹 만들기'}).getByRole('button',{name:'그룹 만들기',exact:true}).click();
+ const detail=page.locator('.group-detail');
+ if(!await detail.isVisible()){
+  const cards=page.locator('.managed-group');
+  await expect(page.getByRole('button',{name:'새 그룹 만들기',exact:true})).toBeVisible();
+  if(await cards.count())await cards.first().locator('.group-card-title').click();
+  else{
+   await page.getByRole('button',{name:'새 그룹 만들기',exact:true}).click();
+   await page.getByRole('dialog',{name:'새 그룹 만들기'}).getByRole('button',{name:'그룹 만들기',exact:true}).click();
+  }
  }
- await expect(cards.filter({hasText:'선택됨'})).toHaveCount(1);
- await cards.filter({hasText:'선택됨'}).getByRole('button',{name:'구성원 초대',exact:true}).click();
+ await detail.getByRole('button',{name:'구성원 초대',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:/ 초대$/});
  const field=dialog.getByLabel('발급한 그룹 초대 링크');
- await expect(field).toBeVisible();
- const link=await field.inputValue();
- await page.keyboard.press('Escape');
- await expect(dialog).toBeHidden();
- return link;
+ await expect(field).toBeVisible();const link=await field.inputValue();
+ await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await page.getByRole('button',{name:'그룹 목록',exact:true}).click();return link;
 }
 
 test('group invite shortcut creates one link per click and fits member filters across the workspace',async({page,request})=>{
@@ -58,6 +57,7 @@ test('group invite shortcut creates one link per click and fits member filters a
  await expect(page.locator('[data-guest-workspace]')).toBeVisible();
  await expect(page.getByRole('button',{name:'그룹 초대 공유',exact:true})).toHaveCount(0);
  await register(page,request,'group-shortcut-host@example.test','초대 단축 버튼');
+ const created=await page.request.post('/api/v1/workspace/group.create',{headers:{Origin:origin},data:{name:'초대 테스트 그룹',description:'',color:0,clientRequestId:crypto.randomUUID()}});expect(created.ok()).toBe(true);
  await page.goto('/timetable');
  const menu=page.getByRole('navigation',{name:'모바일 주 메뉴'});
  const shortcut=page.getByRole('button',{name:'그룹 초대 공유',exact:true});
@@ -182,14 +182,14 @@ test('group link resumes after email verification and requires explicit acceptan
   await expect(page.locator('.managed-group')).toHaveCount(1);
   await guest.getByRole('button',{name:'초대 수락'}).click();
   await guest.getByRole('link',{name:'그룹 관리 열기'}).click();
-  await guest.locator('.group-card-title').click();await expect(guest.locator('.group-member-row')).toHaveCount(2);
+  await guest.locator('.managed-group .group-card-title').click();await expect(guest.locator('.group-member-row')).toHaveCount(2);
   await expect(guest.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await guest.getByRole('button',{name:'구성원 초대',exact:true}).click();
   const dialog=guest.getByRole('dialog',{name:/ 초대$/});
   await expect(dialog.getByLabel('발급한 그룹 초대 링크')).toBeVisible();
   await expect(dialog.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await guest.keyboard.press('Escape');
-  await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(timetableInvite);
+  await guest.goto('/more');await guest.locator('.more-app-share summary').click();await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(timetableInvite);
   await guest.goto(link);
   await expect(guest.getByRole('alert')).toContainText('초대');
  }finally{await context.close();}
@@ -208,6 +208,7 @@ test('general invitation shares the public timetable and leaves the new account 
  await register(page,request,'app-link-host@example.test','가상 앱 초대자');
  await page.goto('/family');
  await expect(page.getByRole('region',{name:'개인 공간',exact:true})).toBeVisible();
+ await page.goto('/more');await page.locator('.more-app-share summary').click();
  const general=page.getByRole('region',{name:'일반 초대',exact:true});
  await expect(general.getByRole('button',{name:'일반 초대 링크 복사'})).toBeVisible();
  await expect(page.getByLabel('초대 대상')).toHaveCount(0);
