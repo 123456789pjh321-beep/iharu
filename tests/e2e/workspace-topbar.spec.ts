@@ -65,6 +65,26 @@ test('uses each menu’s own saved members, current month actions and invitation
   await bar(page).getByRole('button',{name:'그룹 초대 공유',exact:true}).click();await expect(page.getByRole('dialog',{name:'그룹 초대 공유'})).toBeVisible();await expect(page.getByLabel('발급한 그룹 초대 링크',{exact:true})).toBeVisible();await page.getByRole('button',{name:'그룹 초대 닫기'}).click();
   await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await selected('시간표 구성원 필터',true,false);await unchangedChrome(page);
   await nav(page).getByRole('link',{name:'달력',exact:true}).click();await selected('달력 구성원 필터',true,true);await unchangedChrome(page);
+  // Timeline uses the identical common toolbar, invite shortcut and member controls.
+  for(const width of [320,520,820,1440]){
+   await page.setViewportSize({width,height:900});let baseline:unknown;
+   for(const [label,path] of [['시간표','/timetable'],['달력','/today/calendar'],['가계부','/tuition'],['타임라인','/timeline']]){
+    await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
+    await expect(bar(page).locator('.member-preference-options svg')).toHaveCount(2);await unchangedChrome(page);
+    const geometry=await bar(page).evaluate(node=>{
+     const box=(selector:string)=>{const r=node.querySelector(selector)!.getBoundingClientRect();return [r.x,r.y,r.width,r.height].map(n=>Math.round(n));};
+     const title=node.querySelector('.workspace-date-picker>span,.workspace-toolbar-title')!,style=getComputedStyle(title);
+     return {toolbar:box('.workspace-toolbar'),row:box('.member-preference-row'),invite:box('.group-invite-shortcut'),options:box('.member-preference-options'),chip:box('.member-filters>button'),titleX:Math.round(title.getBoundingClientRect().x),font:style.fontSize};
+    });
+    if(baseline)expect(geometry).toEqual(baseline);else baseline=geometry;
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
+    await page.screenshot({path:`test-results/topbar-aligned-${path.split('/').pop()}-${width}.png`,animations:'disabled'});
+   }
+  }
+  await bar(page).getByRole('button',{name:/구성원 필터 설정/}).click();const filter=page.getByRole('dialog',{name:'조회할 구성원'});
+  await expect(filter).toBeVisible();await expect(filter.getByRole('button',{name:/첫 화면으로/})).toHaveCount(0);
+  await filter.getByRole('button',{name:'topbar-host',exact:true}).click();await filter.getByRole('button',{name:'선택 완료'}).click();await selected('메모 작성자',false,true);
+  await bar(page).getByRole('button',{name:/구성원 필터 설정/}).click();await filter.getByRole('button',{name:'전체선택',exact:true}).click();await page.keyboard.press('Escape');await selected('메모 작성자',true,true);
   const saved=await command(page.request,'me');expect(saved.memberFilterPreferences.timetable).toEqual([me.id]);expect(saved.memberFilterPreferences.calendar).toHaveLength(2);expect(saved.memberFilterPreferences.fees).toHaveLength(2);
  }finally{await context.close();}
 });
