@@ -4,6 +4,7 @@ import type {WorkspaceGroup} from '../../../shared/workspace';
 import {AuthLayout} from '../components/AuthLayout';
 import {WorkspaceToolbar} from '../components/WorkspaceToolbar';
 import {GroupInviteManager} from '../components/GroupInviteManager';
+import {GroupInviteShareButton} from '../components/GroupInviteShare';
 import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {Loading,ErrorState} from '../components/Common';
@@ -16,6 +17,9 @@ export function GroupManagement(){
  const gate=useWorkspaceGate(),{requestLogin}=useEntryAccess(),me=gate.access.identity;
  const [editing,setEditing]=useState<WorkspaceGroup|'new'|null>(null),[inviting,setInviting]=useState<WorkspaceGroup|null>(null),[expanded,setExpanded]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const lock=useRef(false);
+ const receipt=me?.updateReceipt;
+ const {markUpdatesRead}=gate;
+ useEffect(()=>{void markUpdatesRead(receipt);},[markUpdatesRead,receipt]);
  if(gate.access.status==='checking')return <AuthLayout wide><Loading label="그룹을 확인하고 있어요"/></AuthLayout>;
  if(gate.access.status==='error')return <AuthLayout wide><ErrorState message={gate.access.error||'그룹을 확인하지 못했어요'} retry={()=>void gate.refreshAccess()}/></AuthLayout>;
  if(gate.access.status==='restricted')return <Navigate to="/account" replace/>;
@@ -23,7 +27,7 @@ export function GroupManagement(){
  async function action(fn:()=>Promise<unknown>,message:string){if(lock.current)return;lock.current=true;setBusy(true);setError('');setNotice('');try{await fn();await gate.refreshAccess();setNotice(message);}catch(e){setError((e as Error).message);}finally{lock.current=false;setBusy(false);}}
  const choose=(id:string|null)=>void action(()=>gate.selectGroup(id),id?'선택한 그룹의 자료를 표시해요.':'개인 자료는 본인만 볼 수 있어요.');
  return <AuthLayout wide><div className="group-management">
-  <WorkspaceToolbar title="그룹관리">{me?.role!=='CHILD'&&<button type="button" className="button primary compact" disabled={busy} onClick={()=>me?setEditing('new'):requestLogin({title:'그룹을 만들려면 로그인해 주세요'})}><Icon name="plus"/>새 그룹</button>}</WorkspaceToolbar>
+  <WorkspaceToolbar title="그룹관리">{me?.role==='PARENT'&&selected&&<GroupInviteShareButton/>}{me?.role!=='CHILD'&&<button type="button" className="button primary compact" disabled={busy} onClick={()=>me?setEditing('new'):requestLogin({title:'그룹을 만들려면 로그인해 주세요'})}><Icon name="plus"/>새 그룹</button>}</WorkspaceToolbar>
   <div className="group-management-body">
    <p className="group-intro">개인은 나만, 그룹은 함께.<br/><span>그룹을 선택하고 그 안에 등록한 자료만 구성원과 공유해요.</span></p>
    {error&&<p role="alert" className="group-error">{error}</p>}{notice&&<p role="status" className="group-notice">{notice}</p>}
