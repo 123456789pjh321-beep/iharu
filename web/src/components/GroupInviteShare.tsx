@@ -25,7 +25,7 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const dialog=useRef<HTMLDialogElement>(null);
  const dialogId=useId();
  const [invite,setInvite]=useState<InviteState>();
- const issuing=useRef<string|null>(null);
+ const issuing=useRef<{scope:string}|null>(null);
  const route=pathname.toLowerCase().replace(/\/+$/,'');
  const profileId=parent?.id;
  const canInvite=!!parent,needsGroup=!parent?.family;
@@ -38,21 +38,21 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const issue=useCallback(async(ownerId:string)=>{
   const targetGroupId=parent?.family?.id;if(!targetGroupId)return;
   const scope=ownerId+':'+targetGroupId;
-  if(issuing.current===scope)return;
-  issuing.current=scope;
+  if(issuing.current?.scope===scope)return;
+  const request={scope};issuing.current=request;
   setInvite({ownerId,groupId:targetGroupId,status:'loading'});
   try{
    // A deliberate click on the labeled shortcut authorizes creating the invitation.
    const link=await workspaceRequest<IssuedInvite>('invite.link.issue',{consent:true,groupId:targetGroupId});
-   if(issuing.current!==scope)return;
+   if(issuing.current!==request)return;
    setInvite({ownerId,groupId:targetGroupId,status:'ready',invite:link});
    void refreshAccess();
   }catch(e){
-   if(issuing.current===scope){
+   if(issuing.current===request){
     const error=e as Error&{code?:string};
     setInvite({ownerId,groupId:targetGroupId,status:'error',message:error.message,code:error.code});
    }
-  }finally{if(issuing.current===scope)issuing.current=null;}
+  }finally{if(issuing.current===request)issuing.current=null;}
  },[refreshAccess,parent?.family?.id]);
 
  const action=useMemo(()=>profileId?{dialogId,open:()=>{
