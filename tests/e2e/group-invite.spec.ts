@@ -61,10 +61,15 @@ test('group invite shortcut creates one link per click and fits member filters a
   await expect(page.locator(position)).toBeVisible();
   if(filteredMenus.includes(label)){
    const row=page.locator('.member-preference-row');
-   const plus=await row.locator('.group-invite-shortcut').boundingBox();
-   const chip=await row.locator('.member-filters button').first().boundingBox();
-   expect(plus?.height).toBe(chip?.height);
-   expect(plus?.y).toBe(chip?.y);
+   const chip=row.locator('.member-filter-bar > .member-filters > button').first();
+   await expect(chip).toBeVisible();
+   const geometry=await row.evaluate(node=>{
+    const plus=node.querySelector('.group-invite-shortcut')!.getBoundingClientRect();
+    const chip=node.querySelector('.member-filter-bar > .member-filters > button')!.getBoundingClientRect();
+    return {plusHeight:plus.height,chipHeight:chip.height,plusY:plus.y,chipY:chip.y};
+   });
+   expect(geometry.plusHeight).toBe(geometry.chipHeight);
+   expect(geometry.plusY).toBeCloseTo(geometry.chipY);
   }
   const [response]=await Promise.all([
    page.waitForResponse(r=>r.url().endsWith('/api/v1/workspace/invite.link.issue')),
