@@ -216,7 +216,7 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   };
  });
  const mainMenus=[
-  ['/today/calendar','달력'],['/chat','대화'],['/briefing','AI 브리핑'],['/tuition','가계부'],['/more','더보기'],
+  ['/today/calendar','달력'],['/chat','대화'],['/timeline','타임라인'],['/tuition','가계부'],['/more','더보기'],
  ];
  const moreMenus=[
   '/family','/account','/settings','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',

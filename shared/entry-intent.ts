@@ -1,7 +1,7 @@
 import {z} from 'zod';
 
 export const accountDeletionRequestPath='/privacy?request=delete';
-const paths=new Set(['/timetable','/today/calendar','/today/repeats','/chat','/briefing','/child/chat','/tuition','/records','/family','/family/invite','/invite','/account','/account/email','/account/reauth','/privacy',accountDeletionRequestPath,'/notification-settings','/more','/settings','/help','/more/service','/more/notices','/more/blog','/admin']);
+const paths=new Set(['/timetable','/today/calendar','/today/repeats','/chat','/timeline','/briefing','/child/chat','/tuition','/records','/family','/family/invite','/invite','/account','/account/email','/account/reauth','/privacy',accountDeletionRequestPath,'/notification-settings','/more','/settings','/help','/more/service','/more/notices','/more/blog','/admin']);
 /** Auth returns are exact app destinations, including explicitly supported settings and saved views. */
 export function entryReturnPath(value:unknown):string{
  if(typeof value!=='string')return '/timetable';

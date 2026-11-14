@@ -59,9 +59,9 @@ test('group invite shortcut creates one link per click and fits member filters a
  let issueRequests=0;
  page.on('request',request=>{if(request.url().endsWith('/api/v1/workspace/invite.link.issue'))issueRequests++;});
  const urls=new Set<string>();
- for(const label of ['시간표','달력','대화','AI 브리핑','가계부','더보기']){
+ for(const label of ['시간표','달력','대화','타임라인','가계부','더보기']){
   await menu.getByRole('link',{name:label,exact:true}).click();
-  const toolbar=label==='대화'?'.chat-rooms-toolbar':label==='AI 브리핑'?'.briefing-instagram-search':'.workspace-toolbar-actions';
+  const toolbar=label==='대화'?'.chat-rooms-toolbar':'.workspace-toolbar-actions';
   const position=filteredMenus.includes(label)?'.member-preference-row > .group-invite-shortcut:first-child':toolbar+' > .group-invite-shortcut';
   await expect(shortcut).toHaveCount(1);
   await expect(page.locator(position)).toBeVisible();

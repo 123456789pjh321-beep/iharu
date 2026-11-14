@@ -15,6 +15,7 @@ import { sessionSchema, type SignedInSession } from './auth';
 import { AuthLayout,WorkspaceFrame } from './components/AuthLayout';
 const TestWorkspace=lazy(()=>import('./testing/TestWorkspace'));
 const MarketingPage=lazy(()=>import('./pages/Marketing'));
+const TimelinePage=lazy(()=>import('./pages/Timeline'));
 const AdminConsole=lazy(()=>import('./pages/AdminConsole'));
 const ChatPage=lazy(()=>import('./pages/Chat').then(m=>({default:m.ChatPage})));
 import { DailyWorkspace } from './pages/Daily';
@@ -87,6 +88,7 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/more/service" element={<WorkspaceEntry mode="service"/>}/>
   {(['notices','blog'] as const).flatMap(mode=>[<Route key={mode} path={'/more/'+mode} element={<WorkspaceEntry mode={mode}/>}/>,<Route key={mode+'-post'} path={'/more/'+mode+'/:slug'} element={<WorkspaceEntry mode={mode}/>}/>])}
   <Route path="/admin" element={<RequireWorkspaceAccount><Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense></RequireWorkspaceAccount>}/>
+  <Route path="/timeline" element={<RequireWorkspaceAccount><Suspense fallback={<Loading label="타임라인을 열고 있어요"/>}><TimelinePage/></Suspense></RequireWorkspaceAccount>}/>
   <Route path="/briefing" element={<RequireWorkspaceAccount><Suspense fallback={<Loading label="브리핑을 열고 있어요"/>}><BriefingPage/></Suspense></RequireWorkspaceAccount>}/>
   <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
   <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/legal/:section" element={<LegalPage/>}/><Route path="/privacy" element={<RequireWorkspaceAccount><PrivacyPage/></RequireWorkspaceAccount>}/><Route path="/location" element={<Navigate to="/timetable" replace/>}/><Route path="/today" element={<WorkspaceLanding/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>

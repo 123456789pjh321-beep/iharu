@@ -9,7 +9,7 @@ import {useWorkspaceGate} from './WorkspaceGate';
 const shareLabel='그룹 초대 공유';
 const issueDescription='이 버튼을 누르면 초대용 링크가 만들어집니다. 초대받은 사람이 수락하면 같은 그룹에서 일정 등 자료를 공유합니다.';
 const inlineShortcutRoutes=new Set([
- '/timetable','/today/calendar','/tuition','/chat','/child/chat','/briefing',
+ '/timetable','/today/calendar','/tuition','/chat','/child/chat','/timeline','/briefing',
  '/more','/settings','/help','/family','/notification-settings','/admin','/account','/privacy','/account-deletion',
 ]);
 const GroupInviteShareContext=createContext<{dialogId:string;canInvite:boolean;open:()=>void}|null>(null);
