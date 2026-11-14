@@ -12,7 +12,7 @@ async function holdBundle(page:Page){
  return release;
 }
 
-test('first paint centers the blue sun on white before the app bundle',async({page})=>{
+test('first paint draws the blue sun rays clockwise around a fixed center',async({page})=>{
  const release=await holdBundle(page);
  try{
   await page.goto('/service',{waitUntil:'commit'});
@@ -20,11 +20,36 @@ test('first paint centers the blue sun on white before the app bundle',async({pa
   const mark=launch.locator('.iharu-loading-mark');
   await expect(launch).toBeVisible();
   await expect(launch).toHaveCSS('background-color','rgb(255, 255, 255)');
-  await expect(mark).toHaveAttribute('src','/brand/iharu-loading-mark.svg');
-  await expect(mark).toHaveJSProperty('complete',true);
-  await expect.poll(()=>mark.evaluate((image:HTMLImageElement)=>image.naturalWidth)).toBeGreaterThan(0);
-  await expect(mark).toHaveCSS('animation-name','iharu-loading-spin');
-  await expect.poll(()=>mark.evaluate(element=>getComputedStyle(element).transform)).not.toBe('none');
+  await expect(mark).toHaveAttribute('width','104');
+  await expect(mark).toHaveCSS('stroke-width','5.5px');
+  const center=mark.locator(':scope > use');
+  await expect.poll(()=>center.evaluate((element:SVGUseElement)=>element.getBBox().width)).toBe(28);
+  await expect(center).toHaveCSS('animation-name','none');
+
+  const rays=mark.locator('.iharu-loading-rays > use');
+  await expect(rays).toHaveCount(8);
+  await expect(rays.first()).toHaveCSS('animation-name','iharu-loading-ray');
+  const state=await rays.evaluateAll(elements=>{
+   for(const ray of elements){
+    const [animation]=ray.getAnimations();
+    animation.pause();
+    animation.currentTime=115;
+   }
+   const growing=Number.parseFloat(getComputedStyle(elements[0]).strokeDashoffset);
+   for(const ray of elements)ray.getAnimations()[0].currentTime=430;
+   return {
+    growing,
+    opacities:elements.map(ray=>Number(getComputedStyle(ray).opacity)),
+    angles:elements.map(ray=>ray.getAttribute('transform')),
+   };
+  });
+  expect(state.growing).toBeGreaterThan(0);
+  expect(state.growing).toBeLessThan(1);
+  expect(state.opacities[0]).toBe(1);
+  expect(state.opacities[2]).toBeGreaterThan(0);
+  expect(state.opacities[2]).toBeLessThan(1);
+  expect(state.opacities.slice(3)).toEqual([0,0,0,0,0]);
+  expect(state.angles).toEqual([0,45,90,135,180,225,270,315].map(angle=>`rotate(${angle} 36 36)`));
   await expect(launch.getByRole('status')).toHaveText('아이하루를 불러오고 있어요');
   await expect(page.locator('#root')).toHaveAttribute('inert','');
   for(const viewport of [{width:320,height:740},{width:1440,height:900}]){
@@ -63,7 +88,7 @@ test('workspace keeps the launch visible while loading and reuses the mark withi
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'AI 브리핑',exact:true}).click();
   const pending=page.locator('[data-app-loading]').filter({hasText:'브리핑을 열고 있어요'});
   await expect(pending).toHaveCSS('background-color','rgb(255, 255, 255)');
-  await expect(pending.locator('.iharu-loading-mark')).toHaveCSS('animation-name','iharu-loading-spin');
+  await expect(pending.locator('.iharu-loading-rays > use').first()).toHaveCSS('animation-name','iharu-loading-ray');
   await expect(page.locator('#app-launch')).toHaveCount(0);
  }finally{releaseBriefing();}
  await expect(page.locator('[data-app-loading]')).toHaveCount(0);
@@ -101,7 +126,7 @@ for(const preference of ['system','app'] as const){
   try{
    await page.goto('/login',{waitUntil:'commit'});
    await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
-   await expect(page.locator('#app-launch .iharu-loading-mark')).toHaveCSS('animation-name','none');
+   await expect(page.locator('#app-launch .iharu-loading-rays > use').first()).toHaveCSS('animation-name','none');
    await expect(page.locator('#app-launch')).toHaveCSS('background-color','rgb(255, 255, 255)');
   }finally{release();}
   await ready(page);await expect(page.locator('.market-brand')).toBeVisible();
@@ -110,7 +135,7 @@ for(const preference of ['system','app'] as const){
 
 test('failed app bundle provides a retry and recovers instead of trapping the user behind the logo',async({page})=>{
  await page.route(mainBundle,route=>route.abort('failed'));
- await page.goto('/service');await expect(page.locator('#launch-recovery')).toBeVisible({timeout:12000});await expect(page.locator('#launch-message')).toHaveText('화면을 불러오지 못했어요');await expect(page.locator('#app-launch .iharu-loading-mark')).toHaveCSS('animation-name','none');
+ await page.goto('/service');await expect(page.locator('#launch-recovery')).toBeVisible({timeout:12000});await expect(page.locator('#launch-message')).toHaveText('화면을 불러오지 못했어요');await expect(page.locator('#app-launch .iharu-loading-rays > use').first()).toHaveCSS('animation-name','none');
  await page.unroute(mainBundle);await page.getByRole('button',{name:'다시 시도',exact:true}).click();await ready(page);await expect(page.locator('.market-hero h1')).toBeVisible();
 });
 
