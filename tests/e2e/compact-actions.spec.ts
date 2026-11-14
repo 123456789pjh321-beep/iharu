@@ -15,7 +15,7 @@ test('labeled registration actions, modal entry/exit, dirty cancellation, save a
   Element.prototype.animate=function(frames,options){
    const animation=original.call(this,frames,options);
    if(this.matches('.direct-editor,.calendar-day-sheet')){
-    (window as any).dialogMotions.push({frames,options});
+    (window as any).dialogMotions.push({frames,options,editor:this.matches('.direct-editor')});
     if((window as any).holdDialogMotion){animation.pause();animation.currentTime=110;}
    }
    return animation;
@@ -33,7 +33,7 @@ test('labeled registration actions, modal entry/exit, dirty cancellation, save a
   if(path==='/tuition')await page.getByLabel('금액',{exact:true}).fill('150000');
   await page.screenshot({path:`test-results/ui97-editor-${path.replaceAll('/','-')}-${width}.png`,animations:'disabled'});
   await save.click();await expect(editor).toHaveCount(0);
-  const motions=await page.evaluate(()=>(window as any).dialogMotions);
+  const motions=await page.evaluate(()=>(window as any).dialogMotions.filter((m:{editor:boolean})=>m.editor));
   expect(motions[0].frames[0].transform).toBe('translateY(900px)');expect(motions[0].frames[1].transform).toBe('translateY(0)');expect(motions.at(-1).frames[1].transform).toBe('translateY(900px)');
  }
  await page.goto('/today/calendar');const day=page.locator('.calendar-cell.is-today .calendar-day-target>span');await day.click();

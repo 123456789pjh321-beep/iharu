@@ -66,7 +66,8 @@ test('browser signup → mail proof → login → timetable → account → logo
   await page.getByRole('button',{name:'연결 해제 확인',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('로그인 방법이 하나는 남아 있어야 해요');
   await page.getByRole('button',{name:'모든 기기에서 로그아웃',exact:true}).click();
-  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveURL(/\/timetable$/);
+  expect(await(await page.request.get('/api/account/session')).json()).toMatchObject({authenticated:false});
   for(const path of ['/today','/chat','/']){await page.goto(path);await expect(page.locator('[data-guest-workspace]')).toBeVisible();}
   await page.goto('/account');await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
   expect(errors).toEqual([]);

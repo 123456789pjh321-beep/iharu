@@ -10,6 +10,7 @@ describe('P01 API boundaries', () => {
     expect(response.status).toBe(200);
     const body = envelope(healthSchema).parse(await response.json());
     expect(body.data.demoEnabled).toBe(true);
+    expect(body.data.version).toBe('2.0.0');
     expect(JSON.stringify(body)).not.toContain('DATABASE_URL');
     expect(response.headers.get('Cache-Control')).toBe('private, no-store');
   });

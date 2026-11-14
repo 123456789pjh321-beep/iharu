@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 
 test('production account routes show truthful readiness and do not expose sample children',async({page})=>{
+  await page.route('**/api/account/providers',r=>r.fulfill({json:{providers:[{id:'email',name:'이메일',enabled:false},{id:'google',name:'Google',enabled:false},{id:'kakao',name:'카카오',enabled:false},{id:'naver',name:'네이버',enabled:false},{id:'phone',name:'휴대폰',enabled:false}]}}));
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('/login');
+  await page.goto('http://127.0.0.1:4174/login');
   await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeEnabled();
   await expect(page.getByText('로그인 연결을 준비하고 있어요')).toBeVisible();
   for(const label of ['Google로 계속하기','카카오로 계속하기','네이버로 계속하기'])await expect(page.getByRole('button',{name:new RegExp(label)})).toBeDisabled();
@@ -10,8 +11,8 @@ test('production account routes show truthful readiness and do not expose sample
   await expect(page.getByText('서준',{exact:true})).toHaveCount(0);
   await page.getByRole('link',{name:'회원가입',exact:true}).click();
   await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
-  await page.goto('/phone');await expect(page.getByRole('button',{name:'인증번호 받기',exact:true})).toBeDisabled();
-  await page.goto('/account');await expect(page).toHaveURL(/\/login$/);
+  await page.goto('http://127.0.0.1:4174/phone');await expect(page.getByRole('button',{name:'인증번호 받기',exact:true})).toBeDisabled();
+  await page.goto('http://127.0.0.1:4174/account');await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();await expect(page.getByText('현재 기기',{exact:true})).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
