@@ -5,6 +5,7 @@ export default defineConfig({
   testMatch:legalOnly?'**/legal-content-save.spec.ts':undefined,
   testIgnore:legalOnly?[]:['**/legal-content-save.spec.ts'],
   use:{ baseURL:'http://127.0.0.1:4173', browserName:'chromium', headless:true,
+    trace:'retain-on-failure', screenshot:'only-on-failure',
     launchOptions: process.env.PLAYWRIGHT_EXECUTABLE_PATH ? {
       executablePath:process.env.PLAYWRIGHT_EXECUTABLE_PATH,
       args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu'],

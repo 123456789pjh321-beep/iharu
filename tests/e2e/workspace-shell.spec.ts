@@ -1,3 +1,4 @@
+import {waitForAppReady} from '../helpers/workspace-ui';
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 test.use({baseURL:'http://127.0.0.1:4174'});
 async function login(page: Page, request: APIRequestContext, email: string) {
@@ -12,7 +13,7 @@ async function login(page: Page, request: APIRequestContext, email: string) {
     },
   });
   const mail = await (await request.get("/__test__/mail")).json();
-  await page.goto(mail.find((m: { to: string }) => m.to === email).url);
+  await page.goto(mail.find((m: { to: string }) => m.to === email).url);await waitForAppReady(page);
   await page.getByLabel("아이디", { exact: true }).fill(email);
   await page
     .getByLabel("암호", { exact: true })

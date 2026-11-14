@@ -1,5 +1,11 @@
 import {expect,type Page} from '@playwright/test';
 
+// Input actions can find a visible form while the startup layer still makes it inert.
+export async function waitForAppReady(page:Page){
+ await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});
+ await expect(page.locator('#root')).not.toHaveAttribute('inert');
+}
+
 export async function selectCalendarView(page:Page,view:'월간'|'주간'|'일간'){
  await page.locator('summary[aria-label="달력 보기 선택"]').click();
  await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:view,exact:true}).click();

@@ -1,3 +1,4 @@
+import {waitForAppReady} from '../helpers/workspace-ui';
 import { test,expect } from '@playwright/test';
 test.use({baseURL:'http://127.0.0.1:4174'});
 
@@ -19,13 +20,13 @@ test('browser signup → mail proof → login → timetable → account → logo
   await expect(page.getByRole('status')).toContainText('인증 메일이 도착해요');
   const mails=await(await request.get('/__test__/mail')).json();
   const proof=mails.find((m:{to:string})=>m.to==='browser-parent@example.test');expect(proof).toBeTruthy();
-  await page.goto(proof.url);
+  await page.goto(proof.url);await waitForAppReady(page);
   await expect(page.getByText('이메일 확인을 마쳤어요. 로그인해 주세요.')).toBeVisible();
   await page.getByLabel('아이디',{exact:true}).fill('browser-parent@example.test');
   await page.getByLabel('암호',{exact:true}).fill('browser-parent-password-2026');
   await page.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(page).toHaveURL(/\/timetable$/);
-  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','대화','가계부','전체메뉴']);await expect(nav.getByRole('link',{name:'오늘',exact:true})).toHaveCount(0);
+  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','대화','더보기']);await expect(nav.getByRole('link',{name:'오늘',exact:true})).toHaveCount(0);
   await expect(page.locator('.personal-timetable')).toBeVisible();
   await page.reload();
   await expect(page.locator('.personal-timetable')).toBeVisible();
