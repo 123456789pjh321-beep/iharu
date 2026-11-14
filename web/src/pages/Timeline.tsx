@@ -10,6 +10,7 @@ import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {DateNavigator,WorkspaceToolbar} from '../components/WorkspaceToolbar';
 import {MemberFilter} from '../components/MemberFilter';
+import {GroupInviteShareButton} from '../components/GroupInviteShare';
 import {MemoEditor,MemoPhoto} from '../components/MemoEditor';
 import {workspaceRequest} from '../workspace-api';
 import './timeline.css';
@@ -64,7 +65,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   <WorkspaceToolbar title="타임라인" navigation={<DateNavigator type="month" value={month} inputLabel="타임라인 조회 월" displayLabel={period==='all'?'전체 기간':period==='custom'?'기간 선택':undefined} onChange={selectMonth}/>}>
    <button className="icon-button" type="button" aria-label="이전 달" onClick={()=>moveMonth(-1)}><Icon name="left"/></button><button className="icon-button" type="button" aria-label="다음 달" onClick={()=>moveMonth(1)}><Icon name="chevron"/></button><button type="button" className="button primary compact memo-create" onClick={create}><Icon name="plus"/>메모 작성</button>
   </WorkspaceToolbar>
-  {me&&<MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} onChange={id=>{if(id==='all'){setOwnerIds([]);return;}const selected=ownerIds.length?ownerIds:members.map(m=>m.id),next=selected.includes(id)?selected.filter(x=>x!==id):[...selected,id];setOwnerIds(next.length?next:[id]);setLimit(40);}} label="메모 작성자" allLabel="전체" allSelected={!ownerIds.length} onSelectAll={()=>setOwnerIds([])}/>}
+  {me&&<div className="member-preference-row memo-members"><GroupInviteShareButton/><MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} onChange={id=>{if(id==='all'){setOwnerIds([]);return;}const selected=ownerIds.length?ownerIds:members.map(m=>m.id),next=selected.includes(id)?selected.filter(x=>x!==id):[...selected,id];setOwnerIds(next.length?next:[id]);setLimit(40);}} label="메모 작성자" allLabel="전체" allSelected={!ownerIds.length} onSelectAll={()=>setOwnerIds([])}/></div>}
   <section className="memo-filters" aria-label="메모 필터"><div className="memo-filter-row"><div className="memo-quick-filters" role="group" aria-label="메모 종류">
    <button type="button" aria-pressed={!filters.hasPhotos&&!filters.hasLocation&&!filters.favorite} onClick={()=>change({hasPhotos:false,hasLocation:false,favorite:false})}>전체</button>
    <button type="button" aria-pressed={filters.hasPhotos} onClick={()=>change({hasPhotos:!filters.hasPhotos})}>사진</button><button type="button" aria-pressed={filters.hasLocation} onClick={()=>change({hasLocation:!filters.hasLocation})}>위치</button><button type="button" aria-pressed={filters.favorite} onClick={()=>change({favorite:!filters.favorite})}>즐겨찾기</button>

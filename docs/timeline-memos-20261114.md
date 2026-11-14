@@ -66,5 +66,6 @@
 | 수정 | `web/src/pages/Marketing.tsx` | 변경된 메뉴 순서 안내 |
 | 수정 | `web/src/components/BriefingLocation.tsx` | 브리핑 임시 위치와 메모 저장 위치 구분 |
 | 수정 | `web/src/pages/Legal.tsx` | 선택한 사진·위치의 실제 저장·공유·삭제 방식 고지 |
+| 수정 | `tests/e2e/group-invite.spec.ts` | 타임라인 구성원 필터 옆 초대 버튼과 메뉴 순서 검증 |
 
 삭제 파일: 없음.
