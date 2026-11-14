@@ -6,7 +6,7 @@ async function login(page:Page,name:string){const email=name+'@example.test',pas
 const nav=(page:Page)=>page.getByRole('navigation',{name:'모바일 주 메뉴'});
 test('shows two guide memos without login and uses the requested menu order at every width',async({page})=>{
  await page.goto('/timeline');await expect(page.getByRole('region',{name:'샘플 메모'}).getByRole('article')).toHaveCount(2);
- await expect(nav(page).getByRole('link')).toHaveText(['시간표','달력','가계부','타임라인','대화','더보기']);
+ await expect(nav(page).getByRole('link')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','대화','더보기']);
  await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.getByRole('button',{name:'더보기',exact:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'이전 달',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'다음 달',exact:true})).toHaveCount(0);await expect(page.getByRole('searchbox')).toHaveCount(0);await expect(page.getByRole('button',{name:'필터',exact:true})).toHaveCount(0);await expect(page.getByText('최신순',{exact:true})).toHaveCount(0);await expect(page.locator('.memo-count')).toHaveCount(0);
  const sample=page.getByRole('article',{name:'공원에서 보낸 오후'});await expect(sample.getByRole('img')).toHaveCount(0);await sample.click();await expect(page.getByRole('dialog',{name:'글 상세'}).getByRole('img')).toBeVisible();await page.keyboard.press('Escape');

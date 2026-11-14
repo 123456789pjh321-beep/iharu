@@ -29,7 +29,7 @@ function CreateChatRoom({me,close,saved}:{me:WorkspaceMe;close:()=>void;saved:(i
   if(lock.current||!selected.length)return;lock.current=true;setBusy(true);setError('');
   const body={memberIds:selected,name:selected.length>1?name.trim():''},key=JSON.stringify(body);
   if(pending.current?.key!==key)pending.current={key,id:crypto.randomUUID()};
-  try{const result=await workspaceRequest<{id:string}>('chat.room.create',{...body,clientRequestId:pending.current.id});await saved(result.id);}
+  try{const result=await workspaceRequest<{id:string}>('chat.room.create',{...body,clientRequestId:pending.current.id},me.family?.id??null);await saved(result.id);}
   catch(e){setError((e as Error).message);}finally{lock.current=false;setBusy(false);}
  }
  return <dialog ref={ref} className="personal-editor chat-create-dialog" aria-labelledby="create-room-title" onCancel={e=>{e.preventDefault();if(!busy)close();}}>

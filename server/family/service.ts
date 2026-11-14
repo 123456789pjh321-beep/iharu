@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto';
 import { query,type AuthDatabase } from '../auth/database.js';
 import {groupLabels} from './group-labels.js';
-export type FamilyActor={memberId?:string;sessionId?:string;deviceHash?:string;workspaceHash?:string;requestId:string};
+export type FamilyActor={workspaceGroup?:string;memberId?:string;sessionId?:string;deviceHash?:string;workspaceHash?:string;requestId:string};
 export class FamilyService {
   constructor(readonly db:AuthDatabase,readonly secret:string,readonly testRole?:string){}
   digest(value:string){return createHmac('sha256',this.secret).update(`p03:${value}`).digest('hex');}
@@ -12,7 +12,7 @@ export class FamilyService {
     return this.db.transaction().execute(async tx=>{
       // Tests use the exact non-owner runtime role on their isolated connection.
       if(this.testRole){if(this.testRole!=='app_runtime')throw new Error('INVALID_TEST_ROLE');await query(tx,'SET LOCAL ROLE app_runtime');}
-      await query(tx,`SELECT set_config('iharu.member_id',$1,true),set_config('iharu.session_id',$2,true),set_config('iharu.device_hash',$3,true),set_config('iharu.request_id',$4,true),set_config('iharu.workspace_hash',$5,true)`,[actor.memberId||'',actor.sessionId||'',actor.deviceHash||'',actor.requestId,actor.workspaceHash||'']);
+      await query(tx,`SELECT set_config('iharu.member_id',$1,true),set_config('iharu.session_id',$2,true),set_config('iharu.device_hash',$3,true),set_config('iharu.request_id',$4,true),set_config('iharu.workspace_hash',$5,true),set_config('iharu.request_group',$6,true)`,[actor.memberId||'',actor.sessionId||'',actor.deviceHash||'',actor.requestId,actor.workspaceHash||'',actor.workspaceGroup||'']);
       if(op==='system.log'){
         const [row]=await query<{data:T}>(tx,'SELECT app_private.system_log_request($1::jsonb) AS data',[JSON.stringify(input)]);return row.data;
       }

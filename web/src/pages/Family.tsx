@@ -1,4 +1,4 @@
-import {PersonalWorkspace} from './PersonalWorkspace';
+import {GroupManagement} from './GroupManagement';
 import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {Link,Navigate,useSearchParams} from 'react-router-dom';
 import {z} from 'zod';
@@ -12,7 +12,7 @@ import {Loading,ErrorState} from '../components/Common';
 import {Icon} from '../components/Icon';
 function useFamilyAction(){const lock=useRef(false);const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');return {busy,error,message,setMessage,setError,async run(fn:()=>Promise<void>){if(lock.current)return;lock.current=true;setBusy(true);setError('');setMessage('');try{await fn();}catch(e){setError((e as Error).message);}finally{lock.current=false;setBusy(false);}}};}
 function FamilyNav(){return <nav className="family-nav" aria-label="그룹과 계정"><Link to="/family" aria-current="page"><Icon name="home"/>우리 그룹</Link><Link to="/today/calendar"><Icon name="calendar"/>그룹 달력</Link><Link to="/device/connect"><Icon name="device"/>아이 기기 연결</Link><Link to="/account"><Icon name="settings"/>내 계정</Link></nav>;}
-export function FamilyPage(){const [params]=useSearchParams();return params.get('legacy')==='1'?<LegacyFamilyPage/>:<PersonalWorkspace mode="family"/>;}
+export function FamilyPage({legacy=false}:{legacy?:boolean}){return legacy?<LegacyFamilyPage/>:<GroupManagement/>;}
 function LegacyFamilyPage(){
  const session=useApi('/api/account/session',sessionSchema);
  if(session.loading)return <AuthLayout wide><Loading label="그룹 연결을 확인하고 있어요"/></AuthLayout>;

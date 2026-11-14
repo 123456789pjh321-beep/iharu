@@ -26,10 +26,16 @@ async function verifyAndSignIn(page:Page,request:APIRequestContext,email:string,
 }
 
 async function issue(page:Page){
- const section=page.getByRole('region',{name:'그룹 초대',exact:true});
- await expect(section.getByRole('checkbox')).toHaveCount(0);
- await section.getByRole('button',{name:'그룹 초대 링크',exact:true}).click();
- const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
+ const cards=page.locator('.managed-group');
+ const first=page.getByRole('button',{name:'기본그룹 만들기',exact:true});
+ await expect(first.or(cards.first())).toBeVisible();
+ if(await first.isVisible()){
+  await first.click();
+  await page.getByRole('dialog',{name:'새 그룹 만들기'}).getByRole('button',{name:'그룹 만들기',exact:true}).click();
+ }
+ await expect(cards.filter({hasText:'선택됨'})).toHaveCount(1);
+ await cards.filter({hasText:'선택됨'}).getByRole('button',{name:'구성원 초대',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:/ 초대$/});
  const field=dialog.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();
  const link=await field.inputValue();
@@ -133,7 +139,7 @@ test('group invite shortcut creates one link per click and fits member filters a
  await expect(page.getByText('사용 가능한 그룹 초대')).toHaveCount(0);
  const options=page.request.post('/api/v1/workspace/invite.link.options',{headers:{Origin:origin},data:{}});
  expect((await(await options).json()).pending).toHaveLength(1);
- await expect(page.locator('.personal-member')).toHaveCount(1);
+ await expect(page.locator('.managed-group')).toHaveCount(1);
  await issue(page);
  expect(issueRequests).toBe(9);
 });
@@ -142,7 +148,7 @@ test('More destinations align the group invite shortcut with their page heading'
  test.setTimeout(60000);
  await page.emulateMedia({reducedMotion:'reduce'});
  await register(page,request,'more-heading-host@example.test','더보기 메뉴 검사');
- for(const path of ['/settings','/family','/help','/more/notices','/more/blog','/more/service','/notification-settings','/account','/privacy','/legal/terms','/legal/privacy','/account-deletion']){
+ for(const path of ['/settings','/help','/more/notices','/more/blog','/more/service','/notification-settings','/account','/privacy','/legal/terms','/legal/privacy','/account-deletion']){
   await page.goto(path);
   const heading=page.locator('.more-page-heading').first();
   const shortcut=heading.getByRole('button',{name:'그룹 초대 공유',exact:true});
@@ -173,13 +179,13 @@ test('group link resumes after email verification and requires explicit acceptan
   await guest.getByRole('link',{name:'회원가입',exact:true}).click();
   await register(guest,request,'group-link-guest@example.test','가상 초대 손님',true);
   await expect(guest.getByRole('button',{name:'초대 수락'})).toBeVisible();
-  await expect(page.locator('.personal-member')).toHaveCount(1);
+  await expect(page.locator('.managed-group')).toHaveCount(1);
   await guest.getByRole('button',{name:'초대 수락'}).click();
   await guest.getByRole('link',{name:'그룹 관리 열기'}).click();
-  await expect(guest.locator('.personal-member')).toHaveCount(2);
+  await guest.locator('.group-card-title').click();await expect(guest.locator('.group-member-row')).toHaveCount(2);
   await expect(guest.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
-  await guest.getByRole('button',{name:'그룹 초대 공유',exact:true}).click();
-  const dialog=guest.getByRole('dialog',{name:'그룹 초대 공유'});
+  await guest.getByRole('button',{name:'구성원 초대',exact:true}).click();
+  const dialog=guest.getByRole('dialog',{name:/ 초대$/});
   await expect(dialog.getByLabel('발급한 그룹 초대 링크')).toBeVisible();
   await expect(dialog.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await guest.keyboard.press('Escape');
@@ -201,7 +207,7 @@ test('general invitation shares the public timetable and leaves the new account 
  });
  await register(page,request,'app-link-host@example.test','가상 앱 초대자');
  await page.goto('/family');
- await expect(page.getByRole('region',{name:'그룹 초대',exact:true})).toBeVisible();
+ await expect(page.getByRole('region',{name:'개인 공간',exact:true})).toBeVisible();
  const general=page.getByRole('region',{name:'일반 초대',exact:true});
  await expect(general.getByRole('button',{name:'일반 초대 링크 복사'})).toBeVisible();
  await expect(page.getByLabel('초대 대상')).toHaveCount(0);
@@ -234,7 +240,7 @@ test('general invitation shares the public timetable and leaves the new account 
   expect(signup.ok(),await signup.text()).toBe(true);
   await verifyAndSignIn(guest,request,email);
   await guest.goto('/family');
-  await expect(guest.locator('.personal-member')).toHaveCount(0);
+  await expect(guest.locator('.managed-group')).toHaveCount(0);
   const me=await guest.request.post('/api/v1/workspace/me',{headers:{Origin:origin},data:{}});
   expect(await me.json()).toMatchObject({name:'가상 앱 가입자',family:null});
   expect(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

@@ -1,7 +1,7 @@
 import {Loading,ErrorState,WorkspaceLoadingBoundary} from './Common';
 import {PublicHeader} from './PublicHeader';
 import {useInPublicFrame} from './PublicFrame';
-import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, Fragment, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {WorkspaceNavigation} from './WorkspaceNavigation';
 import {FamilyArtwork,useExperience} from './Experience';
@@ -16,17 +16,17 @@ export {FormNotice} from './Common';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
-const timeTreeRoutes=new Set(['/timetable','/calendar','/today/calendar','/chat','/child/chat','/timeline','/briefing','/tuition','/more','/settings']);
+const timeTreeRoutes=new Set(['/timetable','/calendar','/today/calendar','/chat','/child/chat','/timeline','/briefing','/tuition','/more','/settings','/family']);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
 export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
 export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><BriefingLocationProvider><StableWorkspaceFrame/></BriefingLocationProvider></EntryAccessProvider></WorkspaceGateProvider>;}
 function StableWorkspaceFrame(){
- const {pathname,search}=useLocation(),{health,session,access}=useWorkspaceGate();
+ const {pathname,search}=useLocation(),{health,session,access,groupBusy}=useWorkspaceGate();
  const publicDocument=pathname.startsWith('/legal/');
  const childNavigation=access.identity?.role==='CHILD';
  if(new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled)return <Outlet/>;
  const chromeIdentity=(access.identity?.id||'guest')+':'+(access.identity?.family?.id||'');
- return <WorkspaceTopBarProvider identity={chromeIdentity}><AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value><WorkspaceLoadingBoundary>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<GroupInviteShareProvider><WorkspaceTopBarHost/><Outlet/></GroupInviteShareProvider>}</WorkspaceLoadingBoundary></FrameContext.Provider></AuthLayoutRoot></WorkspaceTopBarProvider>;
+ return <WorkspaceTopBarProvider identity={chromeIdentity}><AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value><WorkspaceLoadingBoundary>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<GroupInviteShareProvider><WorkspaceTopBarHost/>{groupBusy?<Loading label="그룹을 전환하고 있어요"/>:<Fragment key={chromeIdentity}><Outlet/></Fragment>}</GroupInviteShareProvider>}</WorkspaceLoadingBoundary></FrameContext.Provider></AuthLayoutRoot></WorkspaceTopBarProvider>;
 }
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false,showNavigation=true }: { children: ReactNode; wide?: boolean;personalChild?:boolean;showNavigation?:boolean }) {
   const { pathname } = useLocation(),inPublicFrame=useInPublicFrame();

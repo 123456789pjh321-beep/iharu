@@ -8,8 +8,8 @@ function member(value:unknown){return object(value)&&typeof value.familyName==='
 export function groupLabels<T>(op:string,value:T):T{
  if(!object(value))return value;
  const result:RecordValue={...value};
- if(typeof result.familyName==='string')result.familyName=groupName(result.familyName);
- if(object(result.family))result.family=named(result.family);
+ if(typeof result.familyName==='string'&&!result.groupId&&op!=='workspace.invite.link.inspect')result.familyName=groupName(result.familyName);
+ if(object(result.family)&&!Array.isArray(result.groups))result.family=named(result.family);
  for(const key of ['families','pending'])if(Array.isArray(result[key]))result[key]=result[key].map(named);
  if(Array.isArray(result.rooms))result.rooms=result.rooms.map(member);
  if(op==='admin.members'&&Array.isArray(result.groups))result.groups=result.groups.map(group=>{

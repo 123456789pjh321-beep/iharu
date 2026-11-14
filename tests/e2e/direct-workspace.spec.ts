@@ -7,8 +7,8 @@ async function login(page:Page,request:APIRequestContext,email:string,name='가�
  const mails=await(await request.get(origin+'/__test__/mail')).json();await page.goto(mails.find((m:{to:string})=>m.to===email).url);await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill('direct-workspace-fixture-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.personal-timetable')).toBeVisible();
 }
 async function issue(page:Page){
- await page.goto('/family');
- await page.getByRole('button',{name:'그룹 초대 링크',exact:true}).click();
+ await page.goto('/timetable');
+ await page.getByRole('button',{name:'그룹 초대 공유',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
  const field=dialog.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();
@@ -21,9 +21,8 @@ async function issueLegacy(page:Page){
  expect(response.ok(),await response.text()).toBe(true);
  return (await response.json()).code;
 }
-async function accept(page:Page,link:string,switchGroup=false){
+async function accept(page:Page,link:string){
  await page.goto(link);
- if(switchGroup)await page.getByRole('checkbox',{name:/연결을 끝내고 새 그룹/}).check();
  await page.getByRole('button',{name:'초대 수락'}).click();
  await page.getByRole('link',{name:'그룹 관리 열기'}).click();
 }
@@ -50,7 +49,7 @@ test('direct calendar CRUD, general-event copy, title editing, stable menu shell
 test('parent B joins while signed in and group conversation has shared history, search and safe edits',async({page,browser,request})=>{
  test.setTimeout(90000);await login(page,request,'direct-parent-a@example.test','일반사용자 A');const code=await issue(page);
  const ctx=await browser.newContext({baseURL:origin,viewport:{width:390,height:844}}),b=await ctx.newPage();try{
- await login(b,request,'direct-parent-b@example.test','일반사용자 B');await issue(b);await accept(b,code,true);await expect(b.locator('.personal-member')).toHaveCount(2);
+ await login(b,request,'direct-parent-b@example.test','일반사용자 B');await issue(b);await accept(b,code);await expect(b.locator('.managed-group')).toHaveCount(2);
  await b.goto(origin+'/chat');await expect(b.getByLabel('조회 월')).toHaveCount(0);await expect(b.getByLabel('자료 범위')).toHaveCount(0);await b.getByLabel('참여자에게 전할 말').fill('오늘 같이 저녁 먹어요');await b.getByRole('button',{name:'메시지 보내기'}).click();await expect(b.getByRole('button',{name:'메시지 수정: 오늘 같이 저녁 먹어요'})).toBeVisible();
  await page.goto('/chat');await expect(page.getByRole('button',{name:'메시지 상세: 오늘 같이 저녁 먹어요'})).toBeVisible();await page.getByRole('button',{name:'대화 참여자'}).click();await expect(page.getByLabel('참여자 목록')).toContainText('일반사용자 B');await page.getByRole('button',{name:'메시지 상세: 오늘 같이 저녁 먹어요'}).click();await expect(page.getByLabel('메시지',{exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'삭제',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.getByLabel('참여자에게 전할 말').fill('좋아요 ❤️');await page.getByRole('button',{name:'메시지 보내기'}).click();await expect(page.locator('.chat-message.mine')).toContainText('좋아요 ❤️');await page.getByRole('button',{name:'대화 검색',exact:true}).click();await page.getByLabel('대화 내용 검색').fill('저녁');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.group-chat-history .chat-message')).toHaveCount(1);
@@ -64,7 +63,7 @@ test('tuition recurrence, designated payer, parent-only home, navigation and fix
  test.setTimeout(120000);await page.setViewportSize({width:390,height:844});await login(page,request,'tuition-a@example.test','결제 일반사용자 A');const code=await issue(page);
  const ctx=await browser.newContext({baseURL:origin,viewport:{width:390,height:844}}),b=await ctx.newPage(),cc=await browser.newContext({baseURL:origin,viewport:{width:320,height:900}}),child=await cc.newPage();
  try{
-  await login(b,request,'tuition-b@example.test','결제 일반사용자 B');await accept(b,code);await expect(b.locator('.personal-member')).toHaveCount(2);
+  await login(b,request,'tuition-b@example.test','결제 일반사용자 B');await accept(b,code);await b.locator('.group-card-title').click();await expect(b.locator('.group-member-row')).toHaveCount(2);
   await page.goto('/tuition');await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).click();await page.getByRole('button',{name:'가계부 추가'}).click();await page.getByLabel('내용').fill('매월 피아노');await page.getByRole('button',{name:'매달',exact:true}).click();await page.getByLabel('시작 날짜',{exact:true}).fill('2027-01-31');await page.getByLabel('금액',{exact:true}).fill('180000');await page.locator('.ledger-extra-options summary').click();await page.getByLabel('담당자',{exact:true}).selectOption({label:'결제 일반사용자 B'});await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByLabel('조회 월').fill('2027-02');await expect(page.locator('.personal-tuition-item')).toContainText('2027-02-28');await expect(page.locator('.personal-tuition-item')).toContainText('담당 결제 일반사용자 B');
   await b.goto('/tuition');await b.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).click();await b.getByLabel('조회 월').fill('2027-02');await expect(b.locator('.personal-tuition-item')).toContainText('매월 피아노');await expect(b.locator('.personal-fee-value .badge')).toHaveCount(0);await expect(b.getByRole('button',{name:/납부 완료 표시|납부 취소/})).toHaveCount(0);await expect(b.locator('.personal-fee-summary')).not.toContainText('미납');

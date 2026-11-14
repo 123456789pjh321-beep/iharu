@@ -61,7 +61,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
    if(!validMonth(value)||pending.has(value)||writeLock.current)return;
    pending.add(value);const key=JSON.stringify(requests[value]);
    try{
-    const data=await workspaceRequest<MemoList>('memos.list',requests[value]);
+    const data=await workspaceRequest<MemoList>('memos.list',requests[value],me?.family?.id??null);
     if(active&&!writeLock.current)setResults(old=>({...old,[value]:{key,data}}));
    }catch(e){
     if(active){
@@ -74,7 +74,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   const focused=()=>{if(!document.hidden)for(const value of Object.keys(requests))void load(value);};
   focused();window.addEventListener('focus',focused);const timer=setInterval(focused,30000);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',focused);};
- },[me?.id,requests,refresh]);
+ },[me?.id,me?.family?.id,requests,refresh]);
  const samples=useMemo(()=>sampleMemos(today),[today]);
  const selected=(current?.data?.items||[]).find(m=>m.id===selectedId)||(samples.find(m=>m.id===selectedId));
  useEffect(()=>{
@@ -85,13 +85,29 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  function create(){
   if(!me){requestLogin({title:'메모를 저장하려면 로그인해 주세요',description:'내 계정에 사진과 글을 안전하게 남겨요.'});return;}
   let initial=emptyMemo(today);
-  try{const stored=JSON.parse(sessionStorage.getItem('iharu-memo-draft:'+me.id)||'null');if(stored?.expiresAt>Date.now()&&typeof stored.draft?.id==='string'&&Array.isArray(stored.draft.photos)&&stored.draft.photos.length<=3)initial=stored.draft;else sessionStorage.removeItem('iharu-memo-draft:'+me.id);}catch{}
+  const draftRoot='iharu-memo-draft:'+me.id;
+  const draftKey=draftRoot+':'+(me.family?.id||'personal');
+  try{
+   const current=sessionStorage.getItem(draftKey);
+   const previous=!me.family&&!current?sessionStorage.getItem(draftRoot):null;
+   const stored=JSON.parse(current||previous||'null');
+   if(stored?.expiresAt>Date.now()&&typeof stored.draft?.id==='string'&&Array.isArray(stored.draft.photos)&&stored.draft.photos.length<=3){
+    if(previous){
+     const draft=stored.draft as MemoDraft;
+     initial={...draft,visibility:'PRIVATE',...(draft.version?{
+      id:crypto.randomUUID(),version:0,photos:draft.photos.filter(photo=>'data' in photo),
+     }:{})};
+     sessionStorage.setItem(draftKey,JSON.stringify({...stored,draft:initial}));
+    }else if(current)initial=stored.draft;
+   }else sessionStorage.removeItem(draftKey);
+   if(previous)sessionStorage.removeItem(draftRoot);
+  }catch{}
   setDraft(initial);
  }
  async function action(memo:Memo,op:'memos.delete'|'memos.favorite'){
   if(writeLock.current)return;writeLock.current=true;setBusy(memo.id);setMessage('');
   try{
-   await workspaceRequest(op,op==='memos.delete'?{id:memo.id,version:memo.version}:{id:memo.id,favorite:!memo.favorite});
+   await workspaceRequest(op,op==='memos.delete'?{id:memo.id,version:memo.version}:{id:memo.id,favorite:!memo.favorite},me?.family?.id??null);
    if(!mounted.current)return;
    if(op==='memos.delete'){setSelectedId('');setMessage('메모와 첨부 사진을 삭제했어요.');}
    else{
@@ -143,7 +159,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   {selected&&<MemoDetail memo={selected} busy={busy===selected.id} message={message} onClose={()=>{setSelectedId('');setViewPhoto('');}} onPhoto={setViewPhoto} onCreate={()=>{setSelectedId('');create();}} onEdit={()=>{
    setSelectedId('');setDraft({...selected,photos:selected.photos.map(photo=>({id:photo.id}))});
   }} onFavorite={()=>void action(selected,'memos.favorite')} onDelete={()=>{if(window.confirm('이 메모와 첨부 사진을 삭제할까요?'))void action(selected,'memos.delete');}}/>}
-  {draft&&me&&<MemoEditor initial={draft} profileId={me.id} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));setOwnerIds([]);reload();setMessage('메모를 저장했어요.');}}/>}
+  {draft&&me&&<MemoEditor initial={draft} profileId={me.id} spaceId={me.family?.id||null} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));setOwnerIds([]);reload();setMessage('메모를 저장했어요.');}}/>}
   <dialog ref={viewer} className="memo-photo-viewer" aria-label="사진 크게 보기" onClose={()=>setViewPhoto('')} onClick={e=>{if(e.target===e.currentTarget)setViewPhoto('');}}><button type="button" className="icon-button" aria-label="사진 닫기" onClick={()=>setViewPhoto('')}><Icon name="close"/></button>{viewPhoto&&<img src={viewPhoto} alt="메모 첨부 사진 확대"/>}</dialog>
  </div></AuthLayout>;
 }
