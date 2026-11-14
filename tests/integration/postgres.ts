@@ -460,6 +460,20 @@ try{
   const fresh=await family1.command<{id:string}>(a,'workspace.chat.room.create',{memberIds:[bm.id],name:'',clientRequestId:randomUUID()});assert.notEqual(fresh.id,room.id);assert.deepEqual((await family2.command<{items:unknown[]}>(b,'workspace.chat.list',{roomId:fresh.id})).items,[]);assert.equal((await family2.command<{family:{id:string}}>(b,'workspace.me')).family.id,am.family.id);
   await family2.command(b,'workspace.chat.send',{text:'기본 단체 대화는 유지',clientMessageId:randomUUID()});await assert.rejects(query(db1,"SELECT app_private.workspace_command_v135('workspace.me','{}')"),{code:'42501'});
  });
+ await check('group invite rotations serialize across members and same-group accepts are idempotent',async()=>{
+  const input=()=>({kind:'PARENT',consent:true,codeHash:randomBytes(32).toString('hex')});
+  const pa=input(),pb=input();
+  const links=await Promise.all([family1.command<{id:string}>(a,'workspace.invite.link.issue',pa),family2.command<{id:string}>(b,'workspace.invite.link.issue',pb)]);
+  const pending=(await family1.command<{pending:{id:string}[]}>(a,'workspace.invite.link.options')).pending;
+  assert.equal(pending.length,1);assert.ok(links.some(i=>i.id===pending[0].id));
+  const valid=links[0].id===pending[0].id?pa:pb,invalid=links[0].id===pending[0].id?pb:pa;
+  await assert.rejects(family1.command(a,'workspace.invite.link.inspect',{codeHash:invalid.codeHash}),{message:'INVITE_LINK_INVALID'});
+  const before=await family1.command(a,'workspace.me');
+  await Promise.all([family1.command(a,'workspace.invite.link.accept',{codeHash:valid.codeHash,inviteId:pending[0].id}),family2.command(b,'workspace.invite.link.accept',{codeHash:valid.codeHash,inviteId:pending[0].id})]);
+  assert.deepEqual(await family1.command(a,'workspace.me'),before);
+  await assert.rejects(query(db1,'SELECT app_private.workspace_detach_member(NULL,NULL)'),{code:'42501'});
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_pre_flexible_groups('workspace.me','{}')"),{code:'42501'});
+ });
  await check('UI137 encrypted AI credentials serialize rotations and deny runtime table access',async()=>{
   const fixtureMaster='ab'.repeat(32),version=(await family1.command<{version:number}>(a,'ai.credentials.read')).version;
   const results=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'ai.credentials.save',{version,...sealOpenAiKey('sk-isolated-pg-fixture-provider-key-'+i,fixtureMaster)})));

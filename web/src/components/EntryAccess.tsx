@@ -44,17 +44,16 @@ export function EntryAccessProvider({children}:{children:ReactNode}){
   const session=sessionSchema.parse(await response.json());
   if(version!==generation.current){gate.session.refresh();void gate.refreshAccess();return;}
   const setup=session.authenticated&&(session.assurance==='LOW'||session.emailVerified!==true);
-  if(setup){completed.current=true;window.location.assign(session.assurance==='LOW'?'/account':'/account/email');return;}
+  if(setup){completed.current=true;forgetEntry();window.location.assign('/timetable');return;}
   if(!setup&&!await gate.refreshAccess())throw new Error('로그인은 완료됐지만 자료 연결을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.');
   if(version!==generation.current){gate.session.refresh();return;}
   completed.current=true;opening.current=false;gate.session.refresh();setBusy(false);setRequest(null);
-  const target=entryReturnPath(request?.intent.path);
-  if(request?.intent.type!=='create')forgetEntry();
-  navigate(target,{replace:true});
+  forgetEntry();
+  navigate('/timetable',{replace:true});
  };
  return <EntryContext.Provider value={{requestLogin}}>{children}
   <dialog ref={dialog} className="entry-login-sheet" aria-labelledby="entry-login-title" aria-describedby="entry-login-description" onCancel={event=>{event.preventDefault();dismiss();}} onClick={event=>{if(event.target!==event.currentTarget)return;const rect=event.currentTarget.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)dismiss();}}>
-   {request&&<><div className="entry-sheet-grip" aria-hidden="true"/><header className="entry-login-heading"><div><span className="entry-login-eyebrow">iHaru · 로그인</span><h2 id="entry-login-title">{request.title}</h2><p id="entry-login-description">{request.description}</p></div><button type="button" className="icon-button" aria-label="로그인 창 닫기" disabled={busy} onClick={dismiss}><Icon name="close"/></button></header><div className="entry-login-body"><InlineLogin returnTo={request.intent.path} onAuthenticated={complete} onBusy={setBusy}/><p className="entry-login-note">로그인 후 선택한 화면에서 이어서 이용할 수 있어요.</p></div></>}
+   {request&&<><div className="entry-sheet-grip" aria-hidden="true"/><header className="entry-login-heading"><div><span className="entry-login-eyebrow">iHaru · 로그인</span><h2 id="entry-login-title">{request.title}</h2><p id="entry-login-description">{request.description}</p></div><button type="button" className="icon-button" aria-label="로그인 창 닫기" disabled={busy} onClick={dismiss}><Icon name="close"/></button></header><div className="entry-login-body"><InlineLogin returnTo={request.intent.path} onAuthenticated={complete} onBusy={setBusy}/><p className="entry-login-note">로그인 후 첫 화면인 시간표로 이동해요.</p></div></>}
   </dialog>
  </EntryContext.Provider>;
 }

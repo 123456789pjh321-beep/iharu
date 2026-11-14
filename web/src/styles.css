@@ -60,3 +60,5 @@
 /* P07-F06 timetable selection */
 .template-choices{border:0;padding:0;margin:1rem 0;display:grid;gap:.65rem;min-width:0}.template-choice{display:flex;align-items:flex-start;gap:.7rem;padding:.85rem;border:1px solid var(--line,#e2e8e3);border-radius:12px;cursor:pointer}.template-choice>input{margin-top:.3rem;flex-shrink:0}.template-choice>span,.template-summary li{display:grid;gap:.25rem;min-width:0;overflow-wrap:anywhere}.template-choice small,.template-summary span{font-size:.85em}.template-summary{padding-left:0;list-style:none;display:grid;gap:.85rem}.template-summary li{padding-bottom:.7rem;border-bottom:1px solid var(--line,#e2e8e3)}
 
+
+.auth-panel{position:relative}.auth-panel:has(>.workspace-loading-overlay){min-height:160px}.auth-panel:has(>.workspace-loading-overlay)>:not(.workspace-loading-overlay){visibility:hidden}.workspace-loading-overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:flex-start;justify-content:center;background:var(--surface,#fff);min-height:160px}.workspace-loading-overlay .loading-state{width:100%;min-height:160px}

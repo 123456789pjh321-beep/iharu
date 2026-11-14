@@ -398,40 +398,74 @@ it('retires approval-number and role-specific public signup while accepting grou
  expect((await guest.ok('me')).family.id).toBe((await host.ok('me')).family.id);
 });
 
-it('issues independent adult links, resumes after login, and switches groups only on explicit acceptance',async()=>{
+it('keeps only the latest reusable group link and switches only after explicit acceptance',async()=>{
  const host=await parent('link-host'),guest=new Browser(),other=await parent('link-other');
- const own=await other.ok('invite.link.issue',{kind:'PARENT',consent:true});
- const first=await host.ok('invite.link.issue',{kind:'PARENT',consent:true});
- const second=await host.ok('invite.link.issue',{kind:'PARENT',consent:true});
+ const own=await other.ok('invite.link.issue',{consent:true});
+ const first=await host.ok('invite.link.issue',{consent:true});
+ const second=await host.ok('invite.link.issue',{consent:true});
  const secretOf=(url:string)=>new URL(url).hash.slice(1);
- expect(first.url).toMatch(/^http:\/\/localhost:4173\/invite#[A-Za-z0-9_-]{43}$/);
- expect((await host.ok('invite.link.options')).pending.map((i:{id:string})=>i.id)).toEqual(expect.arrayContaining([first.id,second.id]));
- const response=await guest.req(api+'invite.link.inspect',{token:secretOf(first.url)});
- expect(response.status).toBe(200);
- expect(response.headers.get('Cache-Control')).toBe('no-store');
+ expect((await host.ok('invite.link.options')).pending.map((i:{id:string})=>i.id)).toEqual([second.id]);
+ expect((await guest.req(api+'invite.link.inspect',{token:secretOf(first.url)})).status).toBe(404);
+ const response=await guest.req(api+'invite.link.inspect',{token:secretOf(second.url)});
+ expect(response.status).toBe(200);expect(response.headers.get('Cache-Control')).toBe('no-store');
  expect(response.headers.getSetCookie().join(';')).toMatch(/HttpOnly; SameSite=Lax/i);
- const preview=await response.json();
- expect(preview).toMatchObject({id:first.id,kind:'PARENT',viewer:'GUEST'});
- expect(preview).not.toHaveProperty('familyName');
- expect((await guest.req(api+'invite.link.accept',{inviteId:first.id})).status).toBe(401);
- expect((await guest.req(api+'invite.link.inspect',{token:secretOf(first.url)},{Origin:'https://another.example'})).status).toBe(403);
+ expect(await response.json()).not.toHaveProperty('familyName');
+ expect((await guest.req(api+'invite.link.accept',{inviteId:second.id})).status).toBe(401);
  guest.cookies.forEach((value,key)=>other.cookies.set(key,value));
  const before=await other.ok('me');
- expect((await other.ok('invite.link.inspect')).familyName).toBeDefined();
- expect((await other.req(api+'invite.link.accept',{inviteId:second.id})).status).toBe(404);
- expect((await other.req(api+'invite.link.accept',{inviteId:first.id})).status).toBe(400);
- expect((await other.ok('me')).family.id).toBe(before.family.id);
- await other.ok('invite.link.accept',{inviteId:first.id,leaveCurrent:{familyId:before.family.id,version:before.family.members[0].version}});
+ expect((await other.req(api+'invite.link.accept',{inviteId:first.id})).status).toBe(404);
+ expect((await other.req(api+'invite.link.accept',{inviteId:second.id})).status).toBe(400);
+ await other.ok('invite.link.accept',{inviteId:second.id,leaveCurrent:{familyId:before.family.id,version:before.family.members[0].version}});
  expect((await other.ok('me')).family.id).toBe((await host.ok('me')).family.id);
- expect((await guest.req(api+'invite.link.inspect',{token:secretOf(first.url)})).status).toBe(404);
  expect((await guest.req(api+'invite.link.inspect',{token:secretOf(own.url)})).status).toBe(404);
- await guest.ok('invite.link.inspect',{token:secretOf(second.url)});
- expect((await guest.req(api+'invite.link.signup',{inviteId:second.id,name:'가상 아이',loginId:'badrole',password:'fixture-password'})).status).toBe(404);
- await host.ok('invite.link.revoke',{inviteId:second.id});
+ await other.ok('invite.link.inspect',{token:secretOf(second.url)});
+ await other.ok('invite.link.accept',{inviteId:second.id}); // Same-group retries do not mutate link versions.
+ const third=await other.ok('invite.link.issue',{consent:true}); // Ordinary members may invite.
  expect((await guest.req(api+'invite.link.inspect',{token:secretOf(second.url)})).status).toBe(404);
- const expired=await host.ok('invite.link.issue',{kind:'PARENT',consent:true});
+ expect((await host.ok('invite.link.options')).pending.map((i:{id:string})=>i.id)).toEqual([third.id]);
+ await host.ok('invite.link.revoke',{inviteId:third.id});
+ expect((await guest.req(api+'invite.link.inspect',{token:secretOf(third.url)})).status).toBe(404);
+ const expired=await host.ok('invite.link.issue',{consent:true});
  await query(database.db,"UPDATE app_private.workspace_invites SET expires_at=now()-interval '1 second' WHERE id=$1",[expired.id]);
  expect((await guest.req(api+'invite.link.inspect',{token:secretOf(expired.url)})).status).toBe(404);
+});
+
+it('moves populated hosts, succeeds them in order, revokes old sharing and allows removal, leave and rejoin',async()=>{
+ app=workspaceApp(false);
+ const a=await parent('flex-a'),b=await parent('flex-b'),c=await parent('flex-c'),d=await parent('flex-d');
+ const accept=async(user:Browser,link:{id:string;url:string},leaveCurrent?:object)=>{await user.ok('invite.link.inspect',{token:new URL(link.url).hash.slice(1)});return user.ok('invite.link.accept',{inviteId:link.id,...(leaveCurrent?{leaveCurrent}:{})});};
+ const first=await a.ok('invite.link.issue',{consent:true});await accept(b,first);await accept(d,first);
+ const am=await a.ok('me'),bm=await b.ok('me');
+ const own=await a.ok('items.create',payload('내 자료')),other=await b.ok('items.create',payload('다른 사람 자료'));
+ const room=await a.ok('chat.room.create',{memberIds:[bm.id],clientRequestId:crypto.randomUUID()});
+ await a.ok('chat.send',{roomId:room.id,text:'이전 그룹 대화',clientMessageId:crypto.randomUUID()});
+ const newLink=await c.ok('invite.link.issue',{consent:true});
+ await a.ok('invite.link.inspect',{token:new URL(newLink.url).hash.slice(1)});
+ const leaveCurrent={familyId:am.family.id,version:am.family.members.find((m:{id:string})=>m.id===am.id).version};
+ expect((await a.req(api+'invite.link.accept',{inviteId:newLink.id,leaveCurrent:{...leaveCurrent,version:999}})).status).toBe(409);
+ await accept(a,newLink,leaveCurrent);
+ expect((await b.ok('me')).family).toMatchObject({id:am.family.id,isHost:true});
+ expect((await a.ok('items.get',{id:own.id})).mine).toBe(true);
+ expect((await c.ok('items.get',{id:own.id})).mine).toBe(false);
+ expect((await b.req(api+'items.get',{id:own.id})).status).toBe(404);
+ expect((await a.req(api+'items.get',{id:other.id})).status).toBe(404);
+ expect((await c.req(api+'items.get',{id:other.id})).status).toBe(404);
+ expect((await a.req(api+'chat.list',{roomId:room.id})).status).toBe(404);
+ expect((await c.ok('chat.rooms')).items).toEqual([]);
+ expect((await a.req(api+'family.remove',{familyId:am.family.id,profileId:bm.id,version:1})).status).toBe(404);
+ const remaining=await b.ok('me'),dm=remaining.family.members.find((m:{id:string})=>m.id!==bm.id);
+ const invalidated=await d.ok('invite.link.issue',{consent:true});
+ expect((await d.req(api+'family.remove',{familyId:remaining.family.id,profileId:bm.id,version:1})).status).toBe(403);
+ await b.ok('family.remove',{familyId:remaining.family.id,profileId:dm.id,version:dm.version});
+ expect((await d.ok('me')).family).toBeNull();
+ expect((await d.req(api+'invite.link.inspect',{token:new URL(invalidated.url).hash.slice(1)})).status).toBe(404);
+ const rejoin=await b.ok('invite.link.issue',{consent:true});await accept(d,rejoin);
+ const beforeLeave=await b.ok('me'),self=beforeLeave.family.members.find((m:{id:string})=>m.id===bm.id);
+ await b.ok('family.leave',{familyId:beforeLeave.family.id,version:self.version});
+ expect((await d.ok('me')).family.isHost).toBe(true);
+ await b.ok('invite.link.issue',{consent:true}); // A former host can create a fresh independent group.
+ expect((await b.ok('me')).family.id).not.toBe(am.family.id);
+ await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,'SELECT app_private.workspace_detach_member($1,$2)',[am.family.id,bm.id]);})).rejects.toMatchObject({code:'42501'});
 });
 
 it('binds child signup to verified legal guardian evidence and atomically consumes it',async()=>{

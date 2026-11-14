@@ -43,12 +43,11 @@ function SignupAgeStep({age,onChange}:{age:SignupAge;onChange:(age:SignupAge)=>v
   </fieldset></div>;
 }
 function LoginEntry({providers}:{providers:ReturnType<typeof useLoginProviders>}) {
-  const {search}=useLocation();
   const session=useApi('/api/account/session',sessionSchema);
   useEffect(()=>{const refresh=()=>session.refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[session.refresh]);
   if(session.loading)return <Loading label="로그인 상태를 확인하고 있어요"/>;
   if(session.error)return <ErrorState message={session.error} retry={session.retry}/>;
-  if(session.data?.authenticated)return <Navigate to={session.data.assurance==='LOW'?'/account':entryReturnPath(new URLSearchParams(search).get('next'))} replace/>;
+  if(session.data?.authenticated)return <Navigate to={'/timetable'} replace/>;
   return <LoginForm providers={providers}/>;
 }
 function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthenticated,onBusy}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean;inline?:boolean;returnTo?:string;onAuthenticated?:()=>Promise<void>;onBusy?:(busy:boolean)=>void}) {
@@ -67,7 +66,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
   const signingUp=mode==='signup';
   const canSignUp=signingUp&&signupAge==='eligible';
   const requestedNext=returnTo||new URLSearchParams(search).get('next');
-  const next=reauthenticate&&!requestedNext?'/account':entryReturnPath(requestedNext);
+  const next=reauthenticate?entryReturnPath(requestedNext||'/account'):mode==='login'||mode==='signup'?'/timetable':entryReturnPath(requestedNext);
   const nextQuery='?next='+encodeURIComponent(next);
   const resetPath='/reset-password'+(next===accountDeletionRequestPath?nextQuery:'');
   const forgotPath='/forgot-password'+nextQuery;
@@ -100,7 +99,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
       if (mode === 'login') {
         if(acceptsExistingId&&/^[a-z0-9][a-z0-9_]{3,19}$/i.test(email))await workspaceRequest('child.login',{loginId:email,password});
         else await authPost('/api/auth/sign-in/email',{email,password});
-        if(onAuthenticated)await onAuthenticated();else navigate(next,{replace:true});
+        if(onAuthenticated)await onAuthenticated();else{if(!reauthenticate)forgetEntry();navigate(next,{replace:true});}
       }
       if (canSignUp) { await authPost('/api/auth/sign-up/email',{ageAtLeast14:true,email,password,name:String(form.get('name')).trim(),callbackURL:callback});setMessage('가입을 진행할 수 있는 이메일이면 인증 메일이 도착해요. 메일함과 스팸함을 확인해 주세요.'); }
       if (mode === 'forgot') { await authPost('/api/auth/request-password-reset',{email,redirectTo:resetPath});setMessage('일치하는 이메일 계정이 있으면 재설정 링크를 보내드려요. 메일함을 확인해 주세요.'); }
@@ -154,7 +153,7 @@ export function PhonePage() {
   const params=new URLSearchParams(useLocation().search);
   const link=params.get('link')==='1';
   const signingUp=!link&&params.get('signup')==='1';
-  const next=entryReturnPath(params.get('next'));
+  const next='/timetable';
   const [signupAge,setSignupAge]=useState<SignupAge>(null);
   const [phone,setPhone]=useState('');const [code,setCode]=useState('');const [sent,setSent]=useState(false);const [seconds,setSeconds]=useState(0);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   const enabled=providers.data?.providers.find(p=>p.id==='phone')?.enabled===true;

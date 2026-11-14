@@ -1,4 +1,4 @@
-import {Loading,ErrorState} from './Common';
+import {Loading,ErrorState,WorkspaceLoadingBoundary} from './Common';
 import {PublicHeader} from './PublicHeader';
 import {useInPublicFrame} from './PublicFrame';
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -24,7 +24,7 @@ function StableWorkspaceFrame(){
  const publicDocument=pathname.startsWith('/legal/');
  const childNavigation=access.identity?.role==='CHILD';
  if(new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled)return <Outlet/>;
- return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<GroupInviteShareProvider><Outlet/></GroupInviteShareProvider>}</FrameContext.Provider></AuthLayoutRoot>;
+ return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value><WorkspaceLoadingBoundary>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<GroupInviteShareProvider><Outlet/></GroupInviteShareProvider>}</WorkspaceLoadingBoundary></FrameContext.Provider></AuthLayoutRoot>;
 }
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false,showNavigation=true }: { children: ReactNode; wide?: boolean;personalChild?:boolean;showNavigation?:boolean }) {
   const { pathname } = useLocation(),inPublicFrame=useInPublicFrame();
