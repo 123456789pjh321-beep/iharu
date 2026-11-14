@@ -25,8 +25,9 @@ function StableWorkspaceFrame(){
  const publicDocument=pathname.startsWith('/legal/');
  const childNavigation=access.identity?.role==='CHILD';
  if(new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled)return <Outlet/>;
- const chromeIdentity=(access.identity?.id||'guest')+':'+(access.identity?.family?.id||'');
- return <WorkspaceTopBarProvider identity={chromeIdentity}><AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value><WorkspaceLoadingBoundary>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<GroupInviteShareProvider><WorkspaceTopBarHost/>{groupBusy?<Loading label="그룹을 전환하고 있어요"/>:<Fragment key={chromeIdentity}><Outlet/></Fragment>}</GroupInviteShareProvider>}</WorkspaceLoadingBoundary></FrameContext.Provider></AuthLayoutRoot></WorkspaceTopBarProvider>;
+ // Navigation and toolbar belong to the account; only data is scoped to the group.
+ const chromeIdentity=access.identity?.id||'guest',spaceIdentity=chromeIdentity+':'+(access.identity?.family?.id||'');
+ return <WorkspaceTopBarProvider identity={chromeIdentity}><AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value><WorkspaceLoadingBoundary>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<GroupInviteShareProvider><WorkspaceTopBarHost/>{groupBusy?<Loading label="그룹을 전환하고 있어요"/>:<Fragment key={spaceIdentity}><Outlet/></Fragment>}</GroupInviteShareProvider>}</WorkspaceLoadingBoundary></FrameContext.Provider></AuthLayoutRoot></WorkspaceTopBarProvider>;
 }
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false,showNavigation=true }: { children: ReactNode; wide?: boolean;personalChild?:boolean;showNavigation?:boolean }) {
   const { pathname } = useLocation(),inPublicFrame=useInPublicFrame();

@@ -1,8 +1,8 @@
-import {useEffect,useRef,useState,type FormEvent} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {Link,Navigate,useNavigate,useSearchParams} from 'react-router-dom';
 import type {WorkspaceGroup} from '../../../shared/workspace';
 import {AuthLayout} from '../components/AuthLayout';
-import {WorkspaceToolbar} from '../components/WorkspaceToolbar';
+import {GroupEditor} from '../components/GroupEditor';
 import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {Loading,ErrorState} from '../components/Common';
@@ -37,7 +37,7 @@ export function GroupManagement(){
   if(self&&window.confirm(group.name+'에서 나갈까요? 이 그룹에 작성한 내 자료는 개인 공간에 보관돼요.'+(group.isHost&&group.members.length>1?' 그룹장은 다음 가입자에게 이어져요.':'')))void action(async()=>{await workspaceRequest('family.leave',{familyId:group.id,version:self.version});setParams({});},'그룹을 나왔어요.');
  };
  return <AuthLayout wide><div className="group-management">
-  <WorkspaceToolbar title="그룹관리">{detail&&<button type="button" className="group-back-button" onClick={()=>{setParams({});setError('');setNotice('');}}><Icon name="left"/>그룹 목록</button>}</WorkspaceToolbar>
+  <h1 className="sr-only">그룹관리</h1>{detail&&<button type="button" className="group-back-button" onClick={()=>{setParams({});setError('');setNotice('');}}><Icon name="left"/>그룹 목록</button>}
   <div className="group-management-body">
    {error&&<p role="alert" className="group-error">{error}</p>}{notice&&<p role="status" className="group-notice">{notice}</p>}
    {detail?<section className="group-detail" aria-label={detail.name+' 그룹 상세'}>
@@ -64,13 +64,6 @@ export function GroupManagement(){
 }
 function GroupCover({group}:{group:WorkspaceGroup}){
  return <span className={'group-cover group-color-'+group.color} aria-hidden="true"><Icon name="users"/><span>{Array.from(group.name)[0]}</span></span>;
-}
-function GroupEditor({group,initialName,onClose,onSaved,onArchive}:{group:WorkspaceGroup|null;initialName:string;onClose:()=>void;onSaved:(groupId:string)=>Promise<void>;onArchive?:()=>void}){
- const ref=useRef<HTMLDialogElement>(null),pending=useRef(false),[key]=useState(()=>crypto.randomUUID());
- const [name,setName]=useState(group?.name||initialName),[description,setDescription]=useState(group?.description||''),[color,setColor]=useState(group?.color||0),[busy,setBusy]=useState(false),[error,setError]=useState('');
- useEffect(()=>{const node=ref.current;node?.showModal();return()=>node?.close();},[]);
- async function save(e:FormEvent){e.preventDefault();if(pending.current)return;pending.current=true;setBusy(true);setError('');try{const result=await workspaceRequest<{group?:WorkspaceGroup}>(group?'group.update':'group.create',{name,description,color,...(group?{groupId:group.id,version:group.version}:{clientRequestId:key})});await onSaved(group?.id||result.group!.id);}catch(e){setError((e as Error).message);setBusy(false);pending.current=false;}}
- return <dialog ref={ref} className="group-dialog" aria-labelledby="group-editor-title" onCancel={e=>{e.preventDefault();if(!busy)onClose();}}><form onSubmit={save}><header><h2 id="group-editor-title">{group?'그룹 설정':'새 그룹 만들기'}</h2><button type="button" className="icon-button" aria-label="그룹 설정 닫기" disabled={busy} onClick={onClose}><Icon name="close"/></button></header><div className="group-dialog-body"><fieldset disabled={busy}><label>그룹 이름<input aria-label="그룹 이름" required value={name} maxLength={40} onChange={e=>setName(e.target.value)}/></label><details className="group-editor-extra"><summary>그룹 소개 추가 (선택)</summary><label>그룹 소개<textarea aria-label="그룹 소개" value={description} maxLength={240} onChange={e=>setDescription(e.target.value)} rows={3} placeholder="함께할 사람들에게 그룹을 소개해 주세요"/></label></details><div className="group-color-picker" role="group" aria-label="그룹 색상">{['초록','파랑','분홍','갈색','보라','주황'].map((label,i)=><button type="button" key={label} aria-label={label} aria-pressed={color===i} onClick={()=>setColor(i)} className={'group-color-'+i}>{color===i&&<Icon name="check"/>}</button>)}</div><p className="group-sharing-guide">개인 자료는 이 그룹에 자동으로 공유되지 않아요. 그룹을 선택한 뒤 등록한 자료만 함께 볼 수 있어요.</p></fieldset>{error&&<p role="alert" className="group-error">{error}</p>}{onArchive&&<button type="button" className="group-text-button danger" disabled={busy} onClick={onArchive}>그룹 종료</button>}</div><footer><button className="button" type="button" disabled={busy} onClick={onClose}>취소</button><button className="button primary" type="submit" disabled={busy||!name.trim()}>{busy?'저장 중…':group?'변경 저장':'그룹 만들기'}</button></footer></form></dialog>;
 }
 function GroupInviteSheet({group,onClose}:{group:WorkspaceGroup;onClose:()=>void}){
  const ref=useRef<HTMLDialogElement>(null),[invite,setInvite]=useState<IssuedInvite|null>(null),[error,setError]=useState(''),[consentRequired,setConsentRequired]=useState(false),[revoked,setRevoked]=useState(false),[busy,setBusy]=useState(false),[retry,setRetry]=useState(0);
