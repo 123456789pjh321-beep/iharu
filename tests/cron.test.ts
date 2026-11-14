@@ -114,6 +114,28 @@ describe('P07-F07 cron lease and maintenance',()=>{
   expect((await query<{state:string;error_code:string}>(database.db,'SELECT state,error_code FROM app_private.cron_runs'))[0]).toEqual({state:'FAILED',error_code:'MAINTENANCE_FAILED'});
   let calls=0;const result=await runCronTick(database.db,'fixture','manual',holidays,()=>calls++===0?0:40_000);expect(result).toMatchObject({deferred:'DEADLINE'});
  });
+ it('purges expired unused guardian applications while preserving approval history and current cases',async()=>{
+  const authId=randomUUID(),applicant=randomUUID(),expired=randomUUID(),approved=randomUUID(),active=randomUUID();
+  await query(database.db,'INSERT INTO iharu_auth."user" (id,name,email,"emailVerified") VALUES ($1,$2,$3,true)',[authId,'Fixture',`${authId}@example.test`]);
+  await query(database.db,'INSERT INTO iharu_auth.members(id,auth_user_id) VALUES($1,$2)',[applicant,authId]);
+  await query(database.db,`INSERT INTO app_private.guardian_applications(id,applicant_id,request_key,target_label,relationship,state,expires_at) VALUES
+   ($2,$1,gen_random_uuid(),'Unused','PARENT','EXPIRED',now()-interval '1 day'),
+   ($3,$1,gen_random_uuid(),'Reviewed','PARENT','EXPIRED',now()-interval '1 day'),
+   ($4,$1,gen_random_uuid(),'Active','PARENT','RECEIVED',now()+interval '1 day')`,[applicant,expired,approved,active]);
+  await query(database.db,`INSERT INTO app_private.guardian_application_events(application_id,actor_id,state,request_id) VALUES
+   ($1,$3,'EXPIRED',gen_random_uuid()),($2,$3,'APPROVED',gen_random_uuid())`,[expired,approved,applicant]);
+  const c=await claim();
+  await database.db.transaction().execute(async tx=>{
+   await query(tx,'SET LOCAL ROLE worker_runtime');
+   const [first]=await query<{data:unknown}>(tx,"SELECT app_private.cron_step($1,'retention') AS data",[c.token]);
+   expect(first.data).toMatchObject({unusedGuardianReviewsPurged:1});
+   const [second]=await query<{data:unknown}>(tx,"SELECT app_private.cron_step($1,'retention') AS data",[c.token]);
+   expect(second.data).toMatchObject({unusedGuardianReviewsPurged:0});
+  });
+  const rows=await query<{id:string}>(database.db,'SELECT id FROM app_private.guardian_applications WHERE applicant_id=$1',[applicant]);
+  expect(rows.map(row=>row.id).sort()).toEqual([approved,active].sort());
+  expect(await query(database.db,'SELECT application_id FROM app_private.guardian_application_events WHERE application_id IN ($1,$2)',[expired,approved])).toEqual([{application_id:approved}]);
+ });
  it('denies application roles access to cron data and command execution',async()=>{
   await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,"SELECT app_private.cron_claim('manual')");})).rejects.toMatchObject({code:'42501'});
   await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE worker_runtime');await query(tx,'SELECT * FROM app_private.cron_runs');})).rejects.toMatchObject({code:'42501'});
