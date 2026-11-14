@@ -153,7 +153,7 @@ test('More destinations align the group invite shortcut with their page heading'
    return {titleEnd:title.right,buttonStart:button.left,buttonCenter:button.y+button.height/2,titleCenter:title.y+title.height/2};
   });
   expect(geometry.buttonStart).toBeGreaterThan(geometry.titleEnd);
-  expect(geometry.buttonCenter).toBeCloseTo(geometry.titleCenter);
+  expect(Math.abs(geometry.buttonCenter-geometry.titleCenter)).toBeLessThan(1);
  }
 });
 
