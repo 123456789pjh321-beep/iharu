@@ -73,7 +73,7 @@ test('swipes real months without opening details or interfering with vertical sc
   await page.mouse.move(box.x+box.width-30,box.y+70);await page.mouse.down();await page.mouse.move(box.x+30,box.y+71,{steps:10});await page.mouse.up();
   await expect(month).toHaveValue('2027-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   await area.hover();await page.mouse.wheel(-180,0);await expect(month).toHaveValue('2026-12');await settled();
-  await page.emulateMedia({reducedMotion:'reduce'});await swipe(area,true);await expect(month).toHaveValue('2027-01');await settled();
+  await page.setViewportSize({width:390,height:900});await page.locator('.workspace-toolbar').scrollIntoViewIfNeeded();await page.emulateMedia({reducedMotion:'reduce'});await expect.poll(()=>page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));await swipe(area,true);await expect(month).toHaveValue('2027-01');await settled();
   expect(errors).toEqual([]);
  }finally{await context.close();}
 });
