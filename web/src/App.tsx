@@ -1,4 +1,5 @@
 const BriefingPage=lazy(()=>import('./pages/Briefing'));
+import {AndroidWidgetLink} from './pages/AndroidWidgetLink';
 import {NotificationSettings} from './pages/NotificationSettings';
 import {PublicFrame} from './components/PublicFrame';
 import {AccountDeletionPage,LegalPage,PrivacyPage} from './pages/Legal';
@@ -73,6 +74,7 @@ function Workspace({demo,session}:{demo:true;session?:never}|{demo:false;session
 }
 export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route element={<PublicFrame/>}>
+  <Route path="/android/widgets" element={<AndroidWidgetLink/>}/>
   <Route path="/invite" element={<GroupInvitePage/>}/>
   {['/service','/guide','/notices','/notices/:slug','/blog','/blog/:slug'].map(path=><Route key={path} path={path} element={<Suspense fallback={<Loading label="아이하루 소개를 열고 있어요"/>}><MarketingPage/></Suspense>}/>)}
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}

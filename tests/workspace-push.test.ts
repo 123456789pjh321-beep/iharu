@@ -8,6 +8,7 @@ import {FamilyService} from '../server/family/service';
 import {query} from '../server/auth/database';
 import {allowedPushEndpoint,dispatchPush,pushCommand,pushSpecs,type PushConfig} from '../server/push/service';
 import {visibleOn} from '../shared/workspace-schedules';
+import {koreaToday} from '../shared/schedules';
 import type {WorkspaceItem} from '../shared/workspace';
 const origin='http://localhost:4173',secret='push-fixture-auth-only-not-production-0000001';
 const config:PushConfig={secret:'push-worker-fixture-secret-0000000000000001',publicKey:'fixture',privateKey:'fixture',subject:origin};
@@ -94,4 +95,34 @@ it('stops queued and subsequent private-room push after a participant leaves whi
  const {a,b}=await linked(),c=await parent('push-room-remains'),invite=await a.ok('invite.issue',{consent:true});await c.ok('family.join',{code:invite.code});await subscribe(b,'room-left');await subscribe(c,'room-stays');const bm=await b.ok('me'),cm=await c.ok('me'),room=await a.ok('chat.room.create',{memberIds:[bm.id,cm.id],name:'알림 종료 검증',clientRequestId:crypto.randomUUID()});
  await a.ok('chat.send',{roomId:room.id,text:'나가기 전에 대기 중인 알림',clientMessageId:crypto.randomUUID()});const jobs=await pushCommand<{id:string;leaseToken:string}[]>(family,config,'claim');expect(jobs).toHaveLength(2);await b.ok('chat.room.leave',{roomId:room.id});const deliveries=[];for(const job of jobs){const delivery=await pushCommand<any>(family,config,'delivery',job);if(delivery)deliveries.push(delivery);}expect(deliveries).toHaveLength(1);expect(deliveries[0].subscription.endpoint.endsWith('/room-stays')).toBe(true);
  const after=await a.ok('chat.send',{roomId:room.id,text:'남은 사람에게만 알림',clientMessageId:crypto.randomUUID()});const recipients=await query<{profile_id:string}>(database.db,'SELECT s.profile_id FROM app_private.workspace_push_outbox q JOIN app_private.workspace_push_subscriptions s ON s.id=q.subscription_id WHERE q.item_id=$1',[after.id]);expect(recipients.map(r=>r.profile_id)).toEqual([cm.id]);
+});
+
+
+it('links a widget to a verified session and exposes only selected schedule data',async()=>{
+ const user=await parent('android-widget'),stranger=await parent('android-widget-stranger');
+ const today=koreaToday(),day=new Date(today+'T12:00:00Z').getUTCDay();
+ const data={...event().data,date:today};
+ await user.ok('items.create',{kind:'EVENT',data:{...data,title:'달력 제목은 비공개'}});
+ await user.ok('items.create',{kind:'REPEAT',data:{...data,title:'시간표 제목',weekdays:[day]}});
+ await user.ok('items.create',{kind:'NOTE',data:{...data,title:'개인 메모'}});
+ await stranger.ok('items.create',{kind:'REPEAT',data:{...data,title:'다른 계정의 수업',weekdays:[day]}});
+ const verifier=randomBytes(32).toString('base64url');
+ const challenge=createHash('sha256').update(verifier).digest('base64url');
+ const link='/api/v1/android-widget/link';
+ const snapshot=(grant:string,key=verifier)=>app.request(origin+'/api/v1/android-widget/snapshot',{headers:{Authorization:'Bearer '+grant,'X-Iharu-Widget-Key':key}});
+ expect((await new Browser().req(link,{challenge,showTitles:false})).status).toBe(401);
+ const {grant}=await user.ok(link,{challenge,showTitles:false});
+ expect((await snapshot(grant,randomBytes(32).toString('base64url'))).status).toBe(401);
+ const response=await snapshot(grant);
+ expect(response.status,await response.clone().text()).toBe(200);
+ expect(response.headers.get('cache-control')).toContain('no-store');
+ const hidden=await response.json();
+ expect(hidden.calendar.find((entry:{date:string})=>entry.date===today)).toEqual({date:today,count:1});
+ expect(hidden.timetable[day]).toEqual({date:today,count:1,entries:[{time:'09:00'}]});
+ const shown=await user.ok(link,{challenge,showTitles:true});
+ const text=await(await snapshot(shown.grant)).text();
+ expect(text).toContain('시간표 제목');
+ for(const privateValue of ['달력 제목은 비공개','개인 메모','다른 계정의 수업','private fixture','ownerId'])expect(text).not.toContain(privateValue);
+ await user.ok('/api/account/logout',{sessionId:'current'});
+ expect((await snapshot(grant)).status).toBe(401);
 });

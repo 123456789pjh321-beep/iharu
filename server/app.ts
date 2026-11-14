@@ -3,6 +3,7 @@ import {pushCron} from './push/service.js';
 import {holidayCalendarRoutes} from './schedules/holiday-calendar.js';
 import {legalRoutes} from './legal/routes.js';
 import {workspaceRoutes} from './workspace/routes.js';
+import {androidWidgetRoutes} from './widgets/routes.js';
 import {adminRoutes} from './admin/routes.js';
 import {childAccountRoutes} from './child-accounts/routes.js';
 import {guardianRoutes} from './guardian/routes.js';
@@ -66,6 +67,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
   // Isolated fixtures use retired operations to construct pre-existing accounts.
   app.route('/', workspaceRoutes(authRuntime,familyRuntime,config.environment==='local'&&fixtureOptions?.legacyInviteFixtures===true));
+  app.route('/', androidWidgetRoutes(authRuntime,familyRuntime));
   app.route('/', childAccountRoutes(authRuntime,familyRuntime));
   app.route('/', familyRoutes(authRuntime,familyRuntime));
   app.route('/', scheduleRoutes(authRuntime,familyRuntime));
