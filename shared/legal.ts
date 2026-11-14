@@ -21,10 +21,11 @@ export function legalPublicationGaps(draft:Partial<LegalDraft>){
  return legalRequiredFields.flatMap(field=>{
   const value=draft[field]?.trim()||'';
   const hasPendingMarker=/\[확인 필요|\bTODO\b|\bTBD\b/i.test(value);
-  const issue=value.length<3?'내용 입력 필요':hasPendingMarker?'운영 사실 확인 필요':
+  const requiredIssue=value.length<3?'내용 입력 필요':
    field==='contactEmail'&&!z.email().safeParse(value).success?'이메일 형식 확인 필요':'';
+  const issue=requiredIssue||(hasPendingMarker?'운영 사실 확인 필요':'');
   const details=[...value.matchAll(/\[확인 필요\s*:\s*([^\]]+)\]/g)].map(match=>match[1].trim()).filter(Boolean);
-  return issue?[{field,label:legalFieldLabels[field],issue,details}]:[];
+  return issue?[{field,label:legalFieldLabels[field],issue,details,blocksPublication:!!requiredIssue}]:[];
  });
 }
 // Stable key ordering and trimming make dirty checks match what the API actually saves.

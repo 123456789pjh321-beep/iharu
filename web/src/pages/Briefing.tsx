@@ -7,6 +7,7 @@ import {briefingInstagramHighlights} from '../briefing-instagram';
 import {briefingCategoryNames,briefingPosterContent,type BriefingItem,type BriefingFeed,type BriefingPost} from '../briefing-poster';
 import {briefingCollectionStatus,createBriefingSample} from '../briefing-preview';
 import {Icon} from '../components/Icon';
+import {GroupInviteShareButton} from '../components/GroupInviteShare';
 import {useBriefingLocation} from '../components/BriefingLocation';
 import {Loading,ErrorState} from '../components/Common';
 import {FormNotice} from '../components/AuthLayout';
@@ -56,9 +57,11 @@ export default function BriefingPage(){
  const searchQuery=searchRegion==='화성·동탄'?'동탄 화성 지역 소식':searchRegion+' 지역 소식';
  return <div ref={pull.ref} className="briefing-screen" aria-busy={loading||undefined} aria-keyshortcuts="Alt+R"><div className="briefing-pull-indicator" aria-hidden="true"><span><Icon name="repeat"/></span></div><span className="briefing-pull-status" role="status" aria-live="polite">{pull.phase==='armed'?'놓으면 새로고침해요':pull.phase==='refreshing'?'새 소식을 확인하고 있어요':''}</span><div className="briefing-pull-content">
  <div className="briefing-layout"><section className="briefing-feed" aria-label={saved?'보관한 브리핑 피드':'AI 브리핑 피드'}><FormNotice error={error}/>
+ <div className="briefing-instagram-search"><GroupInviteShareButton/>
+  {pref.enabled&&!saved&&searchRegion&&<a className="button" href={'https://www.instagram.com/explore/search/keyword/?q='+encodeURIComponent(searchQuery)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><Icon name="search"/>인스타그램에서 {searchRegion} 소식 찾기</a>}
+ </div>
  {!pref.enabled?<section className="briefing-onboarding"><img src="/briefing/library.jpg" alt="책과 햇살이 있는 독서 공간" width="1200" height="800"/><div><h2>우리 동네 갈 곳과 볼거리<br/>한눈에 챙겨보세요</h2><p>기준 지역의 공개 인스타그램 게시물과 내 일정에 맞는 공식 공지를 모아드려요.</p><button className="button primary" type="button" onClick={()=>setSettings(true)}>내 브리핑 시작하기<Icon name="arrow"/></button></div></section>
  :<>
- {!saved&&searchRegion&&<div className="briefing-instagram-search"><a className="button" href={'https://www.instagram.com/explore/search/keyword/?q='+encodeURIComponent(searchQuery)} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><Icon name="search"/>인스타그램에서 {searchRegion} 소식 찾기</a></div>}
  {!saved&&(sample||showChannels&&!highlights.length||status.tone==='warning')&&<section className={'briefing-collection-status '+status.tone} role="status"><Icon name={status.tone==='warning'?'clock':'sparkles'}/><div><strong>{status.title}</strong><p>{status.description}</p><small>최근 수집: {timestamp(pref.lastCheckedAt)}</small></div></section>}
  {!saved&&channels.length>0&&<InstagramChannelFeed key={pref.region} channels={channels} highlights={highlights}/>}
  {posts.map(post=><BriefingCard key={post.id} post={post} changed={update} hidden={()=>hide(post.id)}/>)}
