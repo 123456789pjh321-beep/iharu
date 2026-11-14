@@ -49,9 +49,12 @@
 .briefing-details strong{display:block;font-size:.7rem;color:var(--primary);margin-bottom:2px}
 .briefing-source{display:flex;align-items:center;gap:5px;color:var(--primary);font-size:.88rem;line-height:1.8;margin-top:7px;overflow-wrap:anywhere}
 .briefing-source .icon{width:14px;height:14px;flex-shrink:0}
-.briefing-instagram-search{display:flex;justify-content:flex-end;margin:0 0 12px}
+.briefing-instagram-search{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px}
+.briefing-instagram-search:empty{display:none}
+.briefing-instagram-search>.group-invite-shortcut{--invite-control-height:44px}
+.briefing-instagram-search>a{margin-inline-start:auto}
 .briefing-instagram-search .button{min-height:44px;font-size:.83rem;text-align:left}
-.briefing-instagram-search .icon{width:17px;height:17px;flex-shrink:0}
+.briefing-instagram-search .button .icon{width:17px;height:17px;flex-shrink:0}
 .briefing-instagram-embed{display:grid;justify-items:start;gap:10px;margin:10px 0}
 .briefing-instagram-embed iframe{width:100%;max-width:658px;height:clamp(430px,110vw,720px);border:1px solid var(--line);border-radius:10px;background:white}
 .briefing-instagram-channels{margin:0 0 20px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}

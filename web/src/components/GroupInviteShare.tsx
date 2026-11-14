@@ -8,7 +8,7 @@ import {useWorkspaceGate} from './WorkspaceGate';
 
 const shareLabel='그룹 초대 공유';
 const issueDescription='이 버튼을 누르면 초대용 링크가 만들어집니다. 초대받은 사람이 수락하면 같은 그룹에서 일정 등 자료를 공유합니다.';
-const memberFilterRoutes=new Set(['/timetable','/today/calendar','/tuition']);
+const inlineShortcutRoutes=new Set(['/timetable','/today/calendar','/tuition','/chat','/child/chat','/briefing','/more','/settings']);
 const GroupInviteShareContext=createContext<{dialogId:string;canInvite:boolean;open:()=>void;revision:number}|null>(null);
 type InviteState=
  |{ownerId:string;status:'loading'}
@@ -57,7 +57,7 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
   if(canInvite)void issue(profileId);
  },canInvite,revision}:null,[dialogId,profileId,canInvite,issue,revision]);
  return <GroupInviteShareContext.Provider value={action}>
-  {parent&&!memberFilterRoutes.has(route)&&<div className="workspace-invite-toolbar"><GroupInviteShareButton showLabel/></div>}
+  {parent&&!inlineShortcutRoutes.has(route)&&<div className="workspace-invite-toolbar"><GroupInviteShareButton/></div>}
   {children}
   {parent&&<dialog key={parent.id} ref={dialog} id={dialogId} className="group-invite-dialog" aria-labelledby={dialogId+'-title'} onClick={event=>{if(event.target===event.currentTarget)dialog.current?.close();}}>
    <div className="group-invite-dialog-content">
@@ -78,13 +78,13 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  </GroupInviteShareContext.Provider>;
 }
 
-export function GroupInviteShareButton({showLabel=false}:{showLabel?:boolean}){
+export function GroupInviteShareButton(){
  const action=useContext(GroupInviteShareContext);
  const descriptionId=useId();
  if(!action)return null;
  return <>
   <button type="button" className="group-invite-shortcut" aria-label={shareLabel} title={action.canInvite?issueDescription:shareLabel} aria-haspopup="dialog" aria-controls={action.dialogId} aria-describedby={action.canInvite?descriptionId:undefined} onClick={action.open}>
-   <Icon name="plus"/>{showLabel&&<span>{shareLabel}</span>}
+   <Icon name="plus"/>
   </button>
   {action.canInvite&&<span className="sr-only" id={descriptionId}>{issueDescription}</span>}
  </>;

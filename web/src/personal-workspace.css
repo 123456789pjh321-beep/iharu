@@ -31,20 +31,18 @@
 .group-invite-pending h4{margin-bottom:8px}
 
 .group-invite-shortcut{
+ --invite-control-height:var(--member-filter-height,32px);
  display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;
- min-width:40px;min-height:40px;padding:0 8px;border:1px solid var(--line);
- border-radius:9px;background:var(--surface);color:var(--ink);font:inherit;
- font-size:.8125rem;font-weight:650;cursor:pointer;
+ position:relative;box-sizing:border-box;width:var(--invite-control-height);height:var(--invite-control-height);
+ padding:0;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);cursor:pointer;
 }
 .group-invite-shortcut:hover{background:var(--surface-sub);color:var(--primary)}
 .group-invite-shortcut>.icon{width:20px;height:20px}
-.member-preference-row>.group-invite-shortcut{
- position:relative;box-sizing:border-box;width:var(--member-filter-height,32px);min-width:0;
- height:var(--member-filter-height,32px);min-height:0;padding:0;
+.group-invite-shortcut::after{
+ content:"";position:absolute;inset:50% 0 auto;min-height:44px;height:100%;transform:translateY(-50%);
 }
-.member-preference-row>.group-invite-shortcut::after{
- content:"";position:absolute;inset:50% 0 auto;height:44px;transform:translateY(-50%);
-}
+.chat-rooms-toolbar>.group-invite-shortcut{--invite-control-height:var(--chat-control-height)}
+.settings-heading>.group-invite-shortcut{margin-inline-start:auto}
 .workspace-invite-toolbar{
  display:flex;align-items:center;flex:none;padding:4px var(--workspace-inset,16px);
  background:var(--surface);

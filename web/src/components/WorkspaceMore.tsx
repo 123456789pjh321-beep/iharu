@@ -4,6 +4,7 @@ import {hasMenuUpdate,menuForPath} from '../../../shared/workspace-updates';
 import {Icon,type IconName} from './Icon';
 import {DisplaySettings,useExperience} from './Experience';
 import {useOptionalWorkspaceGate} from './WorkspaceGate';
+import {GroupInviteShareButton} from './GroupInviteShare';
 import {BriefingLocationSettings} from './BriefingLocation';
 import {useRef,useState} from 'react';
 import {WorkspaceToolbar} from './WorkspaceToolbar';
@@ -22,7 +23,7 @@ export function WorkspaceMore({me}:{me:WorkspaceMe|null}){
   {to:'/more/notices',label:'공지사항',icon:'calendar'},{to:'/notification-settings',label:'알림',icon:'bell'},
   gate?.adminAllowed?{to:'/admin',label:'시스템관리',icon:'shield'}:{to:'/more/blog',label:'블로그',icon:'sun'},
  ];
- return <><WorkspaceToolbar title="더보기"/><section className="more-screen" aria-label="더보기">
+ return <><WorkspaceToolbar title="더보기">{me&&<GroupInviteShareButton/>}</WorkspaceToolbar><section className="more-screen" aria-label="더보기">
   <MoreGuides/>
   <nav className="more-shortcuts" aria-label="더보기 메뉴">{shortcuts.map(item=><Link key={item.to} to={item.to}><span><Icon name={item.icon}/>{hasMenuUpdate(gate?.updates||null,menuForPath(item.to))&&<i className="more-update-dot" aria-label="새 업데이트"/>}</span><strong>{item.label}</strong></Link>)}</nav>
   <div className="more-section"><h2>계정</h2><div className="more-group"><Link to="/account" className="more-account"><span className="more-avatar"><Icon name="users"/></span><span><strong>{me?.name||'로그인하고 함께해요'}</strong><small>{me?'아이하루 계정'+(me.family?' · '+me.family.name:''):'내 계정과 그룹 정보를 확인하세요.'}</small></span></Link><Link to="/account" className="more-row">계정 관리<Icon name="chevron"/></Link></div><div className="more-group more-privacy-group"><Link to="/privacy" className="more-row">개인정보 관리<Icon name="chevron"/></Link></div><p className="more-account-note">내 정보와 그룹의 공유 범위를 확인하세요.</p></div>
@@ -33,7 +34,7 @@ export function WorkspaceMore({me}:{me:WorkspaceMe|null}){
 export function WorkspaceSettings(){
  const {preferences,setPreference}=useExperience();
  const gate=useOptionalWorkspaceGate();
- return <section className="more-screen settings-screen" aria-labelledby="settings-title"><div className="settings-heading"><Link to="/more" className="icon-button" aria-label="더보기로 돌아가기"><Icon name="arrow" className="flip"/></Link><h1 id="settings-title">설정</h1></div>
+ return <section className="more-screen settings-screen" aria-labelledby="settings-title"><div className="settings-heading"><Link to="/more" className="icon-button" aria-label="더보기로 돌아가기"><Icon name="arrow" className="flip"/></Link><h1 id="settings-title">설정</h1><GroupInviteShareButton/></div>
   <div className="more-section"><h2>화면</h2><div className="more-group"><div className="settings-row"><div><strong>화면 밝기</strong><p>편안하게 볼 수 있는 화면을 선택해요.</p></div><DisplaySettings/></div><div className="settings-row"><div><strong id="quiet-label">움직임 줄이기</strong><p id="quiet-help">전환 효과를 줄이고 바로 이동해요.</p></div><button type="button" role="switch" aria-checked={preferences.quiet} aria-labelledby="quiet-label" aria-describedby="quiet-help" className="setting-switch" onClick={()=>setPreference({quiet:!preferences.quiet})}><span/></button></div></div><p className="settings-note">화면 설정은 이 기기에 저장됩니다. 기기의 ‘동작 줄이기’ 설정도 함께 적용돼요.</p></div>
   <BriefingLocationSettings/>
   {gate?.access.identity?.role!=='CHILD'&&<div className="more-section"><h2>AI 브리핑</h2><div className="more-group"><Link className="more-row" to="/briefing?settings=1"><span><Icon name="settings"/>브리핑 설정</span><Icon name="chevron"/></Link><Link className="more-row" to="/briefing?view=saved"><span><Icon name="bookmark"/>보관한 소식</span><Icon name="chevron"/></Link></div></div>}

@@ -56,9 +56,11 @@ test('group invite shortcut creates one link per click and fits member filters a
  const urls=new Set<string>();
  for(const label of ['시간표','달력','대화','AI 브리핑','가계부','더보기']){
   await menu.getByRole('link',{name:label,exact:true}).click();
-  const position=filteredMenus.includes(label)?'.member-preference-row > .group-invite-shortcut:first-child':'.workspace-invite-toolbar > .group-invite-shortcut';
+  const toolbar=label==='대화'?'.chat-rooms-toolbar':label==='AI 브리핑'?'.briefing-instagram-search':'.workspace-toolbar-actions';
+  const position=filteredMenus.includes(label)?'.member-preference-row > .group-invite-shortcut:first-child':toolbar+' > .group-invite-shortcut';
   await expect(shortcut).toHaveCount(1);
   await expect(page.locator(position)).toBeVisible();
+  await expect(shortcut).toHaveText('');
   if(filteredMenus.includes(label)){
    const row=page.locator('.member-preference-row');
    const chip=row.locator('.member-filter-bar > .member-filters > button').first();
@@ -70,6 +72,15 @@ test('group invite shortcut creates one link per click and fits member filters a
    });
    expect(geometry.plusHeight).toBe(geometry.chipHeight);
    expect(geometry.plusY).toBeCloseTo(geometry.chipY);
+  }else if(label==='대화'){
+   const chatRow=page.locator(toolbar);
+   const geometry=await chatRow.evaluate(node=>{
+    const invite=node.querySelector('.group-invite-shortcut')!.getBoundingClientRect();
+    const create=node.querySelector('.chat-room-create')!.getBoundingClientRect();
+    return {inviteHeight:invite.height,createHeight:create.height,inviteY:invite.y,createY:create.y};
+   });
+   expect(geometry.inviteHeight).toBe(geometry.createHeight);
+   expect(geometry.inviteY).toBeCloseTo(geometry.createY);
   }
   const [response]=await Promise.all([
    page.waitForResponse(r=>r.url().endsWith('/api/v1/workspace/invite.link.issue')),

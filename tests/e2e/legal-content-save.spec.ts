@@ -57,21 +57,31 @@ test('request failures and request responses preserve unsaved edits; stale versi
   await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/ui126-admin-save-mobile.png',fullPage:true,animations:'disabled'});
  }finally{await requester.dispose();}
 });
-test('publishes service introduction to public and app readers, while incomplete legal drafts remain private',async({page,browser})=>{
+test('publishes service introduction and discloses pending reviews without recent authentication',async({page,browser})=>{
  await signup(page.request,'ui126-publish@example.test',true);await page.goto('/admin?section=legal');await launchReady(page);
+ expect((await page.request.post('/__test__/reauth-state',{data:{email:'ui126-publish@example.test',socialOnly:false}})).ok()).toBe(true);
  await page.getByLabel('서비스 소개 제목',{exact:true}).fill('그룹을 위한 서비스 안내');
  const body=serviceIntroDefault.body+'\n<script>window.injected=true</script>';
  await page.getByLabel('서비스 소개 본문',{exact:true}).fill(body);await page.getByLabel('서비스 소개 저장·게시 사유',{exact:true}).fill('실제 기능 소개 게시');
  await page.getByRole('button',{name:'서비스 소개 초안 저장',exact:true}).click();await expect(page.getByText('서비스 소개 초안을 저장했습니다. 게시하면 외부 화면에 반영됩니다.',{exact:true})).toBeVisible();
- await page.request.post('/api/account/reauthenticate',{headers:{Origin:origin},data:{password}});
  await page.getByLabel('서비스 소개가 실제 제공 기능과 일치함을 확인했습니다.',{exact:true}).check();await page.getByRole('button',{name:'저장한 서비스 소개 게시',exact:true}).click();await expect(page.getByText('서비스 소개를 게시했습니다. 홈페이지와 앱에서 확인할 수 있습니다.',{exact:true})).toBeVisible();
  const visitor=await browser.newContext({baseURL:origin});try{const publicPage=await visitor.newPage();await publicPage.goto('/service');await expect(publicPage.getByRole('heading',{name:'그룹을 위한 서비스 안내',exact:true})).toBeVisible();await expect(publicPage.getByLabel('서비스 소개 본문')).toContainText('<script>');expect(await publicPage.evaluate(()=>(window as any).injected)).toBeUndefined();}finally{await visitor.close();}
  await page.goto('/more');await page.getByRole('link',{name:'서비스 소개',exact:true}).click();await expect(page).toHaveURL(/\/more\/service$/);await expect(page.getByRole('heading',{name:'서비스 소개',exact:true})).toHaveCount(1);await expect(page.getByRole('heading',{name:'그룹을 위한 서비스 안내',exact:true})).toBeVisible();await expect(page.locator('.public-header,.marketing-site')).toHaveCount(0);await expect(page.getByRole('link',{name:'로그인',exact:true})).toHaveCount(0);
  await page.setViewportSize({width:320,height:740});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:'test-results/ui126-service-reader-mobile.png',fullPage:true,animations:'disabled'});
  const config=await legal(page.request,'admin.read');expect(config.publication).toBeNull();
- const verified={...legalInitialDraft,operatorName:'가상 운영자',privacyOfficer:'가상 책임자',contactEmail:'review@example.test',children:'가상 확인 절차와 어린이 문의 안내',processors:'검증용 위탁 계약 내용',transfers:'검증용 이전 국가와 근거',retention:'검증용 항목별 실제 보유 기준',reviewNotes:'PRIVATE-REVIEW-NOTES'};
- await legal(page.request,'admin.save',{version:config.version,draft:verified,reason:'검증 문서 저장'});await legal(page.request,'admin.publish',{version:config.version+1,reviewed:true,reason:'검증된 문서 게시'});
+ const verified={...legalInitialDraft,operatorName:'가상 운영자',privacyOfficer:'가상 책임자',contactEmail:'review@example.test',children:'가상 확인 절차와 어린이 문의 안내',processors:'검증용 위탁 계약 내용',transfers:'검증용 이전 국가와 근거\n[확인 필요: 공급사 보유기간]',retention:'검증용 항목별 실제 보유 기준',reviewNotes:'PRIVATE-REVIEW-NOTES'};
+ await legal(page.request,'admin.save',{version:config.version,draft:verified,reason:'검증 문서 저장'});
+ await page.goto('/admin?section=legal');await launchReady(page);
+ await expect(page.getByLabel('게시 전 확인 항목')).toContainText('공급사 보유기간');
+ await page.getByLabel('저장·게시 사유',{exact:true}).fill('확인 중인 항목을 포함해 게시');
+ const publish=page.getByRole('button',{name:'저장한 초안 게시',exact:true});
+ await expect(publish).toBeDisabled();
+ await page.getByLabel('운영자 정보·처리 현황·동의 근거·고지 내용을 검토했습니다.').check();
+ await expect(publish).toBeEnabled();
+ await publish.click();
+ await expect(page.getByText('새 버전을 게시했습니다.',{exact:true})).toBeVisible();
  for(const [path,text] of [['terms','아이하루 이용약관'],['privacy','아이하루 개인정보처리방침']]){await page.goto('/legal/'+path);await expect(page.locator('.legal-document .legal-prose').first()).toContainText(text);await expect(page.locator('.legal-document')).not.toContainText('PRIVATE-REVIEW-NOTES');}
+ await expect(page.locator('.legal-document')).toContainText('[확인 필요: 공급사 보유기간]');
 });
 
 test('records a deletion completion with a verified checklist and shows the reference only to administrators',async({page,playwright})=>{

@@ -22,7 +22,7 @@ beforeEach(async()=>{await database.engine.exec('TRUNCATE app.families,iharu_aut
 afterAll(async()=>{await database.db.destroy();});
 const draft={...legalInitialDraft,operatorName:'테스트 운영자',privacyOfficer:'테스트 담당자',contactEmail:'privacy@example.test',children:'검증용 어린이 안내와 법정대리인 확인 절차',processors:'검증용 수탁자 없음',transfers:'검증용 국외 이전 없음',retention:'검증용 탈퇴 시 삭제 기준',reviewNotes:'DO-NOT-PUBLISH-INTERNAL'};
 async function legal(b:Browser,op:string,data:object={}){const r=await b.req('/api/v1/legal/'+op,data);expect(r.status,await r.clone().text()).toBe(200);return r.json();}
-async function publish(b:Browser,version=0){await legal(b,'admin.save',{version,draft,reason:'테스트 초안 저장'});await b.req('/api/account/reauthenticate',{password});await legal(b,'admin.publish',{version:version+1,reviewed:true,reason:'실제 고지 검토 완료'});return (await legal(b,'state')).publication;}
+async function publish(b:Browser,version=0){await legal(b,'admin.save',{version,draft,reason:'테스트 초안 저장'});await legal(b,'admin.publish',{version:version+1,reviewed:true,reason:'실제 고지 검토 완료'});return (await legal(b,'state')).publication;}
 describe('legal content and privacy operations',{timeout:15000},()=>{
 it('keeps drafts private and denies anonymous/ordinary/forged administrative operations',async()=>{const {b:root}=await parent('root',true),{b:user}=await parent('reader');expect((await (await app.request(origin+'/api/v1/legal/public')).json()).publication).toBeNull();expect((await new Browser().req('/api/v1/legal/admin.read')).status).toBe(401);expect((await user.req('/api/v1/legal/admin.read')).status).toBe(403);expect((await root.req('/api/v1/legal/admin.save',{version:0,draft,reason:'변경 사유'},{Origin:'https://bad.example'})).status).toBe(403);await legal(root,'admin.save',{version:0,draft,reason:'검토 중 초안'});expect((await (await app.request(origin+'/api/v1/legal/public')).json()).publication).toBeNull();expect((await root.req('/api/v1/legal/admin.save',{version:0,draft,reason:'충돌 확인'})).status).toBe(409);});
 it('refuses incomplete publication and snapshots reviewed documents without internal notes',async()=>{const {b:root}=await parent('root',true);await legal(root,'admin.save',{version:0,draft:legalInitialDraft,reason:'미완료 문서'});await root.req('/api/account/reauthenticate',{password});expect((await root.req('/api/v1/legal/admin.publish',{version:1,reviewed:true,reason:'정보 없는 게시 검증'})).status).toBe(400);const pub=await publish(root,1);expect(pub.version).toBe(1);expect(JSON.stringify(await (await app.request(origin+'/api/v1/legal/public')).json())).not.toContain('DO-NOT-PUBLISH');await legal(root,'admin.save',{version:3,draft:{...draft,operatorName:'다음 초안'},reason:'초안만 변경'});expect((await legal(root,'state')).publication.document.operatorName).toBe('테스트 운영자');});
@@ -70,16 +70,26 @@ it('saves long Korean legal documents and returns the committed version without 
  expect(second.config.version).toBe(2);expect((await legal(root,'admin.read')).draft.operatorName).toBe('다시 저장한 운영자');
  expect((await root.req('/api/v1/legal/admin.save',{version:2,draft:{...large,businessNumber:'1'.repeat(41)},reason:'입력 제한 검증'})).status).toBe(400);
 });
-it('reports exact publication gaps and refuses unconfirmed text even through direct API calls',async()=>{
- const {b:root}=await parent('gaps',true);
+it('keeps required-field checks and publishes visible review notes without recent authentication',async()=>{
+ const {b:root}=await parent('gaps',true),{b:user}=await parent('ordinary-publisher');
+ await query(database.db,"UPDATE iharu_auth.session_guard SET reauthenticated_at=now()-interval '10 minutes'");
  await legal(root,'admin.save',{version:0,draft:{...draft,processors:'',transfers:'[확인 필요: 계약 국가]',retention:''},reason:'검토 전 초안 저장'});
- await root.req('/api/account/reauthenticate',{password});
  const result=await root.req('/api/v1/legal/admin.publish',{version:1,reviewed:true,reason:'미확인 문서 게시 시도'});expect(result.status).toBe(400);
- expect((await result.json()).error.fields).toEqual(['processors','transfers','retention']);
+ expect((await result.json()).error.fields).toEqual(['processors','retention']);
  expect((await(await app.request(origin+'/api/v1/legal/public')).json()).publication).toBeNull();
  expect(legalPublicationGaps({...draft,transfers:'[확인 필요: 처리 국가] [확인 필요: 보유기간]'})).toEqual([
-  {field:'transfers',label:'국외 이전',issue:'운영 사실 확인 필요',details:['처리 국가','보유기간']}
+  {field:'transfers',label:'국외 이전',issue:'운영 사실 확인 필요',details:['처리 국가','보유기간'],blocksPublication:false}
  ]);
+ const reviewText=draft.transfers+'\n[확인 필요: 공급사 보유기간]';
+ await legal(root,'admin.save',{version:1,draft:{...draft,transfers:reviewText},reason:'확인 중인 문구 저장'});
+ const request={version:2,reviewed:true,reason:'확인 중인 문구를 포함한 게시'};
+ expect((await user.req('/api/v1/legal/admin.publish',request)).status).toBe(403);
+ expect((await root.req('/api/v1/legal/admin.publish',{...request,reviewed:false})).status).toBe(400);
+ await legal(root,'admin.publish',request);
+ expect((await root.req('/api/v1/legal/admin.publish',request)).status).toBe(409);
+ const publicDocument=(await(await app.request(origin+'/api/v1/legal/public')).json()).publication.document;
+ expect(publicDocument.transfers).toBe(reviewText);
+ expect(publicDocument).not.toHaveProperty('reviewNotes');
  expect(normalizeLegalDraft({...draft,operatorName:'  운영자  '}).operatorName).toBe('운영자');
 });
 it('independently versions service introduction and keeps private edits out of both public documents and acceptance',async()=>{
