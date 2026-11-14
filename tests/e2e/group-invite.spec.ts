@@ -25,11 +25,16 @@ async function verifyAndSignIn(page:Page,request:APIRequestContext,email:string,
 }
 
 async function issue(page:Page){
- await page.getByRole('checkbox',{name:/동의합니다/}).check();
- await page.getByRole('button',{name:'그룹 초대 링크 만들기'}).click();
- const field=page.getByLabel('발급한 그룹 초대 링크');
+ const section=page.getByRole('region',{name:'그룹 초대',exact:true});
+ await expect(section.getByRole('checkbox')).toHaveCount(0);
+ await section.getByRole('button',{name:'그룹 초대 링크',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
+ const field=dialog.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();
- return field.inputValue();
+ const link=await field.inputValue();
+ await page.keyboard.press('Escape');
+ await expect(dialog).toBeHidden();
+ return link;
 }
 
 test('group invite shortcut creates one link per click and fits member filters across the workspace',async({page,request})=>{
@@ -123,7 +128,33 @@ test('group invite shortcut creates one link per click and fits member filters a
  await expect(page.locator('html')).toHaveAttribute('data-invite-copied',fallbackLink);
  await dialog.getByRole('button',{name:'그룹 초대 닫기'}).click();
  await page.goto('/family');
- await expect(page.getByRole('button',{name:'링크 취소'})).toHaveCount(8);
+ await expect(page.getByRole('button',{name:'링크 취소'})).toHaveCount(0);
+ await expect(page.getByText('사용 가능한 그룹 초대')).toHaveCount(0);
+ const options=page.request.post('/api/v1/workspace/invite.link.options',{headers:{Origin:origin},data:{}});
+ expect((await(await options).json()).pending).toHaveLength(8);
+ await expect(page.locator('.personal-member')).toHaveCount(1);
+ await issue(page);
+ expect(issueRequests).toBe(9);
+});
+
+test('More destinations align the group invite shortcut with their page heading',async({page,request})=>{
+ test.setTimeout(60000);
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await register(page,request,'more-heading-host@example.test','더보기 메뉴 검사');
+ for(const path of ['/settings','/family','/help','/more/notices','/more/blog','/more/service','/notification-settings','/account','/privacy','/legal/terms','/legal/privacy','/account-deletion']){
+  await page.goto(path);
+  const heading=page.locator('.more-page-heading').first();
+  const shortcut=heading.getByRole('button',{name:'그룹 초대 공유',exact:true});
+  await expect(shortcut).toBeVisible();
+  await expect(page.getByRole('button',{name:'그룹 초대 공유',exact:true})).toHaveCount(1);
+  const geometry=await heading.evaluate(node=>{
+   const title=node.querySelector('h1')!.getBoundingClientRect();
+   const button=node.querySelector('.group-invite-shortcut')!.getBoundingClientRect();
+   return {titleEnd:title.right,buttonStart:button.left,buttonCenter:button.y+button.height/2,titleCenter:title.y+title.height/2};
+  });
+  expect(geometry.buttonStart).toBeGreaterThan(geometry.titleEnd);
+  expect(geometry.buttonCenter).toBeCloseTo(geometry.titleCenter);
+ }
 });
 
 test('group link resumes after email verification and requires explicit acceptance',async({page,browser,request})=>{

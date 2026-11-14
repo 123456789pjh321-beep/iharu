@@ -39,5 +39,3 @@ export function InviteLinkActions({url,invite,shareFallback=false}:{url:string;i
   <FormNotice error={error} message={message}/>
  </div>;
 }
-
-export {formatExpiry};

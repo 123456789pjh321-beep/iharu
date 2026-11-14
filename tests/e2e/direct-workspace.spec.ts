@@ -7,11 +7,14 @@ async function login(page:Page,request:APIRequestContext,email:string,name='가�
  const mails=await(await request.get(origin+'/__test__/mail')).json();await page.goto(mails.find((m:{to:string})=>m.to===email).url);await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill('direct-workspace-fixture-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.personal-timetable')).toBeVisible();
 }
 async function issue(page:Page){
- await page.goto('/family');await page.getByRole('checkbox',{name:/초대받은 사람과/}).check();
- await page.getByRole('button',{name:'그룹 초대 링크 만들기'}).click();
- const field=page.getByLabel('발급한 그룹 초대 링크');
+ await page.goto('/family');
+ await page.getByRole('button',{name:'그룹 초대 링크',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
+ const field=dialog.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();
- return field.inputValue();
+ const url=await field.inputValue();
+ await page.keyboard.press('Escape');
+ return url;
 }
 async function issueLegacy(page:Page){
  const response=await page.request.post('/api/v1/workspace/invite.issue',{headers:{Origin:origin},data:{consent:true}});

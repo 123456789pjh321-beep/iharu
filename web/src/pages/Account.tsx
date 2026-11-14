@@ -6,6 +6,7 @@ import { emailLinkSchema, authPost, methodNames, methodsSchema, providersSchema,
 import { AuthLayout, FormNotice, PasswordField } from '../components/AuthLayout';
 import { ErrorState, Loading } from '../components/Common';
 import { Icon } from '../components/Icon';
+import {MorePageHeading} from '../components/MorePageHeading';
 
 function useAction() {
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
@@ -28,7 +29,7 @@ function VerifiedAccount({email,emailVerified}:{name:string;email?:string|null;e
   const action=useAction();const [confirm,setConfirm]=useState<string|null>(null);
   const enabled=(id:string)=>providers.data?.providers.find(p=>p.id===id)?.enabled===true;
   const hasEmail=methods.data?.methods.some(m=>m.provider==='credential');
-  return <><div className="account-heading"><div><h1>로그인 방법과 기기</h1></div><span className="account-symbol"><Icon name="shield"/></span></div>
+  return <><MorePageHeading title="로그인 방법과 기기"/>
     <FormNotice error={action.error} message={action.message}/>
     <section className="account-overview"><span className="badge green">계정 로그인 완료</span><p>{email||'연락받을 이메일을 연결해 주세요.'}{email&&!emailVerified&&' · 이메일 확인 필요'}</p></section>
     <div className="account-grid"><section className="account-card"><h2><Icon name="shield"/>로그인 방법</h2><p>다른 방법을 추가하면 계정을 더 쉽게 찾을 수 있어요.</p>

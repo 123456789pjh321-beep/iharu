@@ -8,8 +8,11 @@ import {useWorkspaceGate} from './WorkspaceGate';
 
 const shareLabel='그룹 초대 공유';
 const issueDescription='이 버튼을 누르면 초대용 링크가 만들어집니다. 초대받은 사람이 수락하면 같은 그룹에서 일정 등 자료를 공유합니다.';
-const inlineShortcutRoutes=new Set(['/timetable','/today/calendar','/tuition','/chat','/child/chat','/briefing','/more','/settings']);
-const GroupInviteShareContext=createContext<{dialogId:string;canInvite:boolean;open:()=>void;revision:number}|null>(null);
+const inlineShortcutRoutes=new Set([
+ '/timetable','/today/calendar','/tuition','/chat','/child/chat','/briefing',
+ '/more','/settings','/help','/family','/notification-settings','/admin','/account','/privacy','/account-deletion',
+]);
+const GroupInviteShareContext=createContext<{dialogId:string;canInvite:boolean;open:()=>void}|null>(null);
 type InviteState=
  |{ownerId:string;status:'loading'}
  |{ownerId:string;status:'ready';invite:IssuedInvite}
@@ -22,7 +25,6 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const dialog=useRef<HTMLDialogElement>(null);
  const dialogId=useId();
  const [invite,setInvite]=useState<InviteState>();
- const [revision,setRevision]=useState(0);
  const issuing=useRef<string|null>(null);
  const route=pathname.toLowerCase().replace(/\/+$/,'');
  const profileId=parent?.id;
@@ -40,7 +42,6 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
    const link=await workspaceRequest<IssuedInvite>('invite.link.issue',{consent:true});
    if(issuing.current!==ownerId)return;
    setInvite({ownerId,status:'ready',invite:link});
-   setRevision(value=>value+1);
    void refreshAccess();
   }catch(e){
    if(issuing.current===ownerId){
@@ -55,9 +56,9 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
   if(!node||node.open)return;
   node.showModal();
   if(canInvite)void issue(profileId);
- },canInvite,revision}:null,[dialogId,profileId,canInvite,issue,revision]);
+ },canInvite}:null,[dialogId,profileId,canInvite,issue]);
  return <GroupInviteShareContext.Provider value={action}>
-  {parent&&!inlineShortcutRoutes.has(route)&&<div className="workspace-invite-toolbar"><GroupInviteShareButton/></div>}
+  {parent&&!inlineShortcutRoutes.has(route)&&!route.startsWith('/more/')&&!route.startsWith('/legal/')&&<div className="workspace-invite-toolbar"><GroupInviteShareButton/></div>}
   {children}
   {parent&&<dialog key={parent.id} ref={dialog} id={dialogId} className="group-invite-dialog" aria-labelledby={dialogId+'-title'} onClick={event=>{if(event.target===event.currentTarget)dialog.current?.close();}}>
    <div className="group-invite-dialog-content">
@@ -68,26 +69,23 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
     {!canInvite?<p>그룹 초대 링크는 호스트에게 요청해 주세요.</p>:
      current?.status==='ready'?<InviteLinkActions key={current.invite.id} url={current.invite.url} invite={current.invite} shareFallback/>:
      current?.status==='error'?<>
-      <FormNotice error={current.message}/>
-      {current.code==='INVITE_LIMIT'?<Link className="button" to="/family">그룹 관리 열기</Link>:
-       current.code==='LEGAL_ACCEPTANCE_REQUIRED'?<Link className="button" to="/privacy">개인정보 관리 열기</Link>:
-       current.code!=='HOST_ONLY'&&<button type="button" className="button" onClick={()=>void issue(parent.id)}>다시 시도</button>}
+      <FormNotice error={current.code==='INVITE_LIMIT'?'사용 가능한 초대 링크가 20개 있어요. 기존 링크가 사용되거나 만료된 뒤 다시 발급해 주세요.':current.message}/>
+      {current.code==='LEGAL_ACCEPTANCE_REQUIRED'?<Link className="button" to="/privacy" onClick={()=>dialog.current?.close()}>개인정보 관리 열기</Link>:
+       !['INVITE_LIMIT','HOST_ONLY'].includes(current.code||'')&&<button type="button" className="button" onClick={()=>void issue(parent.id)}>다시 시도</button>}
      </>:<p role="status">그룹 초대 링크를 만들고 있어요.</p>}
    </div>
   </dialog>}
  </GroupInviteShareContext.Provider>;
 }
 
-export function GroupInviteShareButton(){
+export function GroupInviteShareButton({label}:{label?:string}={}){
  const action=useContext(GroupInviteShareContext);
  const descriptionId=useId();
  if(!action)return null;
  return <>
-  <button type="button" className="group-invite-shortcut" aria-label={shareLabel} title={action.canInvite?issueDescription:shareLabel} aria-haspopup="dialog" aria-controls={action.dialogId} aria-describedby={action.canInvite?descriptionId:undefined} onClick={action.open}>
-   <Icon name="plus"/>
+  <button type="button" className={label?'button primary':'group-invite-shortcut'} aria-label={label||shareLabel} title={action.canInvite?issueDescription:label||shareLabel} aria-haspopup="dialog" aria-controls={action.dialogId} aria-describedby={action.canInvite?descriptionId:undefined} onClick={action.open}>
+   {label||<Icon name="plus"/>}
   </button>
   {action.canInvite&&<span className="sr-only" id={descriptionId}>{issueDescription}</span>}
  </>;
 }
-
-export function useGroupInviteRevision(){return useContext(GroupInviteShareContext)?.revision??0;}

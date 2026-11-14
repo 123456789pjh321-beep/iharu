@@ -195,7 +195,6 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .more-account-note{padding:0 16px;margin:10px 0 0;font-size:13px;line-height:1.7;color:var(--muted)}
 .workspace-page:where([data-timetree]) .more-signature{font-size:11px;color:var(--muted)}
 .workspace-page:where([data-timetree]) .settings-screen{padding:20px 16px;background:var(--canvas)}
-.workspace-page:where([data-timetree]) .settings-heading h1{font-size:24px;font-weight:750}
 .workspace-page:where([data-timetree]) .settings-row{background:var(--surface)}
 
 .workspace-page:where([data-timetree]) .group-chat .chat-room-header h2{font-size:17px;font-weight:650}
@@ -213,8 +212,6 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .workspace-page-heading h1{font-size:var(--workspace-title-size)}
 .workspace-page:where([data-timetree]) .more-screen{width:100%;flex:0 0 auto}
 .workspace-page:where([data-timetree]) .settings-screen{padding:0 0 24px}
-.workspace-page:where([data-timetree]) .settings-heading{height:var(--workspace-toolbar-height);min-height:var(--workspace-toolbar-height);padding:4px var(--workspace-inset);margin:0 0 20px;box-sizing:border-box;background:var(--surface)}
-.workspace-page:where([data-timetree]) .settings-heading h1{font-size:var(--workspace-title-size)}
 .workspace-page:where([data-timetree]) .briefing-screen{padding:8px var(--workspace-inset) 24px;flex:0 0 auto}
 .workspace-page:where([data-timetree])[data-timetree='/briefing'] .guest-feature{padding:8px var(--workspace-inset) 24px}
 .workspace-page:where([data-timetree]) .location-access-prompt{flex:0 0 auto;padding-inline:var(--workspace-inset)}
