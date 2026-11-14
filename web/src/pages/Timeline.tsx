@@ -9,6 +9,7 @@ import {Icon} from '../components/Icon';
 import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {DateNavigator,WorkspaceToolbar} from '../components/WorkspaceToolbar';
+import {WorkspaceTopBarSlot} from '../components/WorkspaceTopBar';
 import {MemberFilter} from '../components/MemberFilter';
 import {MonthSwipeArea} from '../components/MonthSwipeArea';
 import {shiftMonth} from '../components/PeriodPager';
@@ -126,10 +127,10 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  }
  return <AuthLayout wide personalChild={me?.role==='CHILD'}><div className="timeline-page memo-timeline">
   <WorkspaceToolbar title="타임라인" navigation={<DateNavigator type="month" value={month} inputLabel="타임라인 조회 월" onChange={selectMonth}/>}/>
-  {me&&<div className="member-preference-row memo-members"><GroupInviteShareButton/><MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} showAll={false} onChange={id=>{
+  <WorkspaceTopBarSlot slot="members">{me&&<div className="member-preference-row memo-members"><GroupInviteShareButton/><MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} showAll={false} onChange={id=>{
    const current=ownerIds.length?ownerIds:members.map(m=>m.id),next=current.includes(id)?current.filter(x=>x!==id):[...current,id];
    setOwnerIds(next.length===members.length?[]:next.length?next:[id]);setOffset(0);setSelectedId('');
-  }} label="메모 작성자"/></div>}
+  }} label="메모 작성자"/></div>}</WorkspaceTopBarSlot>
   <div className="memo-compose"><button type="button" className="memo-new-row" aria-label="새글 등록" onClick={create}>
    <span className="memo-compose-icon"><Icon name="plus"/></span>
    <span className="memo-compose-copy"><strong>새글 등록</strong><small>오늘의 순간을 남겨보세요</small></span>
