@@ -65,7 +65,7 @@ test('jade palette remains readable and aligned in light and dark at phone, tabl
     const root=getComputedStyle(document.documentElement),rgb=(value:string)=>{const probe=document.createElement('span');probe.style.color=value.trim();document.body.appendChild(probe);const color=getComputedStyle(probe).color;probe.remove();return color.match(/[\d.]+/g)!.slice(0,3).map(n=>Number(n)/255);};
     const lum=(color:string)=>rgb(color).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
     const ratio=(a:string,b:string)=>{const x=lum(root.getPropertyValue(a)),y=lum(root.getPropertyValue(b));return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
-    const button=getComputedStyle(document.querySelector('.workspace-add-action')!);const foreground=lum(button.color),background=lum(button.backgroundColor);
+    const button=getComputedStyle(document.querySelector('.ledger-budget-trigger')!);const foreground=lum(button.color),background=lum(button.backgroundColor);
     return [ratio('--ink','--surface'),ratio('--muted','--surface'),ratio('--primary','--mint'),ratio('--on-primary','--primary'),(Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05)];
    });for(const contrast of contrasts)expect(contrast).toBeGreaterThanOrEqual(4.5);
    for(const width of [320,820,1440]){

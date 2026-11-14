@@ -49,7 +49,7 @@ test('timetable, tuition and calendar creation open their matching editors witho
  await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'등록 일반사용자',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
  await page.goto('/timetable');await page.locator('.timetable-slot[data-time="09:00"]').first().click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
- await page.goto('/tuition');await page.getByRole('button',{name:'가계부 추가',exact:true}).click();await expect(page.getByRole('dialog',{name:'가계부 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
+ await page.goto('/tuition');await expect(page.locator('.workspace-add-action')).toHaveCount(0);await page.locator('[data-pager-current=true] .tuition-date').first().click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();await expect(page.getByRole('dialog',{name:'가계부 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
  for(const path of ['/timetable','/today/calendar']){await page.goto(path);await expect(page.locator('.workspace-add-action')).toHaveCount(0);}
  await page.locator('[data-pager-current] .calendar-cell.is-today .calendar-day-target').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();await expect(page.getByRole('dialog',{name:'일정 등록',exact:true})).toBeVisible();
 });
