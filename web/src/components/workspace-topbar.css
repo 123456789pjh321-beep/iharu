@@ -7,8 +7,3 @@
 .workspace-page .workspace-topbar [data-topbar-route='/timetable']>.workspace-toolbar{justify-content:space-between}
 .workspace-page .workspace-topbar [data-topbar-route='/timetable'] .workspace-toolbar-actions{min-width:0;max-width:calc(100% - 116px)}
 .workspace-page .workspace-topbar .timetable-current-summary{max-width:100%;align-items:center}
-.workspace-page .workspace-topbar [data-topbar-route='/timeline']{max-width:960px;margin-inline:auto}
-.workspace-page .workspace-topbar [data-topbar-route='/timeline'] .workspace-toolbar{gap:4px;padding-inline:10px;min-height:52px}
-.workspace-page:where([data-timetree]) .workspace-topbar .memo-members{padding:0 10px 6px}
-.workspace-topbar .memo-members .member-filter-bar{padding:0}
-.workspace-topbar .memo-members .member-filter-expand{flex:none}

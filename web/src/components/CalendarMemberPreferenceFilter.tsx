@@ -6,10 +6,11 @@ import {Icon} from './Icon';
 import {GroupInviteShareButton} from './GroupInviteShare';
 import {WorkspaceTopBarSlot} from './WorkspaceTopBar';
 
-export function CalendarMemberPreferenceFilter({members,selection,label,className='',preview=false}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string;preview?:boolean}){
+type MemberSelection=Pick<ReturnType<typeof useMemberPreference>,'memberIds'|'toggle'|'selectAll'>&Partial<ReturnType<typeof useMemberPreference>>;
+export function CalendarMemberPreferenceFilter({members,selection,label,className='',preview=false}:{members:WorkspaceMember[];selection:MemberSelection;label:string;className?:string;preview?:boolean}){
  const dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null),id=useId();
  const [open,setOpen]=useState(false);
- const {memberIds,isSaved,saving,error,notice,toggle,selectAll,save,canSave}=selection;
+ const {memberIds,isSaved=false,saving=false,error='',notice='',toggle,selectAll,save,canSave=false}=selection;
  const names=members.filter(m=>memberIds.includes(m.id)).map(m=>m.name);
  const name=names.join(' · ')||'나';
  const action=saving?'저장 중':isSaved?'첫 화면으로 설정됨':'첫 화면으로 저장';
@@ -26,7 +27,7 @@ export function CalendarMemberPreferenceFilter({members,selection,label,classNam
    <p>함께 보고 싶은 사람을 선택하세요.</p>
    <MemberFilter members={members} value={memberIds} allLabel="전체선택" onSelectAll={selectAll} allSelected={members.length>0&&memberIds.length===members.length} wrap disabled={saving} onChange={toggle} label={label+' 전체 구성원'}/>
    <p className="preference-selected-names">{name}</p>
-   {!preview&&<div className="preference-save-row timetable-preference"><button type="button" className="button" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} disabled={saving||isSaved||!canSave} onClick={()=>void save()}>{saving?'저장 중':isSaved?'기본 필터로 설정됨':'기본 필터로 저장'}</button></div>}
+   {!preview&&save&&<div className="preference-save-row timetable-preference"><button type="button" className="button" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} disabled={saving||isSaved||!canSave} onClick={()=>void save()}>{saving?'저장 중':isSaved?'기본 필터로 설정됨':'기본 필터로 저장'}</button></div>}
    {error&&<p className="timetable-preference-message error" role="alert">{error}</p>}{notice&&<p className="timetable-preference-message" role="status">{notice}</p>}
    <footer><button type="button" className="button primary" onClick={dismiss}>선택 완료</button></footer>
   </dialog>

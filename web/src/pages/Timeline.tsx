@@ -10,10 +10,9 @@ import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {DateNavigator,WorkspaceToolbar} from '../components/WorkspaceToolbar';
 import {WorkspaceTopBarSlot} from '../components/WorkspaceTopBar';
-import {MemberFilter} from '../components/MemberFilter';
+import {CalendarMemberPreferenceFilter} from '../components/CalendarMemberPreferenceFilter';
 import {MonthSwipeArea} from '../components/MonthSwipeArea';
 import {shiftMonth} from '../components/PeriodPager';
-import {GroupInviteShareButton} from '../components/GroupInviteShare';
 import {calendarColors} from '../components/scheduleColors';
 import {MemoEditor,MemoPhoto} from '../components/MemoEditor';
 import {workspaceRequest} from '../workspace-api';
@@ -43,6 +42,8 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  useEffect(()=>{if(viewPhoto)viewer.current?.showModal();else viewer.current?.close();},[viewPhoto]);
  const members=me?.family?.members||(me?[{id:me.id,name:me.name,kind:me.role,host:false,version:1}]:[]);
+ const selectedOwners=ownerIds.length?ownerIds:members.map(member=>member.id);
+ function selectOwners(next:string[]){setOwnerIds(next.length===members.length?[]:next);setOffset(0);setSelectedId('');}
  // Keep real neighboring months ready for the same continuous pager used by the calendar.
  const requests=useMemo(()=>Object.fromEntries([-1,0,1].map(delta=>{
   const value=shiftMonth(month,delta);
@@ -116,9 +117,9 @@ function Timeline({me}:{me:WorkspaceMe|null}){
    {!items.length?<div className="memo-empty"><Icon name="book"/><h2>{ownerIds.length?'선택한 구성원의 이번 달 글이 없어요':'이번 달에 작성한 글이 없어요'}</h2></div>:Array.from(groups,([date,items])=><section className="memo-day" key={date} aria-label={dayLabel(date)}>
     <h2><time dateTime={date}>{dayLabel(date)}</time>{isSample?<span>샘플</span>:date===today&&<span>오늘</span>}</h2>
     {items.map(memo=><article className="memo-card memo-preview" key={memo.id} aria-label={memo.title}>
+     <button type="button" className="memo-card-open" aria-label={memo.title+' 상세 보기'} aria-haspopup="dialog" onClick={()=>openMemo(memo)}/>
      <MemoFeedMeta memo={memo} color={calendarColors[Math.max(0,members.findIndex(member=>member.id===memo.ownerId))%calendarColors.length]}/>
      <div className="memo-preview-row"><div className="memo-preview-copy"><h3>{memo.title}</h3><p className="memo-preview-body">{memo.body||'내용 없이 저장한 메모예요.'}</p></div>
-      <button type="button" className="memo-more" aria-haspopup="dialog" onClick={()=>openMemo(memo)}>더보기<Icon name="chevron"/></button>
      </div>
     </article>)}
    </section>)}
@@ -127,10 +128,10 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  }
  return <AuthLayout wide personalChild={me?.role==='CHILD'}><div className="timeline-page memo-timeline">
   <WorkspaceToolbar title="타임라인" navigation={<DateNavigator type="month" value={month} inputLabel="타임라인 조회 월" onChange={selectMonth}/>}/>
-  <WorkspaceTopBarSlot slot="members">{me&&<div className="member-preference-row memo-members"><GroupInviteShareButton/><MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} showAll={false} onChange={id=>{
-   const current=ownerIds.length?ownerIds:members.map(m=>m.id),next=current.includes(id)?current.filter(x=>x!==id):[...current,id];
-   setOwnerIds(next.length===members.length?[]:next.length?next:[id]);setOffset(0);setSelectedId('');
-  }} label="메모 작성자"/></div>}</WorkspaceTopBarSlot>
+  {me?<CalendarMemberPreferenceFilter members={members} selection={{memberIds:selectedOwners,toggle:id=>{
+   const next=selectedOwners.includes(id)?selectedOwners.filter(value=>value!==id):[...selectedOwners,id];
+   selectOwners(next.length?next:[id]);
+  },selectAll:()=>selectOwners(members.map(member=>member.id))}} label="메모 작성자"/>:<WorkspaceTopBarSlot slot="members">{null}</WorkspaceTopBarSlot>}
   <div className="memo-compose"><button type="button" className="memo-new-row" aria-label="새글 등록" onClick={create}>
    <span className="memo-compose-icon"><Icon name="plus"/></span>
    <span className="memo-compose-copy"><strong>새글 등록</strong><small>오늘의 순간을 남겨보세요</small></span>
@@ -165,8 +166,9 @@ function MemoMeta({memo}:{memo:DisplayMemo}){
 }
 function MemoDetail({memo,busy,message,onClose,onPhoto,onCreate,onEdit,onFavorite,onDelete}:{memo:DisplayMemo;busy:boolean;message:string;onClose:()=>void;onPhoto:(src:string)=>void;onCreate:()=>void;onEdit:()=>void;onFavorite:()=>void;onDelete:()=>void}){
  const dialog=useRef<HTMLDialogElement>(null);
- useEffect(()=>{dialog.current?.showModal();},[]);
+ useEffect(()=>{const node=dialog.current,opener=document.activeElement instanceof HTMLElement?document.activeElement:null;node?.showModal();return()=>{node?.close();if(opener?.isConnected)opener.focus({preventScroll:true});};},[]);
  return <dialog ref={dialog} className="memo-detail" aria-labelledby="memo-detail-title" onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget&&!busy)onClose();}}>
+  <div className="memo-sheet-handle" aria-hidden="true"/>
   <header className="memo-detail-heading"><h2 id="memo-detail-title">글 상세</h2><button type="button" className="icon-button" aria-label="글 상세 닫기" onClick={onClose}><Icon name="close"/></button></header>
   <div className="memo-detail-body"><MemoMeta memo={memo}/><time className="memo-detail-date" dateTime={memo.date}>{dayLabel(memo.date)}</time>
    <h3>{memo.title}</h3>{memo.body&&<p className="memo-body">{memo.body}</p>}
@@ -186,6 +188,6 @@ function sampleMemos(today:string):DisplayMemo[]{
  const base={...emptyMemo(today),id:'sample-park',ownerId:'sample',ownerName:'샘플',mine:false,favorite:false,createdAt:'',updatedAt:'',photos:[],sample:true};
  return [
   {...base,title:'공원에서 보낸 오후',body:'함께 걷고 웃었던 순간을 남겨요. 사진과 현재 위치를 담으면 나중에 더 생생하게 떠올릴 수 있어요.',category:'OUTING',time:'15:30',samplePhoto:'/briefing/park.jpg',place:'우리 동네 공원 · 장소 예시',tags:['주말','산책']},
-  {...base,id:'sample-growth',title:'처음 혼자 해낸 날',body:'“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 더보기에서 전체 글과 사진·위치를 보고, 오래 기억할 글은 즐겨찾기에 담아 보세요.',category:'FAMILY',time:'09:00',visibility:'GROUP',tags:['성장','기억할말']}
+  {...base,id:'sample-growth',title:'처음 혼자 해낸 날',body:'“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 게시글을 누르면 전체 글과 사진·위치를 볼 수 있어요. 오래 기억할 글은 즐겨찾기에 담아 보세요.',category:'FAMILY',time:'09:00',visibility:'GROUP',tags:['성장','기억할말']}
  ];
 }
