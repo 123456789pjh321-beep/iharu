@@ -6,6 +6,7 @@ import {Icon} from './Icon';
 import {ConversationStickers,ConversationStickerArt} from './ConversationStickers';
 import {conversationSticker,type ConversationSticker} from '../../../shared/conversation-stickers';
 import {FormNotice} from './AuthLayout';
+import {WorkspaceGroupFilter} from './WorkspaceGroupFilter';
 import {ChatRooms} from './ChatRooms';
 import {LeaveChatRoom} from './LeaveChatRoom';
 import {workspaceRequest} from '../workspace-api';
@@ -14,22 +15,24 @@ const dateLabel=(stamp:string)=>new Date(stamp).toLocaleDateString('ko-KR',{time
 type ChatProps={cache?:Map<string,ChatPage>;revision?:number;me:WorkspaceMe;edit:(item:WorkspaceItem)=>void;compact?:boolean};
 export function PersonalChat(props:ChatProps){
  const {me,compact=false,revision=0}=props;
+ const space=me.family?.id??null;
  const [rooms,setRooms]=useState<ChatRoom[]>([]),[selected,setSelected]=useState<string|null>(null),[error,setError]=useState('');
  const generation=useRef(0);
  const refreshRooms=useCallback(async()=>{
   const request=++generation.current;
-  try{const result=await workspaceRequest<{items:ChatRoom[]}>('chat.rooms');if(request!==generation.current)return;
+  try{const result=await workspaceRequest<{items:ChatRoom[]}>('chat.rooms',{},space);if(request!==generation.current)return;
    setRooms(result.items);setSelected(id=>id&&result.items.some(room=>room.id===id)?id:null);setError('');return result.items;
   }catch(e){if(request===generation.current){setRooms([]);setSelected(null);setError((e as Error).message);}throw e;}
- },[me.id,me.family?.id]);
+ },[space]);
  useEffect(()=>{if(compact)return;const update=()=>{if(!document.hidden)void refreshRooms().catch(()=>{});};update();const timer=setInterval(update,5000);window.addEventListener('focus',update);return()=>{++generation.current;clearInterval(timer);window.removeEventListener('focus',update);};},[refreshRooms,compact,revision]);
  const room=rooms.find(room=>room.id===selected);
  return <section className={'chat-workspace '+(compact?'compact':'full')} aria-label="대화 공간">
-  {!compact&&<ChatRooms me={me} rooms={rooms} selected={selected} select={setSelected} error={error} created={async id=>{const next=await refreshRooms();if(!next?.some(room=>room.id===id))throw new Error('대화방 목록을 다시 확인해 주세요.');setSelected(id);}}/>}
+  {!compact&&<><WorkspaceGroupFilter/><ChatRooms me={me} rooms={rooms} selected={selected} select={setSelected} error={error} created={async id=>{const next=await refreshRooms();if(!next?.some(room=>room.id===id))throw new Error('대화방 목록을 다시 확인해 주세요.');setSelected(id);}}/></>}
   <RoomChat left={()=>{if(!room)return;++generation.current;const prefix=me.id+':'+(me.family?.id||'')+':'+room.id+':';for(const key of props.cache?.keys()||[])if(key.startsWith(prefix))props.cache?.delete(key);setSelected(null);setRooms(old=>old.filter(value=>value.id!==room.id));void refreshRooms().catch(()=>{});}} key={me.id+':'+(me.family?.id||'')+':'+(selected||'default')} {...props} room={room}/>
  </section>;
 }
 function RoomChat({me,edit,compact=false,revision=0,cache,room,left}:ChatProps&{room?:ChatRoom;left:()=>void}){
+ const space=me.family?.id??null;
  const roomId=room?.id,canSend=room?.canSend!==false;
  const cacheKey=me.id+':'+(me.family?.id||'')+':'+(roomId||'default')+':'+compact,cached=cache?.get(cacheKey);
  const previousQuery=useRef('');
@@ -44,18 +47,18 @@ function RoomChat({me,edit,compact=false,revision=0,cache,room,left}:ChatProps&{
   const id=++seq.current;try{
    if(more&&history.current)prepend.current={height:history.current.scrollHeight,top:history.current.scrollTop};
    const count=more?pages.current+1:pages.current;let next:ChatCursor|null=null,all:WorkspaceItem[]=[],readReceipt:MenuReceipt|undefined;
-   for(let n=0;n<count;n++){const result:ChatPage=await workspaceRequest('chat.list',{...(roomId?{roomId}:{}),limit:compact?20:50,...(next?{before:next}:{}),...(query?{query}:{})});if(n===0)readReceipt=result.updateReceipt;all=[...result.items,...all];next=result.nextCursor;if(!next)break;}
+   for(let n=0;n<count;n++){const result:ChatPage=await workspaceRequest('chat.list',{...(roomId?{roomId}:{}),limit:compact?20:50,...(next?{before:next}:{}),...(query?{query}:{})},space);if(n===0)readReceipt=result.updateReceipt;all=[...result.items,...all];next=result.nextCursor;if(!next)break;}
    if(id!==seq.current)return;
    if(latest.current&&latest.current!==all.at(-1)?.id&&!stick.current&&!more)setNewMessage(true);
    latest.current=all.at(-1)?.id;if(!query)cache?.set(cacheKey,{items:all,nextCursor:next,hasMore:!!next,updateReceipt:readReceipt});setItems(old=>JSON.stringify(old)===JSON.stringify(all)?old:all);setReceipt(readReceipt);setCursor(next);pages.current=count;setError('');
   }catch(e){if(id===seq.current){cache?.delete(cacheKey);setError((e as Error).message);setItems([]);setCursor(null);}}
   finally{if(id===seq.current)setLoading(false);}
- },[query,compact,cache,cacheKey,roomId]);
+ },[query,compact,cache,cacheKey,roomId,space]);
  useEffect(()=>{if(previousQuery.current!==query){pages.current=1;setCursor(null);setLoading(true);stick.current=true;previousQuery.current=query;}void load();const update=()=>{if(!document.hidden&&!sending.current)void load();};const timer=setInterval(update,5000);window.addEventListener('focus',update);document.addEventListener('visibilitychange',update);return()=>{++seq.current;clearInterval(timer);window.removeEventListener('focus',update);document.removeEventListener('visibilitychange',update);};},[load,revision]);
  useLayoutEffect(()=>{const el=history.current;if(!el)return;if(prepend.current){el.scrollTop=el.scrollHeight-prepend.current.height+prepend.current.top;prepend.current=null;}else if(stick.current)el.scrollTop=el.scrollHeight;},[items]);
  const readVisible=useCallback(()=>{if(!compact&&!loading&&!error&&!query&&stick.current&&!document.hidden&&!document.querySelector('dialog[open]'))void markUpdatesRead?.(receipt);},[compact,loading,error,query,markUpdatesRead,receipt]);
  useEffect(()=>{readVisible();document.addEventListener('visibilitychange',readVisible);return()=>document.removeEventListener('visibilitychange',readVisible);},[readVisible,items]);
- async function submit(e?:FormEvent){e?.preventDefault();const value=sticker?.message||text.trim();if(sending.current||!value||!canSend||loading)return;const sentSticker=!!sticker;sending.current=true;setBusy(true);setError('');if(pending.current?.text!==value)pending.current={id:crypto.randomUUID(),text:value};try{await workspaceRequest('chat.send',{...(roomId?{roomId}:{}),text:value,clientMessageId:pending.current.id});pending.current=null;if(sentSticker){setSticker(null);setStickersOpen(false);}else setText('');stick.current=true;setNewMessage(false);await load();if(!sentSticker)input.current?.focus();}catch(e){setError((e as Error).message+' 입력한 메시지를 확인하고 다시 보내 주세요.');}finally{sending.current=false;setBusy(false);}}
+ async function submit(e?:FormEvent){e?.preventDefault();const value=sticker?.message||text.trim();if(sending.current||!value||!canSend||loading)return;const sentSticker=!!sticker;sending.current=true;setBusy(true);setError('');if(pending.current?.text!==value)pending.current={id:crypto.randomUUID(),text:value};try{await workspaceRequest('chat.send',{...(roomId?{roomId}:{}),text:value,clientMessageId:pending.current.id},space);pending.current=null;if(sentSticker){setSticker(null);setStickersOpen(false);}else setText('');stick.current=true;setNewMessage(false);await load();if(!sentSticker)input.current?.focus();}catch(e){setError((e as Error).message+' 입력한 메시지를 확인하고 다시 보내 주세요.');}finally{sending.current=false;setBusy(false);}}
  return <section className={'group-chat '+(compact?'compact':'full')} aria-label="대화"><header className="chat-room-header"><span className="chat-room-avatar"><Icon name="chat"/></span><div className="chat-room-details"><small className="chat-room-meta" title={room?.name||me.family?.name||me.name}><span>{room?.name||me.family?.name||me.name}{room?' · '+room.members.filter(m=>m.active).length+'명':me.family?' · '+me.family.members.length+'명':''}</span></small></div><div className="chat-room-tools">{compact?<Link className="icon-button" to="/chat" aria-label="대화 전체 보기"><Icon name="arrow"/></Link>:<><button className="icon-button" aria-label="대화 검색" aria-pressed={searchOpen} onClick={()=>{setSearchOpen(v=>!v);if(searchOpen){setSearch('');setQuery('');}}}><Icon name="search"/></button><button className="icon-button" aria-label="대화 참여자" aria-expanded={people} onClick={()=>setPeople(v=>!v)}><Icon name="users"/></button>{room&&<button type="button" className="button compact chat-room-leave" aria-label="대화방 나가기" onClick={()=>setLeaving(true)}>나가기</button>}</>}</div></header>
  {leaving&&room&&<LeaveChatRoom room={room} hasDraft={!!text.trim()||!!sticker} close={()=>setLeaving(false)} left={left}/>}
  {searchOpen&&<form className="chat-search" onSubmit={e=>{e.preventDefault();setQuery(search.trim());}}><input aria-label="대화 내용 검색" placeholder="대화 내용 검색" value={search} onChange={e=>setSearch(e.target.value)} maxLength={100}/><button className="button compact">검색</button>{query&&<button type="button" className="icon-button" aria-label="검색 해제" onClick={()=>{setQuery('');setSearch('');}}><Icon name="close"/></button>}</form>}

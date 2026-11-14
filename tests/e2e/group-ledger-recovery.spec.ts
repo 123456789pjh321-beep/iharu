@@ -46,7 +46,7 @@ test('invite and inline logins land on timetable with an explicit invitation cho
   await guest.getByLabel('아이디',{exact:true}).fill(email);await guest.getByLabel('암호',{exact:true}).fill(password);await guest.getByRole('button',{name:'로그인',exact:true}).click();
   await expect(guest).toHaveURL(origin+'/timetable');await expect(guest.getByRole('region',{name:'받은 그룹 초대'})).toBeVisible();expect((await command(guest,'me')).family).toBeNull();
   await guest.getByRole('link',{name:'초대 확인',exact:true}).click();await guest.getByRole('button',{name:'초대 수락',exact:true}).click();await guest.getByRole('link',{name:'그룹 관리 열기'}).click();
-  await expect(guest.locator('.personal-member')).toHaveCount(2);await guest.getByRole('button',{name:'그룹 초대 링크',exact:true}).click();
+  await guest.locator('.group-card-title').click();await expect(guest.locator('.group-member-row')).toHaveCount(2);await guest.getByRole('button',{name:'구성원 초대',exact:true}).click();
   await expect(guest.getByLabel('발급한 그룹 초대 링크')).toBeVisible();await guest.keyboard.press('Escape');
   await guest.request.post('/api/auth/sign-out',{headers:{Origin:origin},data:{}});await guest.goto('/tuition');
   await guest.getByRole('button',{name:'예산 수정',exact:true}).click();const login=guest.locator('.entry-login-sheet');

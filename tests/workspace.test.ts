@@ -61,10 +61,10 @@ it('allows personal CRUD without a family and makes ownership unforgeable',async
  expect((await a.req(api+'items.create',{...payload('위조'),ownerId:(await b.ok('me')).id})).status).toBe(400);
 });
 it('parent-issued number joins A/B/C, shared reads are mutual, and only each author can write',async()=>{
- const a=await parent('host-a'),b=await parent('member-b'),c=new Browser();const ar=await a.ok('items.create',payload('A 자료')),br=await b.ok('items.create',payload('B 학원비','FEE'));
+ const a=await parent('host-a'),b=await parent('member-b'),c=new Browser();
  const codeB=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:codeB.code});const next=await a.ok('invite.issue',{consent:true});
  expect((await c.req(api+'child.signup',{loginId:'seojun_1',name:'가상 서준',password:'child-fixture-password',code:'invalid'})).status).toBe(400);
- await c.ok('child.signup',{loginId:'seojun_1',name:'가상 서준',password:'child-fixture-password',code:next.code});const cr=await c.ok('items.create',payload('C 반복','REPEAT'));
+ await c.ok('child.signup',{loginId:'seojun_1',name:'가상 서준',password:'child-fixture-password',code:next.code});const cr=await c.ok('items.create',payload('C 반복','REPEAT')),ar=await a.ok('items.create',payload('A 자료')),br=await b.ok('items.create',payload('B 학원비','FEE'));
  for(const user of [a,b])expect((await user.ok('items.list',listing)).items).toHaveLength(3);expect((await c.ok('items.list',listing)).items).toHaveLength(2);
  const meA=await a.ok('me'),meB=await b.ok('me'),meC=await c.ok('me');expect(meA.family.isHost).toBe(true);expect(meC.family.hostId).toBe(meA.id);expect(meC.role).toBe('CHILD');
  expect((await a.req(api+'items.update',{...payload('호스트 위조'),id:cr.id,version:1})).status).toBe(403);expect((await a.req(api+'items.delete',{id:br.id,version:1})).status).toBe(403);
@@ -105,7 +105,7 @@ it('switches a signed-in parent atomically, preserves records, and protects popu
  expect((await b.req(api+'family.join',{code:'000000',leaveCurrent})).status).toBe(400);expect((await b.ok('me')).family.id).toBe(before.family.id);
  const invite=await a.ok('invite.issue',{consent:true});expect((await b.req(api+'family.join',{code:invite.code})).status).toBe(400);
  expect((await b.req(api+'family.join',{code:invite.code,leaveCurrent:{...leaveCurrent,version:999}})).status).toBe(409);
- await b.ok('family.join',{code:invite.code,leaveCurrent});expect((await b.ok('me')).family.id).toBe((await a.ok('me')).family.id);expect((await b.ok('items.get',{id:own.id})).mine).toBe(true);
+ await b.ok('family.join',{code:invite.code,leaveCurrent});expect((await b.ok('me')).family.id).toBe((await a.ok('me')).family.id);expect((await b.req(api+'items.get',{id:own.id})).status).toBe(404);await b.ok('group.select',{groupId:null});expect((await b.ok('items.get',{id:own.id})).mine).toBe(true);
  const target=await c.ok('invite.issue',{consent:true}),host=await a.ok('me');expect((await a.req(api+'family.join',{code:target.code,leaveCurrent:{familyId:host.family.id,version:host.family.members.find((m:{id:string})=>m.id===host.id).version}})).status).toBe(400);expect((await a.ok('me')).family.members).toHaveLength(2);
 });
 it('group messages paginate across months, deduplicate retries and respect removals and author-only edits',async()=>{
@@ -116,7 +116,7 @@ it('group messages paginate across months, deduplicate retries and respect remov
  const newest=await a.ok('chat.list',{limit:1});expect(newest.items[0].data.note).toBe('오늘 메시지');expect(newest.hasMore).toBe(true);const older=await a.ok('chat.list',{limit:1,before:newest.nextCursor});expect(older.items[0].id).toBe(first.id);expect(older.hasMore).toBe(false);expect(older.items[0].createdAt).toContain('2025-01-01');
  expect((await x.ok('chat.list',{})).items).toHaveLength(0);expect((await a.ok('chat.list',{query:'월 경계'})).items).toHaveLength(1);expect((await b.req(api+'items.delete',{id:first.id,version:1})).status).toBe(403);
  await a.ok('items.delete',{id:first.id,version:1});expect((await a.ok('chat.list',{})).items).toHaveLength(1);await a.ok('chat.send',{text:'월 경계 테스트',clientMessageId:key});expect((await a.ok('chat.list',{})).items).toHaveLength(1);
- const host=await a.ok('me'),member=await b.ok('me');await a.ok('family.remove',{familyId:host.family.id,profileId:member.id,version:1});expect((await a.ok('chat.list',{})).items).toHaveLength(0);expect((await b.ok('chat.list',{})).items).toHaveLength(1);
+ const host=await a.ok('me'),member=await b.ok('me');await a.ok('family.remove',{familyId:host.family.id,profileId:member.id,version:1});expect((await a.ok('chat.list',{})).items).toHaveLength(0);expect((await b.ok('chat.list',{})).items).toHaveLength(0);
 });
 it('accepts all-day schedules and rejects invalid color and timed ranges',async()=>{
  const a=await parent('all-day');const input=payload('종일 일정');await a.ok('items.create',{...input,data:{...input.data,allDay:true,startTime:'00:00',endTime:'00:00',color:3}});expect((await a.req(api+'items.create',{...input,data:{...input.data,color:99}})).status).toBe(400);expect((await a.req(api+'items.create',{...input,data:{...input.data,endTime:'15:00'}})).status).toBe(400);
@@ -335,8 +335,8 @@ it('stores multiple timetable members per account and rejects an invalid combina
  const a=await parent('multi-a'),b=await parent('multi-b'),x=await parent('multi-x');const am=await a.ok('me'),bm=await b.ok('me'),xm=await x.ok('me');
  const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
  expect(am.timetableMemberIds).toEqual([am.id]);
- // Legacy saved choices remain readable before backfill and old clients still work.
- await query(database.db,'UPDATE app_private.workspace_profiles SET timetable_member_id=$1,timetable_member_ids=NULL WHERE id=$2',[bm.id,am.id]);
+ // Old single-member clients still save into the selected group's preferences.
+ await a.ok('timetable.preference.save',{memberId:bm.id});
  expect((await a.ok('me')).timetableMemberIds).toEqual([bm.id]);
  expect(await a.ok('timetable.preference.save',{memberIds:[am.id,bm.id]})).toMatchObject({memberIds:[am.id,bm.id]});
  const device=new Browser();expect((await device.req('/api/auth/sign-in/email',{email:'multi-a@example.test',password:'parent-fixture-password'})).ok).toBe(true);
@@ -414,10 +414,10 @@ it('keeps only the latest reusable group link and switches only after explicit a
  guest.cookies.forEach((value,key)=>other.cookies.set(key,value));
  const before=await other.ok('me');
  expect((await other.req(api+'invite.link.accept',{inviteId:first.id})).status).toBe(404);
- expect((await other.req(api+'invite.link.accept',{inviteId:second.id})).status).toBe(400);
- await other.ok('invite.link.accept',{inviteId:second.id,leaveCurrent:{familyId:before.family.id,version:before.family.members[0].version}});
+ expect((await other.req(api+'invite.link.accept',{inviteId:second.id})).status).toBe(200);
+ expect((await other.ok('me')).groups.find((g:{id:string})=>g.id===before.family.id).isHost).toBe(true);
  expect((await other.ok('me')).family.id).toBe((await host.ok('me')).family.id);
- expect((await guest.req(api+'invite.link.inspect',{token:secretOf(own.url)})).status).toBe(404);
+ expect((await other.ok('me')).groups).toHaveLength(2);expect((await guest.req(api+'invite.link.inspect',{token:secretOf(own.url)})).status).toBe(200);
  await other.ok('invite.link.inspect',{token:secretOf(second.url)});
  await other.ok('invite.link.accept',{inviteId:second.id}); // Same-group retries do not mutate link versions.
  const third=await other.ok('invite.link.issue',{consent:true}); // Ordinary members may invite.
@@ -430,7 +430,7 @@ it('keeps only the latest reusable group link and switches only after explicit a
  expect((await guest.req(api+'invite.link.inspect',{token:secretOf(expired.url)})).status).toBe(404);
 });
 
-it('moves populated hosts, succeeds them in order, revokes old sharing and allows removal, leave and rejoin',async()=>{
+it('lets hosts join another group and explicitly leave with succession, private preservation and rejoin',async()=>{
  app=workspaceApp(false);
  const a=await parent('flex-a'),b=await parent('flex-b'),c=await parent('flex-c'),d=await parent('flex-d');
  const accept=async(user:Browser,link:{id:string;url:string},leaveCurrent?:object)=>{await user.ok('invite.link.inspect',{token:new URL(link.url).hash.slice(1)});return user.ok('invite.link.accept',{inviteId:link.id,...(leaveCurrent?{leaveCurrent}:{})});};
@@ -442,11 +442,12 @@ it('moves populated hosts, succeeds them in order, revokes old sharing and allow
  const newLink=await c.ok('invite.link.issue',{consent:true});
  await a.ok('invite.link.inspect',{token:new URL(newLink.url).hash.slice(1)});
  const leaveCurrent={familyId:am.family.id,version:am.family.members.find((m:{id:string})=>m.id===am.id).version};
- expect((await a.req(api+'invite.link.accept',{inviteId:newLink.id,leaveCurrent:{...leaveCurrent,version:999}})).status).toBe(409);
- await accept(a,newLink,leaveCurrent);
+ await accept(a,newLink);expect((await a.ok('me')).groups).toHaveLength(2);expect((await b.ok('me')).family.isHost).toBe(false);
+ expect((await a.req(api+'family.leave',{...leaveCurrent,version:999})).status).toBe(409);await a.ok('family.leave',leaveCurrent);
  expect((await b.ok('me')).family).toMatchObject({id:am.family.id,isHost:true});
- expect((await a.ok('items.get',{id:own.id})).mine).toBe(true);
- expect((await c.ok('items.get',{id:own.id})).mine).toBe(false);
+ expect((await a.req(api+'items.get',{id:own.id})).status).toBe(404);
+ expect((await c.req(api+'items.get',{id:own.id})).status).toBe(404);
+ await a.ok('group.select',{groupId:null});expect((await a.ok('items.get',{id:own.id})).mine).toBe(true);
  expect((await b.req(api+'items.get',{id:own.id})).status).toBe(404);
  expect((await a.req(api+'items.get',{id:other.id})).status).toBe(404);
  expect((await c.req(api+'items.get',{id:other.id})).status).toBe(404);
@@ -543,7 +544,10 @@ it('stores independent memos and filters without pulling timetable, calendar or 
  const input=memoInput(),saved=await a.ok('memos.save',input);expect(saved).toMatchObject({title:input.title,version:1,mine:true,photos:[]});
  const other=await a.ok('memos.save',{...memoInput('나들이'),date:'2026-10-01',category:'OUTING',visibility:'GROUP',place:'공원'});
  expect((await a.ok('memos.list',{from:'2026-11-01',to:'2026-11-30'})).items.map((n:{title:string})=>n.title)).toEqual(['독립 기록']);
- for(const filter of [{query:'도서'},{category:'DAILY'},{visibility:'PRIVATE'},{hasLocation:true,query:'도서'}])expect((await a.ok('memos.list',filter)).total).toBe(1);
+ for(const filter of [{query:'도서'},{category:'DAILY'},{hasLocation:true,query:'도서'}])expect((await a.ok('memos.list',filter)).total).toBe(1);
+ expect(other.visibility).toBe('PRIVATE');
+ expect((await a.ok('memos.list',{visibility:'PRIVATE'})).total).toBe(2);
+ expect((await a.ok('memos.list',{visibility:'GROUP'})).total).toBe(0);
  expect(await a.ok('memos.list',{query:'존재하지않음'})).toMatchObject({items:[],hasAny:true});
  expect((await a.ok('memos.list',{limit:1,offset:1})).items[0].id).toBe(other.id);
  expect((await a.ok('memos.list',{sort:'oldest'})).items[0].id).toBe(other.id);
@@ -587,4 +591,63 @@ it('preserves a previously authored timeline annotation as a private independent
  await database.engine.exec('BEGIN;SET LOCAL ROLE iharu_policy;'+sql.slice(start,stop)+'RESET ROLE;COMMIT;');
  const page=await a.ok('memos.list');expect(page.items).toHaveLength(1);expect(page.items[0]).toMatchObject({title:'이전 일정 제목',body:'직접 작성했던 기록',visibility:'PRIVATE'});
  await a.ok('items.delete',{id:source.id,version:1});expect((await a.ok('memos.list')).items[0].body).toBe('직접 작성했던 기록');
+});
+
+it('keeps personal records private across group creation and multi-group invitations, including photos and chat',async()=>{
+ const a=await parent('multi-a'),b=await parent('multi-b'),c=await parent('multi-c');
+ const personal=await a.ok('items.create',payload('개인 일정'));
+ const personalFee=await a.ok('items.create',payload('개인 가계부','FEE'));
+ const personalMemo=await a.ok('memos.save',{...memoInput('개인 사진'),visibility:'GROUP',photos:[{data:'/9j/2Q==',width:1,height:1}]});
+ const make=(client:Browser,name:string)=>client.ok('group.create',{name,description:'테스트 그룹',color:1,clientRequestId:crypto.randomUUID()});
+ const g1=(await make(a,'기본그룹')).group,g2=(await make(b,'친구그룹')).group;
+ expect((await a.ok('items.list',listing)).items).toEqual([]);expect((await a.ok('memos.list')).items).toEqual([]);
+ const shared=await a.ok('items.create',payload('기본그룹 일정'));
+ const sharedMemo=await a.ok('memos.save',{...memoInput('기본그룹 사진'),visibility:'GROUP',photos:[{data:'/9j/2Q==',width:1,height:1}]});
+ const invite=await a.ok('invite.link.issue',{consent:true,groupId:g1.id});
+ async function accept(client:Browser,link:{url:string}){const preview=await client.ok('invite.link.inspect',{token:new URL(link.url).hash.slice(1)});return client.ok('invite.link.accept',{inviteId:preview.id});}
+ await accept(b,invite);await accept(c,invite);
+ expect((await b.ok('me')).groups).toHaveLength(2);expect((await b.ok('group.list')).groups.find((g:{id:string})=>g.id===g2.id).isHost).toBe(true);
+ expect((await b.ok('items.list',listing)).items.map((i:{id:string})=>i.id)).toEqual([shared.id]);
+ for(const id of [personal.id,personalFee.id])expect((await b.req(api+'items.get',{id})).status).toBe(404);
+ expect((await b.req(api+'memos.photo',{id:personalMemo.photos[0].id})).status).toBe(404);
+ expect((await b.ok('memos.list')).items.map((n:{id:string})=>n.id)).toEqual([sharedMemo.id]);
+ const groupChat=await a.ok('chat.send',{text:'기본그룹 대화',clientMessageId:crypto.randomUUID()});
+ await b.ok('group.select',{groupId:g2.id});
+ expect((await b.ok('items.list',listing)).items).toEqual([]);expect((await b.ok('memos.list')).items).toEqual([]);expect((await b.ok('chat.list')).items).toEqual([]);
+ expect((await b.req(api+'items.get',{id:groupChat.id})).status).toBe(404);
+ const onlyG2=await b.ok('items.create',payload('친구그룹 전용'));
+ expect((await a.req(api+'items.get',{id:onlyG2.id})).status).toBe(404);
+ expect((await c.req(api+'group.select',{groupId:g2.id})).status).toBe(404);
+ expect((await c.req(api+'items.list',listing,{'X-Iharu-Group':g2.id})).status).toBe(404);
+ expect((await c.req(api+'invite.link.issue',{consent:true,groupId:g2.id})).status).toBe(404);
+ await a.ok('group.select',{groupId:null});expect((await a.ok('me')).family).toBeNull();
+ expect((await a.ok('items.list',listing)).items.map((i:{id:string})=>i.id).sort()).toEqual([personal.id,personalFee.id].sort());
+ expect((await a.ok('memos.list')).items.map((n:{id:string})=>n.id)).toEqual([personalMemo.id]);
+ await make(a,'새로운 그룹');expect((await a.ok('items.list',listing)).items).toEqual([]);expect((await a.ok('memos.list')).items).toEqual([]);
+ // A second tab's pinned group is independent of the saved selection.
+ const pinned=await a.req(api+'items.list',{...listing,kind:'EVENT'},{'X-Iharu-Group':g1.id});expect((await pinned.json()).items.map((i:{id:string})=>i.id)).toEqual([shared.id]);
+});
+it('rotates only the chosen group link and scopes host actions, leaving and closure to that group',async()=>{
+ const a=await parent('multi-host'),b=await parent('multi-member'),c=await parent('multi-guest');
+ const create=(name:string)=>a.ok('group.create',{name,color:0,description:'',clientRequestId:crypto.randomUUID()});
+ const one=(await create('그룹 하나')).group,two=(await create('그룹 둘')).group;
+ const first=await a.ok('invite.link.issue',{groupId:one.id,consent:true}),other=await a.ok('invite.link.issue',{groupId:two.id,consent:true}),latest=await a.ok('invite.link.issue',{groupId:one.id,consent:true});
+ expect((await c.req(api+'invite.link.inspect',{token:new URL(first.url).hash.slice(1)})).status).toBe(404);
+ expect((await c.ok('invite.link.inspect',{token:new URL(other.url).hash.slice(1)})).familyId).toBe(two.id);
+ const join=async(client:Browser,url:string)=>{const preview=await client.ok('invite.link.inspect',{token:new URL(url).hash.slice(1)});await client.ok('invite.link.accept',{inviteId:preview.id});};
+ await join(b,latest.url);await join(c,latest.url);await join(b,other.url);
+ await b.ok('group.select',{groupId:one.id});const mine=await b.ok('items.create',payload('나갈 때 개인 보관'));
+ let me=await a.ok('me'),g=me.groups.find((v:{id:string})=>v.id===one.id),bm=(await b.ok('me')).id;
+ expect((await b.req(api+'family.remove',{familyId:one.id,profileId:me.id,version:1})).status).toBe(403);
+ expect((await b.req(api+'group.update',{groupId:one.id,version:g.version,name:'위조',color:0,description:''})).status).toBe(403);
+ await a.ok('family.remove',{familyId:one.id,profileId:bm,version:g.members.find((v:{id:string})=>v.id===bm).version});
+ expect((await b.ok('me')).groups.map((v:{id:string})=>v.id)).toEqual([two.id]);expect((await b.ok('me')).family).toBeNull();
+ expect((await b.ok('items.list',listing)).items.map((v:{id:string})=>v.id)).toEqual([mine.id]);
+ await a.ok('group.select',{groupId:one.id});expect((await a.req(api+'items.get',{id:mine.id})).status).toBe(404);
+ g=(await a.ok('me')).family;const cm=(await c.ok('me')).id;
+ await a.ok('group.transfer',{groupId:one.id,profileId:cm,version:g.version});
+ expect((await c.ok('me')).family.isHost).toBe(true);expect((await a.req(api+'group.update',{groupId:one.id,name:'이름',description:'',color:0,version:g.version})).status).toBe(403);
+ await a.ok('group.select',{groupId:two.id});g=(await a.ok('me')).family;
+ await a.ok('group.archive',{groupId:two.id,version:g.version});expect((await b.ok('group.list')).groups).toEqual([]);
+ expect((await a.ok('group.list')).groups.map((v:{id:string})=>v.id)).toEqual([one.id]);
 });

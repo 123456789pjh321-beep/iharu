@@ -12,12 +12,15 @@ function useGateState(){
  const [workspaceRole,setWorkspaceRole]=useState<'PARENT'|'CHILD'|null>(null);
  const [adminAllowed,setAdminAllowed]=useState(false),[adminLoading,setAdminLoading]=useState(true),[adminError,setAdminError]=useState(''),[adminRevision,setAdminRevision]=useState(0),adminIdentity=useRef('');
  const health=useApi('/api/health',healthResponse),session=useApi('/api/account/session',sessionSchema);
+ const [groupBusy,setGroupBusy]=useState(false),groupLock=useRef(false);
  const [access,setAccess]=useState<WorkspaceAccess>({status:'checking',identity:null}),accessRequest=useRef(0);
  const refreshAccess=useCallback(async()=>{
   const request=++accessRequest.current;
   try{const identity=await workspaceRequest<WorkspaceMe>('me');if(request===accessRequest.current){setAccess({status:'member',identity});setWorkspaceRole(identity.role);}return identity;}
   catch(error){if(request===accessRequest.current){setWorkspaceRole(null);setAccess((error as {code?:string}).code==='AUTH_REQUIRED'?{status:'guest',identity:null}:{status:'error',identity:null,error:(error as Error).message});}return null;}
  },[]);
+ const selectGroup=useCallback(async(groupId:string|null)=>{if(groupLock.current)return;groupLock.current=true;setGroupBusy(true);try{await workspaceRequest('group.select',{groupId});await refreshAccess();}finally{groupLock.current=false;setGroupBusy(false);}},[refreshAccess]);
+ useEffect(()=>{const reset=()=>{void refreshAccess();};window.addEventListener('iharu:group-unavailable',reset);return()=>window.removeEventListener('iharu:group-unavailable',reset);},[refreshAccess]);
  useEffect(()=>{
   if(health.loading||session.loading||health.error||session.error||health.data?.data.demoEnabled)return;
   if(session.data?.authenticated&&(session.data.assurance!=='HIGH'||!session.data.emailVerified)){++accessRequest.current;setWorkspaceRole(null);setAccess({status:'restricted',identity:null});return;}
@@ -29,7 +32,7 @@ function useGateState(){
   const identity=s.email||'';if(adminIdentity.current!==identity){adminIdentity.current=identity;setAdminAllowed(false);setAdminLoading(true);}setAdminError('');
   adminRequest<{allowed:boolean}>('access').then(r=>{if(active)setAdminAllowed(r.allowed);}).catch(e=>{if(active){setAdminAllowed(false);setAdminError((e as Error).message);}}).finally(()=>{if(active)setAdminLoading(false);});return()=>{active=false;};
  },[session.data,session.loading,adminRevision]);
- return {...menuUpdates,health,session,access,refreshAccess,workspaceRole,setWorkspaceRole,adminAllowed:adminAllowed&&access.status==='member'&&access.identity?.role==='PARENT',adminLoading,adminError,refreshAdmin:()=>setAdminRevision(n=>n+1)};
+ return {...menuUpdates,groupBusy,selectGroup,health,session,access,refreshAccess,workspaceRole,setWorkspaceRole,adminAllowed:adminAllowed&&access.status==='member'&&access.identity?.role==='PARENT',adminLoading,adminError,refreshAdmin:()=>setAdminRevision(n=>n+1)};
 }
 const GateContext=createContext<ReturnType<typeof useGateState>|null>(null);
 export function WorkspaceGateProvider({children}:{children:ReactNode}){

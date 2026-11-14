@@ -6,7 +6,7 @@ async function login(page:Page,name:string){const email=name+'@example.test',pas
 const nav=(page:Page)=>page.getByRole('navigation',{name:'모바일 주 메뉴'});
 test('shows two guide memos without login and uses the requested menu order at every width',async({page})=>{
  await page.goto('/timeline');await expect(page.getByRole('region',{name:'샘플 메모'}).getByRole('article')).toHaveCount(2);
- await expect(nav(page).getByRole('link')).toHaveText(['시간표','달력','가계부','타임라인','대화','더보기']);
+ await expect(nav(page).getByRole('link')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','대화','더보기']);
  await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.getByRole('button',{name:'더보기',exact:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:'이전 달',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'다음 달',exact:true})).toHaveCount(0);await expect(page.getByRole('searchbox')).toHaveCount(0);await expect(page.getByRole('button',{name:'필터',exact:true})).toHaveCount(0);await expect(page.getByText('최신순',{exact:true})).toHaveCount(0);await expect(page.locator('.memo-count')).toHaveCount(0);
  const sample=page.getByRole('article',{name:'공원에서 보낸 오후'});await expect(sample.getByRole('img')).toHaveCount(0);await sample.click();await expect(page.getByRole('dialog',{name:'글 상세'}).getByRole('img')).toBeVisible();await page.keyboard.press('Escape');
@@ -60,7 +60,14 @@ test('swipes real months without opening details or interfering with vertical sc
    for(let n=1;n<=8;n++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*n/8,y:from.y+(to.y-from.y)*n/8,id:1}]});await page.waitForTimeout(18);}
    await cdp.send('Input.dispatchTouchEvent',{type:cancel?'touchCancel':'touchEnd',touchPoints:[]});
   }
-  async function swipe(region:Locator,left:boolean,cancel=false){const box=(await region.boundingBox())!,y=Math.max(box.y,80)+Math.min(box.height/2,75);await touch({x:box.x+(left?box.width-24:24),y},{x:box.x+(left?24:box.width-24),y:y+2},cancel);}
+  async function swipe(region:Locator,left:boolean,cancel=false){
+   const box=(await region.boundingBox())!;
+   const viewport=page.viewportSize()!;
+   const y=Math.min(Math.max(box.y,80)+Math.min(box.height/2,75),viewport.height-30);
+   const start={x:box.x+(left?box.width-24:24),y};
+   await expect.poll(()=>region.evaluate((node,point)=>node.contains(document.elementFromPoint(point.x,point.y)),start)).toBe(true);
+   await touch(start,{x:box.x+(left?24:box.width-24),y:y+2},cancel);
+  }
   await swipe(area,true);await expect(month).toHaveValue('2027-01');await settled();await expect(page.getByRole('article',{name:'1월 기록',exact:true})).toBeVisible();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('article',{name:'1월 기록',exact:true}).tap();await expect(page.getByRole('dialog',{name:'글 상세'})).toBeVisible();await page.getByRole('button',{name:'글 상세 닫기'}).tap();
   await swipe(area,false);await expect(month).toHaveValue('2026-12');await settled();
@@ -75,7 +82,7 @@ test('swipes real months without opening details or interfering with vertical sc
   await page.mouse.move(box.x+box.width-30,box.y+70);await page.mouse.down();await page.mouse.move(box.x+30,box.y+71,{steps:10});await page.mouse.up();
   await expect(month).toHaveValue('2027-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   await area.hover();await page.mouse.wheel(-180,0);await expect(month).toHaveValue('2026-12');await settled();
-  await page.setViewportSize({width:390,height:900});await page.locator('.workspace-toolbar').scrollIntoViewIfNeeded();await page.emulateMedia({reducedMotion:'reduce'});await expect.poll(()=>page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));await swipe(area,true);await expect(month).toHaveValue('2027-01');await settled();
+  await page.setViewportSize({width:390,height:900});await page.locator('#auth-main').evaluate(node=>node.scrollTop=0);await settled();await page.emulateMedia({reducedMotion:'reduce'});await expect.poll(()=>page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));await swipe(area,true);await expect(month).toHaveValue('2027-01');await settled();
   expect(errors).toEqual([]);
  }finally{await context.close();}
 });

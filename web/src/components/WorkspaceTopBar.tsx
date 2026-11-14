@@ -2,6 +2,7 @@ import {createContext,Fragment,useCallback,useContext,useLayoutEffect,useMemo,us
 import {createPortal} from 'react-dom';
 import {useLocation} from 'react-router-dom';
 import './workspace-topbar.css';
+import {WorkspaceGroupFilter} from './WorkspaceGroupFilter';
 
 type Slot='toolbar'|'members';
 type Entry={owner:symbol;content:ReactNode;active:boolean};
@@ -47,6 +48,7 @@ export function WorkspaceTopBarHost(){
  if(!active||!target)return null;
  return createPortal(<div className="workspace-topbar-content" data-topbar-route={bar?.route} aria-busy={pending} inert={pending}>
   {bar?.toolbar?.content}
+  <WorkspaceGroupFilter/>
   <Fragment key={bar?.route}>{bar?.members?.content}</Fragment>
  </div>,target);
 }

@@ -26,7 +26,8 @@ export type WorkspaceItem={id:string;kind:WorkspaceKind;data:WorkspaceData;owner
 export type WorkspaceMember={id:string;name:string;kind:'PARENT'|'CHILD';host:boolean;version:number};
 export const memberFilterScopes=['timetable','calendar','fees','home','homeFees'] as const;
 export type MemberFilterScope=typeof memberFilterScopes[number];
-export type WorkspaceMe={memberFilterPreferences?:Partial<Record<MemberFilterScope,string[]>>;timetableMemberIds?:string[];timetableMemberId?:string;updateReceipt?:MenuReceipt;id:string;name:string;role:'PARENT'|'CHILD';loginId:string|null;family:null|{id:string;name:string;hostId:string;isHost:boolean;members:WorkspaceMember[]}};
+export type WorkspaceGroup={id:string;name:string;description:string;color:number;version:number;hostId:string;isHost:boolean;members:WorkspaceMember[]};
+export type WorkspaceMe={groups?:WorkspaceGroup[];selectedGroupId?:string|null;memberFilterPreferences?:Partial<Record<MemberFilterScope,string[]>>;timetableMemberIds?:string[];timetableMemberId?:string;updateReceipt?:MenuReceipt;id:string;name:string;role:'PARENT'|'CHILD';loginId:string|null;family:null|{id:string;name:string;hostId:string;isHost:boolean;members:WorkspaceMember[]}};
 
 export type ChatCursor={createdAt:string;id:string};
 export type ChatPage={updateReceipt?:MenuReceipt;items:WorkspaceItem[];hasMore:boolean;nextCursor:ChatCursor|null};

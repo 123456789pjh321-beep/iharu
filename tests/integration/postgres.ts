@@ -53,7 +53,40 @@ try{
     await migration.query('SET LOCAL ROLE iharu_policy');
     await migration.query('ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC');
    }
-   await migration.query('SET LOCAL ROLE migration_admin');await migration.query(await readFile(`db/migrations/${name}`,'utf8'));
+   await migration.query('SET LOCAL ROLE migration_admin');
+   const source=await readFile(`db/migrations/${name}`,'utf8');
+   if(name.endsWith('_multi_group_workspace.sql')){
+    await migration.query('SAVEPOINT existing_workspace');
+    const ids=Array.from({length:10},()=>randomUUID());
+    const [authId,memberId,profileId,legacyId,groupId,privateId,sharedId,memoId,oldMemoId,sharedMemoId]=ids;
+    await migration.query('RESET ROLE');
+    await migration.query(`INSERT INTO iharu_auth."user" (id,name,email,"emailVerified") VALUES($1,'가상 이전 계정','legacy-migration@example.test',true)`,[authId]);
+    await migration.query('INSERT INTO iharu_auth.members(id,auth_user_id) VALUES($1,$2)',[memberId,authId]);
+    await migration.query("INSERT INTO app.families(id,owner_id,name) VALUES($1,$2,'기존 그룹')",[legacyId,memberId]);
+    await migration.query("INSERT INTO app_private.workspace_profiles(id,member_id,name,kind) VALUES($1,$2,'가상 이전 계정','PARENT')",[profileId,memberId]);
+    await migration.query("INSERT INTO app_private.workspace_families(id,host_id,legacy_family_id,name) VALUES($1,$2,$3,'기존 그룹')",[groupId,profileId,legacyId]);
+    await migration.query("INSERT INTO app_private.workspace_links(family_id,profile_id,joined_at) VALUES($1,$2,'2026-11-13')",[groupId,profileId]);
+    await migration.query("INSERT INTO app_private.workspace_items(id,owner_id,kind,data,created_at) VALUES($1,$3,'NOTE','{}','2026-11-12'),($2,$3,'NOTE','{}','2026-11-14')",[privateId,sharedId,profileId]);
+    const createMemo='INSERT INTO app_private.workspace_memos(id,owner_id,data,created_at) VALUES($1,$2,$3,$4)';
+    await migration.query(createMemo,[memoId,profileId,{visibility:'PRIVATE'},'2026-11-14']);
+    await migration.query(createMemo,[oldMemoId,profileId,{visibility:'GROUP'},'2026-11-12']);
+    await migration.query(createMemo,[sharedMemoId,profileId,{visibility:'GROUP'},'2026-11-14']);
+    await migration.query('SET LOCAL ROLE migration_admin');
+    await migration.query(source);
+    await migration.query('RESET ROLE');
+    const records=(await migration.query('SELECT id,space_id FROM app_private.workspace_items WHERE owner_id=$1',[profileId])).rows;
+    assert.equal(records.find(row=>row.id===privateId).space_id,null);
+    assert.equal(records.find(row=>row.id===sharedId).space_id,groupId);
+    const memos=(await migration.query("SELECT id,space_id,data->>'visibility' AS visibility FROM app_private.workspace_memos WHERE owner_id=$1",[profileId])).rows;
+    assert.deepEqual(memos.find(row=>row.id===memoId),{id:memoId,space_id:null,visibility:'PRIVATE'});
+    assert.deepEqual(memos.find(row=>row.id===oldMemoId),{id:oldMemoId,space_id:null,visibility:'PRIVATE'});
+    assert.deepEqual(memos.find(row=>row.id===sharedMemoId),{id:sharedMemoId,space_id:groupId,visibility:'GROUP'});
+    await migration.query('ROLLBACK TO SAVEPOINT existing_workspace');
+    await migration.query('RELEASE SAVEPOINT existing_workspace');
+    passed++;
+    console.log('PASS multi-group migration keeps existing personal records and preserves in-group records');
+   }
+   await migration.query(source);
   }
   await migration.query('COMMIT');
  }catch(e){await migration.query('ROLLBACK');throw e;}finally{migration.release();}
@@ -295,7 +328,14 @@ try{
   const input={childId:child,from:scheduleDate,to:scheduleEnd,rowIds:['logos','reading']};
   const preview=await schedules1.command<{previewToken:string}>(b,'template.preview',input);
   const payload={...input,previewToken:preview.previewToken,key:randomUUID()};
-  const [x,y]=await Promise.all([schedules1.command<{created:number;existing:number}>(b,'template.import',payload),schedules2.command(b,'template.import',payload)]);assert.deepEqual(x,y);assert.equal(x.created,2);
+  const results=await Promise.allSettled([schedules1.command<{created:number;existing:number}>(b,'template.import',payload),schedules2.command<{created:number;existing:number}>(b,'template.import',payload)]);
+  const committed=results.find(result=>result.status==='fulfilled');assert.ok(committed);
+  for(const result of results){
+   if(result.status==='rejected')assert.equal(result.reason.message,'REQUEST_IN_PROGRESS');
+   else assert.deepEqual(result.value,committed.value);
+  }
+  assert.deepEqual(await schedules1.command(b,'template.import',payload),committed.value);
+  assert.equal(committed.value.created,2);
   const fresh=await schedules2.command<{previewToken:string}>(b,'template.preview',input);
   assert.equal((await schedules1.command<{created:number;existing:number}>(b,'template.import',{...input,previewToken:fresh.previewToken,key:randomUUID()})).existing,2);
   assert.equal((await admin.query('SELECT id FROM app.schedule_series WHERE child_id=$1',[child])).rowCount,2);
@@ -324,7 +364,7 @@ try{
   assert.equal(finishes[0].sealed,finishes[1].sealed);assert.equal((await admin.query('SELECT id FROM app.child_devices WHERE child_id=$1',[rows[0].child_id])).rowCount,1);
   await assert.rejects(query(db1,'SELECT * FROM app_private.child_accounts'),{code:'42501'});
  });
- await check('UI76 parent code has one concurrent winner and shared data remains author-only',async()=>{
+ await check('UI76 parent code has one concurrent winner and preserves personal and author-only data',async()=>{
   const aMe=await family1.command<{id:string}>(a,'workspace.me'),bMe=await family2.command<{id:string}>(b,'workspace.me');
   const data={title:'개인 소유',date:'2026-11-07',allDay:true,weekdays:[]};
   const own=await family2.command<{id:string}>(b,'workspace.items.create',{kind:'EVENT',data});
@@ -332,11 +372,11 @@ try{
   await family1.command(a,'workspace.invite.issue',{consent:true,codeHash});
   const outcomes=await Promise.allSettled([family1.command(b,'workspace.family.join',{codeHash}),family2.command(b,'workspace.family.join',{codeHash})]);
   assert.equal(outcomes.filter(r=>r.status==='fulfilled').length,1);
-  assert.equal((await family1.command<{mine:boolean}>(a,'workspace.items.get',{id:own.id})).mine,false);
+  await assert.rejects(family1.command(a,'workspace.items.get',{id:own.id}),{message:'NOT_FOUND'});
   const assigned=await family1.command<{id:string}>(a,'workspace.items.create',{kind:'EVENT',data:{...data,assigneeId:bMe.id}});assert.equal((await family2.command<{mine:boolean}>(b,'workspace.items.get',{id:assigned.id})).mine,false);
   await assert.rejects(family2.command(b,'workspace.items.delete',{id:assigned.id,version:1}),{message:'AUTHOR_ONLY'});
-  await assert.rejects(family1.command(a,'workspace.items.update',{id:own.id,version:1,kind:'EVENT',data}),{message:'AUTHOR_ONLY'});
-  await assert.rejects(family1.command(a,'workspace.items.delete',{id:own.id,version:1}),{message:'AUTHOR_ONLY'});
+  await assert.rejects(family1.command(a,'workspace.items.update',{id:own.id,version:1,kind:'EVENT',data}),{message:'NOT_FOUND'});
+  await assert.rejects(family1.command(a,'workspace.items.delete',{id:own.id,version:1}),{message:'NOT_FOUND'});
   const me=await family1.command<{family:{id:string;members:{id:string;version:number}[]}}>(a,'workspace.me');
   await family1.command(a,'workspace.family.remove',{familyId:me.family.id,profileId:bMe.id,version:me.family.members.find(m=>m.id===bMe.id)!.version});
   await assert.rejects(family1.command(a,'workspace.items.get',{id:own.id}),{message:'NOT_FOUND'});
@@ -483,6 +523,35 @@ try{
   await assert.rejects(query(db1,'SELECT * FROM app_private.workspace_memo_photos'),{code:'42501'});
   await assert.rejects(query(db1,'SELECT app_private.workspace_memo_json(NULL,NULL)'),{code:'42501'});
   await family1.command(a,'workspace.memos.delete',{id:input.id,version:1});
+ });
+ await check('multi-group creates once and isolates personal, shared and another group across real connections',async()=>{
+  const personalA={...a,workspaceGroup:'personal'};
+  const personalB={...b,workspaceGroup:'personal'};
+  const event={kind:'EVENT',data:{title:'자료 범위 검사',date:'2026-11-14',allDay:true}};
+  const input={id:randomUUID(),version:0,title:'비공개 사진과 위치',body:'격리 환경 자료',date:'2026-11-14',time:'10:00',category:'DAILY',tags:[],place:'',location:{latitude:0,longitude:0,accuracy:1,capturedAt:'2026-11-14T01:00:00Z'},visibility:'GROUP',photos:[{data:'/9j/2Q==',width:1,height:1}]};
+  const personal=await family1.command<{id:string}>(personalA,'workspace.items.create',event);
+  const memo=await family1.command<{photos:{id:string}[];visibility:string}>(personalA,'workspace.memos.save',input);
+  assert.equal(memo.visibility,'PRIVATE');
+  const group={name:'범위 검사 1',description:'',color:1,clientRequestId:randomUUID()};
+  const [made,retry]=await Promise.all([family1,family2].map(s=>s.command<{group:{id:string}}>(a,'workspace.group.create',group)));
+  assert.equal(made.group.id,retry.group.id);
+  const groupId=made.group.id, groupA={...a,workspaceGroup:groupId},groupB={...b,workspaceGroup:groupId};
+  const other=await family2.command<{group:{id:string}}>(b,'workspace.group.create',{...group,name:'범위 검사 2',clientRequestId:randomUUID()});
+  const shared=await family1.command<{id:string}>(groupA,'workspace.items.create',event);
+  const sharedMemo=await family1.command<{photos:{id:string}[]}>(groupA,'workspace.memos.save',{...input,id:randomUUID(),title:'그룹 사진과 위치'});
+  const codeHash=family1.digest(randomUUID());
+  const invite=await family1.command<{id:string}>(groupA,'workspace.invite.link.issue',{kind:'PARENT',groupId,consent:true,codeHash});
+  await Promise.all([family1,family2].map(s=>s.command(b,'workspace.invite.link.accept',{inviteId:invite.id,codeHash})));
+  const profile=await family2.command<{groups:{id:string;isHost:boolean}[]}>(b,'workspace.me');
+  assert.equal(profile.groups.find(g=>g.id===other.group.id)?.isHost,true);
+  await assert.rejects(family2.command(groupB,'workspace.items.get',{id:personal.id}),{message:'NOT_FOUND'});
+  await assert.rejects(family2.command(groupB,'workspace.memos.photo',{id:memo.photos[0].id}),{message:'NOT_FOUND'});
+  assert.equal((await family2.command<{mine:boolean}>(groupB,'workspace.items.get',{id:shared.id})).mine,false);
+  assert.equal((await family2.command<{data:string}>(groupB,'workspace.memos.photo',{id:sharedMemo.photos[0].id})).data,'/9j/2Q==');
+  await assert.rejects(family2.command(personalB,'workspace.items.get',{id:shared.id}),{message:'NOT_FOUND'});
+  await assert.rejects(family2.command({...b,workspaceGroup:other.group.id},'workspace.memos.photo',{id:sharedMemo.photos[0].id}),{message:'NOT_FOUND'});
+  await assert.rejects(family1.command({...a,workspaceGroup:other.group.id},'workspace.items.get',{id:shared.id}),{message:'GROUP_NOT_FOUND'});
+  await assert.rejects(query(db1,"SELECT app_private.workspace_command_before_multi_groups('workspace.me','{}')"),{code:'42501'});
  });
  await check('UI137 encrypted AI credentials serialize rotations and deny runtime table access',async()=>{
   const fixtureMaster='ab'.repeat(32),version=(await family1.command<{version:number}>(a,'ai.credentials.read')).version;

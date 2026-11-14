@@ -90,10 +90,11 @@ export function androidWidgetRoutes(auth:()=>AuthService|null,family:()=>Promise
   const actor={requestId:c.get('requestId'),memberId:guard.member_id,sessionId:grant.sessionId};
   const today=koreaToday(svc.policy.now()),from=addDays(today.slice(0,7)+'-01',-7),to=addDays(from,48);
   try{
-   const [me,events,repeats]=await Promise.all([
-    runtime.command<WorkspaceMe>(actor,'workspace.me'),
-    runtime.command<{items:WorkspaceItem[]}>(actor,'workspace.items.list',{from,to,kind:'EVENT'}),
-    runtime.command<{items:WorkspaceItem[]}>(actor,'workspace.items.list',{from,to,kind:'REPEAT'}),
+   const me=await runtime.command<WorkspaceMe>(actor,'workspace.me');
+   const scope={...actor,workspaceGroup:me.family?.id||'personal'};
+   const [events,repeats]=await Promise.all([
+    runtime.command<{items:WorkspaceItem[]}>(scope,'workspace.items.list',{from,to,kind:'EVENT'}),
+    runtime.command<{items:WorkspaceItem[]}>(scope,'workspace.items.list',{from,to,kind:'REPEAT'}),
    ]);
    return c.json(snapshot([...events.items,...repeats.items],me,today,grant.showTitles));
   }catch(error){

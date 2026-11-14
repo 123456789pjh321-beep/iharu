@@ -12,7 +12,7 @@ const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/tuition',label:'가계부',icon:'wallet'},
 
  {to:'/notification-settings',label:'알림설정',icon:'bell'},
- {to:'/family',label:'그룹 관리',icon:'users'},
+ {to:'/family',label:'그룹관리',icon:'users'},
  {to:'/account',label:'내 계정',icon:'settings'},
  {to:'/privacy',label:'개인정보 관리',icon:'shield'},
  {to:'/legal/privacy',label:'개인정보처리방침',icon:'book'},
@@ -30,8 +30,8 @@ export function WorkspaceNavigation({childMode=false,testMode=false,personalChil
  const hasUpdate=(to:string)=>!testMode&&!childMode&&hasMenuUpdate(gate?.updates||null,menuForPath(to));
  const updateDescription=dialogId+'-updates';
  const renderItem=(item:typeof items[number],close=false)=><Link key={item.to} to={item.to} onClick={close?()=>dialog.current?.close():undefined} className={current(item.to)?'active':''} aria-current={current(item.to)?'page':undefined} aria-describedby={hasUpdate(item.to)?updateDescription:undefined}><span className="rail-icon"><Icon name={item.icon}/>{hasUpdate(item.to)&&<span className="workspace-nav-update" aria-hidden="true"/>}</span><span>{item.label}</span>{current(item.to)&&<span className="rail-active-dot" aria-hidden="true"/>}</Link>;
- const primary=childMode&&!testMode?items:items.filter(item=>['/timetable','/today/calendar','/chat','/child/chat','/timeline','/tuition','/test/today','/test/calendar','/test/chat','/test/location'].includes(item.to));
- primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','가계부','타임라인','대화'];return order.indexOf(a.label)-order.indexOf(b.label);});
+ const primary=childMode&&!testMode?items:items.filter(item=>['/timetable','/today/calendar','/chat','/child/chat','/timeline','/tuition','/family','/test/today','/test/calendar','/test/chat','/test/location'].includes(item.to));
+ primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','가계부','타임라인','그룹관리','대화'];return order.indexOf(a.label)-order.indexOf(b.label);});
  const extraUpdate=items.some(item=>!primary.includes(item)&&hasUpdate(item.to));
  const extraActive=!primary.some(item=>current(item.to));
  return <>

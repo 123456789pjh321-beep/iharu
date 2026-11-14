@@ -1,5 +1,5 @@
 import {createContext,useCallback,useContext,useEffect,useId,useMemo,useRef,useState,type ReactNode} from 'react';
-import {Link,useLocation} from 'react-router-dom';
+import {Link,useLocation,useNavigate} from 'react-router-dom';
 import {workspaceRequest} from '../workspace-api';
 import {FormNotice} from './Common';
 import {Icon} from './Icon';
@@ -7,7 +7,7 @@ import {InviteLinkActions,type IssuedInvite} from './InviteLinkActions';
 import {useWorkspaceGate} from './WorkspaceGate';
 
 const shareLabel='그룹 초대 공유';
-const issueDescription='새 링크를 만들면 이전 링크는 즉시 폐기됩니다. 유효한 최신 링크로 여러 명을 초대할 수 있어요. 수락한 구성원은 본인 자료만 그룹에 공유합니다.';
+const issueDescription='새 링크를 만들면 이전 링크는 즉시 폐기됩니다. 유효한 최신 링크로 여러 명을 초대할 수 있어요. 개인 공간의 자료는 공유되지 않으며, 해당 그룹에 등록한 자료만 함께 봅니다.';
 const inlineShortcutRoutes=new Set([
  '/timetable','/today/calendar','/tuition','/chat','/child/chat','/timeline','/briefing',
  '/more','/settings','/help','/family','/notification-settings','/admin','/account','/privacy','/account-deletion',
@@ -19,7 +19,7 @@ type InviteState=
  |{ownerId:string;status:'error';message:string;code?:string};
 
 export function GroupInviteShareProvider({children}:{children:ReactNode}){
- const {pathname}=useLocation();
+ const {pathname}=useLocation(),navigate=useNavigate();
  const {access,refreshAccess}=useWorkspaceGate();
  const parent=access.identity?.role==='PARENT'?access.identity:null;
  const dialog=useRef<HTMLDialogElement>(null);
@@ -28,9 +28,9 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const issuing=useRef<string|null>(null);
  const route=pathname.toLowerCase().replace(/\/+$/,'');
  const profileId=parent?.id;
- const canInvite=!!parent;
+ const canInvite=!!parent,needsGroup=!!parent?.groups?.length&&!parent.family;
  const groupId=parent?.family?.id,previousGroup=useRef(groupId);
- const current=invite?.ownerId===profileId?invite:undefined;
+ const current=profileId&&invite?.ownerId===profileId?invite:undefined;
 
  useEffect(()=>{dialog.current?.close();},[pathname,profileId]);
  useEffect(()=>{if(previousGroup.current&&previousGroup.current!==groupId)dialog.current?.close();previousGroup.current=groupId;},[groupId]);
@@ -41,7 +41,7 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
   setInvite({ownerId,status:'loading'});
   try{
    // A deliberate click on the labeled shortcut authorizes creating the invitation.
-   const link=await workspaceRequest<IssuedInvite>('invite.link.issue',{consent:true});
+   const link=await workspaceRequest<IssuedInvite>('invite.link.issue',{consent:true,...(parent?.family?.id?{groupId:parent.family.id}:{})});
    if(issuing.current!==ownerId)return;
    setInvite({ownerId,status:'ready',invite:link});
    void refreshAccess();
@@ -51,14 +51,15 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
     setInvite({ownerId,status:'error',message:error.message,code:error.code});
    }
   }finally{if(issuing.current===ownerId)issuing.current=null;}
- },[refreshAccess]);
+ },[refreshAccess,parent?.family?.id]);
 
  const action=useMemo(()=>profileId?{dialogId,open:()=>{
+  if(needsGroup){navigate('/family');return;}
   const node=dialog.current;
   if(!node||node.open)return;
   node.showModal();
   if(canInvite)void issue(profileId);
- },canInvite}:null,[dialogId,profileId,canInvite,issue]);
+ },canInvite}:null,[dialogId,profileId,canInvite,issue,navigate,needsGroup]);
  return <GroupInviteShareContext.Provider value={action}>
   {parent&&!inlineShortcutRoutes.has(route)&&!route.startsWith('/more/')&&!route.startsWith('/legal/')&&<div className="workspace-invite-toolbar"><GroupInviteShareButton/></div>}
   {children}
@@ -73,7 +74,7 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
      current?.status==='error'?<>
       <FormNotice error={current.code==='INVITE_LIMIT'?'사용 가능한 초대 링크가 20개 있어요. 기존 링크가 사용되거나 만료된 뒤 다시 발급해 주세요.':current.message}/>
       {current.code==='LEGAL_ACCEPTANCE_REQUIRED'?<Link className="button" to="/privacy" onClick={()=>dialog.current?.close()}>개인정보 관리 열기</Link>:
-       !['INVITE_LIMIT','HOST_ONLY'].includes(current.code||'')&&<button type="button" className="button" onClick={()=>void issue(parent.id)}>다시 시도</button>}
+       !['INVITE_LIMIT','HOST_ONLY'].includes(current.code||'')&&<button type="button" className="button" onClick={()=>void issue(profileId!)}>다시 시도</button>}
      </>:<p role="status">그룹 초대 링크를 만들고 있어요.</p>}
    </div>
   </dialog>}

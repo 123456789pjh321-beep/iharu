@@ -4,6 +4,7 @@ import type {WorkspaceMe} from '../../../shared/workspace';
 import {AuthLayout,FormNotice} from '../components/AuthLayout';
 import {Loading} from '../components/Common';
 import {workspaceRequest} from '../workspace-api';
+import {useOptionalWorkspaceGate} from '../components/WorkspaceGate';
 
 type InvitePreview={
  id:string;
@@ -33,7 +34,7 @@ function GroupInvite({hash}:{hash:string}){
  const [retry,setRetry]=useState(0);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
- const [switchFamily,setSwitchFamily]=useState(false);
+ const gate=useOptionalWorkspaceGate();
  const [joined,setJoined]=useState('');
 
  useEffect(()=>{
@@ -56,9 +57,7 @@ function GroupInvite({hash}:{hash:string}){
   return()=>{active=false;};
  },[hash,retry]);
 
- const current=me?.family;
- const self=current?.members.find(member=>member.id===me?.id);
- const sameGroup=!!current&&current.id===invite?.familyId;
+ const sameGroup=me?.groups?.some(group=>group.id===invite?.familyId)||me?.family?.id===invite?.familyId;
 
 
  async function submit(event:FormEvent<HTMLFormElement>){
@@ -67,10 +66,10 @@ function GroupInvite({hash}:{hash:string}){
   setBusy(true);setError('');
   try{
    const result=await workspaceRequest<{familyName:string}>('invite.link.accept',{
-    inviteId:invite.id,...(current&&self&&switchFamily?{leaveCurrent:{familyId:current.id,version:self.version}}:{})
+    inviteId:invite.id
    });
    clearInviteIntent();
-   setJoined(result.familyName);
+   setJoined(result.familyName);void gate?.refreshAccess();
   }catch(e){setError((e as Error).message);}
   finally{setBusy(false);}
  }
@@ -80,15 +79,15 @@ function GroupInvite({hash}:{hash:string}){
  if(!invite)return <section className="auth-title"><h1>그룹 초대를 확인해 주세요</h1><FormNotice error={loadError}/><p>받은 초대 링크를 처음부터 다시 열거나 호스트에게 새 링크를 요청해 주세요.</p><button className="button full" onClick={()=>{setLoadError('');setLoading(true);setRetry(value=>value+1);}}>다시 확인</button></section>;
  return <>
   <div className="auth-title"><p className="eyebrow">아이하루 그룹 초대</p><h1>{invite.familyName||'그룹에 초대받았어요'}</h1>
-   <p>초대를 수락하면 내 일정·가계부·메모를 이 그룹에 공유해요. 이전 그룹의 다른 사람 자료와 대화는 옮겨지지 않아요.</p></div>
+   <p>이 그룹에 등록한 자료만 구성원들과 공유해요. 개인 공간의 자료와 다른 그룹의 자료는 공유되지 않으며, 기존 그룹 참여는 유지돼요.</p></div>
   <FormNotice error={error}/>
   {invite.viewer==='CHILD'?<><p>이전에 만든 아이디 계정으로 로그인했어요. 새 그룹 초대를 수락하려면 이메일로 확인된 계정으로 로그인해 주세요.</p><Link className="button full" to="/account">내 계정 열기</Link></>:
    invite.viewer==='PARENT_PENDING'?<><p>먼저 내 계정에서 로그인과 이메일 확인을 마친 뒤 이 초대 링크를 다시 열어 주세요.</p><Link className="button primary full" to="/account">내 계정 확인</Link></>:
    invite.viewer==='GUEST'?<div className="auth-form"><p>로그인이나 회원가입을 마친 뒤 초대를 수락할 수 있어요. 이 브라우저에서 계속해 주세요.</p><Link className="button primary full" to={login}>로그인하고 계속</Link><Link className="button full" to="/signup?next=%2Finvite">회원가입</Link></div>:
    sameGroup?<><p>이미 이 그룹과 연결돼 있어요.</p><Link className="button primary full" to="/family">내 그룹 열기</Link></>:
    <form className="auth-form" onSubmit={submit}><fieldset disabled={busy}><legend className="sr-only">그룹 초대 수락</legend>
-    {current&&<label className="check-option"><input type="checkbox" required checked={switchFamily} onChange={e=>setSwitchFamily(e.target.checked)}/><span>{current.name} 연결을 끝내고 새 그룹에 참여할게요. 내 자료는 유지되며, 내가 호스트라면 기존 그룹의 먼저 가입한 일반 구성원에게 권한이 이어져요.</span></label>}
-    <button className="button primary full" disabled={busy||!!current&&!switchFamily}>{busy?'연결하고 있어요…':'초대 수락'}</button>
+
+    <button className="button primary full" disabled={busy}>{busy?'연결하고 있어요…':'초대 수락'}</button>
    </fieldset></form>}
  </>;
 }
