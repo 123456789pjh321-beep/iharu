@@ -131,9 +131,14 @@ test('anonymous API calls remain unauthorized and desktop dark reduced-motion lo
 
 test('sample menus can be browsed and every write starts login without contacting private APIs',async({page})=>{
  const privateRequests:string[]=[];page.on('request',request=>{if(/\/api\/v1\/workspace\/(items\.|chat\.|invite\.|member-filter\.|fees\.)/.test(request.url()))privateRequests.push(request.url());});
- for(const [path,action] of [['/chat','메시지 보내기'],['/tuition','가계부 추가'],['/records','메모 추가'],['/family','우리 그룹 연결하기']]){
+ for(const [path,action] of [['/chat','메시지 보내기'],['/tuition','가계부 추가'],['/records','메모 추가']]){
   await page.goto(path);await ready(page);await expect(page.locator('.guest-sample-badge')).toHaveText('샘플 데이터');await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('.guest-entry-header')).toHaveCount(0);if(path==='/tuition'){await page.locator('[data-pager-current=true] .tuition-date').first().click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();}else await page.getByRole('button',{name:action,exact:true}).click();await expect(page.locator('.entry-login-sheet')).toBeVisible();await page.getByRole('button',{name:'로그인 창 닫기'}).click();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();
  }
+ await page.goto('/family');await ready(page);
+ await expect(page.getByRole('region',{name:'개인 공간',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'새 그룹',exact:true}).click();
+ await expect(page.locator('.entry-login-sheet')).toBeVisible();
+ await page.getByRole('button',{name:'로그인 창 닫기'}).click();
  expect(privateRequests).toEqual([]);
 });
 
@@ -218,10 +223,10 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   };
  });
  const mainMenus=[
-  ['/today/calendar','달력'],['/chat','대화'],['/timeline','타임라인'],['/tuition','가계부'],['/more','더보기'],
+  ['/today/calendar','달력'],['/chat','대화'],['/timeline','타임라인'],['/tuition','가계부'],['/family','그룹관리'],['/more','더보기'],
  ];
  const moreMenus=[
-  '/family','/account','/settings','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',
+  '/account','/settings','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',
  ];
  for(const [width,height] of [[320,844],[820,1000],[1440,900],[844,390]]){
   await page.setViewportSize({width,height});
