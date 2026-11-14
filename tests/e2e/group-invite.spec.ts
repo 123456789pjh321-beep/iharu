@@ -56,11 +56,11 @@ test('group invite shortcut creates one link per click and fits member filters a
  const menu=page.getByRole('navigation',{name:'모바일 주 메뉴'});
  const shortcut=page.getByRole('button',{name:'그룹 초대 공유',exact:true});
  const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
- const filteredMenus=['시간표','달력','가계부'];
+ const filteredMenus=['시간표','달력','가계부','타임라인'];
  let issueRequests=0;
  page.on('request',request=>{if(request.url().endsWith('/api/v1/workspace/invite.link.issue'))issueRequests++;});
  const urls=new Set<string>();
- for(const label of ['시간표','달력','대화','타임라인','가계부','더보기']){
+ for(const label of ['시간표','달력','가계부','타임라인','대화','더보기']){
   await menu.getByRole('link',{name:label,exact:true}).click();
   const toolbar=label==='대화'?'.chat-rooms-toolbar':'.workspace-toolbar-actions';
   const position=filteredMenus.includes(label)?'.member-preference-row > .group-invite-shortcut:first-child':toolbar+' > .group-invite-shortcut';

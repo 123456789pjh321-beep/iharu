@@ -1,11 +1,11 @@
 import {test,expect,type Page} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 async function login(page:Page,name:string){const email=name+'@example.test',password='ui109-fixture-password';expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);}
-test('notification settings replace the memo menu and persist only calendar/chat preferences',async({page})=>{
+test('notification settings replace the memo menu and persist timetable/calendar reminder preferences',async({page})=>{
  await login(page,'ui109-settings');await page.goto('/notification-settings');await expect(page.getByRole('heading',{name:'알림설정',exact:true})).toBeVisible();
  await page.getByRole('link',{name:'더보기',exact:true}).click();const menu=page.locator('.more-screen');await expect(menu.getByRole('link',{name:'알림',exact:true})).toBeVisible();await expect(menu.getByRole('link',{name:'메모',exact:true})).toHaveCount(0);await menu.getByRole('link',{name:'알림',exact:true}).click();
  const chat=page.getByRole('switch',{name:/새 대화 알림/});await expect(chat).toBeChecked();await chat.uncheck();await expect(page.getByRole('status')).toContainText('알림설정을 저장했어요.');await page.reload();await expect(chat).not.toBeChecked();
- await page.getByLabel('달력 미리 알림 시간').selectOption('30');await expect(page.getByRole('status')).toContainText('알림설정을 저장했어요.');await page.reload();await expect(page.getByLabel('달력 미리 알림 시간')).toHaveValue('30');await expect(page.getByRole('switch',{name:/내용 미리 보기/})).not.toBeChecked();
+ await expect(page.getByLabel('일정 알림 시점')).toHaveValue('0');await expect(page.getByRole('switch',{name:/일정 등록·변경/})).not.toBeChecked();await page.getByLabel('일정 알림 시점').selectOption('30');await expect(page.getByRole('status')).toContainText('알림설정을 저장했어요.');await page.reload();await expect(page.getByLabel('일정 알림 시점')).toHaveValue('30');await expect(page.getByRole('switch',{name:/내용 미리 보기/})).not.toBeChecked();
  for(const width of [360,820,1440]){await page.setViewportSize({width,height:1000});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/ui109-settings-${width}.png`,fullPage:true,animations:'disabled'});}
 });
 test('holiday week separators remain visible above all seven cells at mobile and desktop widths',async({page})=>{

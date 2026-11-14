@@ -31,7 +31,7 @@ export function WorkspaceNavigation({childMode=false,testMode=false,personalChil
  const updateDescription=dialogId+'-updates';
  const renderItem=(item:typeof items[number],close=false)=><Link key={item.to} to={item.to} onClick={close?()=>dialog.current?.close():undefined} className={current(item.to)?'active':''} aria-current={current(item.to)?'page':undefined} aria-describedby={hasUpdate(item.to)?updateDescription:undefined}><span className="rail-icon"><Icon name={item.icon}/>{hasUpdate(item.to)&&<span className="workspace-nav-update" aria-hidden="true"/>}</span><span>{item.label}</span>{current(item.to)&&<span className="rail-active-dot" aria-hidden="true"/>}</Link>;
  const primary=childMode&&!testMode?items:items.filter(item=>['/timetable','/today/calendar','/chat','/child/chat','/timeline','/tuition','/test/today','/test/calendar','/test/chat','/test/location'].includes(item.to));
- primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','대화','타임라인','가계부'];return order.indexOf(a.label)-order.indexOf(b.label);});
+ primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','가계부','타임라인','대화'];return order.indexOf(a.label)-order.indexOf(b.label);});
  const extraUpdate=items.some(item=>!primary.includes(item)&&hasUpdate(item.to));
  const extraActive=!primary.some(item=>current(item.to));
  return <>
