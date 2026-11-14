@@ -42,7 +42,7 @@ it('limits private-room push recipients and revalidates membership before delive
  expect(await pushCommand(family,config,'delivery',jobs[0])).toBeNull();
 });
 it('requires authenticated settings, blocks arbitrary push targets and denies direct table/worker access',async()=>{
- expect((await new Browser().req('push.settings')).status).toBe(401);const a=await parent('push-auth');expect(await a.ok('push.settings')).toMatchObject({...saved,deviceCount:0,pushAvailable:false});
+ expect((await new Browser().req('push.settings')).status).toBe(401);const a=await parent('push-auth');expect(await a.ok('push.settings')).toMatchObject({...saved,calendarChanges:false,reminderMinutes:0,deviceCount:0,pushAvailable:false});
  for(const url of ['http://fcm.googleapis.com/a','https://fcm.googleapis.com.evil.test/a','https://127.0.0.1/a','https://user@fcm.googleapis.com/a','https://fcm.googleapis.com:8443/a','https://web.push.apple.com/a#leak'])expect(allowedPushEndpoint(url)).toBe(false);
  for(const url of ['https://fcm.googleapis.com/fcm/send/fixture','https://updates.push.services.mozilla.com/wpush/v2/fixture','https://web.push.apple.com/fixture'])expect(allowedPushEndpoint(url)).toBe(true);
  expect(pushSpecs['push.subscribe'].safeParse({...subscription('bad'),endpoint:'https://internal.test/a'}).success).toBe(false);
@@ -50,7 +50,7 @@ it('requires authenticated settings, blocks arbitrary push targets and denies di
  await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,'SELECT * FROM app_private.workspace_push_subscriptions');})).rejects.toMatchObject({code:'42501'});
 });
 it('delivers only new calendar and chat to opted-in family recipients, with private content hidden by default',async()=>{
- const{a,b}=await linked(),x=await parent('push-outsider');await subscribe(a,'a');await subscribe(b,'b');await subscribe(x,'x');
+ const{a,b}=await linked(),x=await parent('push-outsider');await subscribe(a,'a');await subscribe(b,'b');await subscribe(x,'x');await b.ok('push.settings.save',saved);
  for(const kind of ['EVENT','REPEAT','FEE','NOTE'])await a.ok('items.create',event('private title',kind));const key=crypto.randomUUID();await a.ok('chat.send',{text:'private message',clientMessageId:key});await a.ok('chat.send',{text:'private message',clientMessageId:key});
  const delivered:any[]=[];expect(await dispatchPush(family,config,{sender:async d=>{delivered.push(d);return 201;}})).toEqual({claimed:2,accepted:2,failed:0});
  expect(delivered.every(d=>d.subscription.endpoint.endsWith('/b'))).toBe(true);expect(delivered.map(d=>d.payload.url).sort()).toEqual(['/chat','/today/calendar']);expect(JSON.stringify(delivered.map(d=>d.payload))).not.toContain('private');
@@ -71,7 +71,7 @@ it('rechecks permission after claiming, retires expired endpoints and retries tr
 it('matches calendar month-end/leap-year/weekday recurrence and queues each due reminder once',async()=>{
  const matrices=[{date:'2026-01-31',calendarFrequency:'MONTHLY',weekdays:[]},{date:'2024-02-29',calendarFrequency:'YEARLY',weekdays:[]},{date:'2026-01-01',calendarFrequency:'WEEKLY',weekdays:[0,1]},{date:'2026-02-28',calendarFrequency:'DAILY',untilDate:'2026-03-02',weekdays:[]},{date:'2026-03-01',weekdays:[]}];
  for(const data of matrices)for(const date of ['2026-02-28','2026-03-01','2026-03-02','2026-03-03','2028-02-29']){const[row]=await query<{yes:boolean}>(database.db,'SELECT app_private.workspace_push_occurs($1::jsonb,$2::date) yes',[JSON.stringify(data),date]);expect(row.yes).toBe(visibleOn({kind:'EVENT',data} as WorkspaceItem,date));}
- const a=await parent('push-reminder');await subscribe(a,'reminder');const[clock]=await query<{day:string;time:string;end:string}>(database.db,"SELECT to_char((now()+interval '10 minutes') AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day,to_char((now()+interval '10 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI') AS time,to_char((now()+interval '11 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI') AS end");
+ const a=await parent('push-reminder');await subscribe(a,'reminder');await a.ok('push.settings.save',saved);const[clock]=await query<{day:string;time:string;end:string}>(database.db,"SELECT to_char((now()+interval '10 minutes') AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day,to_char((now()+interval '10 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI') AS time,to_char((now()+interval '11 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI') AS end");
  await a.ok('items.create',{kind:'EVENT',data:{...event().data,date:clock.day,startTime:clock.time,endTime:clock.end,calendarFrequency:'DAILY'}});await query(database.db,"UPDATE app_private.workspace_push_subscriptions SET created_at=now()-interval '1 hour'");
  const deliveries:any[]=[];expect((await dispatchPush(family,config,{plan:true,sender:async d=>{deliveries.push(d);return 201;}})).accepted).toBe(1);expect(deliveries[0].payload.title).toContain('일정 알림');expect((await dispatchPush(family,config,{plan:true,sender:async()=>201})).claimed).toBe(0);
 });
@@ -125,4 +125,19 @@ it('links a widget to a verified session and exposes only selected schedule data
  for(const privateValue of ['달력 제목은 비공개','개인 메모','다른 계정의 수업','private fixture','ownerId'])expect(text).not.toContain(privateValue);
  await user.ok('/api/account/logout',{sessionId:'current'});
  expect((await snapshot(grant)).status).toBe(401);
+});
+
+it('plans timetable and calendar in start-time order, retains weekly templates, skips edits/deletes and deduplicates',async()=>{
+ const a=await parent('push-ordered');await subscribe(a,'ordered');expect(await a.ok('push.settings')).toMatchObject({calendarReminders:true,reminderMinutes:0,calendarChanges:false});
+ const [clock]=await query<{day:string;time:string;earlier:string;weekday:number}>(database.db,"SELECT to_char(now() AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day,to_char(now() AT TIME ZONE 'Asia/Seoul','HH24:MI') AS time,to_char((now()-interval '2 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI') AS earlier,extract(dow FROM now() AT TIME ZONE 'Asia/Seoul')::int AS weekday");
+ await a.ok('push.settings.save',{...saved,reminderMinutes:0,calendarChanges:false,preview:true});
+ const repeat=await a.ok('items.create',{kind:'REPEAT',data:{...event().data,date:'2020-01-01',untilDate:'2020-12-31',title:'먼저 오는 시간표',weekdays:[clock.weekday],startTime:clock.earlier,endTime:'23:59'}});
+ const later=await a.ok('items.create',{kind:'EVENT',data:{...event().data,date:clock.day,title:'나중 달력',startTime:clock.time,endTime:'23:59'}});
+ await query(database.db,"UPDATE app_private.workspace_push_subscriptions SET created_at=now()-interval '1 hour'");
+ const delivered:any[]=[];await dispatchPush(family,config,{plan:true,sender:async d=>{delivered.push(d);return 201;}});
+ expect(delivered.map(d=>d.payload.body)).toEqual(['먼저 오는 시간표','나중 달력']);expect(delivered.map(d=>d.payload.url)).toEqual(['/timetable','/today/calendar']);
+ expect((await dispatchPush(family,config,{plan:true,sender:async()=>201})).claimed).toBe(0);
+ await query(database.db,"DELETE FROM app_private.workspace_push_outbox");await pushCommand(family,config,'plan');
+ await a.ok('items.delete',{id:repeat.id,version:1});await a.ok('items.update',{...event('시간 바뀜'),id:later.id,version:1,data:{...event().data,date:clock.day,title:'시간 바뀜',startTime:'23:58',endTime:'23:59'}});
+ expect((await dispatchPush(family,config,{sender:async()=>{throw Error('stale schedule');}})).claimed).toBe(0);
 });

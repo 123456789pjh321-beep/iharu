@@ -10,7 +10,7 @@ test('holidays, day agenda and full-screen editors use a bottom navigation at ev
  for(let i=0;i<5;i++)expect((await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind:'EVENT',data:{title:'연휴 일정 '+(i+1),date:'2027-02-09',allDay:true}}})).ok()).toBe(true);
  for(const [width,height] of [[320,740],[820,1180],[1440,900],[844,390]]){
   await page.setViewportSize({width,height});await page.goto('/today/calendar');await page.getByLabel('달력 월 선택').fill('2027-02');
-  const nav=page.locator('.workspace-mobile-nav');await expect(nav).toBeVisible();await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','대화','타임라인','가계부','더보기']);
+  const nav=page.locator('.workspace-mobile-nav');await expect(nav).toBeVisible();await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','가계부','타임라인','대화','더보기']);
   const n=(await nav.boundingBox())!,main=(await page.locator('#auth-main').boundingBox())!;
   expect(n.x).toBe(0);expect(n.width).toBe(width);expect(n.y+n.height).toBeCloseTo(height,0);expect(main.width).toBe(width);expect(main.y+main.height).toBeLessThanOrEqual(n.y+1);await expect(page.locator('.workspace-rail')).toHaveCount(0);
   const cell=page.locator('[data-date="2027-02-09"]');await expect(cell.locator('.calendar-holiday')).toHaveText('대체공휴일(설날)');await expect(cell.locator('.calendar-overflow')).toHaveText('+2개');

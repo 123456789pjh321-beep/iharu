@@ -474,6 +474,16 @@ try{
   await assert.rejects(query(db1,'SELECT app_private.workspace_detach_member(NULL,NULL)'),{code:'42501'});
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_pre_flexible_groups('workspace.me','{}')"),{code:'42501'});
  });
+ await check('memo writes serialize, photos require current visibility and runtime has no direct access',async()=>{
+  const input={id:randomUUID(),version:0,title:'독립 메모',body:'실제 PostgreSQL 검증',date:'2026-11-14',time:'10:00',category:'DAILY',tags:[],place:'',location:null,visibility:'PRIVATE',photos:[{data:'/9j/2Q==',width:1,height:1}]};
+  const attempts=await Promise.allSettled([family1.command(a,'workspace.memos.save',input),family2.command(a,'workspace.memos.save',input)]);
+  assert.equal(attempts.filter(r=>r.status==='fulfilled').length,1);assert.equal(attempts.filter(r=>r.status==='rejected').length,1);
+  const page=await family1.command<{items:{id:string;photos:{id:string}[]}[]}>(a,'workspace.memos.list',{});const memo=page.items.find(m=>m.id===input.id)!;assert.ok(memo);
+  await assert.rejects(family2.command(b,'workspace.memos.photo',{id:memo.photos[0].id}),{message:'NOT_FOUND'});
+  await assert.rejects(query(db1,'SELECT * FROM app_private.workspace_memo_photos'),{code:'42501'});
+  await assert.rejects(query(db1,'SELECT app_private.workspace_memo_json(NULL,NULL)'),{code:'42501'});
+  await family1.command(a,'workspace.memos.delete',{id:input.id,version:1});
+ });
  await check('UI137 encrypted AI credentials serialize rotations and deny runtime table access',async()=>{
   const fixtureMaster='ab'.repeat(32),version=(await family1.command<{version:number}>(a,'ai.credentials.read')).version;
   const results=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'ai.credentials.save',{version,...sealOpenAiKey('sk-isolated-pg-fixture-provider-key-'+i,fixtureMaster)})));

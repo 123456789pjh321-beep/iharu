@@ -1,225 +1,102 @@
-import {useEffect,useId,useMemo,useRef,useState} from 'react';
-import {Link,Navigate} from 'react-router-dom';
-import {koreaToday} from '../../../shared/schedules';
-import {matchesMember,scheduleAssignee} from '../../../shared/workspace-schedules';
-import {ledgerFlow} from '../../../shared/ledger';
-import {timelineAmount,timelineEntries,timelineKey,timelineRange,type TimelineAnnotation,type TimelineData,type TimelineEntry,type TimelineKind,type TimelinePatch,type TimelinePeriod} from '../../../shared/timeline';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Navigate} from 'react-router-dom';
+import {addDays,koreaToday} from '../../../shared/schedules';
+import {emptyMemo,memoCategories,type Memo,type MemoDraft,type MemoList} from '../../../shared/memos';
 import type {WorkspaceMe} from '../../../shared/workspace';
 import {AuthLayout} from '../components/AuthLayout';
 import {ErrorState,Loading} from '../components/Common';
-import {GroupInviteShareButton} from '../components/GroupInviteShare';
-import {Icon,type IconName} from '../components/Icon';
+import {Icon} from '../components/Icon';
 import {useWorkspaceGate} from '../components/WorkspaceGate';
-import {WorkspaceToolbar} from '../components/WorkspaceToolbar';
+import {useEntryAccess} from '../components/EntryAccess';
+import {DateNavigator,WorkspaceToolbar} from '../components/WorkspaceToolbar';
+import {MemberFilter} from '../components/MemberFilter';
+import {MemoEditor,MemoPhoto} from '../components/MemoEditor';
 import {workspaceRequest} from '../workspace-api';
 import './timeline.css';
 
-const sources:Record<TimelineKind,{label:string;icon:IconName;path:string}>={
- REPEAT:{label:'시간표',icon:'clock',path:'/timetable'},
- EVENT:{label:'달력',icon:'calendar',path:'/today/calendar'},
- FEE:{label:'가계부',icon:'wallet',path:'/tuition'},
-};
-const sourceOrder:TimelineKind[]=['REPEAT','EVENT','FEE'];
-const dayFormat=new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'UTC'});
-const rangeFormat=new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
-const asDate=(value:string)=>new Date(value+'T12:00:00Z');
-const errorText=(error:unknown)=>error instanceof Error?error.message:'다시 시도해 주세요.';
-const pageSize=40;
-type EntryStatus='all'|'unreviewed'|'reviewed'|'saved'|'noted';
-
+const dayLabel=(date:string)=>new Date(date+'T12:00:00Z').toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'UTC'});
+const blankFilters={query:'',category:'ALL',hasPhotos:false,hasLocation:false,favorite:false,visibility:'ALL',sort:'newest'};
 export default function TimelinePage(){
- const {access,session,health}=useWorkspaceGate();
+ const {access,session}=useWorkspaceGate();
  if(session.data?.authenticated&&session.data.assurance==='LOW')return <Navigate to="/account" replace/>;
  if(session.data?.authenticated&&!session.data.emailVerified)return <Navigate to="/account/email" replace/>;
- if(!access.identity)return <AuthLayout wide><WorkspaceToolbar title="타임라인"/>{health.data?.data.demoEnabled?<p className="timeline-empty">로그인한 계정에서 타임라인을 이용할 수 있어요.</p>:<Loading/>}</AuthLayout>;
- return <Timeline key={access.identity.id} me={access.identity}/>;
+ if(access.status==='checking')return <Loading/>;
+ if(access.status==='error')return <ErrorState message={access.error||'계정을 확인하지 못했어요.'} retry={()=>location.reload()}/>;
+ return <Timeline key={access.identity?.id||'guest'} me={access.identity}/>;
 }
-
-function Timeline({me}:{me:WorkspaceMe}){
- const today=koreaToday();
- const [period,setPeriod]=useState<TimelinePeriod>('recent'),[month,setMonth]=useState(today.slice(0,7));
- const [source,setSource]=useState<TimelineKind|'all'>('all'),[member,setMember]=useState('all');
- const [status,setStatus]=useState<EntryStatus>('all'),[query,setQuery]=useState('');
- const [limit,setLimit]=useState(pageSize),[retry,setRetry]=useState(0);
- const [writesSettled,setWritesSettled]=useState(0);
- const [result,setResult]=useState<{key:string;data?:TimelineData;error?:string}>();
- const [message,setMessage]=useState('');
- const writeRevision=useRef(0),pendingWrites=useRef(0);
- const {from,to}=timelineRange(period,today,month),rangeKey=from+':'+to;
- const current=result?.key===rangeKey?result:undefined,data=current?.data;
- const members=me.family?.members||[{id:me.id,name:me.name,kind:me.role,host:false,version:1}];
- const selectableSources=me.role==='CHILD'?sourceOrder.filter(kind=>kind!=='FEE'):sourceOrder;
- const entries=useMemo(()=>timelineEntries(data?.items||[],from,to),[data?.items,from,to]);
- const annotations=useMemo(()=>new Map(data?.annotations.map(a=>[timelineKey(a.itemId,a.date),a])),[data?.annotations]);
-
+function Timeline({me}:{me:WorkspaceMe|null}){
+ const today=koreaToday(),{requestLogin}=useEntryAccess();
+ const [month,setMonth]=useState(today.slice(0,7)),[period,setPeriod]=useState('month'),[from,setFrom]=useState(addDays(today,-29)),[to,setTo]=useState(today);
+ const [filters,setFilters]=useState(blankFilters),[ownerIds,setOwnerIds]=useState<string[]>([]),[expanded,setExpanded]=useState(false),[limit,setLimit]=useState(40);
+ const [searchQuery,setSearchQuery]=useState('');
+ useEffect(()=>{const timer=setTimeout(()=>setSearchQuery(filters.query),300);return()=>clearTimeout(timer);},[filters.query]);
+ const [result,setResult]=useState<{key:string;data?:MemoList;error?:string}>(),[refresh,setRefresh]=useState(0),[message,setMessage]=useState(''),[draft,setDraft]=useState<MemoDraft|null>(null);
+ const [busy,setBusy]=useState(''),[viewPhoto,setViewPhoto]=useState('');
+ const mounted=useRef(true),writeLock=useRef(false),viewer=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ useEffect(()=>{if(viewPhoto)viewer.current?.showModal();else viewer.current?.close();},[viewPhoto]);
+ const members=me?.family?.members|| (me?[{id:me.id,name:me.name,kind:me.role,host:false,version:1}]:[]);
+ const range=period==='month'?{from:month+'-01',to:addDays(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),1)).toISOString().slice(0,10),-1)}:period==='custom'?{from,to}:{};
+ const request=useMemo(()=>({...filters,query:searchQuery,...range,ownerIds,limit:40,offset:limit-40}),[JSON.stringify(filters),searchQuery,range.from,range.to,ownerIds,limit]);
+ const key=JSON.stringify(request),current=result?.key===key?result:undefined;
+ const reload=useCallback(()=>setRefresh(n=>n+1),[]);
  useEffect(()=>{
-  let active=true,loading=false;
-  const load=async()=>{
-   if(loading||pendingWrites.current)return;
-   const revision=writeRevision.current;
-   loading=true;
-   try{
-    const data=await workspaceRequest<TimelineData>('timeline.read',{from,to});
-    if(active&&revision===writeRevision.current)setResult({key:rangeKey,data});
-   }catch(error){
-    if(active&&revision===writeRevision.current){
-     const code=(error as {code?:string}).code;
-     // A temporary refresh failure must not unmount cards and erase unsaved notes.
-     // Authentication/authorization failures still discard previously loaded data.
-     const temporary=!code||code==='UNAVAILABLE'||code==='RATE_LIMITED';
-     setResult(old=>({key:rangeKey,data:temporary&&old?.key===rangeKey?old.data:undefined,error:errorText(error)}));
-    }
-   }finally{loading=false;}
-  };
-  const refresh=()=>{if(!document.hidden)void load();};
-  void load();
-  const timer=window.setInterval(refresh,15000);
-  window.addEventListener('focus',refresh);
-  document.addEventListener('visibilitychange',refresh);
-  return ()=>{
-   active=false;window.clearInterval(timer);
-   window.removeEventListener('focus',refresh);
-   document.removeEventListener('visibilitychange',refresh);
-  };
- },[from,to,rangeKey,retry,writesSettled]);
-
- const search=query.trim().normalize('NFKC').toLocaleLowerCase('ko-KR');
- const filtered=entries.filter(entry=>{
-  const a=annotations.get(entry.key);
-  if(source!=='all'&&entry.kind!==source||!matchesMember(entry.item,member))return false;
-  if(status==='saved'&&!a?.saved||status==='reviewed'&&!a?.reviewed||status==='unreviewed'&&a?.reviewed||status==='noted'&&!a?.note)return false;
-  if(!search)return true;
-  const {title,place,note}=entry.item.data;
-  return [title,place,note,a?.note,scheduleAssignee(entry.item,members)].some(value=>value?.normalize('NFKC').toLocaleLowerCase('ko-KR').includes(search));
- });
- const groups=new Map<string,TimelineEntry[]>();
- for(const entry of filtered.slice(0,limit)){
-  const day=groups.get(entry.date);
-  if(day)day.push(entry);else groups.set(entry.date,[entry]);
+  if(!me)return;let active=true,pending=false;
+  const load=async()=>{if(pending||writeLock.current)return;pending=true;try{const data=await workspaceRequest<MemoList>('memos.list',request);if(active&&!writeLock.current)setResult({key,data});}catch(e){if(active){const code=(e as {code?:string}).code;setResult(old=>({key,data:(!code||code==='UNAVAILABLE'||code==='RATE_LIMITED')&&old?.key===key?old.data:undefined,error:(e as Error).message}));if(code==='AUTH_REQUIRED'||code==='NOT_FOUND')setDraft(null);}}finally{pending=false;}};
+  const focused=()=>{if(!document.hidden)void load();};void load();window.addEventListener('focus',focused);const timer=setInterval(focused,30000);
+  return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',focused);};
+ },[me?.id,key,refresh]);
+ function change(value:Partial<typeof filters>){setFilters(old=>({...old,...value}));setLimit(40);}
+ function reset(){setFilters(blankFilters);setOwnerIds([]);setLimit(40);}
+ function create(){
+  if(!me){requestLogin({title:'메모를 저장하려면 로그인해 주세요',description:'내 계정에 사진과 글을 안전하게 남겨요.'});return;}
+  let initial=emptyMemo(today);
+  try{const stored=JSON.parse(sessionStorage.getItem('iharu-memo-draft:'+me.id)||'null');if(stored?.expiresAt>Date.now()&&typeof stored.draft?.id==='string'&&stored.draft.photos?.length<=3)initial=stored.draft;}catch{}
+  setDraft(initial);
  }
-
- async function annotate(entry:TimelineEntry,patch:TimelinePatch){
-  writeRevision.current++;pendingWrites.current++;
-  let next:TimelineAnnotation;
-  try{
-   next=await workspaceRequest<TimelineAnnotation>('timeline.annotate',{itemId:entry.item.id,date:entry.date,...patch});
-  }finally{
-   writeRevision.current++;pendingWrites.current--;
-   // A range selected during a write skipped its first read. Refresh it immediately.
-   if(!pendingWrites.current)setWritesSettled(value=>value+1);
-  }
-  setResult(old=>{
-   if(old?.key!==rangeKey||!old.data)return old;
-   return {...old,data:{...old.data,annotations:[...old.data.annotations.filter(a=>timelineKey(a.itemId,a.date)!==entry.key),next]}};
-  });
-  setMessage(patch.saved!==undefined?(next.saved?'항목을 보관했어요.':'보관을 해제했어요.'):patch.reviewed!==undefined?(next.reviewed?'확인했어요.':'확인 표시를 해제했어요.'):next.note?'메모를 저장했어요.':'메모를 지웠어요.');
- }
- function resetFilters(){
-  setSource('all');setMember('all');setStatus('all');setQuery('');setLimit(pageSize);
- }
- function reload(){
-  setResult(old=>old?.data?old:undefined);
-  setRetry(previous=>previous+1);
- }
- const hasFilters=source!=='all'||member!=='all'||status!=='all'||!!search;
- const hasFuture=period==='upcoming';
- return <AuthLayout wide personalChild={me.role==='CHILD'}>
-  <div className="timeline-page">
-   <WorkspaceToolbar title="타임라인"><GroupInviteShareButton/></WorkspaceToolbar>
-   <section className="timeline-filters" aria-label="타임라인 필터">
-    <div className="timeline-sources" role="group" aria-label="항목 종류">
-     <button type="button" className="timeline-chip" aria-pressed={source==='all'} onClick={()=>{setSource('all');setLimit(pageSize);}}>전체</button>
-     {selectableSources.map(kind=><button key={kind} type="button" className="timeline-chip" data-kind={kind} aria-pressed={source===kind}
-      onClick={()=>{setSource(kind);setLimit(pageSize);}}><Icon name={sources[kind].icon}/>{sources[kind].label}</button>)}
-    </div>
-    <div className="timeline-filter-fields">
-     <label className="timeline-select"><span>기간</span><select value={period} onChange={e=>{setPeriod(e.target.value as TimelinePeriod);setLimit(pageSize);}}>
-      <option value="recent">최근 30일</option><option value="upcoming">예정 30일</option><option value="month">월 선택</option>
-     </select></label>
-     {period==='month'&&<label className="timeline-select"><span>조회 월</span><input type="month" min="1900-01" max="2099-12" value={month}
-      onChange={e=>{if(/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)&&e.target.value>='1900-01'&&e.target.value<='2099-12'){setMonth(e.target.value);setLimit(pageSize);}}}/></label>}
-     <label className="timeline-select"><span>구성원</span><select value={member} onChange={e=>{setMember(e.target.value);setLimit(pageSize);}}>
-      <option value="all">전체</option>{members.map(person=><option value={person.id} key={person.id}>{person.name}</option>)}
-     </select></label>
-     <label className="timeline-select"><span>상태</span><select value={status} onChange={e=>{setStatus(e.target.value as EntryStatus);setLimit(pageSize);}}>
-      <option value="all">전체</option><option value="unreviewed">미확인</option><option value="reviewed">확인</option><option value="saved">보관</option><option value="noted">메모 있음</option>
-     </select></label>
-     <label className="timeline-search"><Icon name="search"/><span className="sr-only">항목 검색</span>
-      <input type="search" placeholder="일정·거래·메모 검색" value={query} maxLength={100} onChange={e=>{setQuery(e.target.value);setLimit(pageSize);}}/>
-     </label>
-    </div>
-   </section>
-   <p className="sr-only" role="status">{message}</p>
-   {!current?<Loading label="타임라인을 불러오고 있어요"/>:current.error&&!data?
-    <ErrorState message={current.error} retry={reload}/>:<section className="timeline-results" aria-label="타임라인 기록">
-     {current.error&&<div className="timeline-refresh-notice" role="status">
-      <span>최신 기록을 불러오지 못했어요. 표시된 기록과 작성 중인 메모는 유지했어요.</span>
-      <button type="button" className="button" onClick={reload}>다시 불러오기</button>
-     </div>}
-     <div className="timeline-result-bar">
-      <span>{rangeFormat.formatRange(asDate(from),asDate(to))}</span>
-      <span aria-live="polite"><strong>{filtered.length}건</strong> <span aria-hidden="true">·</span> 최신순</span>
-     </div>
-     {groups.size===0?<div className="timeline-empty">
-      <Icon name="timeline"/>
-      <h2>{hasFilters?'필터에 맞는 기록이 없어요':hasFuture?'예정된 기록이 없어요':'이 기간에 기록이 없어요'}</h2>
-      {hasFilters&&<button type="button" className="button" onClick={resetFilters}>필터 초기화</button>}
-     </div>:Array.from(groups,([date,items])=><section className="timeline-day" key={date} aria-label={dayFormat.format(asDate(date))}>
-      <h2><time dateTime={date}>{dayFormat.format(asDate(date))}</time>{date===today&&<span>오늘</span>}</h2>
-      <ol>{items.map(entry=><TimelineCard key={entry.key} entry={entry} annotation={annotations.get(entry.key)}
-       assignee={scheduleAssignee(entry.item,members)} annotate={patch=>annotate(entry,patch)}/>)}</ol>
-     </section>)}
-     {filtered.length>limit&&<button type="button" className="button timeline-more" onClick={()=>setLimit(value=>value+pageSize)}>기록 더 보기 <Icon name="chevron"/></button>}
-    </section>}
-  </div>
- </AuthLayout>;
+ async function action(id:string,op:string,payload:object){if(writeLock.current)return;writeLock.current=true;setBusy(id);try{await workspaceRequest(op,payload);setMessage(op==='memos.delete'?'메모와 첨부 사진을 삭제했어요.':'즐겨찾기를 변경했어요.');}catch(e){setMessage((e as Error).message);}finally{writeLock.current=false;if(mounted.current){setBusy('');reload();}}}
+ function selectMonth(value:string){if(/^\d{4}-(0[1-9]|1[0-2])$/.test(value)&&value>='1900-01'&&value<='2099-12'){setMonth(value);setPeriod('month');setLimit(40);}}
+ function moveMonth(delta:number){const d=new Date(month+'-15T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+delta);selectMonth(d.toISOString().slice(0,7));}
+ const data=me?current?.data:{items:[],total:0,hasAny:false};
+ const hasFilters=JSON.stringify(filters)!==JSON.stringify(blankFilters)||ownerIds.length>0;
+ const groups=new Map<string,Memo[]>();for(const memo of data?.items||[]){const group=groups.get(memo.date)||[];group.push(memo);groups.set(memo.date,group);}
+ return <AuthLayout wide personalChild={me?.role==='CHILD'}><div className="timeline-page memo-timeline">
+  <WorkspaceToolbar title="타임라인" navigation={<DateNavigator type="month" value={month} inputLabel="타임라인 조회 월" displayLabel={period==='all'?'전체 기간':period==='custom'?'기간 선택':undefined} onChange={selectMonth}/>}>
+   <button className="icon-button" type="button" aria-label="이전 달" onClick={()=>moveMonth(-1)}><Icon name="left"/></button><button className="icon-button" type="button" aria-label="다음 달" onClick={()=>moveMonth(1)}><Icon name="chevron"/></button><button type="button" className="button primary compact memo-create" onClick={create}><Icon name="plus"/>메모 작성</button>
+  </WorkspaceToolbar>
+  {me&&<MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} onChange={id=>{if(id==='all'){setOwnerIds([]);return;}const selected=ownerIds.length?ownerIds:members.map(m=>m.id),next=selected.includes(id)?selected.filter(x=>x!==id):[...selected,id];setOwnerIds(next.length?next:[id]);setLimit(40);}} label="메모 작성자" allLabel="전체" allSelected={!ownerIds.length} onSelectAll={()=>setOwnerIds([])}/>}
+  <section className="memo-filters" aria-label="메모 필터"><div className="memo-filter-row"><div className="memo-quick-filters" role="group" aria-label="메모 종류">
+   <button type="button" aria-pressed={!filters.hasPhotos&&!filters.hasLocation&&!filters.favorite} onClick={()=>change({hasPhotos:false,hasLocation:false,favorite:false})}>전체</button>
+   <button type="button" aria-pressed={filters.hasPhotos} onClick={()=>change({hasPhotos:!filters.hasPhotos})}>사진</button><button type="button" aria-pressed={filters.hasLocation} onClick={()=>change({hasLocation:!filters.hasLocation})}>위치</button><button type="button" aria-pressed={filters.favorite} onClick={()=>change({favorite:!filters.favorite})}>즐겨찾기</button>
+  </div><button type="button" className="memo-filter-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}><Icon name="filter"/>필터</button></div>
+  <label className="memo-search"><Icon name="search"/><span className="sr-only">메모 검색</span><input type="search" placeholder="제목·글·장소·태그 검색" value={filters.query} maxLength={100} onChange={e=>change({query:e.target.value})}/>{hasFilters&&<button type="button" aria-label="필터 초기화" onClick={reset}><Icon name="close"/></button>}</label>
+  {expanded&&<div className="memo-advanced"><label>기간<select value={period} onChange={e=>{setPeriod(e.target.value);setLimit(40);}}><option value="month">선택한 달</option><option value="all">전체 기간</option><option value="custom">직접 선택</option></select></label>
+   {period==='custom'&&<><label>시작일<input type="date" value={from} max={to} onChange={e=>{if(e.target.value&&e.target.value<=to)setFrom(e.target.value);}}/></label><label>종료일<input type="date" value={to} min={from} onChange={e=>{if(e.target.value&&e.target.value>=from)setTo(e.target.value);}}/></label></>}
+   <label>카테고리<select value={filters.category} onChange={e=>change({category:e.target.value})}><option value="ALL">전체</option>{Object.entries(memoCategories).map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
+   <label>공유 범위<select value={filters.visibility} onChange={e=>change({visibility:e.target.value})}><option value="ALL">전체</option><option value="PRIVATE">나만 보기</option><option value="GROUP">그룹 공유</option></select></label>
+   <label>정렬<select value={filters.sort} onChange={e=>change({sort:e.target.value})}><option value="newest">최신순</option><option value="oldest">오래된순</option></select></label>
+  </div>}</section>
+  <p className="memo-status" role="status">{message}</p>
+  {!data&&!current?.error?<Loading label="메모를 불러오고 있어요"/>:!data?<ErrorState message={current!.error!} retry={reload}/>:<section className="memo-results" aria-label="타임라인 메모">
+   {current?.error&&<div className="memo-refresh-error" role="status">최신 메모를 불러오지 못했어요. 작성 중인 내용은 유지돼요.<button className="button compact" onClick={reload}>다시 불러오기</button></div>}
+   {!data.hasAny&&!hasFilters?<><div className="memo-sample-guide"><Icon name="book"/><span><strong>한 줄부터, 나의 하루를 남겨요</strong><small>아래 2개는 사용 방법을 보여 주는 샘플이에요.</small></span></div><MemoSamples today={today} create={create}/></>:<><div className="memo-count"><span>메모 <strong>{data.total}개</strong></span><span>{filters.sort==='newest'?'최신순':'오래된순'}</span></div>
+   {!data.items.length?<div className="memo-empty"><Icon name="book"/><h2>{hasFilters?'필터에 맞는 메모가 없어요':'이 기간에 작성한 메모가 없어요'}</h2><button type="button" className="button" onClick={()=>{reset();setPeriod('all');}}>전체 메모 보기</button><button type="button" className="button primary" onClick={create}>첫 메모 작성</button></div>:Array.from(groups,([date,items])=><section className="memo-day" key={date} aria-label={dayLabel(date)}><h2><time dateTime={date}>{dayLabel(date)}</time>{date===today&&<span>오늘</span>}</h2>{items.map(m=><article className="memo-card" key={m.id} aria-label={m.title}>
+    <header><span className="memo-category">{memoCategories[m.category]}</span><span>{m.ownerName} · {m.time}</span><span className="memo-visibility">{m.visibility==='PRIVATE'?'나만 보기':'그룹 공유'}</span></header><h3>{m.title}</h3>{m.body&&<MemoBody text={m.body}/>}
+    {m.photos.length>0&&<div className="memo-photos">{m.photos.map((photo,i)=><MemoPhoto key={photo.id} id={photo.id} alt={m.title+' 사진 '+(i+1)} onOpen={setViewPhoto}/>)}</div>}
+    {(m.place||m.location)&&<p className="memo-place"><Icon name="pin"/>{m.location?<a href={`https://www.google.com/maps/search/?api=1&query=${m.location.latitude},${m.location.longitude}`} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{m.place||'저장한 위치'} <span>지도 보기</span></a>:m.place}</p>}
+    {m.tags.length>0&&<div className="memo-tags">{m.tags.map(t=><button type="button" key={t} onClick={()=>{change({query:t});setPeriod('all');}}>#{t}</button>)}</div>}
+    <footer><button type="button" aria-pressed={m.favorite} disabled={busy===m.id} onClick={()=>void action(m.id,'memos.favorite',{id:m.id,favorite:!m.favorite})}><Icon name="bookmark"/>{m.favorite?'즐겨찾기 해제':'즐겨찾기'}</button>{m.mine&&<><button type="button" onClick={()=>setDraft({...m,photos:m.photos.map(p=>({id:p.id}))})}><Icon name="type"/>수정</button><button type="button" disabled={busy===m.id} onClick={()=>{if(window.confirm('이 메모와 첨부 사진을 삭제할까요?'))void action(m.id,'memos.delete',{id:m.id,version:m.version});}}><Icon name="trash"/>삭제</button></>}</footer>
+   </article>)}</section>)}
+   {(data.total>40||limit>40)&&<div className="memo-pagination"><button type="button" className="button compact" disabled={limit===40} onClick={()=>setLimit(n=>n-40)}>이전</button><span>{Math.floor((limit-1)/40)+1} / {Math.max(1,Math.ceil(data.total/40))}</span><button type="button" className="button compact" disabled={data.total<=limit} onClick={()=>setLimit(n=>n+40)}>다음</button></div>}
+   </>}
+  </section>}
+  {draft&&me&&<MemoEditor initial={draft} profileId={me.id} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));reset();reload();setMessage('메모를 저장했어요.');}}/>}
+  <dialog ref={viewer} className="memo-photo-viewer" aria-label="사진 크게 보기" onClose={()=>setViewPhoto('')} onClick={e=>{if(e.target===e.currentTarget)setViewPhoto('');}}><button type="button" className="icon-button" aria-label="사진 닫기" onClick={()=>setViewPhoto('')}><Icon name="close"/></button>{viewPhoto&&<img src={viewPhoto} alt="메모 첨부 사진 확대"/>}</dialog>
+ </div></AuthLayout>;
 }
+function MemoSamples({today,create}:{today:string;create:()=>void}){return <section className="memo-day memo-samples" aria-label="샘플 메모"><h2><time dateTime={today}>{dayLabel(today)}</time><span>샘플</span></h2>
+ <article className="memo-card" aria-label="공원에서 보낸 오후"><header><span className="memo-category">나들이</span><span>샘플 · 15:30</span><span className="memo-visibility">나만 보기</span></header><h3>공원에서 보낸 오후</h3><p className="memo-body">함께 걷고 웃었던 순간을 남겨요. 사진과 현재 위치를 담으면 나중에 더 생생하게 떠올릴 수 있어요.</p><img className="memo-sample-photo" src="/briefing/park.jpg" alt="사진 첨부 예시: 초록 공원"/><p className="memo-place"><Icon name="pin"/>우리 동네 공원 · 장소 예시</p><div className="memo-tags"><span>#주말</span><span>#산책</span></div><footer><button type="button" onClick={create}><Icon name="plus"/>사진 메모 써 보기</button></footer></article>
+ <article className="memo-card" aria-label="처음 혼자 해낸 날"><header><span className="memo-category">가족</span><span>샘플 · 09:00</span><span className="memo-visibility">그룹 공유</span></header><h3>처음 혼자 해낸 날</h3><p className="memo-body">“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 날짜·카테고리·태그로 다시 찾고, 오래 기억할 글은 즐겨찾기에 담아 보세요.</p><div className="memo-tags"><span>#성장</span><span>#기억할말</span></div><footer><button type="button" onClick={create}><Icon name="plus"/>첫 메모 써 보기</button></footer></article>
+ </section>;}
 
-function TimelineCard({entry,annotation,assignee,annotate}:{
- entry:TimelineEntry;annotation?:TimelineAnnotation;assignee:string;annotate:(patch:TimelinePatch)=>Promise<void>;
-}){
- const {kind,item}=entry,{title,place,note}=item.data,source=sources[kind];
- const id=useId(),noteButton=useRef<HTMLButtonElement>(null),pending=useRef(false);
- const [draft,setDraft]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<{message:string;requiresConsent:boolean}>();
- const reviewed=annotation?.reviewed===true,saved=annotation?.saved===true;
- async function write(patch:TimelinePatch){
-  if(pending.current)return;
-  pending.current=true;setBusy(true);setError(undefined);
-  try{
-   await annotate(patch);
-   if(patch.note!==undefined){setDraft(null);requestAnimationFrame(()=>noteButton.current?.focus());}
-  }catch(error){setError({message:errorText(error),requiresConsent:(error as {code?:string}).code==='LEGAL_ACCEPTANCE_REQUIRED'});}
-  finally{pending.current=false;setBusy(false);}
- }
- return <li className="timeline-item" data-kind={kind}>
-  <span className="timeline-point" aria-hidden="true"><Icon name={source.icon}/></span>
-  <article className="timeline-card" aria-labelledby={id} data-saved={saved}>
-   <div className="timeline-card-top">
-    <div className="timeline-card-body">
-     <div className="timeline-meta"><span className="timeline-kind">{source.label}</span><span>{assignee}</span></div>
-     <h3 id={id}>{title}</h3>
-     <p className="timeline-details">{entry.caption}{place&&<><span aria-hidden="true"> · </span>{place}</>}{item.fee&&ledgerFlow(item)==='EXPENSE'&&<><span aria-hidden="true"> · </span>{item.fee.paid?'지출 완료':'미결제'}</>}</p>
-    </div>
-    {kind==='FEE'&&<strong className="timeline-amount" data-flow={ledgerFlow(item)}>{timelineAmount(item)}</strong>}
-   </div>
-   {note&&<p className="timeline-source-note">{note}</p>}
-   {!!annotation?.note&&draft===null&&<p className="timeline-private-note"><Icon name="book"/><span><strong>내 메모</strong>{annotation.note}</span></p>}
-   <div className="timeline-card-actions">
-    <button type="button" className="timeline-action" aria-pressed={reviewed} disabled={busy} onClick={()=>void write({reviewed:!reviewed})}><Icon name="check"/>{reviewed?'확인됨':'확인'}</button>
-    <button type="button" ref={noteButton} className="timeline-action" aria-expanded={draft!==null} disabled={busy} onClick={()=>{setError(undefined);setDraft(draft===null?(annotation?.note||''):null);}}><Icon name="type"/>메모</button>
-    <button type="button" className="timeline-action" aria-pressed={saved} disabled={busy} onClick={()=>void write({saved:!saved})}><Icon name="bookmark"/>{saved?'보관됨':'보관'}</button>
-    <Link to={source.path} className="timeline-source-link" title={source.label+'에서 보기'} aria-label={source.label+'에서 보기'}><span>{source.label}에서 보기</span><Icon name="chevron"/></Link>
-   </div>
-   {draft!==null&&<form className="timeline-note-form" onSubmit={e=>{e.preventDefault();void write({note:draft.trim()});}}>
-    <label htmlFor={id+'-note'}>내 메모 <small>나만 볼 수 있어요</small></label>
-    <textarea id={id+'-note'} rows={3} maxLength={2000} value={draft} disabled={busy} autoFocus onChange={e=>setDraft(e.target.value)} placeholder="기억하고 싶은 내용을 적어 보세요."/>
-    <div className="timeline-note-actions">
-     {annotation?.note&&<button type="button" className="button timeline-delete-note" disabled={busy} onClick={()=>void write({note:''})}>메모 삭제</button>}
-     <button type="button" className="button" disabled={busy} onClick={()=>{setDraft(null);noteButton.current?.focus();}}>취소</button>
-     <button type="submit" className="button primary" disabled={busy||!draft.trim()||draft.trim()===(annotation?.note||'')}>메모 저장</button>
-    </div>
-   </form>}
-   {error&&<p className="timeline-card-error" role="alert">{error.message} {error.requiresConsent&&<Link to="/privacy">개인정보 관리</Link>}</p>}
-  </article>
- </li>;
-}
+function MemoBody({text}:{text:string}){const [expanded,setExpanded]=useState(false),long=text.length>250||text.split("\n").length>6;return <><p className={"memo-body"+(long&&!expanded?" memo-body-collapsed":"")}>{text}</p>{long&&<button type="button" className="memo-body-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?"접기":"글 더 보기"}</button>}</>;}

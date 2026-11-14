@@ -535,3 +535,56 @@ it('keeps timeline notes and flags private, recurring dates separate, and prunes
  expect((await member.ok('timeline.read',listing)).annotations).toEqual([]);
  expect((await member.req(api+'timeline.annotate',{itemId:repeat.id,date:'2026-11-09',saved:true})).status).toBe(404);
 });
+
+const memoInput=(title='독립 기록')=>({id:crypto.randomUUID(),version:0,title,body:'한 줄을 기록합니다',date:'2026-11-14',time:'09:30',category:'DAILY',tags:['기억'],place:'도서관',location:null,visibility:'PRIVATE',photos:[]});
+it('stores independent memos and filters without pulling timetable, calendar or ledger entries',async()=>{
+ const a=await parent('memo-author');for(const kind of ['REPEAT','EVENT','FEE'])await a.ok('items.create',payload('연동하지 않음',kind));
+ expect(await a.ok('memos.list')).toMatchObject({items:[],total:0,hasAny:false});
+ const input=memoInput(),saved=await a.ok('memos.save',input);expect(saved).toMatchObject({title:input.title,version:1,mine:true,photos:[]});
+ const other=await a.ok('memos.save',{...memoInput('나들이'),date:'2026-10-01',category:'OUTING',visibility:'GROUP',place:'공원'});
+ expect((await a.ok('memos.list',{from:'2026-11-01',to:'2026-11-30'})).items.map((n:{title:string})=>n.title)).toEqual(['독립 기록']);
+ for(const filter of [{query:'도서'},{category:'DAILY'},{visibility:'PRIVATE'},{hasLocation:true,query:'도서'}])expect((await a.ok('memos.list',filter)).total).toBe(1);
+ expect(await a.ok('memos.list',{query:'존재하지않음'})).toMatchObject({items:[],hasAny:true});
+ expect((await a.ok('memos.list',{limit:1,offset:1})).items[0].id).toBe(other.id);
+ expect((await a.ok('memos.list',{sort:'oldest'})).items[0].id).toBe(other.id);
+ const update={...input,version:1,title:'수정 기록'};await a.ok('memos.save',update);
+ expect((await a.req(api+'memos.save',update)).status).toBe(409);
+ expect((await a.req(api+'memos.delete',{id:input.id,version:1})).status).toBe(409);
+ await a.ok('memos.delete',{id:input.id,version:2});expect((await a.ok('memos.list')).total).toBe(1);
+});
+it('isolates memo photos, private entries and favorites; leaving immediately removes group access',async()=>{
+ const a=await parent('memo-host'),b=await parent('memo-reader'),x=await parent('memo-other');
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});
+ const privateNote=await a.ok('memos.save',memoInput('개인 메모'));
+ const input={...memoInput('사진 기록'),visibility:'GROUP',photos:[{data:'/9j/2Q==',width:1,height:1}],location:{latitude:37.2,longitude:127.1,accuracy:15,capturedAt:'2026-11-14T00:00:00.000Z'}};
+ const note=await a.ok('memos.save',input),photo=note.photos[0].id;
+ expect((await b.ok('memos.list')).items.map((n:{id:string})=>n.id)).toEqual([note.id]);
+ expect((await x.ok('memos.list')).items).toEqual([]);
+ expect((await b.req(api+'memos.favorite',{id:privateNote.id,favorite:true})).status).toBe(404);
+ expect((await b.req(api+'memos.save',{...input,id:note.id,version:1})).status).toBe(403);
+ expect((await b.req(api+'memos.delete',{id:note.id,version:1})).status).toBe(403);
+ expect(await b.ok('memos.photo',{id:photo})).toMatchObject({data:'/9j/2Q=='});
+ expect((await x.req(api+'memos.photo',{id:photo})).status).toBe(404);
+ await b.ok('memos.favorite',{id:note.id,favorite:true});expect((await b.ok('memos.list',{favorite:true,hasPhotos:true})).total).toBe(1);expect((await a.ok('memos.list',{favorite:true})).total).toBe(0);
+ expect((await a.req(api+'memos.save',{...memoInput(),photos:[{id:photo}]})).status).toBe(400);
+ const me=await b.ok('me');await b.ok('family.leave',{familyId:me.family.id,version:me.family.members.find((m:{id:string})=>m.id===me.id).version});
+ expect((await b.ok('memos.list')).total).toBe(0);expect((await b.req(api+'memos.photo',{id:photo})).status).toBe(404);
+ await a.ok('memos.save',{...input,version:1,photos:[{id:photo}]});await a.ok('memos.delete',{id:note.id,version:2});expect((await a.req(api+'memos.photo',{id:photo})).status).toBe(404);
+ for(const table of ['workspace_memos','workspace_memo_photos','workspace_memo_favorites'])await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,'SELECT * FROM app_private.'+table);})).rejects.toMatchObject({code:'42501'});
+});
+it('rejects oversized, forged and malformed memo inputs without partial saves',async()=>{
+ const a=await parent('memo-validation'),guest=new Browser(),input=memoInput();
+ expect((await guest.req(api+'memos.list')).status).toBe(401);
+ for(const patch of [{ownerId:crypto.randomUUID()},{title:''},{category:'UNKNOWN'},{body:'x'.repeat(10001)},{tags:['x'.repeat(25)]},{date:'2026-02-30'},{time:'24:30'},{photos:[{data:'PHN2Zz4=',width:1,height:1}]},{location:{latitude:91,longitude:0,accuracy:1,capturedAt:'2026-11-14T00:00:00.000Z'}}])expect((await a.req(api+'memos.save',{...input,...patch})).status).toBe(400);
+ expect((await a.ok('memos.list')).total).toBe(0);
+});
+it('preserves a previously authored timeline annotation as a private independent memo',async()=>{
+ const a=await parent('memo-legacy'),source=await a.ok('items.create',payload('이전 일정 제목'));
+ await a.ok('timeline.annotate',{itemId:source.id,date:'2026-11-07',note:'직접 작성했던 기록'});
+ const sql=await readFile('db/migrations/20261114090732_timeline_memos_schedule_alerts.sql','utf8');
+ const start=sql.indexOf('DO $$ BEGIN',sql.indexOf('-- Preserve authored annotation'));
+ const stop=sql.indexOf('RESET ROLE;',start);
+ await database.engine.exec('BEGIN;SET LOCAL ROLE iharu_policy;'+sql.slice(start,stop)+'RESET ROLE;COMMIT;');
+ const page=await a.ok('memos.list');expect(page.items).toHaveLength(1);expect(page.items[0]).toMatchObject({title:'이전 일정 제목',body:'직접 작성했던 기록',visibility:'PRIVATE'});
+ await a.ok('items.delete',{id:source.id,version:1});expect((await a.ok('memos.list')).items[0].body).toBe('직접 작성했던 기록');
+});

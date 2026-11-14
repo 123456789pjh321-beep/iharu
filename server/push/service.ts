@@ -42,13 +42,15 @@ export const sendWebPush:PushSender=async(d,config)=>{
 export async function dispatchPush(family:FamilyService,config:PushConfig,{plan=false,limit=20,sender=sendWebPush}:{plan?:boolean;limit?:number;sender?:PushSender}={}){
  if(plan)await pushCommand(family,config,'plan');
  const batch=await pushCommand<Lease[]>(family,config,'claim',{limit});let accepted=0,failed=0;
- // Five concurrent requests keep the function bounded and avoid flooding push services.
- for(let offset=0;offset<batch.length;offset+=5)await Promise.all(batch.slice(offset,offset+5).map(async lease=>{
-  const delivery=await pushCommand<Delivery|null>(family,config,'delivery',lease);if(!delivery)return;
+ // Keep due-time order for each batch. Push services may still delay device delivery.
+ const deadline=Date.now()+40000;
+ for(const lease of batch){
+  if(Date.now()>deadline)break; // Remaining leases expire and are retried by the next worker.
+  const delivery=await pushCommand<Delivery|null>(family,config,'delivery',lease);if(!delivery)continue;
   let status=0,retryAfter=60;
   try{status=await sender(delivery,config);}catch(e){const err=e as {statusCode?:number;headers?:Record<string,string>};status=Number.isInteger(err.statusCode)?err.statusCode!:0;const value=err.headers?.['retry-after'];if(value){const n=Number(value);retryAfter=Number.isFinite(n)?n:Math.ceil((Date.parse(value)-Date.now())/1000);if(!Number.isFinite(retryAfter))retryAfter=60;}}
   await pushCommand(family,config,'complete',{...lease,status,retryAfter});if(status>=200&&status<300)accepted++;else failed++;
- }));return {claimed:batch.length,accepted,failed};
+ }return {claimed:batch.length,accepted,failed};
 }
 export function schedulePushDispatch(family:FamilyService){
  const config=pushConfig();if(!config)return;
