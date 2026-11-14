@@ -2,13 +2,17 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import { copy } from '../copy';
 import {m} from 'motion/react';
-import {BrandWordmark} from './BrandWordmark';
 
 export function Card({ title, icon, children, className = '', action }: { title:string; icon:IconName; children:ReactNode; className?:string; action?:ReactNode }) {
   return <m.section initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className={`card ${className}`}><div className="card-heading"><h2><span className="section-icon"><Icon name={icon}/></span>{title}</h2>{action}</div>{children}</m.section>;
 }
 export function Loading({ label = '그룹의 하루를 불러오고 있어요' }: { label?:string }) {
-  return <div className="loading-state" role="status" data-app-loading aria-busy="true"><BrandWordmark className="loading-wordmark"/><span className="loading-line" aria-hidden="true"/><span>{label}</span></div>;
+  return (
+    <div className="loading-state" role="status" data-app-loading>
+      <img src="/brand/iharu-loading-mark.svg" className="iharu-loading-mark" width="76" height="76" alt=""/>
+      <span>{label}</span>
+    </div>
+  );
 }
 export function ErrorState({ message, retry }: { message:string; retry:() => void }) {
   return <div className="error-state" role="alert"><strong>{copy.error}</strong><p>{message}</p><button className="button" onClick={retry}>{copy.retry}</button></div>;

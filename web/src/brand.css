@@ -5,12 +5,5 @@
 .workspace-brand.compact-wordmark .iharu-wordmark{width:85px}
 .market-brand{min-height:44px;color:#176b56}
 .market-brand .iharu-wordmark{width:124px;height:auto}
-.loading-state{align-items:center;text-align:center;gap:18px}
-.loading-state .loading-wordmark{width:112px;height:auto;color:var(--primary,#176b56)}
-.loading-line{display:block;width:52px;height:2px;border-radius:2px;background:color-mix(in srgb,var(--primary,#176b56) 12%,transparent);overflow:hidden}
-.loading-line::after{content:"";display:block;width:40%;height:100%;border-radius:inherit;background:var(--primary,#176b56);animation:iharu-loading-line 1.4s ease-in-out infinite}
-@keyframes iharu-loading-line{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
 html[data-theme=dark] :is(.market-brand,.brand.workspace-brand.workspace-wordmark){color:#a7c6b7}
 @media(max-width:760px){.market-brand .iharu-wordmark{width:101px}.workspace-brand .iharu-wordmark,.workspace-wordmark .iharu-wordmark{width:92px}.workspace-brand.compact-wordmark .iharu-wordmark{width:78px}}
-@media(prefers-reduced-motion:reduce){.loading-line::after{animation:none;width:100%;opacity:.55}}
-html[data-motion=reduced] .loading-line::after{animation:none;width:100%;opacity:.55}
