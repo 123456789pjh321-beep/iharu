@@ -58,7 +58,7 @@ test('workspace keeps the launch visible while loading and reuses the mark withi
  await page.screenshot({path:'test-results/ui127-more-navigation-mobile.png',animations:'disabled'});
  let releaseBriefing!:()=>void;
  const heldBriefing=new Promise<void>(resolve=>{releaseBriefing=resolve;});
- await page.route(/\/assets\/BriefingPage-[^/]+\.js$/,async route=>{await heldBriefing;await route.continue();});
+ await page.route(/\/assets\/Briefing-[^/]+\.js$/,async route=>{await heldBriefing;await route.continue();});
  try{
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'AI 브리핑',exact:true}).click();
   const pending=page.locator('[data-app-loading]').filter({hasText:'브리핑을 열고 있어요'});
