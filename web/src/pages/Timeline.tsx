@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,type CSSProperties} from 'react';
 import {Navigate} from 'react-router-dom';
 import {addDays,koreaToday} from '../../../shared/schedules';
 import {emptyMemo,memoCategories,type Memo,type MemoDraft,type MemoList} from '../../../shared/memos';
@@ -13,6 +13,7 @@ import {MemberFilter} from '../components/MemberFilter';
 import {MonthSwipeArea} from '../components/MonthSwipeArea';
 import {shiftMonth} from '../components/PeriodPager';
 import {GroupInviteShareButton} from '../components/GroupInviteShare';
+import {calendarColors} from '../components/scheduleColors';
 import {MemoEditor,MemoPhoto} from '../components/MemoEditor';
 import {workspaceRequest} from '../workspace-api';
 import './timeline.css';
@@ -114,9 +115,9 @@ function Timeline({me}:{me:WorkspaceMe|null}){
    {!items.length?<div className="memo-empty"><Icon name="book"/><h2>{ownerIds.length?'선택한 구성원의 이번 달 글이 없어요':'이번 달에 작성한 글이 없어요'}</h2></div>:Array.from(groups,([date,items])=><section className="memo-day" key={date} aria-label={dayLabel(date)}>
     <h2><time dateTime={date}>{dayLabel(date)}</time>{isSample?<span>샘플</span>:date===today&&<span>오늘</span>}</h2>
     {items.map(memo=><article className="memo-card memo-preview" key={memo.id} aria-label={memo.title}>
-     <MemoMeta memo={memo}/>
+     <MemoFeedMeta memo={memo} color={calendarColors[Math.max(0,members.findIndex(member=>member.id===memo.ownerId))%calendarColors.length]}/>
      <div className="memo-preview-row"><div className="memo-preview-copy"><h3>{memo.title}</h3><p className="memo-preview-body">{memo.body||'내용 없이 저장한 메모예요.'}</p></div>
-      <button type="button" className="memo-more" aria-haspopup="dialog" onClick={()=>openMemo(memo)}>더보기</button>
+      <button type="button" className="memo-more" aria-haspopup="dialog" onClick={()=>openMemo(memo)}>더보기<Icon name="chevron"/></button>
      </div>
     </article>)}
    </section>)}
@@ -129,7 +130,12 @@ function Timeline({me}:{me:WorkspaceMe|null}){
    const current=ownerIds.length?ownerIds:members.map(m=>m.id),next=current.includes(id)?current.filter(x=>x!==id):[...current,id];
    setOwnerIds(next.length===members.length?[]:next.length?next:[id]);setOffset(0);setSelectedId('');
   }} label="메모 작성자"/></div>}
-  <button type="button" className="memo-new-row" onClick={create}><Icon name="plus"/>새글 등록</button>
+  <div className="memo-compose"><button type="button" className="memo-new-row" aria-label="새글 등록" onClick={create}>
+   <span className="memo-compose-icon"><Icon name="plus"/></span>
+   <span className="memo-compose-copy"><strong>새글 등록</strong><small>오늘의 순간을 남겨보세요</small></span>
+   <span className="memo-compose-media" aria-hidden="true"><Icon name="image"/><Icon name="pin"/></span>
+   <Icon name="chevron"/>
+  </button></div>
   <p className="memo-status" role="status">{message}</p>
   <MonthSwipeArea month={month} onChange={selectMonth}>{renderMonth}</MonthSwipeArea>
   {selected&&<MemoDetail memo={selected} busy={busy===selected.id} message={message} onClose={()=>{setSelectedId('');setViewPhoto('');}} onPhoto={setViewPhoto} onCreate={()=>{setSelectedId('');create();}} onEdit={()=>{
@@ -138,6 +144,20 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   {draft&&me&&<MemoEditor initial={draft} profileId={me.id} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));setOwnerIds([]);reload();setMessage('메모를 저장했어요.');}}/>}
   <dialog ref={viewer} className="memo-photo-viewer" aria-label="사진 크게 보기" onClose={()=>setViewPhoto('')} onClick={e=>{if(e.target===e.currentTarget)setViewPhoto('');}}><button type="button" className="icon-button" aria-label="사진 닫기" onClick={()=>setViewPhoto('')}><Icon name="close"/></button>{viewPhoto&&<img src={viewPhoto} alt="메모 첨부 사진 확대"/>}</dialog>
  </div></AuthLayout>;
+}
+function MemoFeedMeta({memo,color}:{memo:DisplayMemo;color:string}){
+ const photoCount=memo.samplePhoto?1:memo.photos.length;
+ return <header className="memo-feed-meta">
+  <span className="memo-author-avatar" style={{'--memo-author-color':color} as CSSProperties} aria-hidden="true">{Array.from(memo.ownerName.trim())[0]||'나'}</span>
+  <div className="memo-author-text"><strong title={memo.ownerName}>{memo.ownerName}</strong>
+   <div className="memo-feed-subline"><time dateTime={memo.date+'T'+memo.time+':00+09:00'}>{memo.time}</time><span aria-hidden="true">·</span><span className="memo-feed-category">{memoCategories[memo.category]}</span>
+    {photoCount>0&&<span className="memo-feed-attachment" title={'사진 '+photoCount+'장'}><Icon name="image"/><span className="sr-only">사진 </span>{photoCount}<span className="sr-only">장 첨부</span></span>}
+    {(memo.location||memo.place)&&<span className="memo-feed-attachment" title="장소 포함"><Icon name="pin"/><span className="sr-only">장소 포함</span></span>}
+    {memo.favorite&&<span className="memo-feed-bookmark" title="즐겨찾기한 글"><Icon name="bookmark"/><span className="sr-only">즐겨찾기한 글</span></span>}
+   </div>
+  </div>
+  <span className="memo-feed-visibility" data-visibility={memo.visibility}><Icon name={memo.visibility==='PRIVATE'?'shield':'users'}/>{memo.visibility==='PRIVATE'?'나만 보기':'그룹 공유'}</span>
+ </header>;
 }
 function MemoMeta({memo}:{memo:DisplayMemo}){
  return <header className="memo-meta"><span className="memo-category">{memoCategories[memo.category]}</span><span>{memo.ownerName} · {memo.time}</span><span className="memo-visibility">{memo.visibility==='PRIVATE'?'나만 보기':'그룹 공유'}</span></header>;
