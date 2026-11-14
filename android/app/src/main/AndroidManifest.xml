@@ -40,8 +40,38 @@
                 <data android:scheme="https" android:host="myiharu.com" />
             </intent-filter>
         </activity>
+        <activity android:name=".IharuNotificationSettings" android:exported="true"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="iharu-settings" android:host="notifications" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".WidgetSettingsActivity" android:exported="true"
+            android:theme="@style/WidgetSettingsTheme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="iharu-widget" android:host="connect" />
+            </intent-filter>
+        </activity>
+        <receiver android:name=".CalendarWidget" android:label="@string/calendar_widget" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/calendar_widget" />
+        </receiver>
+        <receiver android:name=".TimetableWidget" android:label="@string/timetable_widget" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/timetable_widget" />
+        </receiver>
+        <service android:name=".WidgetRefreshJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false" />
         <!-- Only the browser verified by ABH's TokenStore may bind to this service. -->
-        <service android:name="com.google.androidbrowserhelper.trusted.DelegationService"
+        <service android:name=".IharuNotificationService"
             android:exported="true" tools:ignore="ExportedService">
             <meta-data android:name="android.support.customtabs.trusted.SMALL_ICON" android:resource="@drawable/ic_notification" />
             <intent-filter>

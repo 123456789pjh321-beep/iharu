@@ -2,4 +2,9 @@
 <resources>
     <string name="app_name">아이하루</string>
     <string name="asset_statements" translatable="false">[{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://myiharu.com\"}}]</string>
+    <string name="calendar_widget">아이하루 달력</string>
+    <string name="timetable_widget">아이하루 시간표</string>
+    <string name="notification_channel">아이하루 알림</string>
+    <string name="widget_settings">위젯 설정</string>
+    <string name="widget_refresh">새로고침</string>
 </resources>

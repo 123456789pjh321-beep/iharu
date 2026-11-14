@@ -5,6 +5,7 @@ const paths=new Set(['/timetable','/today/calendar','/today/repeats','/chat','/b
 /** Auth returns are exact app destinations, including explicitly supported settings and saved views. */
 export function entryReturnPath(value:unknown):string{
  if(typeof value!=='string')return '/timetable';
+ if(/^\/android\/widgets\?challenge=[A-Za-z0-9_-]{43}$/.test(value))return value;
  if(value==='/admin?section=ai'||value==='/briefing?settings=1'||value==='/briefing?view=saved')return value;
  return paths.has(value)||/^\/more\/(notices|blog)\/[a-z0-9-]{1,100}$/.test(value)?value:'/timetable';
 }

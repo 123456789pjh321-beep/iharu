@@ -9,6 +9,7 @@ import {applicationKey,bindPushProfile,deviceSubscription,pushSupported} from '.
 import '../notification-settings.css';
 
 type Settings={profileId:string;calendarChanges:boolean;calendarReminders:boolean;chat:boolean;reminderMinutes:number;preview:boolean;deviceEnabled:boolean;deviceCount:number;pushAvailable:boolean;publicKey:string|null};
+const androidNotificationSettings='intent://notifications#Intent;scheme=iharu-settings;package=com.myiharu.app;end';
 const minutes=[{value:0,label:'일정 시작 시각'},{value:5,label:'5분 전'},{value:10,label:'10분 전'},{value:30,label:'30분 전'},{value:60,label:'1시간 전'},{value:1440,label:'1일 전'},{value:10080,label:'1주 전'}];
 export function NotificationSettings(){
  const [settings,setSettings]=useState<Settings|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[permission,setPermission]=useState<NotificationPermission|'unsupported'>(()=>pushSupported()?Notification.permission:'unsupported');
@@ -35,6 +36,7 @@ export function NotificationSettings(){
   await run(async()=>{try{const subscription=await deviceSubscription();const next=await workspaceRequest<Settings>('push.settings.save',{calendarChanges:value.calendarChanges,calendarReminders:value.calendarReminders,chat:value.chat,reminderMinutes:value.reminderMinutes,preview:value.preview,...(subscription?{endpoint:subscription.endpoint}:{})});setSettings(next);setMessage('알림설정을 저장했어요.');}catch(e){setSettings(previous);throw e;}});
  }
 
+ const android=/Android/i.test(navigator.userAgent);
  const enabled=settings?.deviceEnabled&&permission==='granted';
  return <AuthLayout wide><div className="notification-settings"><MorePageHeading title="알림설정"/>
  {error&&<div role="alert" className="notification-notice error">{error}</div>}{message&&<div role="status" className="notification-notice">{message}</div>}
@@ -42,6 +44,7 @@ export function NotificationSettings(){
  <section className="notification-device account-card" aria-labelledby="device-push-title"><div className="notification-section-heading"><Icon name="bell"/><div><h2 id="device-push-title">이 기기 알림</h2><p>{enabled?'기기 알림이 연결되어 있어요.':'기기마다 한 번씩 알림을 연결해 주세요.'}</p></div><span className={'notification-state '+(enabled?'on':'')}>{enabled?'연결됨':'연결 안 됨'}</span></div>
  <p>앱을 보고 있지 않을 때도 소식을 받을 수 있어요. 현재 계정에 연결된 기기 {settings.deviceCount}개</p>
  {permission==='unsupported'?<p className="notification-help">이 환경에서는 기기 알림을 지원하지 않아요. Android Chrome 또는 최신 아이하루 앱을 이용해 주세요. iPhone·iPad는 홈 화면에 추가한 앱에서 설정해 주세요.</p>:!settings.pushAvailable?<p className="notification-help">기기 알림 연결을 준비하고 있어요. 아래 수신 설정은 먼저 저장할 수 있어요.</p>:<div className="notification-actions"><button type="button" className="button primary" disabled={busy} onClick={()=>void(enabled?disable():enable())}>{busy?'처리 중…':enabled?'이 기기 알림 끄기':'이 기기 알림 켜기'}</button><button type="button" className="button" disabled={busy||!enabled} onClick={()=>void run(async()=>{const subscription=await deviceSubscription();if(!subscription)throw new Error('기기 알림을 다시 연결해 주세요.');await workspaceRequest('push.test',{endpoint:subscription.endpoint});setMessage('시험 알림을 요청했어요. 기기의 알림창을 확인해 주세요.');})}>시험 알림 보내기</button></div>}
+ {android&&<p className="notification-help"><a href={androidNotificationSettings}>아이하루 안드로이드 알림 설정 열기</a></p>}
  {permission==='denied'&&<p className="notification-help">알림이 차단되어 있어요. Android 설정 → 앱 → 아이하루 → 알림을 허용한 뒤 다시 연결해 주세요. 브라우저에서는 사이트 설정의 알림 권한을 확인해 주세요.</p>}
  </section>
  <fieldset className="notification-options" disabled={busy}><legend className="sr-only">수신할 알림</legend><section className="account-card"><div className="notification-section-heading"><Icon name="calendar"/><div><h2>달력</h2><p>그룹 행사와 기념일을 함께 챙겨요.</p></div></div>

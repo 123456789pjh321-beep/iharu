@@ -2,6 +2,7 @@ package com.myiharu.app;
 
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
+import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ComponentName;
@@ -15,6 +16,8 @@ import android.view.ViewGroup;
 import androidx.browser.customtabs.CustomTabsCallback;
 import com.google.androidbrowserhelper.trusted.QualityEnforcer;
 import com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,8 +32,7 @@ public class RuntimeRecoveryTest {
     @Test public void notificationDelegationIsDeclaredWithPrivatePermissionActivity() throws Exception {
         Context context = RuntimeEnvironment.getApplication();
         var pm = context.getPackageManager();
-        var service = pm.getServiceInfo(new ComponentName(context,
-            "com.google.androidbrowserhelper.trusted.DelegationService"), PackageManager.GET_META_DATA);
+        var service = pm.getServiceInfo(new ComponentName(context,IharuNotificationService.class), PackageManager.GET_META_DATA);
         assertTrue(service.exported);
         assertNotEquals(0,service.metaData.getInt("android.support.customtabs.trusted.SMALL_ICON"));
         var activity = pm.getActivityInfo(new ComponentName(context,
@@ -38,6 +40,26 @@ public class RuntimeRecoveryTest {
         assertFalse(activity.exported);
         var permissions = pm.getPackageInfo(context.getPackageName(),PackageManager.GET_PERMISSIONS).requestedPermissions;
         assertTrue(java.util.Arrays.asList(permissions).contains("android.permission.POST_NOTIFICATIONS"));
+    }
+
+    @Test public void widgetsUseDistinctPrivateProvidersAndOneDeviceScopedVerifier() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        var pm = context.getPackageManager();
+        for (Class<?> type : new Class<?>[]{CalendarWidget.class,TimetableWidget.class}) {
+            var provider = pm.getReceiverInfo(new ComponentName(context,type), PackageManager.GET_META_DATA);
+            assertFalse(provider.exported);
+            assertNotEquals(0,provider.metaData.getInt("android.appwidget.provider"));
+        }
+        String challenge = WidgetConnection.start(context, 123);
+        var prefs = WidgetConnection.preferences(context);
+        String verifier = prefs.getString("pending_verifier", "");
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(verifier.getBytes(StandardCharsets.US_ASCII));
+        assertEquals(challenge, android.util.Base64.encodeToString(digest,
+                android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.NO_PADDING));
+        assertNotEquals(verifier, challenge);
+        assertEquals(123, prefs.getInt("pending_id", AppWidgetManager.INVALID_APPWIDGET_ID));
+        WidgetConnection.clear(context);
+        assertFalse(prefs.contains("pending_verifier"));
     }
 
     @Test public void browserDataManagerExistsBeforeOnlineLauncherEnablesIt() throws Exception {
