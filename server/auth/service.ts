@@ -7,6 +7,13 @@ import { query, type AuthDatabase } from './database.js';
 import { AuthPolicy, MAX_SESSION_MS, normalizePhone, policyError } from './policy.js';
 import { createDelivery, type Delivery } from './delivery.js';
 
+// Middleware payloads are unknown in the function packager's TypeScript mode.
+// Keep the original object so normalized values still reach Better Auth.
+function authFields(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown> : {};
+}
+
 export function createAuthService(settings: AuthSettings, db: AuthDatabase, delivery: Delivery = createDelivery(settings), now: () => Date = () => new Date()) {
   const policy = new AuthPolicy(db, settings.secret, now);
   const synthetic = (provider: string, id: string | number) => `${policy.digest(`${provider}:${id}`)}@identity.iharu.invalid`;
@@ -73,7 +80,7 @@ export function createAuthService(settings: AuthSettings, db: AuthDatabase, deli
     })],
     databaseHooks: {
       user: { create: { before: async (_, ctx) => {
-        if (ctx?.path === '/phone-number/verify' && ctx.body?.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
+        if (ctx?.path === '/phone-number/verify' && authFields(ctx.body).ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
         if (ctx?.path?.startsWith('/callback/') && (await getOAuthState())?.serverContext?.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
       }, after: async user => {
         await query(db, 'INSERT INTO iharu_auth.members (id,auth_user_id) VALUES ($1,$2) ON CONFLICT (auth_user_id) DO NOTHING', [randomUUID(), user.id]);
@@ -109,30 +116,33 @@ export function createAuthService(settings: AuthSettings, db: AuthDatabase, deli
     hooks: { before: createAuthMiddleware(async ctx => {
       // These checks also protect server API calls, not only the Hono gateway.
       const path = ctx.path;
-      if (path === '/sign-up/email' && ctx.body.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
-      if (path === '/sign-in/social' && ctx.body.requestSignUp === true) {
-        if (ctx.body.additionalData?.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
+      const body = authFields(ctx.body);
+      if (path === '/sign-up/email' && body.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
+      if (path === '/sign-in/social' && body.requestSignUp === true) {
+        const additionalData = authFields(body.additionalData);
+        if (additionalData.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
         await addOAuthServerContext({ ageAtLeast14: true });
-        delete ctx.body.additionalData.ageAtLeast14;
+        delete additionalData.ageAtLeast14;
       }
       if (['/unlink-account','/delete-user','/delete-user/callback','/update-user','/change-email','/set-password','/sign-in/phone-number','/phone-number/request-password-reset','/phone-number/reset-password'].includes(path)) policyError('USE_ACCOUNT_SETTINGS');
       if (path === '/phone-number/send-otp' || path === '/phone-number/verify') {
         if (!settings.sms) policyError('PROVIDER_NOT_READY');
-        ctx.body.phoneNumber = normalizePhone(ctx.body.phoneNumber);
+        const phone = normalizePhone(body.phoneNumber);
+        body.phoneNumber = phone;
+        if (path === '/phone-number/send-otp') {
+          // Vercel overwrites x-vercel-forwarded-for; elsewhere use a shared, conservative bucket.
+          const ip = process.env.VERCEL ? ctx.headers?.get('x-vercel-forwarded-for') || 'unknown' : 'local';
+          await policy.reserveSms(phone, ip, settings.sms!.dailyBudget);
+        }
       }
-      if (path === '/phone-number/send-otp') {
-        // Vercel overwrites x-vercel-forwarded-for; elsewhere use a shared, conservative bucket.
-        const ip = process.env.VERCEL ? ctx.headers?.get('x-vercel-forwarded-for') || 'unknown' : 'local';
-        await policy.reserveSms(ctx.body.phoneNumber, ip, settings.sms!.dailyBudget);
-      }
-      if (path === '/link-social' || path === '/change-password' || (path === '/phone-number/verify' && ctx.body.updatePhoneNumber)) {
+      if (path === '/link-social' || path === '/change-password' || (path === '/phone-number/verify' && body.updatePhoneNumber)) {
         const s = ctx.headers ? await auth.api.getSession({ headers: ctx.headers, query: { disableCookieCache: true, disableRefresh: true } }) : null;
         if (!s) policyError('AUTH_REQUIRED');
         await policy.requireRecent(s.session.id);
-        if (path === '/change-password') ctx.body.revokeOtherSessions = true;
+        if (path === '/change-password') body.revokeOtherSessions = true;
       }
       if (path === '/reset-password') {
-        const token = ctx.body.token || ctx.query?.token;
+        const token = body.token || authFields(ctx.query).token;
         const [v] = await query<{ value: string }>(db, 'SELECT value FROM iharu_auth.verification WHERE identifier=$1', [`reset-password:${token}`]);
         if (v) {
           const existing = await query(db, 'SELECT id FROM iharu_auth.account WHERE "userId"=$1 AND "providerId"=\'credential\' AND password IS NOT NULL', [v.value]);
@@ -145,7 +155,7 @@ export function createAuthService(settings: AuthSettings, db: AuthDatabase, deli
         const previous = await auth.api.getSession({ headers: ctx.headers, query: { disableCookieCache: true, disableRefresh: true } });
         if (previous && previous.user.id === fresh.user.id && previous.session.id !== fresh.session.id) await query(db, 'DELETE FROM iharu_auth.session WHERE id=$1', [previous.session.id]);
       }
-      if (ctx.path === '/phone-number/verify' && ctx.body?.updatePhoneNumber && ctx.headers && !(ctx.context.returned instanceof Error)) {
+      if (ctx.path === '/phone-number/verify' && authFields(ctx.body).updatePhoneNumber && ctx.headers && !(ctx.context.returned instanceof Error)) {
         const previous = await auth.api.getSession({ headers: ctx.headers, query: { disableCookieCache: true, disableRefresh: true } });
         if (previous) await query(db, 'DELETE FROM iharu_auth.session WHERE "userId"=$1 AND id<>$2', [previous.user.id, previous.session.id]);
       }

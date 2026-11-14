@@ -2,6 +2,7 @@ import {useEffect,useRef,useState} from 'react';
 import type {WorkspaceMember} from '../../../shared/workspace';
 import {MemberFilter} from './MemberFilter';
 import {GroupInviteShareButton} from './GroupInviteShare';
+import {useOptionalWorkspaceGate} from './WorkspaceGate';
 
 export type MemberPreferenceProps={preview?:boolean;viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>};
 export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultMemberIds,saveDefaultMembers}:MemberPreferenceProps){
@@ -18,13 +19,14 @@ export function useMemberPreference(members:WorkspaceMember[],{viewerId,defaultM
  return {memberIds,saved,isSaved,saving,error,notice,toggle,selectAll,save,canSave:!!saveDefaultMembers};
 }
 export function MemberPreferenceFilter({members,selection,label,className='',preview=false}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string;preview?:boolean}){
+ const gate=useOptionalWorkspaceGate();
  const {memberIds,isSaved,saving,error,notice,toggle,selectAll,save,canSave}=selection;
  const names=members.filter(m=>memberIds.includes(m.id)).map(m=>m.name);
  const name=names.join(' · ')||'나',summary=names.length>1?`${names[0]} 외 ${names.length-1}명`:name;
  const action=saving?'저장 중':isSaved?'첫 화면으로 설정됨':'첫 화면으로 저장';
  return <section className="member-preference" aria-label={label+' 설정'}>
   <div className="member-preference-row">
-   {!preview&&<GroupInviteShareButton/>}
+   {!preview&&gate?.access.identity?.family&&<GroupInviteShareButton/>}
    <MemberFilter className={className} members={members} value={memberIds} allLabel="전체선택" onSelectAll={selectAll} allSelected={members.length>0&&memberIds.length===members.length} compact disabled={saving} onChange={toggle} label={label}/>
    {preview?<span className="guest-sample-badge" title="가상 예시이며 실제 그룹 자료가 아닙니다">샘플 데이터</span>:<div className="timetable-preference"><button type="button" className="button compact" title={name+' · '+action} aria-label={name+' · '+action} aria-busy={saving} data-saved={isSaved} disabled={saving||isSaved||!canSave} onClick={()=>void save()}><strong className="preference-member-names">{summary}</strong><span className="preference-action-short" aria-hidden="true">{saving?'저장 중':isSaved?'설정됨':'저장'}</span></button></div>}
   </div>

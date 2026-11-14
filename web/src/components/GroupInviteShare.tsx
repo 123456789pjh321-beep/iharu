@@ -28,7 +28,7 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const issuing=useRef<string|null>(null);
  const route=pathname.toLowerCase().replace(/\/+$/,'');
  const profileId=parent?.id;
- const canInvite=!!parent,needsGroup=!!parent?.groups?.length&&!parent.family;
+ const canInvite=!!parent,needsGroup=!parent?.family;
  const groupId=parent?.family?.id,previousGroup=useRef(groupId);
  const current=profileId&&invite?.ownerId===profileId?invite:undefined;
 
@@ -54,12 +54,12 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  },[refreshAccess,parent?.family?.id]);
 
  const action=useMemo(()=>profileId?{dialogId,open:()=>{
-  if(needsGroup){navigate('/family');return;}
+  if(needsGroup){navigate(parent?.groups?.length?'/family':'/family?create=1');return;}
   const node=dialog.current;
   if(!node||node.open)return;
   node.showModal();
   if(canInvite)void issue(profileId);
- },canInvite}:null,[dialogId,profileId,canInvite,issue,navigate,needsGroup]);
+ },canInvite}:null,[dialogId,profileId,canInvite,issue,navigate,needsGroup,parent?.groups?.length]);
  return <GroupInviteShareContext.Provider value={action}>
   {parent&&!inlineShortcutRoutes.has(route)&&!route.startsWith('/more/')&&!route.startsWith('/legal/')&&<div className="workspace-invite-toolbar"><GroupInviteShareButton/></div>}
   {children}

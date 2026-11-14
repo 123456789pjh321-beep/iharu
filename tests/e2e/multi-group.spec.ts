@@ -17,9 +17,9 @@ test('creates groups from the menu, accepts an invitation without leaving anothe
  const context=await browser.newContext({baseURL:origin,viewport:{width:520,height:900},reducedMotion:'reduce'}),guest=await context.newPage();
  try{
   await register(page,'그룹장');await command(page,'memos.save',memo('그룹장의 개인 기록'));
-  await page.goto('/family');await expect(page.getByRole('region',{name:'개인 공간'})).toContainText('자동 공유되지');
-  await page.getByRole('button',{name:'새 그룹',exact:true}).click();const editor=page.getByRole('dialog',{name:'새 그룹 만들기'});await expect(editor.getByLabel('그룹 이름')).toHaveValue('기본그룹');await editor.getByRole('button',{name:'그룹 만들기',exact:true}).click();
-  const card=page.getByRole('region',{name:'기본그룹 그룹',exact:true});await expect(card).toBeVisible();await card.getByRole('button',{name:'구성원 초대',exact:true}).click();const link=page.getByLabel('발급한 그룹 초대 링크');await expect(link).toBeVisible();const url=await link.inputValue();await page.getByRole('button',{name:'초대 닫기'}).click();
+  await page.goto('/family');await expect(page.getByRole('region',{name:'개인 공간'})).toContainText('나만 보는');
+  await page.getByRole('button',{name:'새 그룹 만들기',exact:true}).click();const editor=page.getByRole('dialog',{name:'새 그룹 만들기'});await expect(editor.getByLabel('그룹 이름')).toHaveValue('기본그룹');await editor.getByRole('button',{name:'그룹 만들기',exact:true}).click();
+  const card=page.getByRole('region',{name:'기본그룹 그룹 상세',exact:true});await expect(card).toBeVisible();await card.getByRole('button',{name:'구성원 초대',exact:true}).click();const link=page.getByLabel('발급한 그룹 초대 링크');await expect(link).toBeVisible();const url=await link.inputValue();await page.getByRole('button',{name:'초대 닫기'}).click();
   await register(guest,'구성원');await command(guest,'memos.save',memo('구성원의 개인 기록'));await command(guest,'group.create',{name:'친구 모임',description:'',color:1,clientRequestId:crypto.randomUUID()});
   await guest.goto(url);await guest.getByRole('button',{name:'초대 수락',exact:true}).click();await guest.getByRole('link',{name:'그룹 관리 열기'}).click();await expect(guest.locator('.managed-group')).toHaveCount(2);
   await nav(page).getByRole('link',{name:'타임라인',exact:true}).click();await expect(page.getByRole('article',{name:'그룹장의 개인 기록',exact:true})).toHaveCount(0);
@@ -39,8 +39,8 @@ test('creates groups from the menu, accepts an invitation without leaving anothe
   await filter(page).getByRole('button',{name:'기본그룹',exact:true}).click();await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('');await page.getByRole('button',{name:'메모 작성 닫기'}).click();
   await filter(page).getByRole('button',{name:'개인',exact:true}).click();await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('개인 임시 글');
   page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'메모 작성 닫기'}).click();
-  await nav(page).getByRole('link',{name:'그룹관리',exact:true}).click();await card.locator('.group-card-title').click();await expect(card.locator('.group-member-row')).toHaveCount(2);
-  page.once('dialog',d=>d.accept());await card.getByRole('button',{name:'구성원 내보내기',exact:true}).click();await expect(card.locator('.group-member-row')).toHaveCount(1);
+  await nav(page).getByRole('link',{name:'그룹관리',exact:true}).click();await page.getByRole('region',{name:'기본그룹 그룹',exact:true}).locator('.group-card-title').click();await expect(card.locator('.group-member-list .group-member-row')).toHaveCount(2);
+  await card.locator('.group-manage-options summary').click();page.once('dialog',d=>d.accept());await card.getByRole('button',{name:'구성원 내보내기',exact:true}).click();await expect(card.locator('.group-member-list .group-member-row')).toHaveCount(1);
   await guest.reload();expect((await command(guest,'me')).groups.map((g:{name:string})=>g.name)).toEqual(['친구 모임']);
   await filter(guest).getByRole('button',{name:'개인',exact:true}).click();await expect(guest.getByRole('article',{name:'구성원의 개인 기록',exact:true})).toBeVisible();expect(errors).toEqual([]);
  }finally{await context.close();}
@@ -53,9 +53,37 @@ test('keeps seven navigation items, shared group filters and management sheets u
  await expect(nav(page).getByRole('link')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','대화','더보기']);
  for(const width of [320,520,820,1440]){
   await page.setViewportSize({width,height:900});await page.screenshot({path:`test-results/groups-management-${width}.png`,animations:'disabled'});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
-  await page.getByRole('button',{name:'새 그룹',exact:true}).click();const dialog=page.getByRole('dialog',{name:'새 그룹 만들기'});await expect(dialog).toBeVisible();const bounds=(await dialog.boundingBox())!;expect(bounds.x).toBeGreaterThanOrEqual(0);expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);await page.screenshot({path:`test-results/groups-editor-${width}.png`,animations:'disabled'});await dialog.getByRole('button',{name:'취소',exact:true}).click();
+  await page.getByRole('button',{name:'새 그룹 만들기',exact:true}).click();const dialog=page.getByRole('dialog',{name:'새 그룹 만들기'});await expect(dialog).toBeVisible();const bounds=(await dialog.boundingBox())!;expect(bounds.x).toBeGreaterThanOrEqual(0);expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);await page.screenshot({path:`test-results/groups-editor-${width}.png`,animations:'disabled'});await dialog.getByRole('button',{name:'취소',exact:true}).click();
   for(const label of ['시간표','달력','가계부','타임라인']){await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(filter(page)).toBeVisible();await expect(filter(page).getByRole('button',{name:'학교 친구 모임',exact:true})).toHaveAttribute('aria-pressed','true');expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);}
   await page.screenshot({path:`test-results/groups-timeline-${width}.png`,animations:'disabled'});await nav(page).getByRole('link',{name:'그룹관리',exact:true}).click();
  }
  await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await page.setViewportSize({width:320,height:900});await expect(page.locator('.managed-group')).toHaveCount(3);await expect(page.locator('html')).toHaveAttribute('data-theme','dark');await expect(page.locator('#app-launch')).toBeHidden();await page.screenshot({path:'test-results/groups-dark-320.png',animations:'disabled'});
+});
+
+test('personal space hides member invitation, group plus creates explicitly and list settings persist',async({page})=>{
+ test.setTimeout(120000);await register(page,'그룹목록검사');
+ let issued=0;page.on('request',r=>{if(r.url().endsWith('/workspace/invite.link.issue'))issued++;});
+ for(const path of ['/timetable','/today/calendar','/tuition','/timeline']){
+  await page.goto(path);await expect(filter(page).getByRole('button',{name:'개인',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('.member-preference-row .group-invite-shortcut')).toHaveCount(0);
+  const row=page.getByRole('region',{name:'그룹 선택',exact:true});
+  const plus=row.getByRole('link',{name:'새 그룹 만들기',exact:true});await expect(plus).toBeVisible();
+  const a=(await plus.boundingBox())!,b=(await filter(page).getByRole('button',{name:'개인',exact:true}).boundingBox())!;
+  expect(a.x+a.width).toBeLessThanOrEqual(b.x);expect(Math.abs(a.y+a.height/2-b.y-b.height/2)).toBeLessThan(2);
+ }
+ expect(issued).toBe(0);expect((await command(page,'me')).groups).toHaveLength(0);
+ await page.getByRole('link',{name:'새 그룹 만들기',exact:true}).click();
+ const editor=page.getByRole('dialog',{name:'새 그룹 만들기'});await editor.getByLabel('그룹 이름',{exact:true}).fill('우리 가족');await editor.getByRole('button',{name:'파랑',exact:true}).click();await editor.getByRole('button',{name:'그룹 만들기',exact:true}).click();
+ const detail=page.locator('.group-detail');await expect(detail.getByRole('heading',{name:'우리 가족',exact:true})).toBeVisible();await expect(detail.getByRole('button',{name:'구성원 초대',exact:true})).toBeVisible();
+ expect(issued).toBe(0);expect((await command(page,'me')).groups).toHaveLength(1);
+ await detail.getByRole('button',{name:'그룹 설정',exact:true}).click();const settings=page.getByRole('dialog',{name:'그룹 설정'});await settings.getByLabel('그룹 이름',{exact:true}).fill('가족의 하루');await settings.getByRole('button',{name:'변경 저장'}).click();await expect(detail.getByRole('heading',{name:'가족의 하루',exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'그룹 목록',exact:true}).click();await expect(page.locator('.managed-group')).toHaveCount(1);await expect(page.getByRole('button',{name:'구성원 초대',exact:true})).toHaveCount(0);await expect(page.getByLabel('일반 초대 링크')).toHaveCount(0);await page.reload();await expect(page.locator('.managed-group')).toContainText('가족의 하루');
+ await page.locator('.managed-group .group-card-title').click();await page.getByRole('button',{name:'그룹 열기',exact:true}).click();
+ for(const label of ['시간표','달력','가계부','타임라인']){
+  await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(page.locator('.member-preference-row .group-invite-shortcut')).toBeVisible();
+  await filter(page).getByRole('button',{name:'개인',exact:true}).click();await expect(filter(page).getByRole('button',{name:'개인',exact:true})).toHaveAttribute('aria-pressed','true');await expect(page.locator('.member-preference-row .group-invite-shortcut')).toHaveCount(0);
+  await filter(page).getByRole('button',{name:'가족의 하루',exact:true}).click();await expect(page.locator('.member-preference-row .group-invite-shortcut')).toBeVisible();
+ }
+ await page.screenshot({path:'test-results/group-plus-and-members.png',animations:'disabled'});
+ await filter(page).getByRole('button',{name:'개인',exact:true}).click();await page.reload();await expect(page.locator('.member-preference-row .group-invite-shortcut')).toHaveCount(0);await page.screenshot({path:'test-results/personal-without-member-invite.png',animations:'disabled'});expect(issued).toBe(0);
 });

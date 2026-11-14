@@ -136,7 +136,7 @@ test('sample menus can be browsed and every write starts login without contactin
  }
  await page.goto('/family');await ready(page);
  await expect(page.getByRole('region',{name:'개인 공간',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'새 그룹',exact:true}).click();
+ await page.getByRole('button',{name:'새 그룹 만들기',exact:true}).click();
  await expect(page.locator('.entry-login-sheet')).toBeVisible();
  await page.getByRole('button',{name:'로그인 창 닫기'}).click();
  expect(privateRequests).toEqual([]);
