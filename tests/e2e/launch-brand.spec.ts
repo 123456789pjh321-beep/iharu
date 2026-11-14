@@ -75,7 +75,7 @@ test('workspace keeps the launch visible while loading and reuses the mark withi
  let release!:()=>void;const held=new Promise<void>(resolve=>{release=resolve;});
  await page.route('**/api/v1/workspace/items.list',async route=>{await held;await route.continue();});
  try{
-  await page.goto('/timetable');await expect(page.locator('[data-app-loading]')).toBeAttached();
+  await page.goto('/timetable');await expect(page.locator('.loading-state[data-app-loading]')).toBeAttached();
   await expect(page.locator('#app-launch .iharu-loading-mark')).toBeVisible();
  }finally{release();}
  await ready(page);await expect(page.locator('.personal-timetable')).toBeVisible();
@@ -87,7 +87,7 @@ test('workspace keeps the launch visible while loading and reuses the mark withi
  await page.route(/\/assets\/Timeline-[^/]+\.js$/,async route=>{await heldTimeline;await route.continue();});
  try{
   await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'타임라인',exact:true}).click();
-  const pending=page.locator('[data-app-loading]').filter({hasText:'타임라인을 열고 있어요'});
+  const pending=page.locator('.workspace-loading-overlay').filter({hasText:'타임라인을 열고 있어요'});
   await expect(pending).toHaveCSS('background-color','rgb(255, 255, 255)');
   await expect(pending.locator('.iharu-loading-rays > use').first()).toHaveCSS('animation-name','iharu-loading-ray');
   await expect(page.locator('#app-launch')).toHaveCount(0);
@@ -204,7 +204,7 @@ test('tablet demo opens without a launch video',async({page})=>{
  expect(requests).toEqual([]);
 });
 
-test('contextual login reopens the selected timetable slot without a video overlay',async({page,playwright})=>{
+test('contextual login returns to the timetable without replaying a slot or showing video',async({page,playwright})=>{
  const email='launch-timetable-inline@example.test',password='launch-timetable-fixture-password';
  const client=await playwright.request.newContext({baseURL:origin});
  try{
@@ -220,9 +220,8 @@ test('contextual login reopens the selected timetable slot without a video overl
  await sheet.getByLabel('암호',{exact:true}).fill(password);
  await sheet.getByRole('button',{name:'로그인',exact:true}).click();
  await expect(page).toHaveURL(/\/timetable$/);
- await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();
+ await expect(page.locator('.personal-editor')).toHaveCount(0);
  await expect(page.locator('.launch-video')).toHaveCount(0);
- await expect(page.locator('input[name=startTime]')).toHaveValue('16:30');
 });
 
 test('desktop home opens the timetable without downloading intro media',async({page})=>{
