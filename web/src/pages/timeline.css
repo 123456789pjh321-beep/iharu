@@ -82,6 +82,21 @@
  padding: 2px 0 10px;
 }
 .timeline-result-bar strong { color: var(--ink); }
+.timeline-refresh-notice {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ flex-wrap: wrap;
+ gap: 8px;
+ margin-bottom: 12px;
+ padding: 10px;
+ border: 1px solid var(--line);
+ border-radius: 10px;
+ background: var(--surface);
+ color: var(--muted);
+ font-size: .8rem;
+}
+.timeline-refresh-notice .button { min-height: 40px; font-size: inherit; }
 .timeline-day h2 {
  display: flex;
  align-items: center;
