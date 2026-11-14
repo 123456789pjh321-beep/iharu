@@ -1,0 +1,26 @@
+name: Persistent workspace top bar
+on:
+  pull_request:
+    paths: ['web/**', 'tests/e2e/workspace-topbar.spec.ts', '.github/workflows/workspace-topbar.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: workspace-topbar-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  topbar-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - run: npm ci
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/e2e/workspace-topbar.spec.ts tests/e2e/group-ledger-recovery.spec.ts tests/e2e/continuous-workspace.spec.ts --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: workspace-topbar-ui, path: test-results/, retention-days: 3}

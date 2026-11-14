@@ -1,15 +1,16 @@
 import type {ReactNode} from 'react';
 import {Icon} from './Icon';
 import {PlusButton} from './PlusButton';
+import {WorkspaceTopBarSlot} from './WorkspaceTopBar';
 
 const weekdays=['일','월','화','수','목','금','토'];
 
 export function WorkspaceToolbar({title,navigation,createLabel,onCreate,children}:{title:string;navigation?:ReactNode;createLabel?:string;onCreate?:()=>void;children?:ReactNode}){
- return <><header className="workspace-toolbar" aria-label={title+' 날짜 및 등록'}>
+ return <><WorkspaceTopBarSlot slot="toolbar"><header className="workspace-toolbar" aria-label={title+' 날짜 및 등록'}>
   <h1 className={navigation?'sr-only':'workspace-toolbar-title'}>{title}</h1>
   {navigation}
   {children&&<div className="workspace-toolbar-actions">{children}</div>}
- </header>{onCreate&&createLabel&&<PlusButton className="workspace-add-action" label={createLabel} onClick={onCreate}/>}</>;
+ </header></WorkspaceTopBarSlot>{onCreate&&createLabel&&<PlusButton className="workspace-add-action" label={createLabel} onClick={onCreate}/>}</>;
 }
 
 export function DateNavigator({type,value,inputLabel,onChange,displayLabel}:{

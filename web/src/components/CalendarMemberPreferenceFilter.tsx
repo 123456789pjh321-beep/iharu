@@ -4,6 +4,7 @@ import type {useMemberPreference} from './MemberPreferenceFilter';
 import {MemberFilter} from './MemberFilter';
 import {Icon} from './Icon';
 import {GroupInviteShareButton} from './GroupInviteShare';
+import {WorkspaceTopBarSlot} from './WorkspaceTopBar';
 
 export function CalendarMemberPreferenceFilter({members,selection,label,className='',preview=false}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string;preview?:boolean}){
  const dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null),id=useId();
@@ -13,7 +14,7 @@ export function CalendarMemberPreferenceFilter({members,selection,label,classNam
  const name=names.join(' · ')||'나';
  const action=saving?'저장 중':isSaved?'첫 화면으로 설정됨':'첫 화면으로 저장';
  const dismiss=()=>{dialog.current?.close();setOpen(false);trigger.current?.focus({preventScroll:true});};
- return <section className="member-preference" aria-label={label+' 설정'}>
+ return <WorkspaceTopBarSlot slot="members"><section className="member-preference" aria-label={label+' 설정'}>
   <div className="member-preference-row">
    {!preview&&<GroupInviteShareButton/>}
    <MemberFilter className={className} members={members} value={memberIds} showAll={false} expandable={false} disabled={saving} onChange={toggle} label={label}/>
@@ -30,5 +31,5 @@ export function CalendarMemberPreferenceFilter({members,selection,label,classNam
    <footer><button type="button" className="button primary" onClick={dismiss}>선택 완료</button></footer>
   </dialog>
   {!open&&error&&<p className="timetable-preference-message error" role="alert">{error}</p>}{!open&&notice&&<p className="timetable-preference-message" role="status">{notice}</p>}
- </section>;
+ </section></WorkspaceTopBarSlot>;
 }
