@@ -74,6 +74,41 @@ describe('P07-F07 cron lease and maintenance',()=>{
   const [b]=await query<{data:{state:string;counts:{schedule_idempotency:number}}}>(database.db,"SELECT app_private.cron_step($1,'retention') data",[c.token]);expect(b.data).toMatchObject({state:'DONE',counts:{schedule_idempotency:5}});
   expect((await query<{data:{state:string}}>(database.db,"SELECT app_private.cron_step($1,'retention') data",[c.token]))[0].data.state).toBe('ALREADY_DONE');
  });
+ it('purges only expired auth data, through the worker lease, without deleting accounts',async()=>{
+  const userId=randomUUID();
+  await query(database.db,`INSERT INTO iharu_auth."user" (id,name,email,"emailVerified") VALUES ($1,'Fixture',$2,true)`,[userId,`${userId}@example.test`]);
+  await query(database.db,`INSERT INTO iharu_auth.session (id,token,"userId","expiresAt","updatedAt") VALUES
+   ('expired-session','expired-session-token',$1,now()-interval '1 hour',now()),
+   ('idle-session','idle-session-token',$1,now()+interval '1 hour',now()),
+   ('absolute-session','absolute-session-token',$1,now()+interval '1 hour',now()),
+   ('live-session','live-session-token',$1,now()+interval '1 hour',now())`,[userId]);
+  await query(database.db,`INSERT INTO iharu_auth.session_guard (session_id,assurance,last_seen_at,absolute_expires_at) VALUES
+   ('idle-session','HIGH',now()-interval '7 days',now()+interval '1 hour'),
+   ('absolute-session','HIGH',now(),now()-interval '1 second'),
+   ('live-session','HIGH',now(),now()+interval '1 hour')`);
+  await query(database.db,`INSERT INTO iharu_auth.verification (id,identifier,value,"expiresAt") VALUES
+   ('expired-proof','expired','fixture',now()-interval '1 second'),('live-proof','live','fixture',now()+interval '1 hour')`);
+  await query(database.db,`INSERT INTO iharu_auth.phone_challenges (key,code_hash,attempts,expires_at) VALUES
+   ('expired-otp','fixture',0,now()-interval '1 second'),('live-otp','fixture',0,now()+interval '1 hour')`);
+  await query(database.db,`INSERT INTO iharu_auth.email_links (token_hash,session_id,user_id,email,password_hash,expires_at)
+   VALUES ('expired-link','live-session',$1,'fixture@example.test','fixture',now()-interval '1 second')`,[userId]);
+  const c=await claim();
+  await database.db.transaction().execute(async tx=>{
+   await query(tx,'SET LOCAL ROLE worker_runtime');
+   const [first]=await query<{data:unknown}>(tx,"SELECT app_private.cron_step($1,'retention') data",[c.token]);
+   expect(first.data).toMatchObject({authArtifactsPurged:{verification:1,phoneChallenges:1,pendingEmailLinks:1,sessions:3}});
+   const [second]=await query<{data:unknown}>(tx,"SELECT app_private.cron_step($1,'retention') data",[c.token]);
+   expect(second.data).toMatchObject({authArtifactsPurged:{verification:0,phoneChallenges:0,pendingEmailLinks:0,sessions:0}});
+  });
+  expect(await query(database.db,'SELECT id FROM iharu_auth.session WHERE "userId"=$1',[userId])).toEqual([{id:'live-session'}]);
+  expect(await query(database.db,"SELECT id FROM iharu_auth.verification WHERE id IN ('live-proof','expired-proof')")).toEqual([{id:'live-proof'}]);
+  expect(await query(database.db,"SELECT key FROM iharu_auth.phone_challenges WHERE key IN ('live-otp','expired-otp')")).toEqual([{key:'live-otp'}]);
+  expect(await query(database.db,'SELECT id FROM iharu_auth."user" WHERE id=$1',[userId])).toEqual([{id:userId}]);
+  await expect(database.db.transaction().execute(async tx=>{
+   await query(tx,'SET LOCAL ROLE worker_runtime');
+   await query(tx,'SELECT id FROM iharu_auth.verification');
+  })).rejects.toMatchObject({code:'42501'});
+ });
  it('records failed work for retry and stops starting work at the deadline',async()=>{
   await expect(runCronTick(database.db,'fixture','manual',async()=>{throw Error('private provider detail');})).rejects.toThrow('MAINTENANCE_FAILED');
   expect((await query<{state:string;error_code:string}>(database.db,'SELECT state,error_code FROM app_private.cron_runs'))[0]).toEqual({state:'FAILED',error_code:'MAINTENANCE_FAILED'});
