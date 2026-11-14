@@ -23,7 +23,8 @@ test('labeled registration actions, modal entry/exit, dirty cancellation, save a
  });
  for(const width of [390,1024])for(const [path,label,title] of [['/tuition','가계부 추가','가계부 등록'],['/records','메모 추가','메모 작성']]){
   await page.setViewportSize({width,height:900});await page.goto(path);
-  const add=page.locator('.workspace-add-action');await expect(add).toHaveAccessibleName(label);await expect(add).toHaveText('등록');
+  if(path==='/tuition'){await page.locator('[data-pager-current] .tuition-date').first().click();}
+  const add=path==='/tuition'?page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}):page.locator('.workspace-add-action');if(path!=='/tuition')await expect(add).toHaveAccessibleName(label);await expect(add).toHaveText('등록');
   const box=(await add.boundingBox())!;expect(box.width).toBeGreaterThanOrEqual(64);expect(box.height).toBeGreaterThanOrEqual(40);
   await add.click();const editor=page.getByRole('dialog',{name:title,exact:true});
   await expect.poll(async()=>Math.round((await editor.boundingBox())!.y)).toBe(0);
@@ -59,6 +60,7 @@ test('fixed seven-day timetable and aligned composer with emoji choices above in
   await page.screenshot({path:`test-results/ui97-timetable-${width}.png`,animations:'disabled'});
   await page.goto('/chat');const input=page.getByRole('textbox',{name:'참여자에게 전할 말'}),send=page.getByRole('button',{name:'메시지 보내기'}),emoji=page.getByRole('button',{name:'이모티콘',exact:true});
   await expect(send).toHaveText('');await expect(send).toBeDisabled();await expect(emoji).toHaveCount(0);
+  await page.getByRole('button',{name:'그림 메시지',exact:true}).click();
   const tray=(await page.locator('.conversation-sticker-tray').boundingBox())!,i=(await input.boundingBox())!,s=(await send.boundingBox())!;
   expect(tray.y+tray.height).toBeLessThanOrEqual(i.y);expect(i.height).toBe(44);expect(s.height).toBe(44);expect(i.y).toBe(s.y);
   await page.getByRole('button',{name:'나 집이야 그림 선택'}).click();await expect(input).toHaveValue('');await expect(input).not.toBeFocused();await expect(send).toBeEnabled();

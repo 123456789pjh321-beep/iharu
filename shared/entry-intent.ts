@@ -34,5 +34,10 @@ export function takeEntryIntent(storage:EntryStorage,path:string,now=Date.now())
   if(!parsed.success||!Number.isFinite(value.expiresAt)||value.expiresAt<=now||value.expiresAt>now+entryIntentLifetime){clearEntryIntent(storage);return null;}
   if(parsed.data.path!==path)return null;
   clearEntryIntent(storage);return parsed.data;
- }catch{clearEntryIntent(storage);return null;}
+ }catch{
+  // Storage can be denied both when reading and when removing a broken record.
+  // Never resume an intent that could not be consumed exactly once.
+  try{clearEntryIntent(storage);}catch{/* Optional navigation state. */}
+  return null;
+ }
 }

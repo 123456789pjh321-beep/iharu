@@ -54,7 +54,7 @@ test('P07 another device sees new messages, read state and deletions without ref
   await expect(childPage.getByText('그룹이 읽었어요',{exact:true})).toBeVisible({timeout:22000});
   await childPage.getByRole('button',{name:'메시지 삭제: 도착했어요'}).click();await childPage.getByRole('dialog').getByRole('button',{name:'삭제하기',exact:true}).click();
   await expect(page.getByText('삭제된 메시지예요',{exact:true})).toBeVisible({timeout:22000});
-  await page.goto('/notifications');await expect(page.getByRole('heading',{name:'그룹의 새 소식'})).toBeVisible();await expect(page.getByText('이 페이지에는 해당 소식이 없어요.')).toBeVisible();
+  await page.goto('/notifications?legacy=1');await expect(page.getByRole('heading',{name:'그룹의 새 소식'})).toBeVisible();await expect(page.getByText('이 페이지에는 해당 소식이 없어요.')).toBeVisible();
  }finally{await childContext.close();}
 });
 

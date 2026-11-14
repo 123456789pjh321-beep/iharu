@@ -55,7 +55,7 @@ test('browser signup → mail proof → login → timetable → account → logo
   await expect(page.getByText('browser-parent@example.test',{exact:true})).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:'test-results/account-390.png',fullPage:true});
-  await page.locator('.auth-header').getByRole('link',{name:'아이하루',exact:true}).click();
+  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'시간표',exact:true}).click();
   await expect(page).toHaveURL(/\/timetable$/);
   await page.goto('/account/reauth');
   await page.getByRole('link',{name:'다른 로그인 방법으로 확인',exact:true}).click();
@@ -67,7 +67,8 @@ test('browser signup → mail proof → login → timetable → account → logo
   await expect(page.getByRole('alert')).toContainText('로그인 방법이 하나는 남아 있어야 해요');
   await page.getByRole('button',{name:'모든 기기에서 로그아웃',exact:true}).click();
   await expect(page).toHaveURL(/\/login$/);
-  for(const path of ['/account','/today','/chat','/']){await page.goto(path);await expect(page).toHaveURL(/\/login$/);}
+  for(const path of ['/today','/chat','/']){await page.goto(path);await expect(page.locator('[data-guest-workspace]')).toBeVisible();}
+  await page.goto('/account');await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
   expect(errors).toEqual([]);
 });
 

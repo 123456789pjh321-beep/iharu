@@ -1,5 +1,6 @@
 const BriefingPage=lazy(()=>import('./pages/Briefing'));
 import {AndroidWidgetLink} from './pages/AndroidWidgetLink';
+import {NotificationsPage} from './pages/Notifications';
 import {NotificationSettings} from './pages/NotificationSettings';
 import {PublicFrame} from './components/PublicFrame';
 import {AccountDeletionPage,LegalPage,PrivacyPage} from './pages/Legal';
@@ -81,7 +82,7 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   {['/login','/signup','/forgot-password','/verify-email','/reset-password'].map(path=><Route key={path} path={path} element={<LoginPage key={path}/>}/>)}
   </Route>
   <Route path="/test/*" element={<TestWorkspaceEntry/>}/>
-  <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<Navigate to="/notification-settings" replace/>}/><Route path="/notification-settings" element={<RequireWorkspaceAccount><NotificationSettings/></RequireWorkspaceAccount>}/>
+  <Route element={<WorkspaceFrame/>}><Route path="/" element={<WorkspaceLanding/>}/><Route path="/notifications" element={<NotificationAlias/>}/><Route path="/notification-settings" element={<RequireWorkspaceAccount><NotificationSettings/></RequireWorkspaceAccount>}/>
   <Route path="/more" element={<WorkspaceEntry mode="more"/>}/><Route path="/settings" element={<WorkspaceEntry mode="settings"/>}/>
   <Route path="/help" element={<WorkspaceEntry mode="guide"/>}/>
   <Route path="/account-deletion" element={<AccountDeletionPage/>}/>
@@ -104,7 +105,8 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/device/connect" element={<DeviceConnectPage/>}/><Route path="/child/connected" element={<ConnectedChildPage/>}/><Route path="/child/schedules" element={<ChildSchedulePage/>}/>
   <Route path="*" element={<Shell/>}/>
 </Routes></BrowserRouter>;}
-function WorkspaceLanding(){const {health}=useWorkspaceGate();return health.data?.data.demoEnabled?<Shell/>:<Navigate to="/timetable" replace/>;}
+function WorkspaceLanding(){const {health}=useWorkspaceGate(),{search}=useLocation();if(health.loading)return <AuthLayout wide><Loading/></AuthLayout>;return health.data?.data.demoEnabled||new URLSearchParams(search).get('legacy')==='1'?<Shell/>:<Navigate to="/timetable" replace/>;}
+function NotificationAlias(){const {search}=useLocation();return new URLSearchParams(search).get('legacy')==='1'?<NotificationsPage/>:<Navigate to="/notification-settings" replace/>;}
 function ScheduleAlias({repeats=false}:{repeats?:boolean}){const {health}=useWorkspaceGate();if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
 
 

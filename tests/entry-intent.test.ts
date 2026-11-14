@@ -24,4 +24,16 @@ describe('guest authentication continuations',()=>{
  it('has no operation that writes, sends, or deletes records',()=>{
   for(const type of ['save','send','delete','invite','pay'])expect(entryIntentSchema.safeParse({type,path:'/timetable'}).success).toBe(false);
  });
+ it('returns to a deletion form or invite without accepting action-like or duplicate parameters',()=>{
+  expect(entryReturnPath('/privacy?request=delete')).toBe('/privacy?request=delete');
+  expect(entryReturnPath('/invite')).toBe('/invite');
+  for(const path of ['/privacy?request=delete&confirm=1','/privacy?request=delete&request=delete','/invite?accept=1','/privacy?request=DELETE','/privacy?request=delete#submit'])expect(entryReturnPath(path)).toBe('/timetable');
+ });
+ it('fails closed when a shared browser contains invalid JSON or inaccessible session storage',()=>{
+  const store=storage();store.setItem(entryIntentKey,'{broken');expect(takeEntryIntent(store,'/timetable',1000)).toBeNull();expect(store.getItem(entryIntentKey)).toBeNull();
+  const unavailable:EntryStorage={getItem:()=>{throw Error('storage unavailable');},setItem:()=>{throw Error('storage unavailable');},removeItem:()=>{throw Error('storage unavailable');}};
+  expect(()=>saveEntryIntent(unavailable,{type:'page',path:'/timetable'},1000)).toThrow('storage unavailable');expect(takeEntryIntent(unavailable,'/timetable',1001)).toBeNull();
+  const cannotConsume:EntryStorage={...unavailable,getItem:()=>JSON.stringify({intent:{type:'page',path:'/timetable'},expiresAt:2000})};
+  expect(takeEntryIntent(cannotConsume,'/timetable',1001)).toBeNull();
+ });
 });

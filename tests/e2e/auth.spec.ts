@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test';
 test('production account routes show truthful readiness and do not expose sample children',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/login');
-  await expect(page.getByRole('button',{name:'이메일 로그인 준비 중',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeEnabled();
   await expect(page.getByText('로그인 연결을 준비하고 있어요')).toBeVisible();
   for(const label of ['Google로 계속하기','카카오로 계속하기','네이버로 계속하기'])await expect(page.getByRole('button',{name:new RegExp(label)})).toBeDisabled();
-  await expect(page.locator('#email')).toBeDisabled();
+  await expect(page.getByLabel('아이디',{exact:true})).toBeEnabled();
   await expect(page.getByText('서준',{exact:true})).toHaveCount(0);
   await page.getByRole('link',{name:'회원가입',exact:true}).click();
   await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();

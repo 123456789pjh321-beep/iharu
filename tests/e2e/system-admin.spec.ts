@@ -35,7 +35,7 @@ test('system administrator manages family-grouped members, sessions, roles and a
   })).toBeGreaterThanOrEqual(4.5);
   await page.screenshot({path:'test-results/ui83-admin-members-dark.png',animations:'disabled'});await page.goto('/settings');await page.getByRole('button',{name:'밝게',exact:true}).click();await page.goto('/admin?section=history');await expect(page.locator('.admin-events')).toBeVisible();
   await page.getByRole('button',{name:'이력관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('운영 검증');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-events')).toContainText('최고관리자 권한 변경');await expect(page.locator('.admin-events')).toContainText('전체 세션 종료');
-  await page.getByRole('button',{name:'로그관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/member.update');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-log').first()).toContainText('200');
+  await page.getByRole('button',{name:'로그관리',exact:true}).click();await expect(page.getByRole('heading',{name:'요청·오류 로그',exact:true})).toBeVisible();await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/member.update');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-log').first()).toContainText('200');
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'현재 목록 CSV'}).click();expect((await downloadPromise).suggestedFilename()).toMatch(/^iharu-logs-/);
  }finally{await other.dispose();await child.dispose();}
 });
