@@ -22,13 +22,18 @@ const fees:Guide={id:'fees',label:'가계부',steps:[
  {title:'지출·수입·잔액을 한눈에 봐요',icon:'calendar',description:'잔액은 조회한 수입에서 지출을 뺀 금액이에요. 달력의 날짜를 누르면 그날의 내역과 합계를 확인할 수 있어요.',tips:['구성원 설정에서 전체를 선택하거나 첫 화면의 필터를 저장할 수 있어요.','구성원과 수입·지출 선택은 합계·달력·내역·통계에 함께 적용돼요.']},
  {title:'예산과 소비 흐름을 확인해요',icon:'wallet',description:'나의 월 예산을 정하면 선택한 구성원의 이번 달 전체 지출과 비교해 더 쓸 수 있는 금액을 알려줘요. 예산은 내 계정의 조회 월과 구성원 선택별로 저장돼요.',tips:['통계에서 분류·결제 방법별 지출과 최근 3개월 수입·지출을 확인해요.','내가 작성한 내역은 수정·삭제할 수 있어요. 매달 반복하는 내역은 함께 바뀝니다.']},
 ]};
+const timeline:Guide={id:'timeline',label:'타임라인',steps:[
+ {title:'사진과 글로 하루를 남겨요',icon:'book',description:'시간표·달력·가계부와 별개로 메모를 작성해요. 첫 기록을 남기기 전에는 샘플 2개를 볼 수 있어요.',tips:['메모 작성에서 날짜·시간·카테고리·태그를 정하고 사진을 3장까지 추가해요.','현재 위치 담기는 누른 순간의 위치만 읽어요. 권한을 허용하지 않아도 장소를 직접 적을 수 있어요.']},
+ {title:'원하는 기록을 빠르게 찾아요',icon:'search',description:'월과 작성자를 선택하고 제목·글·장소·태그를 검색해요.',tips:['사진·위치·즐겨찾기 필터를 함께 사용할 수 있어요.','필터에서 전체 기간·직접 선택·카테고리·공유 범위·정렬을 조절해요.']},
+ {title:'공유 범위를 직접 선택해요',icon:'shield',description:'기본값은 나만 보기예요. 현재 그룹과 공유를 선택하면 글·사진·위치가 함께 공유돼요.',tips:['작성자만 수정·삭제할 수 있어요. 즐겨찾기는 본인에게만 적용돼요.','그룹을 나가면 이전 그룹에 공유가 종료되고, 다른 그룹으로 옮기면 본인 공유 메모만 새 그룹에 표시돼요.']},
+]};
 const family:Guide=({id:'family',label:'그룹 관리',steps:[
  {title:'초대 링크를 공유해요',icon:'users',description:'더보기 → 그룹 관리에서 초대 링크를 카카오톡이나 문자로 공유할 수 있어요.',tips:['그룹 초대는 로그인 후 수락하면 같은 그룹에 연결돼요.','일반 초대는 아이하루 시간표를 열어요.']},
  {title:'연결된 그룹과 함께 사용해요',icon:'calendar',description:'연결이 완료되면 그룹의 일정과 대화를 함께 사용할 수 있어요.',tips:['그룹 목록에서 이름과 연결 상태를 확인해 주세요.','그룹 연결을 해제하면 서로의 자료 공유가 중단돼요. 각자의 원본 자료는 유지돼요.']},
 ]});
 const notifications:Guide={id:'notifications',label:'알림설정',steps:[
  {title:'이 기기에 알림을 연결해요',icon:'bell',description:'알림은 사용하는 기기마다 한 번씩 연결해요. 이 기기 알림 켜기를 누르고 기기 또는 브라우저의 권한 요청을 허용해 주세요.',tips:['연결 후 시험 알림 보내기로 수신 상태를 확인해요.','연결 준비 중이거나 지원하지 않는 환경이면 화면의 안내를 확인해 주세요.']},
- {title:'달력과 대화 소식만 골라 받아요',icon:'calendar',description:'일정 등록·변경, 일정 미리 알림, 새 대화 알림을 각각 선택할 수 있어요.',tips:['미리 알림 시간을 고르세요. 종일 일정은 오전 9시를 기준으로 해요.','시간표와 가계부는 푸시 알림 대상이 아니에요. 수신 항목은 계정의 연결 기기에 함께 적용돼요.']},
+ {title:'시간표·달력 순서대로 알림을 받아요',icon:'calendar',description:'시간표와 달력의 일정을 시작 시각 순서대로 알려드려요. 등록·변경 알림과 대화 알림도 각각 선택할 수 있어요.',tips:['기본 알림 시점은 일정 시작 시각이에요. 종일 일정은 오전 9시를 기준으로 해요.','가계부·타임라인 메모는 푸시 알림 대상이 아니에요. 수신 항목은 계정의 연결 기기에 함께 적용돼요.']},
  {title:'미리 보기와 수신 상태를 확인해요',icon:'shield',description:'알림에 내용 미리 보기를 켜면 제목이나 대화 내용이 잠금화면에 표시될 수 있어요.',tips:['알림이 오지 않으면 기기의 알림 권한·절전·방해금지 설정을 확인해 주세요.','로그아웃하거나 로그인이 만료되면 다시 로그인한 뒤 기기 알림 연결을 확인해 주세요.']},
 ]};
 const account=(child:boolean):Guide=>({id:'account',label:'내 계정',steps:child?[
@@ -41,9 +46,10 @@ export function workspaceGuide(path:string,child=false):Guide{
  if(path.includes('calendar'))return calendar;
  if(path==='/chat'||path==='/child/chat')return chat;
  if(path==='/tuition')return fees;
+ if(path==='/timeline')return timeline;
  if(path.startsWith('/family'))return family;
  if(path.startsWith('/account'))return account(child);
  if(path==='/notification-settings')return notifications;
  return timetable;
 }
-export function workspaceGuidePath(path:string){return ['/timetable','/today/calendar','/today/repeats','/chat','/child/chat','/tuition','/family','/account','/notification-settings'].includes(path)?path:'/timetable';}
+export function workspaceGuidePath(path:string){return ['/timetable','/today/calendar','/today/repeats','/chat','/child/chat','/tuition','/timeline','/family','/account','/notification-settings'].includes(path)?path:'/timetable';}

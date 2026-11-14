@@ -51,7 +51,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  function create(){
   if(!me){requestLogin({title:'메모를 저장하려면 로그인해 주세요',description:'내 계정에 사진과 글을 안전하게 남겨요.'});return;}
   let initial=emptyMemo(today);
-  try{const stored=JSON.parse(sessionStorage.getItem('iharu-memo-draft:'+me.id)||'null');if(stored?.expiresAt>Date.now()&&typeof stored.draft?.id==='string'&&stored.draft.photos?.length<=3)initial=stored.draft;}catch{}
+  try{const stored=JSON.parse(sessionStorage.getItem('iharu-memo-draft:'+me.id)||'null');if(stored?.expiresAt>Date.now()&&typeof stored.draft?.id==='string'&&Array.isArray(stored.draft.photos)&&stored.draft.photos.length<=3)initial=stored.draft;else sessionStorage.removeItem('iharu-memo-draft:'+me.id);}catch{}
   setDraft(initial);
  }
  async function action(id:string,op:string,payload:object){if(writeLock.current)return;writeLock.current=true;setBusy(id);try{await workspaceRequest(op,payload);setMessage(op==='memos.delete'?'메모와 첨부 사진을 삭제했어요.':'즐겨찾기를 변경했어요.');}catch(e){setMessage((e as Error).message);}finally{writeLock.current=false;if(mounted.current){setBusy('');reload();}}}
@@ -70,11 +70,11 @@ function Timeline({me}:{me:WorkspaceMe|null}){
    <button type="button" aria-pressed={filters.hasPhotos} onClick={()=>change({hasPhotos:!filters.hasPhotos})}>사진</button><button type="button" aria-pressed={filters.hasLocation} onClick={()=>change({hasLocation:!filters.hasLocation})}>위치</button><button type="button" aria-pressed={filters.favorite} onClick={()=>change({favorite:!filters.favorite})}>즐겨찾기</button>
   </div><button type="button" className="memo-filter-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}><Icon name="filter"/>필터</button></div>
   <label className="memo-search"><Icon name="search"/><span className="sr-only">메모 검색</span><input type="search" placeholder="제목·글·장소·태그 검색" value={filters.query} maxLength={100} onChange={e=>change({query:e.target.value})}/>{hasFilters&&<button type="button" aria-label="필터 초기화" onClick={reset}><Icon name="close"/></button>}</label>
-  {expanded&&<div className="memo-advanced"><label>기간<select value={period} onChange={e=>{setPeriod(e.target.value);setLimit(40);}}><option value="month">선택한 달</option><option value="all">전체 기간</option><option value="custom">직접 선택</option></select></label>
-   {period==='custom'&&<><label>시작일<input type="date" value={from} max={to} onChange={e=>{if(e.target.value&&e.target.value<=to)setFrom(e.target.value);}}/></label><label>종료일<input type="date" value={to} min={from} onChange={e=>{if(e.target.value&&e.target.value>=from)setTo(e.target.value);}}/></label></>}
-   <label>카테고리<select value={filters.category} onChange={e=>change({category:e.target.value})}><option value="ALL">전체</option>{Object.entries(memoCategories).map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
-   <label>공유 범위<select value={filters.visibility} onChange={e=>change({visibility:e.target.value})}><option value="ALL">전체</option><option value="PRIVATE">나만 보기</option><option value="GROUP">그룹 공유</option></select></label>
-   <label>정렬<select value={filters.sort} onChange={e=>change({sort:e.target.value})}><option value="newest">최신순</option><option value="oldest">오래된순</option></select></label>
+  {expanded&&<div className="memo-advanced"><label>기간<select aria-label="기간" value={period} onChange={e=>{setPeriod(e.target.value);setLimit(40);}}><option value="month">선택한 달</option><option value="all">전체 기간</option><option value="custom">직접 선택</option></select></label>
+   {period==='custom'&&<><label>시작일<input aria-label="시작일" type="date" value={from} max={to} onChange={e=>{if(e.target.value&&e.target.value<=to)setFrom(e.target.value);}}/></label><label>종료일<input aria-label="종료일" type="date" value={to} min={from} onChange={e=>{if(e.target.value&&e.target.value>=from)setTo(e.target.value);}}/></label></>}
+   <label>카테고리<select aria-label="카테고리" value={filters.category} onChange={e=>change({category:e.target.value})}><option value="ALL">전체</option>{Object.entries(memoCategories).map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
+   <label>공유 범위<select aria-label="공유 범위" value={filters.visibility} onChange={e=>change({visibility:e.target.value})}><option value="ALL">전체</option><option value="PRIVATE">나만 보기</option><option value="GROUP">그룹 공유</option></select></label>
+   <label>정렬<select aria-label="정렬" value={filters.sort} onChange={e=>change({sort:e.target.value})}><option value="newest">최신순</option><option value="oldest">오래된순</option></select></label>
   </div>}</section>
   <p className="memo-status" role="status">{message}</p>
   {!data&&!current?.error?<Loading label="메모를 불러오고 있어요"/>:!data?<ErrorState message={current!.error!} retry={reload}/>:<section className="memo-results" aria-label="타임라인 메모">
