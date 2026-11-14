@@ -49,8 +49,8 @@ export function WorkspaceTopBarHost(){
  if(!active||!target)return null;
  return createPortal(<div className="workspace-topbar-content" data-topbar-route={bar?.route} aria-busy={pending} inert={pending}>
   {bar?.toolbar?.content}
-  <WorkspaceGroupFilter key={route}/>
-  <Fragment key={bar?.route}>{bar?.members?.content}</Fragment>
+  <WorkspaceGroupFilter key={'groups:'+route}/>
+  <Fragment key={'members:'+bar?.route}>{bar?.members?.content}</Fragment>
  </div>,target);
 }
 
