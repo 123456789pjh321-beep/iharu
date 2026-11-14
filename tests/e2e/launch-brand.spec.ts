@@ -90,6 +90,7 @@ test('workspace keeps the launch visible while loading and reuses the mark withi
   const pending=page.locator('.workspace-loading-overlay').filter({hasText:'타임라인을 열고 있어요'});
   await expect(pending).toHaveCSS('background-color','rgb(255, 255, 255)');
   await expect(pending.locator('.iharu-loading-rays > use').first()).toHaveCSS('animation-name','iharu-loading-ray');
+  await page.screenshot({path:'test-results/menu-loading-content-center.png',animations:'disabled'});
   await expect(page.locator('#app-launch')).toHaveCount(0);
  }finally{releaseTimeline();}
  await expect(page.locator('[data-app-loading]')).toHaveCount(0);
