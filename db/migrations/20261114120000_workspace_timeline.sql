@@ -16,6 +16,7 @@ CREATE POLICY workspace_timeline_policy ON app_private.workspace_timeline_annota
 REVOKE ALL ON app_private.workspace_timeline_annotations FROM PUBLIC,app_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON app_private.workspace_timeline_annotations TO iharu_policy;
 
+SELECT set_config('iharu.timeline_migration_executor',current_user,true);
 GRANT CREATE ON SCHEMA app_private TO iharu_policy;
 SET LOCAL ROLE iharu_policy;
 CREATE FUNCTION app_private.workspace_timeline_command(op text,p jsonb) RETURNS jsonb
@@ -31,6 +32,7 @@ DECLARE
  state app_private.workspace_timeline_annotations%ROWTYPE;
  annotations jsonb;
  items jsonb;
+ required_publication uuid;
 BEGIN
  identity:=app_private.workspace_command('workspace.me','{}');
  who:=(identity->>'id')::uuid;
@@ -65,6 +67,14 @@ BEGIN
    OR (p?'saved' AND jsonb_typeof(p->'saved')<>'boolean')
    OR (p?'note' AND (jsonb_typeof(p->'note')<>'string' OR char_length(p->>'note')>2000))
  THEN RAISE EXCEPTION 'INVALID_INPUT'; END IF;
+ IF can_read_fees AND (p->>'reviewed'='true' OR p->>'saved'='true' OR coalesce(p->>'note','')<>'') THEN
+  PERFORM singleton FROM app_private.legal_settings WHERE singleton FOR SHARE;
+  SELECT id INTO required_publication FROM app_private.legal_publications ORDER BY version DESC LIMIT 1;
+  IF required_publication IS NOT NULL AND NOT EXISTS (
+   SELECT 1 FROM app_private.legal_acceptances a
+   WHERE a.member_id=app_private.actor() AND a.publication_id=required_publication AND a.withdrawn_at IS NULL
+  ) THEN RAISE EXCEPTION 'LEGAL_ACCEPTANCE_REQUIRED'; END IF;
+ END IF;
  day:=(p->>'date')::date;
  SELECT * INTO item FROM app_private.workspace_items WHERE id=(p->>'itemId')::uuid FOR SHARE;
  IF item.id IS NULL OR item.deleted_at IS NOT NULL OR item.kind NOT IN ('REPEAT','EVENT','FEE')
@@ -103,6 +113,9 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION app_private.workspace_timeline_command(text,jsonb),app_private.workspace_timeline_prune() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app_private.workspace_timeline_command(text,jsonb) TO app_runtime;
+DO $$ BEGIN
+ EXECUTE format('GRANT EXECUTE ON FUNCTION app_private.workspace_timeline_prune() TO %I',current_setting('iharu.timeline_migration_executor'));
+END $$;
 RESET ROLE;
 REVOKE CREATE ON SCHEMA app_private FROM iharu_policy;
 CREATE TRIGGER workspace_timeline_source_deleted AFTER UPDATE OF deleted_at ON app_private.workspace_items

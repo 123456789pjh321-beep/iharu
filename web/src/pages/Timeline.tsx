@@ -163,15 +163,15 @@ function TimelineCard({entry,annotation,assignee,annotate}:{
 }){
  const {kind,item}=entry,{title,place,note}=item.data,source=sources[kind];
  const id=useId(),noteButton=useRef<HTMLButtonElement>(null),pending=useRef(false);
- const [draft,setDraft]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [draft,setDraft]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<{message:string;requiresConsent:boolean}>();
  const reviewed=annotation?.reviewed===true,saved=annotation?.saved===true;
  async function write(patch:TimelinePatch){
   if(pending.current)return;
-  pending.current=true;setBusy(true);setError('');
+  pending.current=true;setBusy(true);setError(undefined);
   try{
    await annotate(patch);
    if(patch.note!==undefined){setDraft(null);requestAnimationFrame(()=>noteButton.current?.focus());}
-  }catch(error){setError(errorText(error));}
+  }catch(error){setError({message:errorText(error),requiresConsent:(error as {code?:string}).code==='LEGAL_ACCEPTANCE_REQUIRED'});}
   finally{pending.current=false;setBusy(false);}
  }
  return <li className="timeline-item" data-kind={kind}>
@@ -189,7 +189,7 @@ function TimelineCard({entry,annotation,assignee,annotate}:{
    {!!annotation?.note&&draft===null&&<p className="timeline-private-note"><Icon name="book"/><span><strong>내 메모</strong>{annotation.note}</span></p>}
    <div className="timeline-card-actions">
     <button type="button" className="timeline-action" aria-pressed={reviewed} disabled={busy} onClick={()=>void write({reviewed:!reviewed})}><Icon name="check"/>{reviewed?'확인됨':'확인'}</button>
-    <button type="button" ref={noteButton} className="timeline-action" aria-expanded={draft!==null} disabled={busy} onClick={()=>{setError('');setDraft(draft===null?(annotation?.note||''):null);}}><Icon name="type"/>메모</button>
+    <button type="button" ref={noteButton} className="timeline-action" aria-expanded={draft!==null} disabled={busy} onClick={()=>{setError(undefined);setDraft(draft===null?(annotation?.note||''):null);}}><Icon name="type"/>메모</button>
     <button type="button" className="timeline-action" aria-pressed={saved} disabled={busy} onClick={()=>void write({saved:!saved})}><Icon name="bookmark"/>{saved?'보관됨':'보관'}</button>
     <Link to={source.path} className="timeline-source-link" title={source.label+'에서 보기'} aria-label={source.label+'에서 보기'}><span>{source.label}에서 보기</span><Icon name="chevron"/></Link>
    </div>
@@ -202,7 +202,7 @@ function TimelineCard({entry,annotation,assignee,annotate}:{
      <button type="submit" className="button primary" disabled={busy||!draft.trim()||draft.trim()===(annotation?.note||'')}>메모 저장</button>
     </div>
    </form>}
-   {error&&<p className="timeline-card-error" role="alert">{error}</p>}
+   {error&&<p className="timeline-card-error" role="alert">{error.message} {error.requiresConsent&&<Link to="/privacy">개인정보 관리</Link>}</p>}
   </article>
  </li>;
 }
