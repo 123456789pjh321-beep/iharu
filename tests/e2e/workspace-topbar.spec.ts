@@ -14,7 +14,7 @@ async function register(page:Page,name:string){
  expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
 }
 async function rememberChrome(page:Page){
- await expect(bar(page).locator('[aria-busy=false]')).toHaveCount(1);
+ await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
  await page.evaluate(()=>Object.assign(window,{topbarNode:document.querySelector('[data-workspace-topbar]'),toolbarNode:document.querySelector('.workspace-toolbar'),navNode:document.querySelector('.workspace-mobile-nav')}));
 }
 async function unchangedChrome(page:Page){
@@ -29,7 +29,7 @@ test('keeps the same top and bottom chrome across all four menus without changin
  for(const width of [320,520,1440]){
   await page.setViewportSize({width,height:900});
   for(const [label,path] of [['달력','/today/calendar'],['가계부','/tuition'],['타임라인','/timeline'],['시간표','/timetable']]){
-   await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('[aria-busy=false]')).toHaveCount(1);
+   await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
    await unchangedChrome(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
    expect((await bar(page).boundingBox())!.y).toBeLessThanOrEqual(1);
    await page.screenshot({path:`test-results/topbar-${path.split('/').pop()}-${width}.png`,animations:'disabled'});
@@ -40,7 +40,7 @@ test('keeps the same top and bottom chrome across all four menus without changin
  // Browser back closes a filter sheet owned by the previous menu.
  await page.goBack();await expect(page).toHaveURL(origin+'/timetable');await expect(page.getByRole('dialog',{name:'조회할 구성원'})).not.toBeVisible();await unchangedChrome(page);
  await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await page.setViewportSize({width:320,height:900});await rememberChrome(page);
- for(const label of ['달력','가계부','타임라인','시간표']){await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[aria-busy=false]')).toHaveCount(1);await unchangedChrome(page);}
+ for(const label of ['달력','가계부','타임라인','시간표']){await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);await unchangedChrome(page);}
  await page.screenshot({path:'test-results/topbar-dark-320.png',animations:'disabled'});expect(errors).toEqual([]);
  await nav(page).getByRole('link',{name:'더보기',exact:true}).click();await expect(bar(page)).toHaveCount(0);await expect(page.locator('.more-screen')).toBeVisible();
 });
@@ -76,8 +76,8 @@ test('retains inert chrome during slow navigation and keeps it fixed while conte
  const top=(await bar(page).boundingBox())!.y;await page.locator('.auth-panel').evaluate(node=>{node.scrollTop=500;});await expect.poll(()=>page.locator('.auth-panel').evaluate(node=>node.scrollTop)).toBeGreaterThan(100);expect((await bar(page).boundingBox())!.y).toBe(top);await unchangedChrome(page);
  let release:()=>void=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});
  await page.route('**/api/v1/workspace/me',async route=>{await gate;await route.continue();});
- await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await expect(bar(page).locator('[aria-busy=true][inert]')).toHaveCount(1);await unchangedChrome(page);await expect(bar(page).locator('.workspace-toolbar')).toBeVisible();
- release();await page.unrouteAll({behavior:'wait'});await expect(bar(page).locator('[aria-busy=false]')).toHaveCount(1);await expect(page.locator('.timetable-grid')).toBeVisible();await unchangedChrome(page);
+ await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await expect(bar(page).locator('.workspace-topbar-content[aria-busy=true][inert]')).toHaveCount(1);await unchangedChrome(page);await expect(bar(page).locator('.workspace-toolbar')).toBeVisible();
+ release();await page.unrouteAll({behavior:'wait'});await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);await expect(page.locator('.timetable-grid')).toBeVisible();await unchangedChrome(page);
  await page.locator('.timetable-scroll').evaluate(node=>{node.scrollTop=500;});expect((await bar(page).boundingBox())!.y).toBe(top);
  // Navigating out must not leave an old date/member toolbar behind.
  await nav(page).getByRole('link',{name:'더보기',exact:true}).click();await expect(bar(page)).toHaveCount(0);await page.goBack();await expect(bar(page).getByRole('group',{name:'시간표 구성원 필터',exact:true})).toBeVisible();

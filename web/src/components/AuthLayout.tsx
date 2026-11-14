@@ -47,11 +47,11 @@ function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=fal
   return <div data-timetree={timeTree?route:undefined} className={`auth-app ${wide?'workspace-page':'entry-page'}${wide&&!showNavigation?' public-document-page':''}`}><a className="skip-link" href="#auth-main">본문 바로가기</a>
     {!wide&&!inPublicFrame&&<PublicHeader/>}
     {wide&&showNavigation&&<WorkspaceNavigation personalChild={personalChild} childMode={!personalChild&&(pathname.startsWith('/child')||pathname.startsWith('/device'))}/> }
-    {wide&&showNavigation&&(!timeTree||route==='/timetable')&&<LocationAccessPrompt/>}
+    {wide&&showNavigation&&!timeTree&&<LocationAccessPrompt/>}
     <main id="auth-main" tabIndex={-1} className={`auth-main ${wide?'auth-wide':''}`}>
       {!wide && <aside className="auth-intro"><span className="eyebrow">그룹의 하루를 잇다</span><h1>서로의 하루에<br/>조금 더 가까이.</h1><p>챙겨야 할 일정도, 전하고 싶은 마음도.<br/>그룹이 함께하는 하루를 시작하세요.</p><FamilyArtwork/></aside>}
       <WorkspaceTopBarMount/>
-      <div ref={panel} className="auth-panel">{timeTree&&route==='/briefing'&&<LocationAccessPrompt/>}{children}</div>
+      <div ref={panel} className="auth-panel">{timeTree&&(route==='/briefing'||route==='/timetable')&&<LocationAccessPrompt/>}{children}</div>
     </main>{!inPublicFrame&&<footer className="auth-footer"><span className="auth-footer-brand">아이하루 · 그룹의 하루를 잇다</span> <Link to="/service">서비스 소개</Link><Link to="/guide">활용방법</Link><Link to="/notices">공지사항</Link><Link to="/blog">블로그</Link><Link to="/legal/terms">이용약관</Link><Link to="/legal/privacy">개인정보처리방침</Link><Link to="/privacy">개인정보 관리</Link></footer>}
   </div>;
 }
