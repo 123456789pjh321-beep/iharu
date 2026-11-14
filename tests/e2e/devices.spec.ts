@@ -4,7 +4,7 @@ test.use({baseURL:origin,actionTimeout:10000});
 async function setup(page:Page){
  const email=`f05-${crypto.randomUUID()}@example.test`,password='isolated-device-flow-password';
  async function post(path:string,data:object){const r=await page.request.post(path,{headers:{Origin:origin,'Idempotency-Key':crypto.randomUUID()},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
- await post('/api/auth/sign-up/email',{email,password,name:'가상 일반사용자',callbackURL:'/login?verified=1'});
+ await post('/api/auth/sign-up/email',{ageAtLeast14:true,email,password,name:'가상 일반사용자',callbackURL:'/login?verified=1'});
  const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await post('/api/auth/sign-in/email',{email,password});await post('/__test__/ready',{email});
  const family=await post('/api/v1/families',{name:'F05 가상 그룹'}),children=[];
  for(const nickname of ['F05 첫째','F05 둘째']){const d=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});await post('/__test__/verify-draft',{draftId:d.id});const proof=await post(`/api/v1/child-registration-drafts/${d.id}/consent-proofs`,{general:true,location:false,policyVersion:'6.1'});children.push(await post(`/api/v1/families/${family.id}/children`,{draftId:d.id,proofId:proof.proofId,nickname,birthDate:'2018-03-02'}));}

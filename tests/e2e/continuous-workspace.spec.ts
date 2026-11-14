@@ -1,7 +1,7 @@
 import {test,expect,type BrowserContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='continuous-workspace-fixture-2026';
 async function setup(context:BrowserContext,email:string){
- expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'연속 화면',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'연속 화면',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await context.request.get('/__test__/mail')).json();await context.request.get(mails.find((mail:{to:string})=>mail.to===email).url);
  expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
 }

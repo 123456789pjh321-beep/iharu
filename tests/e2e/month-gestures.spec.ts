@@ -9,7 +9,7 @@ test('tuition and notes swipe across months while filters, taps, scrolling and r
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
  try{
   const email='month-swipes@example.test',password='month-swipes-fixture-2026';
-  const signup=await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'월 이동 일반사용자',password,callbackURL:'/login?verified=1'}});expect(signup.ok()).toBe(true);
+  const signup=await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'월 이동 일반사용자',password,callbackURL:'/login?verified=1'}});expect(signup.ok()).toBe(true);
   const mails=await(await request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);
   const signin=await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});expect(signin.ok()).toBe(true);
   const api=async(op:string,data:object={})=>{const r=await context.request.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();};

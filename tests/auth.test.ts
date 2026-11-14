@@ -28,7 +28,7 @@ class Browser {
   }
 }
 async function signup(b:Browser,email='parent@example.test'){
-  const r=await b.request('/api/auth/sign-up/email',{email,password,name:'보호자',callbackURL:'/login?verified=1'});
+  const r=await b.request('/api/auth/sign-up/email',{ageAtLeast14:true,email,password,name:'보호자',callbackURL:'/login?verified=1'});
   expect(r.status,await r.clone().text()).toBe(200);
   const link=[...mail].reverse().find(m=>m.to===email&&m.kind==='verify');expect(link).toBeDefined();
   expect((await b.request(link!.url)).status).toBe(302);
@@ -49,9 +49,20 @@ beforeEach(async()=>{
 afterAll(async()=>{await database.db.destroy();});
 
 describe('P02 real Better Auth + PostgreSQL integration',()=>{
+  it('rejects email and social registration without a positive age declaration',async()=>{
+    const b=new Browser();
+    for(const choice of [{},{ageAtLeast14:false},{ageAtLeast14:'true'}]){
+      const email=await b.request('/api/auth/sign-up/email',{...choice,email:'age-check@example.test',password,name:'연령 확인'});
+      expect(email.status).toBe(403);expect(await email.json()).toMatchObject({code:'SIGNUP_AGE_REQUIRED'});
+      const social=await b.request('/api/auth/sign-in/social',{provider:'google',requestSignUp:true,additionalData:choice});
+      expect(social.status).toBe(403);expect(await social.json()).toMatchObject({code:'SIGNUP_AGE_REQUIRED'});
+    }
+    expect(await query(database.db,'SELECT id FROM iharu_auth."user"')).toHaveLength(0);
+    expect(mail).toHaveLength(0);
+  });
   it('requires email verification; sets HttpOnly cookie and never returns token or family data',async()=>{
     const b=new Browser();
-    expect((await b.request('/api/auth/sign-up/email',{email:'parent@example.test',password,name:'보호자',callbackURL:'/login?verified=1'})).status).toBe(200);
+    expect((await b.request('/api/auth/sign-up/email',{ageAtLeast14:true,email:'parent@example.test',password,name:'보호자',callbackURL:'/login?verified=1'})).status).toBe(200);
     const unverified=await b.request('/api/auth/sign-in/email',{email:'parent@example.test',password});
     expect(unverified.status).toBe(403);
     await b.request(mail[0].url);
@@ -68,8 +79,8 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
   });
   it('keeps signup and recovery responses uniform for known and unknown addresses',async()=>{
     const b=new Browser();await signup(b);
-    const duplicate=await b.request('/api/auth/sign-up/email',{email:'parent@example.test',password,name:'보호자'});
-    const fresh=await b.request('/api/auth/sign-up/email',{email:'other@example.test',password,name:'보호자'});
+    const duplicate=await b.request('/api/auth/sign-up/email',{ageAtLeast14:true,email:'parent@example.test',password,name:'보호자'});
+    const fresh=await b.request('/api/auth/sign-up/email',{ageAtLeast14:true,email:'other@example.test',password,name:'보호자'});
     expect(duplicate.status).toBe(fresh.status);expect(await duplicate.json()).toEqual(await fresh.json());
     const known=await b.request('/api/auth/request-password-reset',{email:'parent@example.test',redirectTo:'/reset-password'});
     const unknown=await b.request('/api/auth/request-password-reset',{email:'missing@example.test',redirectTo:'/reset-password'});
@@ -122,11 +133,16 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
     const b=new Browser();
     expect((await b.request('/api/auth/phone-number/send-otp',{phoneNumber:'010-1234-5678'})).status).toBe(200);
     expect(sms[0].phone).toBe('+821012345678');
-    expect((await b.request('/api/auth/phone-number/verify',{phoneNumber:'01012345678',code:sms[0].code})).status).toBe(200);
+    const rejected=await b.request('/api/auth/phone-number/verify',{phoneNumber:'01012345678',code:sms[0].code});
+    expect(rejected.status).toBe(403);expect(await rejected.json()).toMatchObject({code:'SIGNUP_AGE_REQUIRED'});
+    expect(await query(database.db,'SELECT id FROM iharu_auth."user"')).toHaveLength(0);
+    time=new Date(+time+61_000);
+    expect((await b.request('/api/auth/phone-number/send-otp',{phoneNumber:'01012345678'})).status).toBe(200);
+    expect((await b.request('/api/auth/phone-number/verify',{phoneNumber:'01012345678',code:sms[1].code,ageAtLeast14:true})).status).toBe(200);
     expect(await(await b.request('/api/account/session')).json()).toEqual({authenticated:true,assurance:'LOW',accessReady:false});
     expect((await b.request('/api/account/logout',{sessionId:'all'})).status).toBe(403);
     for(const path of ['/api/account/methods','/api/account/sessions','/api/auth/get-session','/api/auth/list-accounts','/api/v1/children','/api/v1/notifications'])expect((await b.request(path)).status).toBe(403);
-    expect((await b.request('/api/auth/phone-number/verify',{phoneNumber:'01012345678',code:sms[0].code})).status).toBe(400);
+    expect((await b.request('/api/auth/phone-number/verify',{phoneNumber:'01012345678',code:sms[1].code})).status).toBe(400);
   });
   it('OTP hashes, expiry, attempt limit, resend cooldown and daily budget survive separate service instances',async()=>{
     const b=new Browser();const phone='+821099998888';
@@ -263,7 +279,7 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
   });
   it('verifies contextual signup mail through the same return policy and allows subsequent login',async()=>{
     const b=new Browser(),email='contextual@example.test',callbackURL='/login?verified=1&next=%2Ftoday%2Fcalendar';
-    const signup=await b.request('/api/auth/sign-up/email',{email,password,name:'가상 보호자',callbackURL});
+    const signup=await b.request('/api/auth/sign-up/email',{ageAtLeast14:true,email,password,name:'가상 보호자',callbackURL});
     expect(signup.status,await signup.clone().text()).toBe(200);
     const link=mail.find(message=>message.to===email&&message.kind==='verify')!;
     expect(link).toBeDefined();
@@ -285,13 +301,23 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
       throw new Error('Unexpected external request in isolated Google OAuth test');
     });
     try{
-      const b=new Browser(),start=await b.request('/api/auth/sign-in/social',{provider:'google',callbackURL:'/today/calendar',errorCallbackURL:'/login?next=%2Ftoday%2Fcalendar'});
-      expect(start.status).toBe(200);const authorization=new URL((await start.json()).url),state=authorization.searchParams.get('state')!;
-      expect(authorization.searchParams.get('code_challenge')).toBeTruthy();
-      const callback='/api/auth/callback/google?'+new URLSearchParams({code:'isolated-google-code',state}),response=await b.request(callback);
+      const b=new Browser();
+      async function complete(browser:Browser,requestSignUp:boolean){
+        const start=await browser.request('/api/auth/sign-in/social',{provider:'google',callbackURL:'/today/calendar',errorCallbackURL:'/login?next=%2Ftoday%2Fcalendar',...(requestSignUp?{requestSignUp:true,additionalData:{ageAtLeast14:true}}:{})});
+        expect(start.status).toBe(200);const authorization=new URL((await start.json()).url);
+        expect(authorization.searchParams.get('code_challenge')).toBeTruthy();
+        const callback='/api/auth/callback/google?'+new URLSearchParams({code:'isolated-google-code',state:authorization.searchParams.get('state')!});
+        return {callback,response:await browser.request(callback)};
+      }
+      const blocked=await complete(b,false);
+      expect(new URL(blocked.response.headers.get('location')!,origin).searchParams.get('error')).toBe('signup_disabled');
+      expect(await query(database.db,'SELECT id FROM iharu_auth."user"')).toHaveLength(0);
+      const {callback,response}=await complete(b,true);
       expect(response.status).toBe(302);expect(new URL(response.headers.get('location')!,origin).href).toBe(origin+'/today/calendar');expect(response.headers.get('set-cookie')).toContain('HttpOnly');
       expect(await(await b.request('/api/account/session')).json()).toMatchObject({authenticated:true,email:'google-parent@example.test',emailVerified:true,assurance:'HIGH'});
       const replay=new Browser();await replay.request(callback);expect(await(await replay.request('/api/account/session')).json()).toEqual({authenticated:false});
+      const returning=new Browser();await complete(returning,false);
+      expect(await(await returning.request('/api/account/session')).json()).toMatchObject({authenticated:true,email:'google-parent@example.test'});
     }finally{fetchMock.mockRestore();}
   });
   it('signs in Kakao users without email, preserves optional nicknames and keeps family access blocked',async()=>{
@@ -303,8 +329,8 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
       throw new Error('Unexpected external request in isolated OAuth test');
     });
     try {
-      const signIn=async(b:Browser)=>{
-        const start=await b.request('/api/auth/sign-in/social',{provider:'kakao',callbackURL:'/timetable',errorCallbackURL:'/login'});
+      const signIn=async(b:Browser,signup=false)=>{
+        const start=await b.request('/api/auth/sign-in/social',{provider:'kakao',callbackURL:'/timetable',errorCallbackURL:'/login',...(signup?{requestSignUp:true,additionalData:{ageAtLeast14:true}}:{})});
         expect(start.status).toBe(200);
         const state=new URL((await start.json()).url).searchParams.get('state')!;
         const callback=`/api/auth/callback/kakao?${new URLSearchParams({code:'isolated-code',state})}`;
@@ -315,7 +341,7 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
         return callback;
       };
       const first=new Browser();
-      const usedCallback=await signIn(first);
+      const usedCallback=await signIn(first,true);
       const session=await(await first.request('/api/account/session')).json();
       expect(session).toMatchObject({authenticated:true,name:'테스트 보호자',email:null,emailVerified:false,accessReady:false});
       expect(JSON.stringify(session)).not.toContain('@identity.iharu.invalid');
@@ -326,7 +352,7 @@ describe('P02 real Better Auth + PostgreSQL integration',()=>{
       await signIn(new Browser());
       expect(await query(database.db,'SELECT id FROM iharu_auth."user"')).toHaveLength(1);
       profile={id:1002}; // Nickname consent is optional too.
-      const second=new Browser();await signIn(second);
+      const second=new Browser();await signIn(second,true);
       expect(await(await second.request('/api/account/session')).json()).toMatchObject({authenticated:true,name:'보호자',email:null,emailVerified:false,accessReady:false});
       const users=await query<{email:string;emailVerified:boolean}>(database.db,'SELECT email,"emailVerified" FROM iharu_auth."user"');
       expect(users).toHaveLength(2);

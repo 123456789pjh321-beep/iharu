@@ -7,7 +7,7 @@ test.use({baseURL:origin,viewport:{width:390,height:844},actionTimeout:10000});
 
 async function register(page:Page,request:APIRequestContext,email:string,name:string,invite=false){
  const response=await page.request.post('/api/auth/sign-up/email',{
-  headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'+(invite?'&next=%2Finvite':'')}
+  headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password,callbackURL:'/login?verified=1'+(invite?'&next=%2Finvite':'')}
  });
  expect(response.ok(),await response.text()).toBe(true);
  await verifyAndSignIn(page,request,email,invite);
@@ -89,6 +89,7 @@ test('general invitation shares the public timetable and leaves the new account 
   await guest.locator('.timetable-day-column').first().locator('[data-time="16:30"]').click();
   await guest.getByRole('dialog').getByRole('link',{name:'회원가입',exact:true}).click();
   await expect(guest.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
+  await guest.getByRole('button',{name:'만 14세 이상',exact:true}).click();
   await expect(guest.getByLabel('이메일',{exact:true})).toBeVisible();
   await expect(guest.getByRole('navigation',{name:'회원가입 대상'})).toHaveCount(0);
   const email='app-link-guest@example.test';

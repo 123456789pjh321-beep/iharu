@@ -10,7 +10,7 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
  try{
   await page.clock.setFixedTime(new Date('2026-11-02T12:00:00+09:00'));
   const email='timetable-gestures@example.test',password='timetable-gestures-fixture-2026';
-  expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'고정 시간표 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+  expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'고정 시간표 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
   const mails=await(await request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);
   expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
   await page.goto('/today');await expect(page).toHaveURL(/\/timetable$/);await expect(page.getByLabel('시간표 날짜 선택')).toHaveCount(0);

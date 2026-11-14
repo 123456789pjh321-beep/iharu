@@ -5,7 +5,7 @@ const origin='http://127.0.0.1:4174';
 async function fixture(page:Page){
  const email=`schedule-${crypto.randomUUID()}@example.test`,password='schedule-browser-fixture-password';
  async function post(path:string,data:object){const r=await page.request.post(path,{headers:{Origin:origin,'Idempotency-Key':crypto.randomUUID()},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
- await post('/api/auth/sign-up/email',{email,password,name:'가상 일반사용자',callbackURL:'/login?verified=1'});
+ await post('/api/auth/sign-up/email',{ageAtLeast14:true,email,password,name:'가상 일반사용자',callbackURL:'/login?verified=1'});
  const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);
  await post('/api/auth/sign-in/email',{email,password});await post('/__test__/ready',{email});
  const family=await post('/api/v1/families',{name:'일정 테스트 그룹'}),draft=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});

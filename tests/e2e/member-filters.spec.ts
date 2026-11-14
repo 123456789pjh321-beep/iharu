@@ -4,7 +4,7 @@ import {koreaToday} from '../../shared/schedules';
 const origin='http://127.0.0.1:4174',password='shared-filter-fixture-2026';test.use({baseURL:origin,reducedMotion:'reduce'});
 async function call(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
 async function login(page:Page,email:string){expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);}
-async function parent(page:Page,email:string,name:string){expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await login(page,email);}
+async function parent(page:Page,email:string,name:string){expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await login(page,email);}
 test('calendar and tuition share multiple-member controls, save independently across devices and keep temporary filters private',async({page,browser})=>{
  test.setTimeout(90000);const context=await browser.newContext({baseURL:origin}),otherContext=await browser.newContext({baseURL:origin}),b=await context.newPage(),other=await otherContext.newPage();
  try{

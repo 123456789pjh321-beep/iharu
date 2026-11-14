@@ -5,6 +5,13 @@ test('browser signup → mail proof → login → timetable → account → logo
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.setViewportSize({width:390,height:844});
   await page.goto('/signup');await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
+  await expect(page.getByLabel('이메일',{exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'만 14세 미만',exact:true}).click();
+  await expect(page.getByRole('status')).toContainText('만 14세 미만은 지금 새 계정을 만들 수 없어요');
+  await expect(page.getByLabel('이메일',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('link',{name:'어린이를 위한 개인정보 안내'})).toHaveAttribute('href','/legal/children');
+  await page.getByRole('button',{name:'연령 다시 선택',exact:true}).click();
+  await page.getByRole('button',{name:'만 14세 이상',exact:true}).click();
   await page.getByLabel('이름',{exact:true}).fill('테스트 일반사용자');
   await page.getByLabel('이메일',{exact:true}).fill('browser-parent@example.test');
   await page.getByLabel('암호',{exact:true}).fill('browser-parent-password-2026');

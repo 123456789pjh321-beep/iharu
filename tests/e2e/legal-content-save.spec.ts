@@ -4,7 +4,7 @@ const origin='http://127.0.0.1:4175',password='legal-save-fixture-2026';
 test.use({baseURL:origin});
 test.describe.configure({mode:'serial'});
 async function signup(client:APIRequestContext,email:string,admin=false){
- expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:email.split('@')[0],password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:email.split('@')[0],password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mail=await(await client.get('/__test__/mail')).json();await client.get(mail.find((item:{to:string})=>item.to===email).url);
  expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
  await client.post('/api/v1/workspace/me',{headers:{Origin:origin},data:{}});

@@ -1,5 +1,5 @@
 import { betterAuth, type BetterAuthOptions } from 'better-auth';
-import { createAuthMiddleware } from 'better-auth/api';
+import { addOAuthServerContext, createAuthMiddleware, getOAuthState } from 'better-auth/api';
 import { phoneNumber } from 'better-auth/plugins/phone-number';
 import { randomUUID } from 'node:crypto';
 import type { AuthSettings } from './config.js';
@@ -49,12 +49,12 @@ export function createAuthService(settings: AuthSettings, db: AuthDatabase, deli
       },
     },
     socialProviders: {
-      ...(settings.social.google ? { google: { ...settings.social.google, prompt: 'select_account' as const } } : {}),
+      ...(settings.social.google ? { google: { ...settings.social.google, disableImplicitSignUp: true, prompt: 'select_account' as const } } : {}),
       // The current Kakao app grants nickname access, but not account_email (KOE205).
-      ...(settings.social.kakao ? { kakao: { ...settings.social.kakao, disableDefaultScope: true, scope: ['profile_nickname'],
+      ...(settings.social.kakao ? { kakao: { ...settings.social.kakao, disableImplicitSignUp: true, disableDefaultScope: true, scope: ['profile_nickname'],
         mapProfileToUser: (profile: { id: number; kakao_account?: { email?: string; profile?: { nickname?: string } } }) => !profile.kakao_account?.email ? { email: synthetic('kakao', profile.id), emailVerified: false, name: profile.kakao_account?.profile?.nickname || '보호자' } : {},
       } } : {}),
-      ...(settings.social.naver ? { naver: { ...settings.social.naver,
+      ...(settings.social.naver ? { naver: { ...settings.social.naver, disableImplicitSignUp: true,
         mapProfileToUser: (profile: { response: { id: string; email?: string } }) => !profile.response.email ? { email: synthetic('naver', profile.response.id), emailVerified: false, name: '보호자' } : {},
       } } : {}),
     },
@@ -72,7 +72,10 @@ export function createAuthService(settings: AuthSettings, db: AuthDatabase, deli
       verifyOTP: ({ phoneNumber: phone, code }) => policy.consumeOtp(phone, code),
     })],
     databaseHooks: {
-      user: { create: { after: async user => {
+      user: { create: { before: async (_, ctx) => {
+        if (ctx?.path === '/phone-number/verify' && ctx.body?.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
+        if (ctx?.path?.startsWith('/callback/') && (await getOAuthState())?.serverContext?.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
+      }, after: async user => {
         await query(db, 'INSERT INTO iharu_auth.members (id,auth_user_id) VALUES ($1,$2) ON CONFLICT (auth_user_id) DO NOTHING', [randomUUID(), user.id]);
       } } },
       session: { create: { before: async session => {
@@ -106,6 +109,12 @@ export function createAuthService(settings: AuthSettings, db: AuthDatabase, deli
     hooks: { before: createAuthMiddleware(async ctx => {
       // These checks also protect server API calls, not only the Hono gateway.
       const path = ctx.path;
+      if (path === '/sign-up/email' && ctx.body.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
+      if (path === '/sign-in/social' && ctx.body.requestSignUp === true) {
+        if (ctx.body.additionalData?.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
+        await addOAuthServerContext({ ageAtLeast14: true });
+        delete ctx.body.additionalData.ageAtLeast14;
+      }
       if (['/unlink-account','/delete-user','/delete-user/callback','/update-user','/change-email','/set-password','/sign-in/phone-number','/phone-number/request-password-reset','/phone-number/reset-password'].includes(path)) policyError('USE_ACCOUNT_SETTINGS');
       if (path === '/phone-number/send-otp' || path === '/phone-number/verify') {
         if (!settings.sms) policyError('PROVIDER_NOT_READY');

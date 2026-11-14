@@ -18,7 +18,7 @@ class Browser{
  async ok(path:string,body?:object,method?:string){const r=await this.req(path,body,method);expect(r.status,await r.clone().text()).toBeLessThan(300);return r.json();}
  actor(){return {memberId:this.memberId,sessionId:this.sessionId,requestId:randomUUID()};}
 }
-async function parent(email:string,ready=true){const b=new Browser();await b.ok('/api/auth/sign-up/email',{email,password:'p03-parent-fixture-password',name:email.split('@')[0],callbackURL:'/login?verified=1'});const link=[...mail].reverse().find(m=>m.to===email)!;await b.req(link.url.replace(origin,''));await b.ok('/api/auth/sign-in/email',{email,password:'p03-parent-fixture-password'});
+async function parent(email:string,ready=true){const b=new Browser();await b.ok('/api/auth/sign-up/email',{ageAtLeast14:true,email,password:'p03-parent-fixture-password',name:email.split('@')[0],callbackURL:'/login?verified=1'});const link=[...mail].reverse().find(m=>m.to===email)!;await b.req(link.url.replace(origin,''));await b.ok('/api/auth/sign-in/email',{email,password:'p03-parent-fixture-password'});
  const [row]=await query<{id:string;session:string}>(database.db,'SELECT m.id,s.id AS session FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id JOIN iharu_auth.session s ON s."userId"=u.id WHERE u.email=$1',[email]);b.memberId=row.id;b.sessionId=row.session;
  if(ready)await query(database.db,'UPDATE iharu_auth.members SET access_ready=true WHERE id=$1',[b.memberId]);return b;}
 async function create(b:Browser,name='가상 가족'){return (await b.ok('/api/v1/families',{name})).id as string;}

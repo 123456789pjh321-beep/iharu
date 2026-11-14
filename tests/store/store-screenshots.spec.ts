@@ -10,7 +10,7 @@ test('capture actual iHaru screens with an isolated fictional family',async({pag
   expect(r.ok(),await r.text()).toBe(true);return r.json();
  };
  const signup=async(client:APIRequestContext,email:string,name:string)=>{
-  expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+  expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
   const mail=(await(await request.get('/__test__/mail')).json()).find((m:{to:string})=>m.to===email);
   await client.get(mail.url);
   expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);

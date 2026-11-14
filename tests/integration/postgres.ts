@@ -98,7 +98,7 @@ try{
   assert.equal((await admin.query('SELECT attempts FROM app_private.cron_runs ORDER BY slot DESC LIMIT 1')).rows[0].attempts,2);
  });
  await check('parallel Better Auth signup uses a real two-connection auth pool',async()=>{
-  const requests=['one','two'].map(name=>app.request(origin+'/api/auth/sign-up/email',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({name:'가상 보호자',email:`${name}@example.test`,password:'integration-fixture-password-2026',callbackURL:'/login?verified=1'})}));
+  const requests=['one','two'].map(name=>app.request(origin+'/api/auth/sign-up/email',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({ageAtLeast14:true,name:'가상 보호자',email:`${name}@example.test`,password:'integration-fixture-password-2026',callbackURL:'/login?verified=1'})}));
   const results=await Promise.all(requests);for(const r of results)assert.equal(r.status,200,await r.text());
   assert.equal((await admin.query('SELECT id FROM iharu_auth.members')).rowCount,2);
  });
@@ -308,7 +308,7 @@ try{
   const parents:FamilyActor[]=[];
   for(const name of ['child-parent-c','child-parent-d']){
    const email=name+'@example.test';
-   const registered=await app.request(origin+'/api/auth/sign-up/email',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({email,name:'가상 부모',password:'isolated-parent-child-password',callbackURL:'/login?verified=1'})});assert.equal(registered.status,200);
+   const registered=await app.request(origin+'/api/auth/sign-up/email',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({ageAtLeast14:true,email,name:'가상 부모',password:'isolated-parent-child-password',callbackURL:'/login?verified=1'})});assert.equal(registered.status,200);
    await admin.query('UPDATE iharu_auth."user" SET "emailVerified"=true WHERE email=$1',[email]);
    const login=await app.request(origin+'/api/auth/sign-in/email',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({email,password:'isolated-parent-child-password'})});assert.equal(login.status,200);
    const row=(await admin.query('SELECT m.id,s.id AS session FROM iharu_auth.members m JOIN iharu_auth."user" u ON u.id=m.auth_user_id JOIN iharu_auth.session s ON s."userId"=u.id WHERE u.email=$1',[email])).rows[0];parents.push({memberId:row.id,sessionId:row.session,requestId:randomUUID()});

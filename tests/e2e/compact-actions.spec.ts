@@ -3,7 +3,7 @@ const origin='http://127.0.0.1:4174';
 test.use({baseURL:origin});
 async function login(page:Page,request:APIRequestContext,key:string){
  const email=`compact-${key}@example.test`,password='compact-ui-fixture-2026';
- expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'화면 확인 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'화면 확인 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);
  expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
 }

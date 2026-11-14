@@ -5,7 +5,7 @@ test.use({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce'}
 async function ready(page:Page){await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});}
 async function parent(playwright:typeof import('playwright-core'),name:string){
  const client=await playwright.request.newContext({baseURL:origin}),email=`ui129-${name}@example.test`;
- expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'일반사용자 '+name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'일반사용자 '+name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await client.get('/__test__/mail')).json();await client.get(mails.find((mail:{to:string})=>mail.to===email).url);
  expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
  return {client,email};

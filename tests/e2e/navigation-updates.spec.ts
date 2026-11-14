@@ -5,7 +5,7 @@ test('new family content dots clear after the destination loads and the replaced
  const password='menu-dot-fixture-2026',other=await apiRequest.newContext({baseURL:origin});
  try{
   for(const [client,email] of [[page.request,'dot-reader@example.test'],[other,'dot-writer@example.test']] as const){
-   expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:email.split('@')[0],password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+   expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:email.split('@')[0],password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
    const mail=await(await request.get('/__test__/mail')).json();await client.get(mail.find((m:{to:string})=>m.to===email).url);expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
   }
   const call=async(client:typeof other,op:string,data:object={})=>{const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();};

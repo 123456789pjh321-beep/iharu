@@ -1,7 +1,7 @@
 import {test,expect} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='usability-fixture-password-2026';test.use({baseURL:origin,reducedMotion:'reduce'});
 async function parent(page:import('@playwright/test').Page,email:string){
- expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'사용 안내 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'사용 안내 일반사용자',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await page.request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
 }
 test('more, settings and public menu guides replace the top bar without duplicate primary menus',async({page,browser})=>{
