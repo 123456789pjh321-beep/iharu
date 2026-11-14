@@ -13,6 +13,9 @@ export function Loading({ label = '그룹의 하루를 불러오고 있어요' }
 export function ErrorState({ message, retry }: { message:string; retry:() => void }) {
   return <div className="error-state" role="alert"><strong>{copy.error}</strong><p>{message}</p><button className="button" onClick={retry}>{copy.retry}</button></div>;
 }
+export function FormNotice({ error, message }: { error?:string; message?:string }) {
+  return <>{error&&<div className="auth-notice error" role="alert">{error}</div>}{message&&<div className="auth-notice" role="status">{message}</div>}</>;
+}
 export function PreviewDialog({ title, onClose }: { title:string | null; onClose:() => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (title && !ref.current?.open) ref.current?.showModal(); }, [title]);

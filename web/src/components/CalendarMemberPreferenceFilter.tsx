@@ -3,6 +3,7 @@ import type {WorkspaceMember} from '../../../shared/workspace';
 import type {useMemberPreference} from './MemberPreferenceFilter';
 import {MemberFilter} from './MemberFilter';
 import {Icon} from './Icon';
+import {GroupInviteShareButton} from './GroupInviteShare';
 
 export function CalendarMemberPreferenceFilter({members,selection,label,className='',preview=false}:{members:WorkspaceMember[];selection:ReturnType<typeof useMemberPreference>;label:string;className?:string;preview?:boolean}){
  const dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null),id=useId();
@@ -14,6 +15,7 @@ export function CalendarMemberPreferenceFilter({members,selection,label,classNam
  const dismiss=()=>{dialog.current?.close();setOpen(false);trigger.current?.focus({preventScroll:true});};
  return <section className="member-preference" aria-label={label+' 설정'}>
   <div className="member-preference-row">
+   {!preview&&<GroupInviteShareButton/>}
    <MemberFilter className={className} members={members} value={memberIds} showAll={false} expandable={false} disabled={saving} onChange={toggle} label={label}/>
    {preview&&<span className="guest-sample-badge" title="가상 예시이며 실제 그룹 자료가 아닙니다">샘플 데이터</span>}
    <button ref={trigger} type="button" className="member-preference-options icon-button" aria-label={`구성원 필터 설정 · ${names.length}명 선택됨`} title="구성원 필터 설정" aria-haspopup="dialog" aria-controls={id} onClick={()=>{dialog.current?.showModal();setOpen(true);}}><span aria-hidden="true"><Icon name="chevron"/><Icon name="chevron"/></span></button>

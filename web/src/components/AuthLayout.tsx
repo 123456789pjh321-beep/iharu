@@ -8,7 +8,10 @@ import {FamilyArtwork,useExperience} from './Experience';
 import {WorkspaceGateProvider,useWorkspaceGate} from './WorkspaceGate';
 import {EntryAccessProvider} from './EntryAccess';
 import {BriefingLocationProvider,LocationAccessPrompt} from './BriefingLocation';
+import {GroupInviteShareProvider} from './GroupInviteShare';
 import {entryReturnPath} from '../../../shared/entry-intent';
+
+export {FormNotice} from './Common';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
@@ -21,7 +24,7 @@ function StableWorkspaceFrame(){
  const publicDocument=pathname.startsWith('/legal/');
  const childNavigation=access.identity?.role==='CHILD';
  if(new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled)return <Outlet/>;
- return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<Outlet/>}</FrameContext.Provider></AuthLayoutRoot>;
+ return <AuthLayoutRoot wide showNavigation={!publicDocument||session.data?.authenticated===true||childNavigation} personalChild={pathname==='/child/chat'||childNavigation}><FrameContext.Provider value>{health.error?<ErrorState message={health.error} retry={health.retry}/>:health.loading||session.loading?<Loading label="작업실을 열고 있어요"/>:<GroupInviteShareProvider><Outlet/></GroupInviteShareProvider>}</FrameContext.Provider></AuthLayoutRoot>;
 }
 function AuthLayoutRoot({ children, wide:requestedWide = false,personalChild=false,showNavigation=true }: { children: ReactNode; wide?: boolean;personalChild?:boolean;showNavigation?:boolean }) {
   const { pathname } = useLocation(),inPublicFrame=useInPublicFrame();
@@ -56,9 +59,6 @@ export function LoginActions({busy=false,ready=true,next}:{busy?:boolean;ready?:
 export function PasswordField({ label='암호', name='password', fresh=false,minimum }: { label?:string; name?:string; fresh?:boolean;minimum?:number }) {
   const [visible,setVisible] = useState(false);
   return <div className="form-field"><label htmlFor={name}>{label}</label><div className="password-field"><input id={name} name={name} type={visible?'text':'password'} minLength={minimum??(fresh?12:1)} maxLength={128} required autoComplete={fresh?'new-password':'current-password'} aria-describedby={fresh?`${name}-hint`:undefined}/><button type="button" aria-pressed={visible} onClick={()=>setVisible(v=>!v)} aria-label={`${label} ${visible?'숨기기':'표시'}`}>{visible?'숨기기':'표시'}</button></div>{fresh&&<small id={`${name}-hint`}>{minimum??12}~128자로 입력해 주세요. 붙여넣기도 가능해요.</small>}</div>;
-}
-export function FormNotice({ error, message }: { error?:string; message?:string }) {
-  return <>{error&&<div className="auth-notice error" role="alert">{error}</div>}{message&&<div className="auth-notice" role="status">{message}</div>}</>;
 }
 
 

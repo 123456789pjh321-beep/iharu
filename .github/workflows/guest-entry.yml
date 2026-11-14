@@ -1,7 +1,7 @@
 name: Guest entry and contextual login
 on:
   pull_request:
-    paths: ['web/**', 'shared/**', 'server/auth/**', 'tests/auth*.ts', 'tests/helpers/auth-server.ts', 'tests/entry-intent.test.ts', 'tests/e2e/guest-entry.spec.ts', '.github/workflows/guest-entry.yml']
+    paths: ['web/**', 'shared/**', 'server/auth/**', 'tests/auth*.ts', 'tests/helpers/auth-server.ts', 'tests/entry-intent.test.ts', 'tests/e2e/guest-entry.spec.ts', 'tests/e2e/group-invite.spec.ts', '.github/workflows/guest-entry.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
       - run: npm test -- tests/entry-intent.test.ts tests/auth-redirect.test.ts tests/auth.test.ts --testTimeout=15000 --maxWorkers=2
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test tests/e2e/guest-entry.spec.ts --workers=1
+      - run: npx playwright test tests/e2e/guest-entry.spec.ts tests/e2e/group-invite.spec.ts --workers=1
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: iharu-guest-entry-results, path: test-results/, retention-days: 3}

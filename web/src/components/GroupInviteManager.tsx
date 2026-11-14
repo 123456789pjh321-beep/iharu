@@ -1,6 +1,6 @@
-import {useEffect,useState,type FormEvent} from 'react';
+import {useEffect,useId,useState,type FormEvent} from 'react';
 import {workspaceRequest} from '../workspace-api';
-import {FormNotice} from './AuthLayout';
+import {FormNotice} from './Common';
 import {Icon} from './Icon';
 
 type InviteSummary={id:string;expiresAt:string};
@@ -8,7 +8,8 @@ type IssuedInvite=InviteSummary&{url:string};
 const appInviteLink='https://myiharu.com/timetable';
 const formatExpiry=new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});
 
-export function GroupInviteManager({canInvite,refresh}:{canInvite:boolean;refresh:()=>Promise<void>}){
+export function GroupInviteManager({canInvite,refresh,groupOnly=false,openCount=0}:{canInvite:boolean;refresh:()=>Promise<void>;groupOnly?:boolean;openCount?:number}){
+ const id=useId();
  const [pending,setPending]=useState<InviteSummary[]>([]);
  const [issued,setIssued]=useState<IssuedInvite|null>(null);
  const [busy,setBusy]=useState(false);
@@ -16,14 +17,19 @@ export function GroupInviteManager({canInvite,refresh}:{canInvite:boolean;refres
  const [message,setMessage]=useState('');
  const [revision,setRevision]=useState(0);
 
+ const issuedId=issued?.id;
  useEffect(()=>{
   if(!canInvite)return;
   let active=true;
   workspaceRequest<{pending:InviteSummary[]}>('invite.link.options').then(result=>{
-   if(active)setPending(result.pending);
+   if(!active)return;
+   setPending(result.pending);
+   if(issuedId&&!result.pending.some(invite=>invite.id===issuedId)){
+    setIssued(current=>current?.id===issuedId?null:current);
+   }
   }).catch(e=>{if(active)setError((e as Error).message);});
   return()=>{active=false;};
- },[canInvite,revision]);
+ },[canInvite,issuedId,openCount,revision]);
 
  async function issue(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
@@ -68,11 +74,11 @@ export function GroupInviteManager({canInvite,refresh}:{canInvite:boolean;refres
   finally{setBusy(false);}
  }
 
- return <section className="account-card">
-  <div className="card-title"><h2><Icon name="key"/>초대 링크</h2></div>
+ return <section className={groupOnly?undefined:'account-card'}>
+  {!groupOnly&&<div className="card-title"><h2><Icon name="key"/>초대 링크</h2></div>}
   <FormNotice error={error} message={message}/>
-  <section className="group-invite-option" aria-labelledby="invite-group-title">
-   <h3 id="invite-group-title">그룹 초대</h3>
+  <section className="group-invite-option" aria-labelledby={id+'-group'}>
+   <h3 id={id+'-group'} className={groupOnly?'sr-only':undefined}>그룹 초대</h3>
    <p>받은 사람이 로그인하고 초대를 수락하면 같은 그룹으로 연결돼요.</p>
    {canInvite?<>
     <form className="auth-form" onSubmit={issue}><fieldset disabled={busy}>
@@ -90,13 +96,13 @@ export function GroupInviteManager({canInvite,refresh}:{canInvite:boolean;refres
     </ul></div>}
    </>:<p>그룹 초대 링크는 호스트에게 요청해 주세요.</p>}
   </section>
-  <section className="group-invite-option" aria-labelledby="invite-app-title">
-   <h3 id="invite-app-title">일반 초대</h3>
+  {!groupOnly&&<section className="group-invite-option" aria-labelledby={id+'-app'}>
+   <h3 id={id+'-app'}>일반 초대</h3>
    <p>아이하루 시간표를 열어 앱을 둘러볼 수 있어요.</p>
    <div className="group-invite-issued">
     <input aria-label="일반 초대 링크" value={appInviteLink} readOnly onFocus={e=>e.target.select()}/>
     <div className="group-invite-actions">{typeof navigator.share==='function'&&<button className="button" onClick={()=>void share(appInviteLink,'아이하루 앱 초대')}>일반 초대 공유</button>}<button className="button" onClick={()=>void copy(appInviteLink,'일반 초대 링크')}>일반 초대 링크 복사</button></div>
    </div>
-  </section>
+  </section>}
  </section>;
 }
