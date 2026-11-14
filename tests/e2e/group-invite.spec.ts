@@ -40,7 +40,7 @@ async function issue(page:Page){
  const dialog=page.getByRole('dialog',{name:/ 초대$/});
  const field=dialog.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();const link=await field.inputValue();
- await page.keyboard.press('Escape');await expect(dialog).toBeHidden();return link;
+ await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await page.getByRole('button',{name:'그룹 목록',exact:true}).click();return link;
 }
 
 test('group invite shortcut creates one link per click and fits member filters across the workspace',async({page,request})=>{
@@ -189,7 +189,7 @@ test('group link resumes after email verification and requires explicit acceptan
   await expect(dialog.getByLabel('발급한 그룹 초대 링크')).toBeVisible();
   await expect(dialog.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await guest.keyboard.press('Escape');
-  await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(timetableInvite);
+  await guest.goto('/more');await guest.locator('.more-app-share summary').click();await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(timetableInvite);
   await guest.goto(link);
   await expect(guest.getByRole('alert')).toContainText('초대');
  }finally{await context.close();}

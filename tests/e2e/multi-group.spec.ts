@@ -87,3 +87,23 @@ test('personal space hides member invitation, group plus creates explicitly and 
  await page.screenshot({path:'test-results/group-plus-and-members.png',animations:'disabled'});
  await filter(page).getByRole('button',{name:'개인',exact:true}).click();await page.reload();await expect(page.locator('.member-preference-row .group-invite-shortcut')).toHaveCount(0);await page.screenshot({path:'test-results/personal-without-member-invite.png',animations:'disabled'});expect(issued).toBe(0);
 });
+
+test('late invitation responses never replace the currently selected group link',async({page})=>{
+ await register(page,'초대공간검사');
+ const a=(await command(page,'group.create',{name:'첫 그룹',description:'',color:0,clientRequestId:crypto.randomUUID()})).group;
+ const b=(await command(page,'group.create',{name:'다음 그룹',description:'',color:1,clientRequestId:crypto.randomUUID()})).group;
+ await command(page,'group.select',{groupId:a.id});await page.goto('/timetable');
+ let release!:()=>void,started!:()=>void;
+ const hold=new Promise<void>(resolve=>{release=resolve;}),pending=new Promise<void>(resolve=>{started=resolve;});let first=true;
+ await page.route('**/workspace/invite.link.issue',async route=>{
+  if(first){first=false;const response=await route.fetch();started();await hold;await route.fulfill({response});}
+  else await route.continue();
+ });
+ try{
+  await page.locator('.member-preference-row .group-invite-shortcut').click();await pending;
+  await page.getByRole('button',{name:'그룹 초대 닫기'}).click();await filter(page).getByRole('button',{name:'다음 그룹',exact:true}).click();
+  await page.locator('.member-preference-row .group-invite-shortcut').click();const field=page.getByLabel('발급한 그룹 초대 링크');await expect(field).toBeVisible();const link=await field.inputValue();
+  const late=page.waitForResponse(r=>r.url().endsWith('/workspace/invite.link.issue')&&r.request().postDataJSON().groupId===a.id);release();await late;await expect(field).toHaveValue(link);await expect(page.locator('.group-invite-target')).toContainText('다음 그룹');
+  const inspected=await command(page,'invite.link.inspect',{token:new URL(link).hash.slice(1)});expect(inspected.familyId).toBe(b.id);
+ }finally{release();}
+});

@@ -14,9 +14,9 @@ const inlineShortcutRoutes=new Set([
 ]);
 const GroupInviteShareContext=createContext<{dialogId:string;canInvite:boolean;open:()=>void}|null>(null);
 type InviteState=
- |{ownerId:string;status:'loading'}
- |{ownerId:string;status:'ready';invite:IssuedInvite}
- |{ownerId:string;status:'error';message:string;code?:string};
+ |{ownerId:string;groupId:string;status:'loading'}
+ |{ownerId:string;groupId:string;status:'ready';invite:IssuedInvite}
+ |{ownerId:string;groupId:string;status:'error';message:string;code?:string};
 
 export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const {pathname}=useLocation(),navigate=useNavigate();
@@ -30,27 +30,29 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const profileId=parent?.id;
  const canInvite=!!parent,needsGroup=!parent?.family;
  const groupId=parent?.family?.id,previousGroup=useRef(groupId);
- const current=profileId&&invite?.ownerId===profileId?invite:undefined;
+ const current=profileId&&invite?.ownerId===profileId&&invite.groupId===groupId?invite:undefined;
 
  useEffect(()=>{dialog.current?.close();},[pathname,profileId]);
  useEffect(()=>{if(previousGroup.current&&previousGroup.current!==groupId)dialog.current?.close();previousGroup.current=groupId;},[groupId]);
 
  const issue=useCallback(async(ownerId:string)=>{
-  if(issuing.current===ownerId)return;
-  issuing.current=ownerId;
-  setInvite({ownerId,status:'loading'});
+  const targetGroupId=parent?.family?.id;if(!targetGroupId)return;
+  const scope=ownerId+':'+targetGroupId;
+  if(issuing.current===scope)return;
+  issuing.current=scope;
+  setInvite({ownerId,groupId:targetGroupId,status:'loading'});
   try{
    // A deliberate click on the labeled shortcut authorizes creating the invitation.
-   const link=await workspaceRequest<IssuedInvite>('invite.link.issue',{consent:true,...(parent?.family?.id?{groupId:parent.family.id}:{})});
-   if(issuing.current!==ownerId)return;
-   setInvite({ownerId,status:'ready',invite:link});
+   const link=await workspaceRequest<IssuedInvite>('invite.link.issue',{consent:true,groupId:targetGroupId});
+   if(issuing.current!==scope)return;
+   setInvite({ownerId,groupId:targetGroupId,status:'ready',invite:link});
    void refreshAccess();
   }catch(e){
-   if(issuing.current===ownerId){
+   if(issuing.current===scope){
     const error=e as Error&{code?:string};
-    setInvite({ownerId,status:'error',message:error.message,code:error.code});
+    setInvite({ownerId,groupId:targetGroupId,status:'error',message:error.message,code:error.code});
    }
-  }finally{if(issuing.current===ownerId)issuing.current=null;}
+  }finally{if(issuing.current===scope)issuing.current=null;}
  },[refreshAccess,parent?.family?.id]);
 
  const action=useMemo(()=>profileId?{dialogId,open:()=>{
@@ -69,6 +71,7 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
      <h2 id={dialogId+'-title'}>{shareLabel}</h2>
      <button type="button" className="icon-button" aria-label="그룹 초대 닫기" onClick={()=>dialog.current?.close()}><Icon name="close"/></button>
     </header>
+    {parent.family&&<p className="group-invite-target">{parent.family.name} · 구성원 초대</p>}
     {!canInvite?<p>그룹 초대 링크는 호스트에게 요청해 주세요.</p>:
      current?.status==='ready'?<InviteLinkActions key={current.invite.id} url={current.invite.url} invite={current.invite} shareFallback/>:
      current?.status==='error'?<>
