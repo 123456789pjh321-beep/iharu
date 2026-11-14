@@ -8,7 +8,7 @@ test('creates and switches individual and selected-member rooms without mixing d
  for(const name of ['민수','지우','서연']){
   const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},extraHTTPHeaders:{'x-fixture-client':'room-browser-'+contexts.length}});
   const email='ui130-'+contexts.length+'@example.test';
-  expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,password,name,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+  expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,password,name,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
   const mails=await(await context.request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);
   expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);contexts.push(context);
  }
@@ -39,7 +39,7 @@ test('creates and switches individual and selected-member rooms without mixing d
 test('invited users and creators leave optional rooms, clear cached history, retry errors and keep default chat',async({browser})=>{
  test.setTimeout(150000);const contexts=[];
  for(const [index,name] of ['민준','지윤','도윤'].entries()){
-  const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce',extraHTTPHeaders:{'x-fixture-client':'room-leave-'+index}}),email='ui136-leave-'+index+'@example.test';expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,password,name,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mails=await(await context.request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);contexts.push(context);
+  const context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce',extraHTTPHeaders:{'x-fixture-client':'room-leave-'+index}}),email='ui136-leave-'+index+'@example.test';expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,password,name,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mails=await(await context.request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);contexts.push(context);
  }
  try{
   const [ac,bc,cc]=contexts;for(const context of [bc,cc]){const invite=await command(ac.request,'invite.issue',{consent:true});await command(context.request,'family.join',{code:invite.code});}const am=await command(ac.request,'me'),bm=await command(bc.request,'me'),cm=await command(cc.request,'me'),room=await command(ac.request,'chat.room.create',{memberIds:[bm.id],name:'',clientRequestId:crypto.randomUUID()});await command(ac.request,'chat.send',{roomId:room.id,text:'나가기 전에 남긴 대화',clientMessageId:crypto.randomUUID()});

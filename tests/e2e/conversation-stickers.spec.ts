@@ -4,7 +4,7 @@ test.use({baseURL:origin});
 test('child picture messages persist, reach the parent, retry once, and remain above the input',async({page,browser,request})=>{
  test.setTimeout(90000);
  const email='picture-parent@example.test',password='picture-fixture-2026';
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'그림 일반사용자',password,callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'그림 일반사용자',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);
  await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
  const invite=await(await page.request.post('/api/v1/workspace/invite.issue',{headers:{Origin:origin},data:{consent:true}})).json();
@@ -46,7 +46,7 @@ test('child picture messages persist, reach the parent, retry once, and remain a
 
 test('timetable, tuition and calendar creation open their matching editors without a floating action',async({page,request})=>{
  const email='registration-parent@example.test',password='registration-fixture-2026';
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'등록 일반사용자',password,callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'등록 일반사용자',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();await page.request.get(mails.find((m:{to:string})=>m.to===email).url);await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}});
  await page.goto('/timetable');await page.locator('.timetable-slot[data-time="09:00"]').first().click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
  await page.goto('/tuition');await page.getByRole('button',{name:'가계부 추가',exact:true}).click();await expect(page.getByRole('dialog',{name:'가계부 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();

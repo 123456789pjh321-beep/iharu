@@ -4,7 +4,7 @@ import {openMemberPreferences,saveMemberPreference,selectAllMembers} from '../he
 const origin='http://127.0.0.1:4174',password='timetable-preference-fixture-2026';test.use({baseURL:origin,reducedMotion:'reduce'});
 async function call(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
 async function signIn(page:Page,email:string){expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);}
-async function parent(page:Page,email:string,name:string){expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await signIn(page,email);}
+async function parent(page:Page,email:string,name:string){expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await signIn(page,email);}
 const filters=(page:Page)=>page.getByRole('group',{name:'시간표 구성원 필터',exact:true});
 async function selected(page:Page,name:string,pressed=true){await expect(filters(page).getByRole('button',{name,exact:true})).toHaveAttribute('aria-pressed',String(pressed));}
 

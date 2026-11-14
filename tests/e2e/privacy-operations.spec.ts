@@ -1,6 +1,6 @@
 import {test,expect,type APIRequestContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='privacy-fixture-password-2026';test.use({baseURL:origin});
-async function signup(client:APIRequestContext,email:string,name='검증 계정'){expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await client.get('/__test__/mail')).json();await client.get(mail.find((m:{to:string})=>m.to===email).url);expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);await api(client,'workspace/me');}
+async function signup(client:APIRequestContext,email:string,name='검증 계정'){expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await client.get('/__test__/mail')).json();await client.get(mail.find((m:{to:string})=>m.to===email).url);expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);await api(client,'workspace/me');}
 async function api(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
 test('the public account deletion link leads to a signed-in deletion request',async({page})=>{
  await page.emulateMedia({reducedMotion:'reduce'});

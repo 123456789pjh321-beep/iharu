@@ -8,7 +8,7 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
  test.setTimeout(120000);
  await page.setViewportSize({width:390,height:844});
  const email='calendar-day@example.test',password='calendar-day-fixture-2026';
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'일간 일반사용자',password,callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'일간 일반사용자',password,callbackURL:'/login?verified=1'}});
  const mails=await(await request.get('/__test__/mail')).json();
  await request.get(mails.find((m:{to:string})=>m.to===email).url);
  expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);

@@ -4,6 +4,7 @@ async function login(page: Page, request: APIRequestContext, email: string) {
   await page.request.post("/api/auth/sign-up/email", {
     headers: { Origin: "http://127.0.0.1:4174" },
     data: {
+      ageAtLeast14: true,
       email,
       password: "household-browser-password-2026",
       name: "가상 일반사용자",

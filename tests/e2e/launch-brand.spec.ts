@@ -39,7 +39,7 @@ test('first paint displays the original wordmark and animates the feature introd
 
 test('workspace launch waits for initial data and does not repeat when switching menus',async({page})=>{
  const email='launch-parent@example.test',password='launch-browser-fixture-2026';
- expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'시작 화면 검증',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'시작 화면 검증',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await page.request.get('/__test__/mail')).json();await page.request.get(mails.find((mail:{to:string})=>mail.to===email).url);
  expect((await page.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
  let release!:()=>void;const held=new Promise<void>(resolve=>{release=resolve;});
@@ -140,7 +140,7 @@ test('contextual login reopens the selected timetable slot without a video overl
  const email='launch-timetable-inline@example.test',password='launch-timetable-fixture-password';
  const client=await playwright.request.newContext({baseURL:origin});
  try{
-  expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'첫 화면 일정 검사',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+  expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'첫 화면 일정 검사',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
   const mails=await(await client.get('/__test__/mail')).json();
   await client.get(mails.find((mail:{to:string})=>mail.to===email).url);
  }finally{await client.dispose();}

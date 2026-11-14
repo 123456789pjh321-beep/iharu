@@ -1,7 +1,7 @@
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 test.use({baseURL:'http://127.0.0.1:4174'});
 async function login(page:Page,request:APIRequestContext,email:string,ready=true){
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:'http://127.0.0.1:4174'},data:{email,password:'browser-family-password-2026',name:'가상 일반사용자',callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:'http://127.0.0.1:4174'},data:{ageAtLeast14:true,email,password:'browser-family-password-2026',name:'가상 일반사용자',callbackURL:'/login?verified=1'}});
  const mail=await(await request.get('/__test__/mail')).json();const m=mail.find((m:{to:string})=>m.to===email);await page.goto(m.url);
  await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill('browser-family-password-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.personal-timetable')).toBeVisible();
  if(ready)expect((await request.post('/__test__/ready',{data:{email}})).ok()).toBe(true);

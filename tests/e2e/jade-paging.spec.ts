@@ -2,7 +2,7 @@ import {selectCalendarView} from '../helpers/workspace-ui';
 import {test,expect,type Page,type BrowserContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='jade-paging-fixture-2026';
 async function signIn(context:BrowserContext,email:string){
- expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'디자인 확인',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
+ expect((await context.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'디자인 확인',password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);
  const mails=await(await context.request.get('/__test__/mail')).json();await context.request.get(mails.find((m:{to:string})=>m.to===email).url);
  expect((await context.request.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);
 }

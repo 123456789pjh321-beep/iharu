@@ -1,7 +1,7 @@
 import {koreaToday} from '../../shared/schedules';
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
-async function parentLogin(page:Page,request:APIRequestContext,email:string){await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name:'가상 일반사용자',password:'new-parent-fixture-password',callbackURL:'/login?verified=1'}});const mails=await(await request.get('/__test__/mail')).json();await page.goto(mails.find((m:{to:string})=>m.to===email).url);await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill('new-parent-fixture-password');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.personal-timetable')).toBeVisible();}
+async function parentLogin(page:Page,request:APIRequestContext,email:string){await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name:'가상 일반사용자',password:'new-parent-fixture-password',callbackURL:'/login?verified=1'}});const mails=await(await request.get('/__test__/mail')).json();await page.goto(mails.find((m:{to:string})=>m.to===email).url);await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill('new-parent-fixture-password');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.personal-timetable')).toBeVisible();}
 test('existing child account → login → shared read-only data → removal preserves own data',async({page,browser,request})=>{
  test.setTimeout(90000);await parentLogin(page,request,'ui76-parent@example.test');
  await page.goto('/today/calendar');await page.locator('.calendar-cell[data-date="'+koreaToday()+'"] .calendar-day-target').click({position:{x:12,y:12}});await page.getByRole('button',{name:'이 날짜에 일정 추가',exact:true}).click();await page.getByLabel('제목',{exact:true}).fill('일반사용자 개인 일정');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.getByText('일반사용자 개인 일정',{exact:true})).toBeVisible();
@@ -20,7 +20,7 @@ test('existing child account → login → shared read-only data → removal pre
 });
 for(const width of [320,390,768,1440])test(`signup fields and personal workspace remain reachable at ${width}px`,async({page,request})=>{
  await page.setViewportSize({width,height:900});for(const path of ['/login','/login?role=child']){await page.goto(path);const login=await page.getByRole('button',{name:path.includes('child')?'로그인':'로그인',exact:true}).boundingBox(),signup=await page.getByRole('link',{name:'회원가입',exact:true}).boundingBox();expect(signup!.y).toBeGreaterThanOrEqual(login!.y+login!.height);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
- await page.goto('/signup?role=child');await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();await expect(page.getByLabel('이메일',{exact:true})).toBeVisible();
+ await page.goto('/signup?role=child');await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'만 14세 미만',exact:true})).toBeVisible();await expect(page.getByLabel('이메일',{exact:true})).toHaveCount(0);
  await parentLogin(page,request,`ui76-align-${width}@example.test`);
  await expect(page.locator('[data-timetable-date]')).toHaveCount(7);await expect(page.locator('[data-home-section]')).toHaveCount(0);
  await expect(page.getByRole('navigation',{name:'오늘 화면 보기'})).toHaveCount(0);

@@ -6,7 +6,7 @@ const origin='http://127.0.0.1:4174';
 async function sampleFamily(page:Page){
  const email=`chat-${crypto.randomUUID()}@example.test`,password='message-browser-fixture-password';
  async function post(path:string,data:object){const r=await page.request.post(path,{headers:{Origin:origin,'Idempotency-Key':crypto.randomUUID()},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
- await post('/api/auth/sign-up/email',{email,password,name:'테스트 일반사용자',callbackURL:'/login?verified=1'});const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await post('/api/auth/sign-in/email',{email,password});await post('/__test__/ready',{email});
+ await post('/api/auth/sign-up/email',{ageAtLeast14:true,email,password,name:'테스트 일반사용자',callbackURL:'/login?verified=1'});const mail=await(await page.request.get('/__test__/mail')).json();await page.request.get(mail.find((m:{to:string})=>m.to===email).url);await post('/api/auth/sign-in/email',{email,password});await post('/__test__/ready',{email});
  const family=await post('/api/v1/families',{name:'우리 그룹 · 테스트'});const children=[];
  // Synthetic birthdays satisfy the isolated fixture contract; only names/ages were provided.
  for(const [nickname,birthDate] of [['서준','2018-03-02'],['서하','2019-03-02']]){const draft=await post(`/api/v1/families/${family.id}/child-registration-drafts`,{});await post('/__test__/verify-draft',{draftId:draft.id,birthDate});const proof=await post(`/api/v1/child-registration-drafts/${draft.id}/consent-proofs`,{general:true,location:false,policyVersion:'6.1'});children.push(await post(`/api/v1/families/${family.id}/children`,{draftId:draft.id,proofId:proof.proofId,nickname,birthDate}));}

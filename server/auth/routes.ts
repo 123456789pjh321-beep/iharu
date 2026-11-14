@@ -81,7 +81,8 @@ export function accountRoutes(resolve: () => AuthService | null = getAuthRuntime
       if(callbacks?.length!==1||!authRedirectAllowed(callbacks[0],svc.settings.origin,path,'redirectTo'))policyError('INVALID_CALLBACK', 'BAD_REQUEST');
     }
     if (c.req.method === 'POST') {
-      const body: Record<string, unknown> = await c.req.raw.clone().json().catch(() => ({}));
+      const body: Record<string, unknown> = (await c.req.raw.clone().json().catch(() => null)) ?? {};
+      if (path === '/sign-up/email' && body.ageAtLeast14 !== true) policyError('SIGNUP_AGE_REQUIRED');
       if (path === '/sign-up/email' && typeof body.email === 'string' && body.email.toLowerCase().endsWith('@identity.iharu.invalid')) policyError('INVALID_INPUT', 'BAD_REQUEST');
       const ip = process.env.VERCEL ? c.req.header('x-vercel-forwarded-for') || 'unknown' : 'local';
       await svc.policy.takeLimits([

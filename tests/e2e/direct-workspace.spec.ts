@@ -3,7 +3,7 @@ import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 import {koreaToday} from '../../shared/schedules';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 async function login(page:Page,request:APIRequestContext,email:string,name='가상 일반사용자'){
- await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{email,name,password:'direct-workspace-fixture-2026',callbackURL:'/login?verified=1'}});
+ await page.request.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password:'direct-workspace-fixture-2026',callbackURL:'/login?verified=1'}});
  const mails=await(await request.get(origin+'/__test__/mail')).json();await page.goto(mails.find((m:{to:string})=>m.to===email).url);await page.getByLabel('아이디',{exact:true}).fill(email);await page.getByLabel('암호',{exact:true}).fill('direct-workspace-fixture-2026');await page.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.personal-timetable')).toBeVisible();
 }
 async function issue(page:Page){

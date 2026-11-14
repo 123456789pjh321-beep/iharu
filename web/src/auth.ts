@@ -14,6 +14,7 @@ export const methodNames: Record<string, string> = { credential:'이메일 · �
 export const emailLinkSchema = z.object({pending:z.object({email:z.string(),expiresAt:z.string()}).nullable()});
 const messages: Record<string,string> = {
   INVALID_CALLBACK:'로그인 후 돌아갈 화면을 확인하지 못했어요. 현재 화면을 새로 열고 다시 로그인해 주세요.',
+  SIGNUP_AGE_REQUIRED:'새 계정을 만들려면 만 14세 이상인지 먼저 확인해 주세요.',
   MAIL_DELIVERY_FAILED:'인증 메일을 보내지 못했어요. 1분 뒤 다시 입력해 주세요. 계속되면 서비스 연결 확인이 필요해요.',
   METHOD_ALREADY_LINKED:'이미 이메일 로그인이 연결되어 있어요. 내 계정에서 확인해 주세요.',
   AUTH_NOT_READY:'로그인 연결을 준비하고 있어요. 잠시 후 다시 방문해 주세요.',
@@ -40,9 +41,9 @@ export async function authPost(path: string, body: object) {
   if(path==='/api/auth/sign-out')await clearDevicePush();
   return data;
 }
-export async function startSocial(provider:string, link = false, reauthenticate = false,returnTo?:string) {
+export async function startSocial(provider:string, link = false, reauthenticate = false,returnTo?:string, signup = false) {
   const next=reauthenticate&&returnTo===undefined?'/account':entryReturnPath(returnTo);
-  const data = await authPost(`/api/auth/${link?'link-social':'sign-in/social'}`, { provider, callbackURL:link?'/account':next, errorCallbackURL:'/login?next='+encodeURIComponent(next) });
+  const data = await authPost(`/api/auth/${link?'link-social':'sign-in/social'}`, { provider, callbackURL:link?'/account':next, errorCallbackURL:'/login?next='+encodeURIComponent(next), ...(signup?{requestSignUp:true,additionalData:{ageAtLeast14:true}}:{}) });
   if (!data.url || !data.url.startsWith('https://')) throw new Error('로그인 연결 주소를 확인하지 못했어요. 다시 시도해 주세요.');
   window.location.assign(data.url);
 }
@@ -51,6 +52,7 @@ export async function startSocial(provider:string, link = false, reauthenticate 
 export function socialErrorMessage(code:string|null) {
   if(!code)return undefined;
   if(code==='account_not_linked')return '기존에 사용하던 방법으로 로그인한 뒤, 내 계정 → 로그인 방법 추가에서 소셜 계정을 연결해 주세요.';
+  if(code==='signup_disabled')return '연결된 아이하루 계정을 찾지 못했어요. 처음이라면 회원가입에서 연령을 확인하고 같은 로그인 방법을 선택해 주세요.';
   if(code==='access_denied')return '로그인이 취소됐어요. 로그인 버튼을 눌러 다시 시작할 수 있어요.';
   if(['state_not_found','state_mismatch','invalid_callback_request','invalid_code'].includes(code))return '로그인 연결이 만료됐어요. 이전 화면으로 돌아가지 말고 로그인 버튼을 눌러 다시 시작해 주세요.';
   if(['unable_to_get_user_info','email_not_found'].includes(code))return '소셜 계정 정보를 확인하지 못했어요. 다시 시도해 주세요. 계속되면 서비스 설정 확인이 필요해요.';
