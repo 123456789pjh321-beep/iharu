@@ -32,6 +32,43 @@ async function issue(page:Page){
  return field.inputValue();
 }
 
+test('group invite shortcut follows the workspace menus and opens the same share flow',async({page,request})=>{
+ test.setTimeout(70000);
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator.clipboard,'writeText',{value:async (url:string)=>{
+   document.documentElement.dataset.inviteCopied=url;
+  }});
+ });
+ await page.goto('/timetable');
+ await expect(page.locator('[data-guest-workspace]')).toBeVisible();
+ await expect(page.getByRole('button',{name:'그룹 초대 공유',exact:true})).toHaveCount(0);
+ await register(page,request,'group-shortcut-host@example.test','초대 단축 버튼');
+ await page.goto('/timetable');
+ const menu=page.getByRole('navigation',{name:'모바일 주 메뉴'});
+ const shortcut=page.getByRole('button',{name:'그룹 초대 공유',exact:true});
+ const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
+ const filteredMenus=['시간표','달력','가계부'];
+ for(const label of ['시간표','달력','대화','AI 브리핑','가계부','더보기']){
+  await menu.getByRole('link',{name:label,exact:true}).click();
+  const position=filteredMenus.includes(label)?'.member-preference-row > .group-invite-shortcut:first-child':'.workspace-invite-toolbar > .group-invite-shortcut';
+  await expect(shortcut).toHaveCount(1);
+  await expect(page.locator(position)).toBeVisible();
+  await shortcut.click();
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button',{name:'그룹 초대 링크 만들기'})).toBeEnabled();
+  await expect(dialog.getByLabel('일반 초대 링크',{exact:true})).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+ }
+ await shortcut.click();
+ const link=await issue(page);
+ expect(new URL(link).pathname).toBe('/invite');
+ await dialog.getByRole('button',{name:'그룹 초대 링크 복사'}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-invite-copied',link);
+ await dialog.getByRole('button',{name:'그룹 초대 닫기'}).click();
+ await expect(shortcut).toBeFocused();
+});
+
 test('group link resumes after email verification and requires explicit acceptance',async({page,browser,request})=>{
  test.setTimeout(60000);
  await register(page,request,'group-link-host@example.test','가상 초대 호스트');
@@ -52,6 +89,10 @@ test('group link resumes after email verification and requires explicit acceptan
   await guest.getByRole('link',{name:'그룹 관리 열기'}).click();
   await expect(guest.locator('.personal-member')).toHaveCount(2);
   await expect(guest.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
+  await guest.getByRole('button',{name:'그룹 초대 공유',exact:true}).click();
+  const dialog=guest.getByRole('dialog',{name:'그룹 초대 공유'});
+  await expect(dialog).toContainText('그룹 초대 링크는 호스트에게 요청해 주세요.');
+  await expect(dialog.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(timetableInvite);
   await guest.goto(link);
   await expect(guest.getByRole('alert')).toContainText('이미 사용');
