@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {waitForAppReady} from '../helpers/workspace-ui';
 import {publicPaths,publicPosts} from '../../shared/public-content';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin,reducedMotion:'reduce'});
 test('article reading size persists and the outline follows the selected section',async({page})=>{
@@ -34,4 +35,23 @@ test('all introduction menus and article layouts remain usable on small screens'
  }
  await page.goto('/guide');await page.locator('.user-guide-index a[href="#chat"]').click();await expect(page.locator('#chat h2')).toBeInViewport();await page.locator('.market-nav').getByRole('link',{name:'블로그',exact:true}).click();await page.locator('.story-card a[href="/blog/first-picture-conversation"]').click();await expect(page).toHaveURL(/\/blog\/first-picture-conversation$/);
  await page.goto('/login');await expect(page.locator('.market-nav').getByRole('link')).toHaveText(['서비스','활용방법','공지사항','블로그']);await page.locator('.market-nav').getByRole('link',{name:'공지사항',exact:true}).click();await expect(page).toHaveURL(/\/notices$/);
+});
+
+test('rapid category and query changes preserve the latest filters in public and in-app readers',async({page})=>{
+ for(const path of ['/notices','/more/notices']){
+  await page.goto(path+'?category='+encodeURIComponent('서비스 안내'));await waitForAppReady(page);
+  await expect(page.getByRole('button',{name:'서비스 안내',exact:true})).toHaveAttribute('aria-pressed','true');
+  // Keep both events in one browser turn to exercise a pending router navigation.
+  await page.getByRole('button',{name:'전체',exact:true}).evaluate(button=>{
+   (button as HTMLButtonElement).click();
+   const input=document.querySelector<HTMLInputElement>('input[type="search"]')!;
+   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'말 대신 그림으로');
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  await expect(page.getByRole('button',{name:'전체',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByRole('searchbox',{name:'글 검색'})).toHaveValue('말 대신 그림으로');
+  await expect(page.locator('.story-card,.reader-post-list>article')).toHaveCount(1);
+  await expect(page).not.toHaveURL(/category=/);
+  await page.reload();await waitForAppReady(page);await expect(page.locator('.story-card,.reader-post-list>article')).toHaveCount(1);
+ }
 });

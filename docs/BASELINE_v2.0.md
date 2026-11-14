@@ -11,6 +11,8 @@
 | 시간표·달력·메모 | 생성·수정·삭제, 잘못된 날짜/시간, 반복·공휴일, 구성원 필터, 월 이동, 임시 글과 사진·위치, 중복 저장·네트워크 실패 |
 | 가계부 | 금액·날짜 검증, 수입·지출, 월별 조회, 공유·납부 권한, 저장 재시도와 그룹 전환 |
 | 대화·알림 | 접근 권한, 방 생성·탈퇴, 메시지 중복·삭제·늦은 응답, 읽음·알림, 연결 복구 |
+| AI 브리핑·설정 | 공급자 사용 가능 여부, 설정 저장·연결 실패, 브리핑 생성·위치 범위, 권한 없는 호출과 이전 응답 |
+| Android·위젯 | 자체 도메인 링크, 오프라인 재시도·빠른 재실행·회전, 브라우저 복귀, 위젯 연결·해제·토큰 검증 |
 | 관리자·개인정보 | 권한 없는 접근, 초안/게시, 계정 및 권한 변경, 로그·검색 응답 순서, 개인정보 열람·삭제 요청 |
 | 공통 UI | 320~1440px 반응형, 짧은 화면, 큰 글씨·어두운 테마, 고정 상하단과 본문 스크롤, 팝업 초점·Escape·뒤로가기, 로딩·오류·빈 상태 |
 | 서버·DB | 입력·권한·트랜잭션·멱등성, 실제 PostgreSQL 동시성, 오류 응답과 민감정보 노출 방지 |
@@ -47,3 +49,29 @@
 - 개인/그룹 격리, 수락·탈퇴·취소·재발급, 날짜 경계·반복, 중복 쓰기, 지연/실패 응답, 접근 거절, 세션 만료를 포함합니다.
 - 외부 OAuth 공급자·메일·SMS·지도·웹푸시의 계약/실패는 테스트 공급자·모의 응답으로 검사합니다. 타사 실제 계정의 로그인, 실제 휴대폰 수신·푸시 전달 및 Android 실기기/스토어 배포는 이 자동화 검사만으로 보증하지 않습니다.
 - 운영 데이터에 테스트 계정·일정·대화·초대를 넣지 않습니다. 운영 반영 확인은 정확한 소스 SHA의 배포 상태와 읽기 전용 상태 API로 수행합니다.
+
+## 검사 연결표
+
+| 기능·예외 영역 | 대표 자동화 검사 |
+|---|---|
+| 가입·인증·세션·재인증·복귀·공급자 실패 | `auth-flow`, `auth`, `guest-entry`, `login-landing`, `baseline-exceptions`, `entry-intent` |
+| 그룹 CRUD·초대·개인 분리·그룹 전환 경합 | `multi-group`, `group-invite`, `group-ledger-recovery`, `workspace-topbar`, PostgreSQL 통합 |
+| 시간표·반복·달력·공휴일·날짜/시간 입력 | `schedules`, `direct-workspace`, `entry-input`, `timetable-*`, `calendar-*` |
+| 가계부·금액·납부자·중복 저장·네트워크 복구 | `ledger`, `tuition-touch`, `group-ledger-recovery`, `direct-workspace` |
+| 타임라인·메모·사진·위치·작성자 권한 | `timeline`, `workspace-reading-calendar`, `direct-workspace` |
+| 대화·그림 메시지·채팅방·읽음·알림·수신 순서 | `chat-rooms`, `messages`, `conversation-stickers`, `notification-calendar`, `workspace-push` |
+| AI 브리핑·설정·위치 권한 | `briefing`, `briefing-location`, `ai-settings` |
+| 관리자·개인정보·약관 게시·권한 제한 | `system-admin`, `privacy-operations`, `public-legal-navigation`, `legal-content` |
+| 고정 상하단·메뉴 이동·응답형·로딩·접근성·제스처 | `workspace-shell`, `adaptive-design`, `launch-brand`, `public-stories`, `continuous-workspace`, `month-gestures`, `jade-paging` |
+| Android·브라우저 복귀·오프라인·위젯 | `RuntimeRecoveryTest`, `emulator-smoke.py`, `android-connection`, `devices` |
+
+대표 이름은 `tests/e2e/*.spec.ts`, `tests/*.test.ts` 및 `android/app/src/test`에 대응합니다. 검사 건수는 실행 결과에 기재하며, 중복 실행된 그룹/전용 워크플로 건수를 전체 브라우저 검사에 더하지 않습니다. 코드의 모든 분기를 100% 측정했다는 뜻은 아닙니다.
+
+## 기준 소스와 복구 원칙
+
+- `baseline/v2.0.0`은 승인된 v2.0 소스를 가리키는 보존용 브랜치입니다. 이후 기능 개발은 별도 브랜치에서 진행하고 이 기준 참조는 이동하지 않습니다.
+- 검증된 코드 커밋과 최종 문서/병합 커밋을 구분합니다. 문서만 갱신하는 커밋은 실행 코드가 동일한지 비교합니다.
+- 운영 배포는 기준 소스의 정확한 커밋을 지정하고 READY, 도메인 연결 SHA, `/api/health`의 2.0.0을 확인합니다. 최종 병합 SHA·배포 ID·상태는 제공 패키지의 `RELEASE_VERIFICATION.json`과 검증 보고서에 기록합니다.
+- 웹 롤백 기준은 직전 운영 `d7e9ee5141f875d8988c37d441c0f2c9b5926dc7` 및 배포 `dpl_6SB5Vxqcj1ct9wQYpPTNAZPEGKA8`입니다. 문제가 확인되면 해당 소스로 웹 배포를 복구하고 상태/도메인을 확인합니다.
+- DB 변경이 없으므로 이 패치만을 위한 역방향 마이그레이션은 없습니다. 실제 작성 데이터는 롤백 과정에서 삭제하거나 이전 덤프로 덮지 않습니다.
+- Android 2.0 설치 파일은 서명·스토어 게시 전 검증 산출물입니다. 실제 배포된 기존 앱의 스토어 상태와 구분합니다.
