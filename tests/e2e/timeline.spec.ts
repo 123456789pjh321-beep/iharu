@@ -52,7 +52,7 @@ test('timeline orders actual occurrences and persists per-item review, notes and
  await page.reload();
  await expect(card.getByText('운동화 챙기기')).toBeVisible();
  await expect(card).toHaveAttribute('data-saved','true');
- await page.getByLabel('상태',{exact:true}).selectOption('saved');
+ await page.getByRole('combobox',{name:'상태',exact:true}).selectOption('saved');
  await expect(articles).toHaveCount(1);
  await page.getByRole('searchbox',{name:'항목 검색'}).fill('운동화');
  await expect(articles).toHaveCount(1);
@@ -62,7 +62,7 @@ test('timeline orders actual occurrences and persists per-item review, notes and
  await card.getByRole('button',{name:'메모',exact:true}).click();
  await card.getByRole('button',{name:'메모 삭제'}).click();
  await expect(card.getByText('운동화 챙기기')).toHaveCount(0);
- await page.getByLabel('기간',{exact:true}).selectOption('upcoming');
+ await page.getByRole('combobox',{name:'기간',exact:true}).selectOption('upcoming');
  await expect(timeline.getByRole('article',{name:'다음 일정'})).toBeVisible();
  await expect(card).toHaveCount(0);
 });
@@ -101,12 +101,12 @@ test('timeline preserves a note draft across refresh failures and loads a change
  await card.getByRole('button',{name:'메모 저장'}).click();
  await saving;
  try{
-  await page.getByLabel('기간',{exact:true}).selectOption('upcoming');
+  await page.getByRole('combobox',{name:'기간',exact:true}).selectOption('upcoming');
   await expect(page.getByText('타임라인을 불러오고 있어요',{exact:true})).toBeVisible();
  }finally{release();}
  // The changed range must load when saving finishes, without waiting for the 15-second poll.
  await expect(page.getByRole('article',{name:'저장 후 예정 일정'})).toBeVisible({timeout:5000});
- await page.getByLabel('기간',{exact:true}).selectOption('recent');
+ await page.getByRole('combobox',{name:'기간',exact:true}).selectOption('recent');
  await expect(card.getByText('연결이 끊겨도 남아 있어야 하는 초안')).toBeVisible();
  await page.route('**/api/v1/workspace/timeline.read',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({error:{code:'AUTH_REQUIRED',message:'먼저 로그인해 주세요.'}})}),{times:1});
  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
