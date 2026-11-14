@@ -52,7 +52,7 @@ test('timeline orders actual occurrences and persists per-item review, notes and
  await page.reload();
  await expect(card.getByText('운동화 챙기기')).toBeVisible();
  await expect(card).toHaveAttribute('data-saved','true');
- await page.getByLabel('상태',{exact:true}).selectOption('saved');
+ await page.getByRole('combobox',{name:'상태',exact:true}).selectOption('saved');
  await expect(articles).toHaveCount(1);
  await page.getByRole('searchbox',{name:'항목 검색'}).fill('운동화');
  await expect(articles).toHaveCount(1);
@@ -62,7 +62,54 @@ test('timeline orders actual occurrences and persists per-item review, notes and
  await card.getByRole('button',{name:'메모',exact:true}).click();
  await card.getByRole('button',{name:'메모 삭제'}).click();
  await expect(card.getByText('운동화 챙기기')).toHaveCount(0);
- await page.getByLabel('기간',{exact:true}).selectOption('upcoming');
+ await page.getByRole('combobox',{name:'기간',exact:true}).selectOption('upcoming');
  await expect(timeline.getByRole('article',{name:'다음 일정'})).toBeVisible();
+ await expect(card).toHaveCount(0);
+});
+
+test('timeline preserves a note draft across refresh failures and loads a changed period after a pending save',async({page})=>{
+ const email='timeline-recovery@example.test',password='timeline-recovery-fixture';
+ const post=(path:string,data:object={})=>page.request.post(path,{headers:{Origin:origin},data});
+ expect((await post('/api/auth/sign-up/email',{ageAtLeast14:true,email,name:'타임라인 복구',password,callbackURL:'/login?verified=1'})).ok()).toBe(true);
+ const mail=await(await page.request.get('/__test__/mail')).json();
+ await page.request.get(mail.find((m:{to:string})=>m.to===email).url);
+ expect((await post('/api/auth/sign-in/email',{email,password})).ok()).toBe(true);
+ const today=koreaToday();
+ for(const [date,title] of [[today,'메모 복구 일정'],[addDays(today,1),'저장 후 예정 일정']]){
+  expect((await post('/api/v1/workspace/items.create',{kind:'EVENT',data:{date,title,weekdays:[],place:'',note:'',allDay:true,paid:false}})).ok()).toBe(true);
+ }
+ await page.setViewportSize({width:320,height:770});
+ await page.goto('/timeline');
+ const card=page.getByRole('article',{name:'메모 복구 일정'});
+ await card.getByRole('button',{name:'메모',exact:true}).click();
+ await card.getByLabel('내 메모').fill('연결이 끊겨도 남아 있어야 하는 초안');
+ await page.route('**/api/v1/workspace/timeline.read',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'연결을 확인하고 다시 시도해 주세요.'}})}),{times:1});
+ const refresh=page.waitForResponse(response=>response.url().endsWith('/timeline.read')&&response.status()===503);
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await refresh;
+ await expect(card.getByLabel('내 메모')).toHaveValue('연결이 끊겨도 남아 있어야 하는 초안');
+ const notice=page.getByRole('status').filter({hasText:'최신 기록을 불러오지 못했어요'});
+ await expect(notice).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(320);
+ await notice.getByRole('button',{name:'다시 불러오기'}).click();
+ await expect(notice).toHaveCount(0);
+ await expect(card.getByLabel('내 메모')).toHaveValue('연결이 끊겨도 남아 있어야 하는 초안');
+
+ let release!:()=>void,started!:()=>void;
+ const pending=new Promise<void>(resolve=>{release=resolve;}),saving=new Promise<void>(resolve=>{started=resolve;});
+ await page.route('**/api/v1/workspace/timeline.annotate',async route=>{started();await pending;await route.continue();},{times:1});
+ await card.getByRole('button',{name:'메모 저장'}).click();
+ await saving;
+ try{
+  await page.getByRole('combobox',{name:'기간',exact:true}).selectOption('upcoming');
+  await expect(page.getByText('타임라인을 불러오고 있어요',{exact:true})).toBeVisible();
+ }finally{release();}
+ // The changed range must load when saving finishes, without waiting for the 15-second poll.
+ await expect(page.getByRole('article',{name:'저장 후 예정 일정'})).toBeVisible({timeout:5000});
+ await page.getByRole('combobox',{name:'기간',exact:true}).selectOption('recent');
+ await expect(card.getByText('연결이 끊겨도 남아 있어야 하는 초안')).toBeVisible();
+ await page.route('**/api/v1/workspace/timeline.read',route=>route.fulfill({status:401,contentType:'application/json',body:JSON.stringify({error:{code:'AUTH_REQUIRED',message:'먼저 로그인해 주세요.'}})}),{times:1});
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await expect(page.getByRole('alert')).toContainText('먼저 로그인해 주세요.');
  await expect(card).toHaveCount(0);
 });

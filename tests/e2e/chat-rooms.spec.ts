@@ -33,7 +33,11 @@ test('creates and switches individual and selected-member rooms without mixing d
  }finally{for(const context of contexts)await context.close();}
  await page.goto('/timetable');await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});await expect(page.locator('[data-guest-workspace]')).toBeVisible();expect((await page.locator('.member-preference').boundingBox())!.y).toBeGreaterThanOrEqual(24);
  await page.screenshot({path:'test-results/ui130-timetable.png',animations:'disabled'});
- await page.goto('/login');await expect(page.getByRole('link',{name:'일반사용자',exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'어린이',exact:true})).toBeVisible();
+ await page.goto('/login');
+ await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
+ await expect(page.getByLabel('암호',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeEnabled();
+ await expect(page.getByRole('link',{name:/^(일반사용자|어린이)$/})).toHaveCount(0);
  await page.goto('/chat');await page.getByRole('button',{name:'대화방 만들기',exact:true}).click();await expect(page.locator('.entry-login-sheet')).toBeVisible();
 });
 test('invited users and creators leave optional rooms, clear cached history, retry errors and keep default chat',async({browser})=>{

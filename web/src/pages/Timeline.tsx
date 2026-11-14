@@ -41,6 +41,7 @@ function Timeline({me}:{me:WorkspaceMe}){
  const [source,setSource]=useState<TimelineKind|'all'>('all'),[member,setMember]=useState('all');
  const [status,setStatus]=useState<EntryStatus>('all'),[query,setQuery]=useState('');
  const [limit,setLimit]=useState(pageSize),[retry,setRetry]=useState(0);
+ const [writesSettled,setWritesSettled]=useState(0);
  const [result,setResult]=useState<{key:string;data?:TimelineData;error?:string}>();
  const [message,setMessage]=useState('');
  const writeRevision=useRef(0),pendingWrites=useRef(0);
@@ -61,7 +62,13 @@ function Timeline({me}:{me:WorkspaceMe}){
     const data=await workspaceRequest<TimelineData>('timeline.read',{from,to});
     if(active&&revision===writeRevision.current)setResult({key:rangeKey,data});
    }catch(error){
-    if(active&&revision===writeRevision.current)setResult({key:rangeKey,error:errorText(error)});
+    if(active&&revision===writeRevision.current){
+     const code=(error as {code?:string}).code;
+     // A temporary refresh failure must not unmount cards and erase unsaved notes.
+     // Authentication/authorization failures still discard previously loaded data.
+     const temporary=!code||code==='UNAVAILABLE'||code==='RATE_LIMITED';
+     setResult(old=>({key:rangeKey,data:temporary&&old?.key===rangeKey?old.data:undefined,error:errorText(error)}));
+    }
    }finally{loading=false;}
   };
   const refresh=()=>{if(!document.hidden)void load();};
@@ -74,7 +81,7 @@ function Timeline({me}:{me:WorkspaceMe}){
    window.removeEventListener('focus',refresh);
    document.removeEventListener('visibilitychange',refresh);
   };
- },[from,to,rangeKey,retry]);
+ },[from,to,rangeKey,retry,writesSettled]);
 
  const search=query.trim().normalize('NFKC').toLocaleLowerCase('ko-KR');
  const filtered=entries.filter(entry=>{
@@ -98,6 +105,8 @@ function Timeline({me}:{me:WorkspaceMe}){
    next=await workspaceRequest<TimelineAnnotation>('timeline.annotate',{itemId:entry.item.id,date:entry.date,...patch});
   }finally{
    writeRevision.current++;pendingWrites.current--;
+   // A range selected during a write skipped its first read. Refresh it immediately.
+   if(!pendingWrites.current)setWritesSettled(value=>value+1);
   }
   setResult(old=>{
    if(old?.key!==rangeKey||!old.data)return old;
@@ -107,6 +116,10 @@ function Timeline({me}:{me:WorkspaceMe}){
  }
  function resetFilters(){
   setSource('all');setMember('all');setStatus('all');setQuery('');setLimit(pageSize);
+ }
+ function reload(){
+  setResult(old=>old?.data?old:undefined);
+  setRetry(previous=>previous+1);
  }
  const hasFilters=source!=='all'||member!=='all'||status!=='all'||!!search;
  const hasFuture=period==='upcoming';
@@ -137,8 +150,12 @@ function Timeline({me}:{me:WorkspaceMe}){
     </div>
    </section>
    <p className="sr-only" role="status">{message}</p>
-   {!current?<Loading label="타임라인을 불러오고 있어요"/>:current.error?
-    <ErrorState message={current.error} retry={()=>{setResult(undefined);setRetry(previous=>previous+1);}}/>:<section className="timeline-results" aria-label="타임라인 기록">
+   {!current?<Loading label="타임라인을 불러오고 있어요"/>:current.error&&!data?
+    <ErrorState message={current.error} retry={reload}/>:<section className="timeline-results" aria-label="타임라인 기록">
+     {current.error&&<div className="timeline-refresh-notice" role="status">
+      <span>최신 기록을 불러오지 못했어요. 표시된 기록과 작성 중인 메모는 유지했어요.</span>
+      <button type="button" className="button" onClick={reload}>다시 불러오기</button>
+     </div>}
      <div className="timeline-result-bar">
       <span>{rangeFormat.formatRange(asDate(from),asDate(to))}</span>
       <span aria-live="polite"><strong>{filtered.length}건</strong> <span aria-hidden="true">·</span> 최신순</span>
