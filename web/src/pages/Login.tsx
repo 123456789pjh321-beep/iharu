@@ -43,11 +43,12 @@ function SignupAgeStep({age,onChange}:{age:SignupAge;onChange:(age:SignupAge)=>v
   </fieldset></div>;
 }
 function LoginEntry({providers}:{providers:ReturnType<typeof useLoginProviders>}) {
+  const {search}=useLocation();
   const session=useApi('/api/account/session',sessionSchema);
   useEffect(()=>{const refresh=()=>session.refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[session.refresh]);
   if(session.loading)return <Loading label="로그인 상태를 확인하고 있어요"/>;
   if(session.error)return <ErrorState message={session.error} retry={session.retry}/>;
-  if(session.data?.authenticated)return <Navigate to={'/timetable'} replace/>;
+  if(session.data?.authenticated)return <Navigate to={entryReturnPath(new URLSearchParams(search).get('next'))} replace/>;
   return <LoginForm providers={providers}/>;
 }
 function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthenticated,onBusy}:{providers:ReturnType<typeof useLoginProviders>;reauthenticate?:boolean;inline?:boolean;returnTo?:string;onAuthenticated?:()=>Promise<void>;onBusy?:(busy:boolean)=>void}) {
@@ -66,7 +67,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
   const signingUp=mode==='signup';
   const canSignUp=signingUp&&signupAge==='eligible';
   const requestedNext=returnTo||new URLSearchParams(search).get('next');
-  const next=reauthenticate?entryReturnPath(requestedNext||'/account'):mode==='login'||mode==='signup'?'/timetable':entryReturnPath(requestedNext);
+  const next=inline?'/timetable':entryReturnPath(requestedNext||(reauthenticate?'/account':'/timetable'));
   const nextQuery='?next='+encodeURIComponent(next);
   const resetPath='/reset-password'+(next===accountDeletionRequestPath?nextQuery:'');
   const forgotPath='/forgot-password'+nextQuery;
@@ -153,7 +154,7 @@ export function PhonePage() {
   const params=new URLSearchParams(useLocation().search);
   const link=params.get('link')==='1';
   const signingUp=!link&&params.get('signup')==='1';
-  const next='/timetable';
+  const next=entryReturnPath(params.get('next'));
   const [signupAge,setSignupAge]=useState<SignupAge>(null);
   const [phone,setPhone]=useState('');const [code,setCode]=useState('');const [sent,setSent]=useState(false);const [seconds,setSeconds]=useState(0);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   const enabled=providers.data?.providers.find(p=>p.id==='phone')?.enabled===true;

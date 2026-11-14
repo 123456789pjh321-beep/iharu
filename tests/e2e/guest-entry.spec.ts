@@ -13,7 +13,7 @@ async function parent(playwright:typeof import('playwright-core'),name:string){
 async function command(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
 async function signInSheet(page:Page,email:string){const sheet=page.getByRole('dialog');await expect(sheet).toBeVisible();await sheet.getByLabel('아이디',{exact:true}).fill(email);await sheet.getByLabel('암호',{exact:true}).fill(password);await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();}
 
-test('password recovery lands on timetable before explicitly reopening account deletion',async({page,playwright})=>{
+test('password recovery returns to the requested deletion form and requires explicit submission',async({page,playwright})=>{
  const {client,email}=await parent(playwright,'deletion-recovery');
  await client.dispose();
  const newPassword='privacy-recovery-password-2026';
@@ -43,8 +43,8 @@ test('password recovery lands on timetable before explicitly reopening account d
  await page.getByLabel('아이디',{exact:true}).fill(email);
  await page.getByLabel('암호',{exact:true}).fill(newPassword);
  await page.getByRole('button',{name:'로그인',exact:true}).click();
- await expect(page).toHaveURL(origin+'/timetable');
- await page.goto('/privacy?request=delete');
+ await expect(page).toHaveURL(origin+'/privacy?request=delete');
+ await expect(page.getByText('요청을 접수했습니다.',{exact:false})).toHaveCount(0);
  await expect(page.getByLabel('요청 종류')).toHaveValue('DELETE');
  await page.getByLabel('요청 내용').fill('암호를 복구한 테스트 계정의 삭제를 요청합니다.');
  await page.getByRole('button',{name:'요청 접수',exact:true}).click();

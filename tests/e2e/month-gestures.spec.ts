@@ -18,7 +18,7 @@ test('tuition and notes swipe across months while filters, taps, scrolling and r
   await api('items.create',{kind:'FEE',data:{title:'12월 교재',date:'2026-12-15',assigneeId:me.id,feePayerId:me.id,feeFrequency:'ONCE',amount:20000}});
   for(const [date,title] of [['2026-12-15','12월 메모'],['2027-01-15','1월 메모']])await api('items.create',{kind:'NOTE',data:{title,date,assigneeId:me.id,note:'그룹 준비물을 확인해요.'}});
   for(let n=1;n<=10;n++)await api('items.create',{kind:'NOTE',data:{title:'12월 기록 '+n,date:'2026-12-16',assigneeId:me.id,note:'확인할 내용'}});
-  const cdp=await context.newCDPSession(page),month=page.getByLabel('조회 월',{exact:true}),area=page.locator('.month-swipe-area');
+  const cdp=await context.newCDPSession(page),month=page.getByLabel('조회 월',{exact:true}),area=page.locator('[data-pager-current] .month-swipe-area');
   const settled=async()=>{await expect.poll(()=>area.evaluate(node=>node.getAnimations().length)).toBe(0);};
   const touch=async(from:{x:number;y:number},to:{x:number;y:number},cancel=false)=>{
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...from,id:1}]});
@@ -26,12 +26,12 @@ test('tuition and notes swipe across months while filters, taps, scrolling and r
    await cdp.send('Input.dispatchTouchEvent',{type:cancel?'touchCancel':'touchEnd',touchPoints:[]});
   };
   const swipe=async(region:Locator,left:boolean,cancel=false)=>{const b=(await region.boundingBox())!,y=Math.max(b.y,80)+Math.min(b.height/2,80);await touch({x:b.x+(left?b.width-24:24),y},{x:b.x+(left?24:b.width-24),y:y+2},cancel);};
-  await page.goto('/tuition');await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).click();await month.fill('2026-12');await expect(area.locator('.personal-fee-summary')).toContainText('120,000원');await settled();
+  await page.goto('/tuition');await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).click();await month.fill('2026-12');await expect(area.locator('.ledger-summary-expense dd')).toContainText('120,000원');await settled();
   const filter=page.getByRole('group',{name:'가계부 구성원 필터'}),selected=filter.getByRole('button',{name:'월 이동 일반사용자',exact:true});await selected.click();
   await swipe(area.locator('.personal-tuition-item').first(),true);await expect(month).toHaveValue('2027-01');await settled();
-  await expect(area.locator('.personal-fee-summary')).toContainText('100,000원');await expect(selected).toHaveAttribute('aria-pressed','true');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(area.locator('.ledger-summary-expense dd')).toContainText('100,000원');await expect(selected).toHaveAttribute('aria-pressed','true');await expect(page.getByRole('dialog')).toHaveCount(0);
   await area.getByRole('button',{name:'매월 학원 수정',exact:true}).tap();await expect(page.getByRole('dialog')).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
-  await swipe(area,false);await expect(month).toHaveValue('2026-12');await settled();await expect(area.locator('.personal-fee-summary')).toContainText('120,000원');
+  await swipe(area,false);await expect(month).toHaveValue('2026-12');await settled();await expect(area.locator('.ledger-summary-expense dd')).toContainText('120,000원');
   await swipe(filter,true);await expect(month).toHaveValue('2026-12');await expect(selected).toHaveAttribute('aria-pressed','true');
   await swipe(area,true,true);await expect(month).toHaveValue('2026-12');await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:'test-results/ui92-tuition-month-swipe-390.png',animations:'disabled'});

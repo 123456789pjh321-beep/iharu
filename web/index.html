@@ -133,6 +133,8 @@
 
         function remove() {
           if (closed) return;
+          var active = document.activeElement;
+          var focusMain = !active || active === document.body || boot.contains(active);
           closed = true;
           clearTimeout(watchdog);
           clearTimeout(logoFallback);
@@ -148,6 +150,12 @@
           html.classList.remove('app-launch-active');
           html.dataset.launchState = 'ready';
           boot.remove();
+          // Initial route focus is ignored while root is inert. Restore keyboard
+          // access after startup without moving focus away from an active control.
+          if (focusMain) {
+            var main = root.querySelector('main[tabindex]');
+            if (main) main.focus({ preventScroll: true });
+          }
         }
         function queue() {
           cancelAnimationFrame(frame);

@@ -29,14 +29,17 @@ test('email-less Kakao session enters the live home without demo or protected-da
   state='signed-in';await page.getByRole('button',{name:'다시 불러오기',exact:true}).click();
   await expect(page.getByRole('heading',{name:'이메일 확인',exact:true})).toBeVisible();
   state='expired';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole('button',{name:'로그인',exact:true})).toBeVisible();
+  await expect(page).toHaveURL(/\/timetable$/);
+  await expect(page.locator('[data-guest-workspace]')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'이메일 확인',exact:true})).toHaveCount(0);
 });
 
 test('LOW session keeps additional verification and explicit social reauthentication reachable',async({page})=>{
   await page.route('**/api/account/session',route=>route.fulfill({json:{authenticated:true,assurance:'LOW',accessReady:false}}));
   for(const path of ['/today','/login']) {
-    await page.goto(path);await expect(page).toHaveURL(/\/account$/);
+    await page.goto(path);await expect(page).toHaveURL(/\/timetable$/);
+    await expect(page.getByRole('heading',{name:'로그인이 완료됐어요'})).toBeVisible();
+    await page.getByRole('link',{name:'계정 확인',exact:true}).click();await expect(page).toHaveURL(/\/account$/);
     await expect(page.getByRole('heading',{name:'한 번 더 확인할게요'})).toBeVisible();
   }
   await page.getByRole('link',{name:'연결한 소셜 계정으로 로그인',exact:true}).click();

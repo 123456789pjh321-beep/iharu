@@ -13,6 +13,7 @@ import type { FamilyService } from './family/service.js';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { dashboardQuerySchema, envelope, dashboardSchema, healthSchema } from '../shared/contracts.js';
+import {appVersion} from '../shared/version.js';
 import { getDemoDashboard } from './domain/demo.js';
 import { readConfig, type AppConfig } from './env.js';
 import { resolvePrincipal } from './auth/principal.js';
@@ -48,7 +49,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   });
   const meta = (requestId: string, source: 'system' | 'demo') => ({ requestId, source, serverNow: new Date().toISOString() });
   app.get('/api/health', c => c.json(envelope(healthSchema).parse({
-    data:{ status:'ok', phase:'P07', environment:config.environment, demoEnabled:config.demoEnabled && config.environment !== 'production' },
+    data:{ status:'ok', phase:'P07', version:appVersion, environment:config.environment, demoEnabled:config.demoEnabled && config.environment !== 'production' },
     meta:meta(c.get('requestId'), 'system'),
   })));
   app.get('/api/demo/dashboard', c => {

@@ -35,7 +35,16 @@ test('system administrator manages family-grouped members, sessions, roles and a
   })).toBeGreaterThanOrEqual(4.5);
   await page.screenshot({path:'test-results/ui83-admin-members-dark.png',animations:'disabled'});await page.goto('/settings');await page.getByRole('button',{name:'밝게',exact:true}).click();await page.goto('/admin?section=history');await expect(page.locator('.admin-events')).toBeVisible();
   await page.getByRole('button',{name:'이력관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('운영 검증');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-events')).toContainText('최고관리자 권한 변경');await expect(page.locator('.admin-events')).toContainText('전체 세션 종료');
-  await page.getByRole('button',{name:'로그관리',exact:true}).click();await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/member.update');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-log').first()).toContainText('200');
+  await page.getByRole('button',{name:'로그관리',exact:true}).click();await expect(page.getByRole('heading',{name:'요청·오류 로그',exact:true})).toBeVisible();await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/member.update');await page.getByRole('button',{name:'검색',exact:true}).click();await expect(page.locator('.admin-log').first()).toContainText('200');
+  // A slow earlier search must not replace a later query's results.
+  let releaseOld!:()=>void,started!:()=>void;const held=new Promise<void>(r=>{releaseOld=r;}),oldStarted=new Promise<void>(r=>{started=r;});
+  await page.route('**/api/v1/admin/logs',async route=>{if(route.request().postDataJSON()?.query==='/api/v1/admin/members'){const response=await route.fetch();started();await held;await route.fulfill({response});}else await route.continue();});
+  try{
+   await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/members');await page.getByRole('button',{name:'검색',exact:true}).click();await oldStarted;
+   await page.getByLabel('관리 기록 검색').fill('/api/v1/admin/member.update');await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/v1/admin/logs')&&r.request().postDataJSON()?.query==='/api/v1/admin/member.update'),page.getByRole('button',{name:'검색',exact:true}).click()]);await expect(page.locator('.admin-log').first()).toContainText('/api/v1/admin/member.update');
+   const oldResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/admin/logs')&&r.request().postDataJSON()?.query==='/api/v1/admin/members');releaseOld();await oldResponse;await page.evaluate(()=>new Promise<void>(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r()))));
+   await expect(page.locator('.admin-log').first()).toContainText('/api/v1/admin/member.update');await expect(page.getByLabel('관리 기록 검색')).toHaveValue('/api/v1/admin/member.update');
+  }finally{releaseOld();await page.unrouteAll({behavior:'wait'});}
   const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'현재 목록 CSV'}).click();expect((await downloadPromise).suggestedFilename()).toMatch(/^iharu-logs-/);
  }finally{await other.dispose();await child.dispose();}
 });

@@ -129,7 +129,8 @@ it('links a widget to a verified session and exposes only selected schedule data
 
 it('plans timetable and calendar in start-time order, retains weekly templates, skips edits/deletes and deduplicates',async()=>{
  const a=await parent('push-ordered');await subscribe(a,'ordered');expect(await a.ok('push.settings')).toMatchObject({calendarReminders:true,reminderMinutes:0,calendarChanges:false});
- const [clock]=await query<{day:string;time:string;earlier:string;weekday:number}>(database.db,"SELECT to_char(now() AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day,to_char(now() AT TIME ZONE 'Asia/Seoul','HH24:MI') AS time,to_char((now()-interval '2 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI') AS earlier,extract(dow FROM now() AT TIME ZONE 'Asia/Seoul')::int AS weekday");
+ // A valid one-day fixture must end after its start even at 23:59 or across midnight.
+ const [clock]=await query<{day:string;time:string;earlier:string;weekday:number}>(database.db,"SELECT to_char((now()-interval '2 minutes') AT TIME ZONE 'Asia/Seoul','YYYY-MM-DD') AS day,least(to_char((now()-interval '2 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI'),'23:58') AS time,least(to_char((now()-interval '4 minutes') AT TIME ZONE 'Asia/Seoul','HH24:MI'),'23:58') AS earlier,extract(dow FROM (now()-interval '4 minutes') AT TIME ZONE 'Asia/Seoul')::int AS weekday");
  await a.ok('push.settings.save',{...saved,reminderMinutes:0,calendarChanges:false,preview:true});
  const repeat=await a.ok('items.create',{kind:'REPEAT',data:{...event().data,date:'2020-01-01',untilDate:'2020-12-31',title:'먼저 오는 시간표',weekdays:[clock.weekday],startTime:clock.earlier,endTime:'23:59'}});
  const later=await a.ok('items.create',{kind:'EVENT',data:{...event().data,date:clock.day,title:'나중 달력',startTime:clock.time,endTime:'23:59'}});

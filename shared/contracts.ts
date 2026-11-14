@@ -18,6 +18,7 @@ export const dashboardSchema = z.object({
 });
 export const healthSchema = z.object({
   status: z.literal('ok'), phase: z.literal('P07'), demoEnabled: z.boolean(),
+  version: z.string().optional(),
   environment: z.enum(['local', 'preview', 'production']),
 });
 export const envelope = <T extends z.ZodType>(data: T) => z.object({

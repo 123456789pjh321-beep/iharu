@@ -29,9 +29,9 @@ test('public service and usage pages work across phone, tablet and desktop witho
    const html=await(await page.request.get(path)).text();expect(html).toContain('content="index, follow"');expect(html).toContain('https://myiharu.com'+path);
    await page.screenshot({path:`test-results/marketing-${path.slice(1)}-${width}-hero.png`,animations:'disabled'});
    expect(await page.locator('.marketing-site').evaluate(el=>({width:el.clientWidth,overflow:el.scrollWidth-el.clientWidth}))).toMatchObject({overflow:0});
-   const feature=page.locator(path==='/service'?'.market-feature':'.guide-section').first();await feature.scrollIntoViewIfNeeded();
+   const feature=page.locator(path==='/service'?'.market-feature':'.user-guide-section').first();await feature.scrollIntoViewIfNeeded();
    await page.screenshot({path:`test-results/marketing-${path.slice(1)}-${width}-feature.png`,animations:'disabled'});
-   const faq=page.locator('.market-faq details').first();await faq.locator('summary').click();await expect(faq).toHaveAttribute('open','');await expect(faq.locator('p')).toBeVisible();
+   if(path==='/service'){const faq=page.locator('.market-faq details').first();await faq.locator('summary').click();await expect(faq).toHaveAttribute('open','');await expect(faq.locator('p')).toBeVisible();}else await expect(page.getByRole('navigation',{name:'사용 가이드 목차'})).toBeVisible();
    await page.locator('.public-footer').scrollIntoViewIfNeeded();await page.screenshot({path:`test-results/marketing-${path.slice(1)}-${width}-footer.png`,animations:'disabled'});
   }
  }
@@ -49,9 +49,9 @@ test('visitors can explore examples, use mobile navigation and reach signup/logi
  await preview.getByRole('button',{name:'그룹 달력',exact:true}).click();await expect(preview.locator('.calendar-school')).toBeVisible();
  await preview.getByRole('button',{name:'단체 대화',exact:true}).click();await preview.getByRole('button',{name:'사랑해 예시 입력'}).click();await expect(preview.locator('.demo-chat-input')).toContainText('💛 사랑해');
  await page.getByRole('button',{name:'소개 메뉴 열기'}).click();await page.locator('.market-nav').getByRole('link',{name:'활용방법',exact:true}).click();await expect(page).toHaveURL(/\/guide$/);await expect(page.getByRole('button',{name:'소개 메뉴 열기'})).toHaveAttribute('aria-expanded','false');
- await page.locator('.guide-jumps').getByRole('link',{name:'가계부 관리'}).click();await expect(page).toHaveURL(/\/guide#fees$/);await expect(page.locator('#fees h2')).toBeInViewport();
+ await page.locator('.user-guide-index a[href="#fees"]').click();await expect(page).toHaveURL(/\/guide#fees$/);await expect(page.locator('#fees h2')).toBeInViewport();
  await page.getByRole('button',{name:'소개 메뉴 열기'}).click();await page.keyboard.press('Escape');await expect(page.getByRole('button',{name:'소개 메뉴 열기'})).toBeFocused();
- await page.locator('.market-closing').getByRole('link',{name:'아이하루 시작하기',exact:true}).click();await expect(page).toHaveURL(/\/signup$/);await expect(page.locator('meta[name=robots]')).toHaveAttribute('content','noindex, nofollow');await expect(page.locator('link[rel=canonical]')).toHaveCount(0);
+ await expect(page.locator('.user-guide-footer').getByRole('link',{name:'아이하루 시작하기',exact:true})).toHaveAttribute('href','/timetable');
  await page.locator('.public-footer').getByRole('link',{name:'서비스 소개',exact:true}).click();await expect(page).toHaveURL(/\/service$/);
  await page.locator('.market-header').getByRole('link',{name:'로그인',exact:true}).click();await expect(page).toHaveURL(/\/login$/);await expect(page.getByLabel('아이디',{exact:true})).toBeVisible();
  await page.locator('.public-footer').getByRole('link',{name:'활용방법',exact:true}).click();await page.locator('.public-footer').getByRole('link',{name:'개인정보처리방침',exact:true}).click();await expect(page).toHaveURL(/\/legal\/privacy$/);await expect(page.locator('.legal-page')).toBeVisible();await expect(page.locator('.workspace-mobile-nav')).toHaveCount(0);
@@ -66,7 +66,7 @@ for(const width of [320,820,1440])test(`public header and footer stay fixed thro
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
  await page.getByRole('link',{name:'회원가입',exact:true}).click();
  await expect(page.getByRole('heading',{name:'회원가입',exact:true})).toBeVisible();
- await expect(page.getByLabel('이메일',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'만 14세 이상',exact:true}).click();await expect(page.getByLabel('이메일',{exact:true})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'회원가입 대상'})).toHaveCount(0);
  expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);
  await page.locator('.public-content').evaluate(el=>{el.scrollTop=el.scrollHeight;});expect([await header.boundingBox(),await footer.boundingBox()]).toEqual(before);

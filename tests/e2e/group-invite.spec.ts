@@ -20,8 +20,8 @@ async function verifyAndSignIn(page:Page,request:APIRequestContext,email:string,
  expect(login.ok(),await login.text()).toBe(true);
  if(invite){
   await page.reload();
-  await expect(page).toHaveURL(origin+'/timetable');
-  await page.getByRole('link',{name:'초대 확인',exact:true}).click();
+  await expect(page).toHaveURL(origin+'/invite');
+  await expect(page.getByRole('button',{name:'초대 수락',exact:true})).toBeVisible();
  }
 }
 

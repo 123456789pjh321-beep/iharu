@@ -125,6 +125,19 @@ public class RuntimeRecoveryTest {
             assertNull(shadowOf(activity).getNextStartedActivity());
         }
     }
+    @Test public void offlineRelaunchSurvivesPreviousActivityFinishing() {
+        Intent intent = new Intent(RuntimeEnvironment.getApplication(),MainActivity.class)
+            .setAction(Intent.ACTION_MAIN).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try (var previous = Robolectric.buildActivity(MainActivity.class,intent).create().start().resume().visible()) {
+            // finish() precedes onDestroy on a real device; ABH still counts this instance.
+            previous.get().finish();
+            try (var next = Robolectric.buildActivity(MainActivity.class,new Intent(intent)).create().start().resume().visible()) {
+                assertFalse(next.get().isFinishing());
+                assertNotNull(find(next.get().findViewById(android.R.id.content),"인터넷 연결을 확인해 주세요"));
+                assertNull(shadowOf(next.get()).getNextStartedActivity());
+            }
+        }
+    }
     private View find(View view,String text) {
         if (view instanceof TextView && text.contentEquals(((TextView)view).getText())) return view;
         if (view instanceof ViewGroup) for (int i=0;i<((ViewGroup)view).getChildCount();i++) {
