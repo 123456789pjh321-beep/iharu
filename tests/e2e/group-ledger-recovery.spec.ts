@@ -20,7 +20,7 @@ test('month changes stay silent, hide the bottom register button and keep daily 
  await page.getByRole('button',{name:'예산 설정',exact:true}).click();await page.getByLabel('월 예산 (원)',{exact:true}).fill('500000');await page.getByRole('button',{name:'예산 저장',exact:true}).click();
  await expect(page.getByRole('region',{name:'나의 월 예산'})).toContainText('500,000원');
  await page.getByLabel('조회 월',{exact:true}).fill('2027-03');
- await expect(page.getByRole('region',{name:'나의 월 예산'})).not.toContainText('500,000원');
+ await expect(page.locator('.ledger-budget')).not.toContainText('500,000원');
  await expect(page.getByRole('button',{name:'예산 설정',exact:true})).toBeEnabled();
  await page.getByLabel('조회 월',{exact:true}).fill('2027-02');
  await expect(page.getByRole('region',{name:'나의 월 예산'})).toContainText('500,000원');

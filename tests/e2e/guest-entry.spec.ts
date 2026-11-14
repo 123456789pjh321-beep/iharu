@@ -13,7 +13,7 @@ async function parent(playwright:typeof import('playwright-core'),name:string){
 async function command(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
 async function signInSheet(page:Page,email:string){const sheet=page.getByRole('dialog');await expect(sheet).toBeVisible();await sheet.getByLabel('아이디',{exact:true}).fill(email);await sheet.getByLabel('암호',{exact:true}).fill(password);await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();}
 
-test('account deletion resumes after opening the password reset email and signing in',async({page,playwright})=>{
+test('password recovery lands on timetable before explicitly reopening account deletion',async({page,playwright})=>{
  const {client,email}=await parent(playwright,'deletion-recovery');
  await client.dispose();
  const newPassword='privacy-recovery-password-2026';
@@ -43,7 +43,8 @@ test('account deletion resumes after opening the password reset email and signin
  await page.getByLabel('아이디',{exact:true}).fill(email);
  await page.getByLabel('암호',{exact:true}).fill(newPassword);
  await page.getByRole('button',{name:'로그인',exact:true}).click();
- await expect(page).toHaveURL(origin+'/privacy?request=delete');
+ await expect(page).toHaveURL(origin+'/timetable');
+ await page.goto('/privacy?request=delete');
  await expect(page.getByLabel('요청 종류')).toHaveValue('DELETE');
  await page.getByLabel('요청 내용').fill('암호를 복구한 테스트 계정의 삭제를 요청합니다.');
  await page.getByRole('button',{name:'요청 접수',exact:true}).click();
@@ -59,15 +60,15 @@ test('root shows fictional samples without a logo top bar and never requests pri
  for(const width of [320,820,1440]){await page.setViewportSize({width,height:900});await page.goto('/timetable');await ready(page);await expect(page.locator('.timetable-grid')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/ui129-guest-timetable-${width}.png`,animations:'disabled'});}
 });
 
-test('a timetable slot opens a sheet, reports an invalid password, then resumes that exact input after parent login',async({page,playwright})=>{
+test('a timetable slot opens login and returns to the initial menu without replaying input',async({page,playwright})=>{
  const user=await parent(playwright,'timetable');await user.client.dispose();let creates=0;page.on('request',r=>{if(r.url().endsWith('/workspace/items.create'))creates++;});
  await page.goto('/timetable');await ready(page);const slot=page.locator('.timetable-day-column').first().locator('[data-time="16:30"]');const date=await slot.locator('..').locator('..').getAttribute('data-date');await slot.click();
  const sheet=page.getByRole('dialog');await expect(sheet).toBeVisible();await expect(page).toHaveURL(/\/timetable\?signin=1$/);expect(Math.abs((await sheet.boundingBox())!.y+(await sheet.boundingBox())!.height-844)).toBeLessThan(2);
  const saved=await page.evaluate(key=>JSON.parse(sessionStorage.getItem(key)!),entryIntentKey);expect(saved.intent).toMatchObject({kind:'REPEAT',date,time:'16:30'});expect(Object.keys(saved.intent).sort()).toEqual(['date','kind','path','time','type']);
  await sheet.getByLabel('아이디',{exact:true}).fill(user.email);await sheet.getByLabel('암호',{exact:true}).fill('wrong-password-2026');await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(sheet.getByRole('alert')).toBeVisible();await expect(sheet).toBeVisible();
  await page.screenshot({path:'test-results/ui129-login-sheet-mobile.png',animations:'disabled'});await signInSheet(page,user.email);
- await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await expect(page.locator('input[name=startTime]')).toHaveValue('16:30');expect(creates).toBe(0);await expect(page.locator('[data-guest-workspace]')).toHaveCount(0);
- await page.getByRole('button',{name:'편집 닫기'}).click();await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await expect(page.locator('.more-account')).toContainText('일반사용자 timetable');
+ await expect(page).toHaveURL(/\/timetable$/);await expect(page.locator('.personal-editor')).toHaveCount(0);expect(creates).toBe(0);await expect(page.locator('[data-guest-workspace]')).toHaveCount(0);
+ await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await expect(page.locator('.more-account')).toContainText('일반사용자 timetable');
 });
 
 test('calendar cancellation and browser Back preserve the viewed month and remove the pending action',async({page})=>{

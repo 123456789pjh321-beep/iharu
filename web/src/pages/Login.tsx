@@ -66,7 +66,7 @@ function LoginForm({providers,reauthenticate=false,inline=false,returnTo,onAuthe
   const signingUp=mode==='signup';
   const canSignUp=signingUp&&signupAge==='eligible';
   const requestedNext=returnTo||new URLSearchParams(search).get('next');
-  const next=reauthenticate?entryReturnPath(requestedNext||'/account'):'/timetable';
+  const next=reauthenticate?entryReturnPath(requestedNext||'/account'):mode==='login'||mode==='signup'?'/timetable':entryReturnPath(requestedNext);
   const nextQuery='?next='+encodeURIComponent(next);
   const resetPath='/reset-password'+(next===accountDeletionRequestPath?nextQuery:'');
   const forgotPath='/forgot-password'+nextQuery;

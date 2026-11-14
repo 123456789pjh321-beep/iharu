@@ -20,10 +20,9 @@ export function WorkspaceLoadingBoundary({children}:{children:ReactNode}){
   else release.current=setTimeout(()=>setLabel(''),80);
  },[]);
  useEffect(()=>()=>{if(release.current)clearTimeout(release.current);},[]);
- return <LoadingContext.Provider value={report}><div className="workspace-loading-boundary">
-  <div aria-hidden={label?true:undefined} inert={!!label}>{children}</div>
+ return <LoadingContext.Provider value={report}>{children}
   {label&&<div className="workspace-loading-overlay"><LoadingView label={label}/></div>}
- </div></LoadingContext.Provider>;
+ </LoadingContext.Provider>;
 }
 
 export function Loading({ label = '그룹의 하루를 불러오고 있어요' }: { label?:string }) {

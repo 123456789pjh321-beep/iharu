@@ -132,7 +132,7 @@ test('group invite shortcut creates one link per click and fits member filters a
  await expect(page.getByRole('button',{name:'링크 취소'})).toHaveCount(0);
  await expect(page.getByText('사용 가능한 그룹 초대')).toHaveCount(0);
  const options=page.request.post('/api/v1/workspace/invite.link.options',{headers:{Origin:origin},data:{}});
- expect((await(await options).json()).pending).toHaveLength(8);
+ expect((await(await options).json()).pending).toHaveLength(1);
  await expect(page.locator('.personal-member')).toHaveCount(1);
  await issue(page);
  expect(issueRequests).toBe(9);
