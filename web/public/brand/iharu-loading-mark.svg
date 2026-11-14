@@ -1,4 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 72 72" fill="none" stroke="#0878ce" stroke-width="4" stroke-linecap="round">
-  <circle cx="54" cy="54" r="14"/>
-  <path d="M54 23v7m0 48v7M23 54h7m48 0h7M32 32l5 5m34 34 5 5M32 76l5-5m34-34 5-5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" fill="none" stroke="#0878ce" stroke-width="5.5" stroke-linecap="round">
+  <circle id="sun-center" cx="36" cy="36" r="14"/>
+  <path id="sun-ray" pathLength="1" d="M36 12V5"/>
+  <use href="#sun-ray" transform="rotate(45 36 36)"/>
+  <use href="#sun-ray" transform="rotate(90 36 36)"/>
+  <use href="#sun-ray" transform="rotate(135 36 36)"/>
+  <use href="#sun-ray" transform="rotate(180 36 36)"/>
+  <use href="#sun-ray" transform="rotate(225 36 36)"/>
+  <use href="#sun-ray" transform="rotate(270 36 36)"/>
+  <use href="#sun-ray" transform="rotate(315 36 36)"/>
 </svg>

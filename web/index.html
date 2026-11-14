@@ -32,15 +32,32 @@
       }
       .iharu-loading-mark {
         display: block;
-        width: 76px;
-        height: 76px;
-        animation: iharu-loading-spin 2.4s linear infinite;
+        flex: none;
+        fill: none;
+        stroke: #0878ce;
+        stroke-width: 5.5;
+        stroke-linecap: round;
       }
-      @keyframes iharu-loading-spin { to { transform: rotate(90deg); } }
-      #app-launch:is([data-motion=reduced], [data-state=error]) .iharu-loading-mark,
-      html[data-motion=reduced] .iharu-loading-mark { animation: none; }
+      .iharu-loading-rays > use {
+        stroke-dasharray: 1 1;
+        animation: iharu-loading-ray 1.28s linear infinite backwards;
+      }
+      .iharu-loading-rays > use:nth-child(2) { animation-delay: .16s; }
+      .iharu-loading-rays > use:nth-child(3) { animation-delay: .32s; }
+      .iharu-loading-rays > use:nth-child(4) { animation-delay: .48s; }
+      .iharu-loading-rays > use:nth-child(5) { animation-delay: .64s; }
+      .iharu-loading-rays > use:nth-child(6) { animation-delay: .8s; }
+      .iharu-loading-rays > use:nth-child(7) { animation-delay: .96s; }
+      .iharu-loading-rays > use:nth-child(8) { animation-delay: 1.12s; }
+      @keyframes iharu-loading-ray {
+        0% { opacity: 0; stroke-dashoffset: 1; }
+        18%, 55% { opacity: 1; stroke-dashoffset: 0; }
+        100% { opacity: 0; stroke-dashoffset: 0; }
+      }
+      #app-launch:is([data-motion=reduced], [data-state=error]) .iharu-loading-rays > use,
+      html[data-motion=reduced] .iharu-loading-rays > use { animation: none; }
       @media (prefers-reduced-motion: reduce) {
-        .iharu-loading-mark { animation: none; }
+        .iharu-loading-rays > use { animation: none; }
       }
       #app-launch .launch-message {
         margin: 0;
@@ -66,7 +83,19 @@
   <body>
     <div id="app-launch" role="region" aria-label="아이하루 시작" data-state="loading">
       <div class="launch-content">
-        <img src="/brand/iharu-loading-mark.svg" class="iharu-loading-mark" width="76" height="76" alt="" />
+        <svg class="iharu-loading-mark" viewBox="0 0 72 72" width="104" height="104" aria-hidden="true" focusable="false">
+          <use href="/brand/iharu-loading-mark.svg#sun-center" />
+          <g class="iharu-loading-rays">
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(0 36 36)" />
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(45 36 36)" />
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(90 36 36)" />
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(135 36 36)" />
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(180 36 36)" />
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(225 36 36)" />
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(270 36 36)" />
+            <use href="/brand/iharu-loading-mark.svg#sun-ray" transform="rotate(315 36 36)" />
+          </g>
+        </svg>
         <p class="launch-message" id="launch-message" role="status">아이하루를 불러오고 있어요</p>
         <div class="launch-recovery" id="launch-recovery" hidden>
           <p class="launch-message">연결 상태를 확인한 후 다시 시도해 주세요.</p>
