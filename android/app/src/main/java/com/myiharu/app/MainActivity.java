@@ -24,6 +24,13 @@ public final class MainActivity extends LauncherActivity {
     @Override
     protected void onCreate(Bundle state) {
         setIntent(sanitizeIntent(this, getIntent()));
+        // ABH treats a second URL-less launcher as an already running TWA.
+        // An offline recovery activity can still be alive while its close animation
+        // finishes, so a quick relaunch must explicitly request our own start URL.
+        // Online launcher taps keep their URL-less browser-resume behavior.
+        if (!hasNetworkConnection() && getIntent().getData() == null) {
+            getIntent().setData(Uri.parse("https://myiharu.com/timetable"));
+        }
         super.onCreate(state);
         if (!isFinishing() && !hasNetworkConnection()) showConnectionMessage(false);
     }
