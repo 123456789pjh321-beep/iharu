@@ -30,7 +30,8 @@ export function InviteLinkActions({url,invite,shareFallback=false}:{url:string;i
  }
 
  return <div className="group-invite-issued">
-  {invite&&<small>{formatExpiry.format(new Date(invite.expiresAt))}까지 · 한 번 사용</small>}
+  {invite&&<small>{formatExpiry.format(new Date(invite.expiresAt))}까지 · 여러 명 초대 가능</small>}
+  <p>{invite?'새 링크 발급·그룹 나가기·내보내기 시 이 링크는 폐기돼요.':null}</p>
   <input aria-label={invite?'발급한 그룹 초대 링크':'일반 초대 링크'} value={url} readOnly onFocus={e=>e.target.select()}/>
   <div className="group-invite-actions">
    {(canShare||shareFallback)&&<button type="button" className={invite?'button primary':'button'} onClick={()=>void share()}>{label} 공유</button>}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import { copy } from '../copy';
 import {m} from 'motion/react';
@@ -7,8 +7,31 @@ export function Card({ title, icon, children, className = '', action }: { title:
   return <m.section initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className={`card ${className}`}><div className="card-heading"><h2><span className="section-icon"><Icon name={icon}/></span>{title}</h2>{action}</div>{children}</m.section>;
 }
 const loadingRayAngles = [0, 45, 90, 135, 180, 225, 270, 315];
+const LoadingContext=createContext<((id:symbol,label?:string)=>void)|null>(null);
+
+/** Keep one indicator mounted while session, identity, lazy code and page data hand off. */
+export function WorkspaceLoadingBoundary({children}:{children:ReactNode}){
+ const pending=useRef(new Map<symbol,string>()),release=useRef<ReturnType<typeof setTimeout>|undefined>(undefined);
+ const [label,setLabel]=useState('');
+ const report=useCallback((id:symbol,text?:string)=>{
+  if(release.current)clearTimeout(release.current);
+  if(text)pending.current.set(id,text);else pending.current.delete(id);
+  if(pending.current.size)setLabel([...pending.current.values()].at(-1)!);
+  else release.current=setTimeout(()=>setLabel(''),80);
+ },[]);
+ useEffect(()=>()=>{if(release.current)clearTimeout(release.current);},[]);
+ return <LoadingContext.Provider value={report}><div className="workspace-loading-boundary">
+  <div aria-hidden={label?true:undefined} inert={!!label}>{children}</div>
+  {label&&<div className="workspace-loading-overlay"><LoadingView label={label}/></div>}
+ </div></LoadingContext.Provider>;
+}
 
 export function Loading({ label = '그룹의 하루를 불러오고 있어요' }: { label?:string }) {
+ const report=useContext(LoadingContext),id=useRef(Symbol('loading'));
+ useLayoutEffect(()=>{const token=id.current;report?.(token,label);return()=>report?.(token);},[report,label]);
+ return report?<span hidden data-app-loading/>:<LoadingView label={label}/>;
+}
+function LoadingView({label}:{label:string}){
   return (
     <div className="loading-state" role="status" data-app-loading>
       <svg className="iharu-loading-mark" viewBox="0 0 72 72" width="104" height="104" aria-hidden="true" focusable="false">

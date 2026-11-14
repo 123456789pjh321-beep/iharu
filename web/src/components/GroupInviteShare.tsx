@@ -7,7 +7,7 @@ import {InviteLinkActions,type IssuedInvite} from './InviteLinkActions';
 import {useWorkspaceGate} from './WorkspaceGate';
 
 const shareLabel='그룹 초대 공유';
-const issueDescription='이 버튼을 누르면 초대용 링크가 만들어집니다. 초대받은 사람이 수락하면 같은 그룹에서 일정 등 자료를 공유합니다.';
+const issueDescription='새 링크를 만들면 이전 링크는 즉시 폐기됩니다. 유효한 최신 링크로 여러 명을 초대할 수 있어요. 수락한 구성원은 본인 자료만 그룹에 공유합니다.';
 const inlineShortcutRoutes=new Set([
  '/timetable','/today/calendar','/tuition','/chat','/child/chat','/timeline','/briefing',
  '/more','/settings','/help','/family','/notification-settings','/admin','/account','/privacy','/account-deletion',
@@ -28,10 +28,12 @@ export function GroupInviteShareProvider({children}:{children:ReactNode}){
  const issuing=useRef<string|null>(null);
  const route=pathname.toLowerCase().replace(/\/+$/,'');
  const profileId=parent?.id;
- const canInvite=!!parent&&(!parent.family||parent.family.isHost);
+ const canInvite=!!parent;
+ const groupId=parent?.family?.id,previousGroup=useRef(groupId);
  const current=invite?.ownerId===profileId?invite:undefined;
 
  useEffect(()=>{dialog.current?.close();},[pathname,profileId]);
+ useEffect(()=>{if(previousGroup.current&&previousGroup.current!==groupId)dialog.current?.close();previousGroup.current=groupId;},[groupId]);
 
  const issue=useCallback(async(ownerId:string)=>{
   if(issuing.current===ownerId)return;

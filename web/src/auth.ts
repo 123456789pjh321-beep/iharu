@@ -1,3 +1,4 @@
+import {forgetEntry} from './entry-session';
 import {clearDevicePush} from './push-device';
 import { z } from 'zod';
 import {entryReturnPath} from '../../shared/entry-intent';
@@ -42,9 +43,10 @@ export async function authPost(path: string, body: object) {
   return data;
 }
 export async function startSocial(provider:string, link = false, reauthenticate = false,returnTo?:string, signup = false) {
-  const next=reauthenticate&&returnTo===undefined?'/account':entryReturnPath(returnTo);
+  const next=reauthenticate?entryReturnPath(returnTo||'/account'):'/timetable';
   const data = await authPost(`/api/auth/${link?'link-social':'sign-in/social'}`, { provider, callbackURL:link?'/account':next, errorCallbackURL:'/login?next='+encodeURIComponent(next), ...(signup?{requestSignUp:true,additionalData:{ageAtLeast14:true}}:{}) });
   if (!data.url || !data.url.startsWith('https://')) throw new Error('로그인 연결 주소를 확인하지 못했어요. 다시 시도해 주세요.');
+  if(!link&&!reauthenticate)forgetEntry();
   window.location.assign(data.url);
 }
 

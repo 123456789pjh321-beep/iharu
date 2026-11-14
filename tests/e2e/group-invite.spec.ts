@@ -20,7 +20,8 @@ async function verifyAndSignIn(page:Page,request:APIRequestContext,email:string,
  expect(login.ok(),await login.text()).toBe(true);
  if(invite){
   await page.reload();
-  await expect(page).toHaveURL(origin+'/invite');
+  await expect(page).toHaveURL(origin+'/timetable');
+  await page.getByRole('link',{name:'초대 확인',exact:true}).click();
  }
 }
 
@@ -168,7 +169,7 @@ test('group link resumes after email verification and requires explicit acceptan
   await guest.goto(link);
   await expect(guest.getByRole('heading',{name:'그룹에 초대받았어요'})).toBeVisible();
   await expect(guest).toHaveURL(origin+'/invite');
-  await expect(guest.getByRole('link',{name:'로그인하고 계속'})).toHaveAttribute('href','/login?next=%2Finvite');
+  await expect(guest.getByRole('link',{name:'로그인하고 계속'})).toHaveAttribute('href','/login');
   await guest.getByRole('link',{name:'회원가입',exact:true}).click();
   await register(guest,request,'group-link-guest@example.test','가상 초대 손님',true);
   await expect(guest.getByRole('button',{name:'초대 수락'})).toBeVisible();
@@ -179,12 +180,12 @@ test('group link resumes after email verification and requires explicit acceptan
   await expect(guest.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await guest.getByRole('button',{name:'그룹 초대 공유',exact:true}).click();
   const dialog=guest.getByRole('dialog',{name:'그룹 초대 공유'});
-  await expect(dialog).toContainText('그룹 초대 링크는 호스트에게 요청해 주세요.');
+  await expect(dialog.getByLabel('발급한 그룹 초대 링크')).toBeVisible();
   await expect(dialog.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await guest.keyboard.press('Escape');
   await expect(guest.getByLabel('일반 초대 링크',{exact:true})).toHaveValue(timetableInvite);
   await guest.goto(link);
-  await expect(guest.getByRole('alert')).toContainText('이미 사용');
+  await expect(guest.getByRole('alert')).toContainText('초대');
  }finally{await context.close();}
 });
 
