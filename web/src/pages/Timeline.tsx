@@ -10,13 +10,19 @@ import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {DateNavigator,WorkspaceToolbar} from '../components/WorkspaceToolbar';
 import {MemberFilter} from '../components/MemberFilter';
+import {MonthSwipeArea} from '../components/MonthSwipeArea';
+import {shiftMonth} from '../components/PeriodPager';
 import {GroupInviteShareButton} from '../components/GroupInviteShare';
 import {MemoEditor,MemoPhoto} from '../components/MemoEditor';
 import {workspaceRequest} from '../workspace-api';
 import './timeline.css';
 
 const dayLabel=(date:string)=>new Date(date+'T12:00:00Z').toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'UTC'});
-const blankFilters={query:'',category:'ALL',hasPhotos:false,hasLocation:false,favorite:false,visibility:'ALL',sort:'newest'};
+type DisplayMemo=Memo&{sample?:boolean;samplePhoto?:string};
+type MonthResult={key:string;data?:MemoList;error?:string};
+const emptyList:MemoList={items:[],total:0,hasAny:false};
+const validMonth=(value:string)=>/^\d{4}-(0[1-9]|1[0-2])$/.test(value)&&value>='1900-01'&&value<='2099-12';
+
 export default function TimelinePage(){
  const {access,session}=useWorkspaceGate();
  if(session.data?.authenticated&&session.data.assurance==='LOW')return <Navigate to="/account" replace/>;
@@ -27,77 +33,138 @@ export default function TimelinePage(){
 }
 function Timeline({me}:{me:WorkspaceMe|null}){
  const today=koreaToday(),{requestLogin}=useEntryAccess();
- const [month,setMonth]=useState(today.slice(0,7)),[period,setPeriod]=useState('month'),[from,setFrom]=useState(addDays(today,-29)),[to,setTo]=useState(today);
- const [filters,setFilters]=useState(blankFilters),[ownerIds,setOwnerIds]=useState<string[]>([]),[expanded,setExpanded]=useState(false),[limit,setLimit]=useState(40);
- const [searchQuery,setSearchQuery]=useState('');
- useEffect(()=>{const timer=setTimeout(()=>setSearchQuery(filters.query),300);return()=>clearTimeout(timer);},[filters.query]);
- const [result,setResult]=useState<{key:string;data?:MemoList;error?:string}>(),[refresh,setRefresh]=useState(0),[message,setMessage]=useState(''),[draft,setDraft]=useState<MemoDraft|null>(null);
+ const [month,setMonth]=useState(today.slice(0,7)),[ownerIds,setOwnerIds]=useState<string[]>([]),[offset,setOffset]=useState(0);
+ const [results,setResults]=useState<Record<string,MonthResult>>({}),[refresh,setRefresh]=useState(0);
+ const [message,setMessage]=useState(''),[draft,setDraft]=useState<MemoDraft|null>(null),[selectedId,setSelectedId]=useState('');
  const [busy,setBusy]=useState(''),[viewPhoto,setViewPhoto]=useState('');
  const mounted=useRef(true),writeLock=useRef(false),viewer=useRef<HTMLDialogElement>(null);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  useEffect(()=>{if(viewPhoto)viewer.current?.showModal();else viewer.current?.close();},[viewPhoto]);
- const members=me?.family?.members|| (me?[{id:me.id,name:me.name,kind:me.role,host:false,version:1}]:[]);
- const range=period==='month'?{from:month+'-01',to:addDays(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5,7)),1)).toISOString().slice(0,10),-1)}:period==='custom'?{from,to}:{};
- const request=useMemo(()=>({...filters,query:searchQuery,...range,ownerIds,limit:40,offset:limit-40}),[JSON.stringify(filters),searchQuery,range.from,range.to,ownerIds,limit]);
- const key=JSON.stringify(request),current=result?.key===key?result:undefined;
+ const members=me?.family?.members||(me?[{id:me.id,name:me.name,kind:me.role,host:false,version:1}]:[]);
+ // Keep real neighboring months ready for the same continuous pager used by the calendar.
+ const requests=useMemo(()=>Object.fromEntries([-1,0,1].map(delta=>{
+  const value=shiftMonth(month,delta);
+  return [value,{from:value+'-01',to:addDays(shiftMonth(value,1)+'-01',-1),ownerIds,limit:40,offset:delta===0?offset:0}];
+ })),[month,ownerIds,offset]);
+ const requestKey=(value:string)=>JSON.stringify(requests[value]);
+ const current=results[month]?.key===requestKey(month)?results[month]:undefined;
  const reload=useCallback(()=>setRefresh(n=>n+1),[]);
  useEffect(()=>{
-  if(!me)return;let active=true,pending=false;
-  const load=async()=>{if(pending||writeLock.current)return;pending=true;try{const data=await workspaceRequest<MemoList>('memos.list',request);if(active&&!writeLock.current)setResult({key,data});}catch(e){if(active){const code=(e as {code?:string}).code;setResult(old=>({key,data:(!code||code==='UNAVAILABLE'||code==='RATE_LIMITED')&&old?.key===key?old.data:undefined,error:(e as Error).message}));if(code==='AUTH_REQUIRED'||code==='NOT_FOUND')setDraft(null);}}finally{pending=false;}};
-  const focused=()=>{if(!document.hidden)void load();};void load();window.addEventListener('focus',focused);const timer=setInterval(focused,30000);
+  if(!me)return;
+  let active=true;
+  const pending=new Set<string>();
+  setResults(old=>Object.fromEntries(Object.keys(requests).filter(value=>old[value]?.key===JSON.stringify(requests[value])).map(value=>[value,old[value]])));
+  async function load(value:string){
+   if(!validMonth(value)||pending.has(value)||writeLock.current)return;
+   pending.add(value);const key=JSON.stringify(requests[value]);
+   try{
+    const data=await workspaceRequest<MemoList>('memos.list',requests[value]);
+    if(active&&!writeLock.current)setResults(old=>({...old,[value]:{key,data}}));
+   }catch(e){
+    if(active){
+     const code=(e as {code?:string}).code;
+     setResults(old=>({...old,[value]:{key,data:(!code||code==='UNAVAILABLE'||code==='RATE_LIMITED')&&old[value]?.key===key?old[value].data:undefined,error:(e as Error).message}}));
+     if(code==='AUTH_REQUIRED'||code==='NOT_FOUND'){setDraft(null);setSelectedId('');setViewPhoto('');}
+    }
+   }finally{pending.delete(value);}
+  }
+  const focused=()=>{if(!document.hidden)for(const value of Object.keys(requests))void load(value);};
+  focused();window.addEventListener('focus',focused);const timer=setInterval(focused,30000);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',focused);};
- },[me?.id,key,refresh]);
- function change(value:Partial<typeof filters>){setFilters(old=>({...old,...value}));setLimit(40);}
- function reset(){setFilters(blankFilters);setOwnerIds([]);setLimit(40);}
+ },[me?.id,requests,refresh]);
+ const samples=useMemo(()=>sampleMemos(today),[today]);
+ const selected=(current?.data?.items||[]).find(m=>m.id===selectedId)||(samples.find(m=>m.id===selectedId));
+ useEffect(()=>{
+  if(selectedId&&!selected){setSelectedId('');setViewPhoto('');}
+ },[selectedId,selected]);
+ // A deletion on the last page must return to the remaining records.
+ useEffect(()=>{if(offset>0&&current?.data&&!current.data.items.length)setOffset(Math.max(0,offset-40));},[offset,current?.data]);
  function create(){
   if(!me){requestLogin({title:'메모를 저장하려면 로그인해 주세요',description:'내 계정에 사진과 글을 안전하게 남겨요.'});return;}
   let initial=emptyMemo(today);
   try{const stored=JSON.parse(sessionStorage.getItem('iharu-memo-draft:'+me.id)||'null');if(stored?.expiresAt>Date.now()&&typeof stored.draft?.id==='string'&&Array.isArray(stored.draft.photos)&&stored.draft.photos.length<=3)initial=stored.draft;else sessionStorage.removeItem('iharu-memo-draft:'+me.id);}catch{}
   setDraft(initial);
  }
- async function action(id:string,op:string,payload:object){if(writeLock.current)return;writeLock.current=true;setBusy(id);try{await workspaceRequest(op,payload);setMessage(op==='memos.delete'?'메모와 첨부 사진을 삭제했어요.':'즐겨찾기를 변경했어요.');}catch(e){setMessage((e as Error).message);}finally{writeLock.current=false;if(mounted.current){setBusy('');reload();}}}
- function selectMonth(value:string){if(/^\d{4}-(0[1-9]|1[0-2])$/.test(value)&&value>='1900-01'&&value<='2099-12'){setMonth(value);setPeriod('month');setLimit(40);}}
- function moveMonth(delta:number){const d=new Date(month+'-15T12:00:00Z');d.setUTCMonth(d.getUTCMonth()+delta);selectMonth(d.toISOString().slice(0,7));}
- const data=me?current?.data:{items:[],total:0,hasAny:false};
- const hasFilters=JSON.stringify(filters)!==JSON.stringify(blankFilters)||ownerIds.length>0;
- const groups=new Map<string,Memo[]>();for(const memo of data?.items||[]){const group=groups.get(memo.date)||[];group.push(memo);groups.set(memo.date,group);}
+ async function action(memo:Memo,op:'memos.delete'|'memos.favorite'){
+  if(writeLock.current)return;writeLock.current=true;setBusy(memo.id);setMessage('');
+  try{
+   await workspaceRequest(op,op==='memos.delete'?{id:memo.id,version:memo.version}:{id:memo.id,favorite:!memo.favorite});
+   if(!mounted.current)return;
+   if(op==='memos.delete'){setSelectedId('');setMessage('메모와 첨부 사진을 삭제했어요.');}
+   else{
+    setResults(old=>Object.fromEntries(Object.entries(old).map(([value,result])=>[value,{...result,data:result.data?{...result.data,items:result.data.items.map(item=>item.id===memo.id?{...item,favorite:!memo.favorite}:item)}:undefined}])));
+    setMessage('즐겨찾기를 변경했어요.');
+   }
+  }catch(e){if(mounted.current)setMessage((e as Error).message);}
+  finally{writeLock.current=false;if(mounted.current){setBusy('');reload();}}
+ }
+ function selectMonth(value:string){
+  if(validMonth(value)){setMonth(value);setOffset(0);setSelectedId('');setViewPhoto('');setMessage('');}
+ }
+ function openMemo(memo:DisplayMemo){setMessage('');setSelectedId(memo.id);}
+ function renderMonth(value:string){
+  if(!validMonth(value))return <div className="memo-results"/>;
+  const result=results[value]?.key===requestKey(value)?results[value]:undefined,data=me?result?.data:emptyList;
+  if(!data)return result?.error?<ErrorState message={result.error} retry={reload}/>:<Loading label="메모를 불러오고 있어요"/>;
+  const isSample=!data.hasAny&&ownerIds.length===0&&value===today.slice(0,7),items=isSample?samples:data.items;
+  const groups=new Map<string,DisplayMemo[]>();for(const memo of items){const group=groups.get(memo.date)||[];group.push(memo);groups.set(memo.date,group);}
+  return <section className="memo-results" aria-label={isSample?'샘플 메모':'타임라인 메모'}>
+   {result?.error&&<div className="memo-refresh-error" role="status">최신 메모를 불러오지 못했어요. 작성 중인 내용은 유지돼요.<button className="button compact" onClick={reload}>다시 불러오기</button></div>}
+   {isSample&&<p className="memo-sample-guide">아래 두 글은 사용 방법을 보여 주는 샘플이에요.</p>}
+   {!items.length?<div className="memo-empty"><Icon name="book"/><h2>{ownerIds.length?'선택한 구성원의 이번 달 글이 없어요':'이번 달에 작성한 글이 없어요'}</h2></div>:Array.from(groups,([date,items])=><section className="memo-day" key={date} aria-label={dayLabel(date)}>
+    <h2><time dateTime={date}>{dayLabel(date)}</time>{isSample?<span>샘플</span>:date===today&&<span>오늘</span>}</h2>
+    {items.map(memo=><article className="memo-card memo-preview" key={memo.id} aria-label={memo.title}>
+     <MemoMeta memo={memo}/>
+     <div className="memo-preview-row"><div className="memo-preview-copy"><h3>{memo.title}</h3><p className="memo-preview-body">{memo.body||'내용 없이 저장한 메모예요.'}</p></div>
+      <button type="button" className="memo-more" aria-haspopup="dialog" onClick={()=>openMemo(memo)}>더보기</button>
+     </div>
+    </article>)}
+   </section>)}
+   {value===month&&(data.total>40||offset>0)&&<div className="memo-pagination"><button type="button" className="button compact" disabled={offset===0} onClick={()=>setOffset(n=>Math.max(0,n-40))}>이전</button><span>{Math.floor(offset/40)+1} / {Math.max(1,Math.ceil(data.total/40))}</span><button type="button" className="button compact" disabled={data.total<=offset+40} onClick={()=>setOffset(n=>n+40)}>다음</button></div>}
+  </section>;
+ }
  return <AuthLayout wide personalChild={me?.role==='CHILD'}><div className="timeline-page memo-timeline">
-  <WorkspaceToolbar title="타임라인" navigation={<DateNavigator type="month" value={month} inputLabel="타임라인 조회 월" displayLabel={period==='all'?'전체 기간':period==='custom'?'기간 선택':undefined} onChange={selectMonth}/>}>
-   <button className="icon-button" type="button" aria-label="이전 달" onClick={()=>moveMonth(-1)}><Icon name="left"/></button><button className="icon-button" type="button" aria-label="다음 달" onClick={()=>moveMonth(1)}><Icon name="chevron"/></button><button type="button" className="button primary compact memo-create" onClick={create}><Icon name="plus"/>메모 작성</button>
-  </WorkspaceToolbar>
-  {me&&<div className="member-preference-row memo-members"><GroupInviteShareButton/><MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} onChange={id=>{if(id==='all'){setOwnerIds([]);setLimit(40);return;}const selected=ownerIds.length?ownerIds:members.map(m=>m.id),next=selected.includes(id)?selected.filter(x=>x!==id):[...selected,id];setOwnerIds(next.length?next:[id]);setLimit(40);}} label="메모 작성자" allLabel="전체" allSelected={!ownerIds.length} onSelectAll={()=>{setOwnerIds([]);setLimit(40);}}/></div>}
-  <section className="memo-filters" aria-label="메모 필터"><div className="memo-filter-row"><div className="memo-quick-filters" role="group" aria-label="메모 종류">
-   <button type="button" aria-pressed={!filters.hasPhotos&&!filters.hasLocation&&!filters.favorite} onClick={()=>change({hasPhotos:false,hasLocation:false,favorite:false})}>전체</button>
-   <button type="button" aria-pressed={filters.hasPhotos} onClick={()=>change({hasPhotos:!filters.hasPhotos})}>사진</button><button type="button" aria-pressed={filters.hasLocation} onClick={()=>change({hasLocation:!filters.hasLocation})}>위치</button><button type="button" aria-pressed={filters.favorite} onClick={()=>change({favorite:!filters.favorite})}>즐겨찾기</button>
-  </div><button type="button" className="memo-filter-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}><Icon name="filter"/>필터</button></div>
-  <label className="memo-search"><Icon name="search"/><span className="sr-only">메모 검색</span><input type="search" placeholder="제목·글·장소·태그 검색" value={filters.query} maxLength={100} onChange={e=>change({query:e.target.value})}/>{hasFilters&&<button type="button" aria-label="필터 초기화" onClick={reset}><Icon name="close"/></button>}</label>
-  {expanded&&<div className="memo-advanced"><label>기간<select aria-label="기간" value={period} onChange={e=>{setPeriod(e.target.value);setLimit(40);}}><option value="month">선택한 달</option><option value="all">전체 기간</option><option value="custom">직접 선택</option></select></label>
-   {period==='custom'&&<><label>시작일<input aria-label="시작일" type="date" value={from} max={to} onChange={e=>{if(e.target.value&&e.target.value<=to){setFrom(e.target.value);setLimit(40);}}}/></label><label>종료일<input aria-label="종료일" type="date" value={to} min={from} onChange={e=>{if(e.target.value&&e.target.value>=from){setTo(e.target.value);setLimit(40);}}}/></label></>}
-   <label>카테고리<select aria-label="카테고리" value={filters.category} onChange={e=>change({category:e.target.value})}><option value="ALL">전체</option>{Object.entries(memoCategories).map(([v,label])=><option key={v} value={v}>{label}</option>)}</select></label>
-   <label>공유 범위<select aria-label="공유 범위" value={filters.visibility} onChange={e=>change({visibility:e.target.value})}><option value="ALL">전체</option><option value="PRIVATE">나만 보기</option><option value="GROUP">그룹 공유</option></select></label>
-   <label>정렬<select aria-label="정렬" value={filters.sort} onChange={e=>change({sort:e.target.value})}><option value="newest">최신순</option><option value="oldest">오래된순</option></select></label>
-  </div>}</section>
+  <WorkspaceToolbar title="타임라인" navigation={<DateNavigator type="month" value={month} inputLabel="타임라인 조회 월" onChange={selectMonth}/>}/>
+  {me&&<div className="member-preference-row memo-members"><GroupInviteShareButton/><MemberFilter members={members} value={ownerIds.length?ownerIds:members.map(m=>m.id)} showAll={false} onChange={id=>{
+   const current=ownerIds.length?ownerIds:members.map(m=>m.id),next=current.includes(id)?current.filter(x=>x!==id):[...current,id];
+   setOwnerIds(next.length===members.length?[]:next.length?next:[id]);setOffset(0);setSelectedId('');
+  }} label="메모 작성자"/></div>}
+  <button type="button" className="memo-new-row" onClick={create}><Icon name="plus"/>새글 등록</button>
   <p className="memo-status" role="status">{message}</p>
-  {!data&&!current?.error?<Loading label="메모를 불러오고 있어요"/>:!data?<ErrorState message={current!.error!} retry={reload}/>:<section className="memo-results" aria-label="타임라인 메모">
-   {current?.error&&<div className="memo-refresh-error" role="status">최신 메모를 불러오지 못했어요. 작성 중인 내용은 유지돼요.<button className="button compact" onClick={reload}>다시 불러오기</button></div>}
-   {!data.hasAny&&!hasFilters?<><div className="memo-sample-guide"><Icon name="book"/><span><strong>한 줄부터, 나의 하루를 남겨요</strong><small>아래 2개는 사용 방법을 보여 주는 샘플이에요.</small></span></div><MemoSamples today={today} create={create}/></>:<><div className="memo-count"><span>메모 <strong>{data.total}개</strong></span><span>{filters.sort==='newest'?'최신순':'오래된순'}</span></div>
-   {!data.items.length?<div className="memo-empty"><Icon name="book"/><h2>{hasFilters?'필터에 맞는 메모가 없어요':'이 기간에 작성한 메모가 없어요'}</h2><button type="button" className="button" onClick={()=>{reset();setPeriod('all');}}>전체 메모 보기</button><button type="button" className="button primary" onClick={create}>첫 메모 작성</button></div>:Array.from(groups,([date,items])=><section className="memo-day" key={date} aria-label={dayLabel(date)}><h2><time dateTime={date}>{dayLabel(date)}</time>{date===today&&<span>오늘</span>}</h2>{items.map(m=><article className="memo-card" key={m.id} aria-label={m.title}>
-    <header><span className="memo-category">{memoCategories[m.category]}</span><span>{m.ownerName} · {m.time}</span><span className="memo-visibility">{m.visibility==='PRIVATE'?'나만 보기':'그룹 공유'}</span></header><h3>{m.title}</h3>{m.body&&<MemoBody text={m.body}/>}
-    {m.photos.length>0&&<div className="memo-photos">{m.photos.map((photo,i)=><MemoPhoto key={photo.id} id={photo.id} alt={m.title+' 사진 '+(i+1)} onOpen={setViewPhoto}/>)}</div>}
-    {(m.place||m.location)&&<p className="memo-place"><Icon name="pin"/>{m.location?<a href={`https://www.google.com/maps/search/?api=1&query=${m.location.latitude},${m.location.longitude}`} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{m.place||'저장한 위치'} <span>지도 보기</span></a>:m.place}</p>}
-    {m.tags.length>0&&<div className="memo-tags">{m.tags.map(t=><button type="button" key={t} onClick={()=>{change({query:t});setPeriod('all');}}>#{t}</button>)}</div>}
-    <footer><button type="button" aria-pressed={m.favorite} disabled={busy===m.id} onClick={()=>void action(m.id,'memos.favorite',{id:m.id,favorite:!m.favorite})}><Icon name="bookmark"/>{m.favorite?'즐겨찾기 해제':'즐겨찾기'}</button>{m.mine&&<><button type="button" onClick={()=>setDraft({...m,photos:m.photos.map(p=>({id:p.id}))})}><Icon name="type"/>수정</button><button type="button" disabled={busy===m.id} onClick={()=>{if(window.confirm('이 메모와 첨부 사진을 삭제할까요?'))void action(m.id,'memos.delete',{id:m.id,version:m.version});}}><Icon name="trash"/>삭제</button></>}</footer>
-   </article>)}</section>)}
-   {(data.total>40||limit>40)&&<div className="memo-pagination"><button type="button" className="button compact" disabled={limit===40} onClick={()=>setLimit(n=>n-40)}>이전</button><span>{Math.floor((limit-1)/40)+1} / {Math.max(1,Math.ceil(data.total/40))}</span><button type="button" className="button compact" disabled={data.total<=limit} onClick={()=>setLimit(n=>n+40)}>다음</button></div>}
-   </>}
-  </section>}
-  {draft&&me&&<MemoEditor initial={draft} profileId={me.id} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));reset();reload();setMessage('메모를 저장했어요.');}}/>}
+  <MonthSwipeArea month={month} onChange={selectMonth}>{renderMonth}</MonthSwipeArea>
+  {selected&&<MemoDetail memo={selected} busy={busy===selected.id} message={message} onClose={()=>{setSelectedId('');setViewPhoto('');}} onPhoto={setViewPhoto} onCreate={()=>{setSelectedId('');create();}} onEdit={()=>{
+   setSelectedId('');setDraft({...selected,photos:selected.photos.map(photo=>({id:photo.id}))});
+  }} onFavorite={()=>void action(selected,'memos.favorite')} onDelete={()=>{if(window.confirm('이 메모와 첨부 사진을 삭제할까요?'))void action(selected,'memos.delete');}}/>}
+  {draft&&me&&<MemoEditor initial={draft} profileId={me.id} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));setOwnerIds([]);reload();setMessage('메모를 저장했어요.');}}/>}
   <dialog ref={viewer} className="memo-photo-viewer" aria-label="사진 크게 보기" onClose={()=>setViewPhoto('')} onClick={e=>{if(e.target===e.currentTarget)setViewPhoto('');}}><button type="button" className="icon-button" aria-label="사진 닫기" onClick={()=>setViewPhoto('')}><Icon name="close"/></button>{viewPhoto&&<img src={viewPhoto} alt="메모 첨부 사진 확대"/>}</dialog>
  </div></AuthLayout>;
 }
-function MemoSamples({today,create}:{today:string;create:()=>void}){return <section className="memo-day memo-samples" aria-label="샘플 메모"><h2><time dateTime={today}>{dayLabel(today)}</time><span>샘플</span></h2>
- <article className="memo-card" aria-label="공원에서 보낸 오후"><header><span className="memo-category">나들이</span><span>샘플 · 15:30</span><span className="memo-visibility">나만 보기</span></header><h3>공원에서 보낸 오후</h3><p className="memo-body">함께 걷고 웃었던 순간을 남겨요. 사진과 현재 위치를 담으면 나중에 더 생생하게 떠올릴 수 있어요.</p><img className="memo-sample-photo" src="/briefing/park.jpg" alt="사진 첨부 예시: 초록 공원"/><p className="memo-place"><Icon name="pin"/>우리 동네 공원 · 장소 예시</p><div className="memo-tags"><span>#주말</span><span>#산책</span></div><footer><button type="button" onClick={create}><Icon name="plus"/>사진 메모 써 보기</button></footer></article>
- <article className="memo-card" aria-label="처음 혼자 해낸 날"><header><span className="memo-category">가족</span><span>샘플 · 09:00</span><span className="memo-visibility">그룹 공유</span></header><h3>처음 혼자 해낸 날</h3><p className="memo-body">“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 날짜·카테고리·태그로 다시 찾고, 오래 기억할 글은 즐겨찾기에 담아 보세요.</p><div className="memo-tags"><span>#성장</span><span>#기억할말</span></div><footer><button type="button" onClick={create}><Icon name="plus"/>첫 메모 써 보기</button></footer></article>
- </section>;}
-
-function MemoBody({text}:{text:string}){const [expanded,setExpanded]=useState(false),long=text.length>250||text.split("\n").length>6;return <><p className={"memo-body"+(long&&!expanded?" memo-body-collapsed":"")}>{text}</p>{long&&<button type="button" className="memo-body-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?"접기":"글 더 보기"}</button>}</>;}
+function MemoMeta({memo}:{memo:DisplayMemo}){
+ return <header className="memo-meta"><span className="memo-category">{memoCategories[memo.category]}</span><span>{memo.ownerName} · {memo.time}</span><span className="memo-visibility">{memo.visibility==='PRIVATE'?'나만 보기':'그룹 공유'}</span></header>;
+}
+function MemoDetail({memo,busy,message,onClose,onPhoto,onCreate,onEdit,onFavorite,onDelete}:{memo:DisplayMemo;busy:boolean;message:string;onClose:()=>void;onPhoto:(src:string)=>void;onCreate:()=>void;onEdit:()=>void;onFavorite:()=>void;onDelete:()=>void}){
+ const dialog=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{dialog.current?.showModal();},[]);
+ return <dialog ref={dialog} className="memo-detail" aria-labelledby="memo-detail-title" onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget&&!busy)onClose();}}>
+  <header className="memo-detail-heading"><h2 id="memo-detail-title">글 상세</h2><button type="button" className="icon-button" aria-label="글 상세 닫기" onClick={onClose}><Icon name="close"/></button></header>
+  <div className="memo-detail-body"><MemoMeta memo={memo}/><time className="memo-detail-date" dateTime={memo.date}>{dayLabel(memo.date)}</time>
+   <h3>{memo.title}</h3>{memo.body&&<p className="memo-body">{memo.body}</p>}
+   {memo.samplePhoto&&<button type="button" className="memo-photo" aria-label="샘플 사진 크게 보기" onClick={()=>onPhoto(memo.samplePhoto!)}><img src={memo.samplePhoto} alt="사진 첨부 예시: 초록 공원"/></button>}
+   {memo.photos.length>0&&<div className="memo-photos">{memo.photos.map((photo,i)=><MemoPhoto key={photo.id} id={photo.id} alt={memo.title+' 사진 '+(i+1)} onOpen={onPhoto}/>)}</div>}
+   {(memo.place||memo.location)&&<p className="memo-place"><Icon name="pin"/>{memo.location?<a href={'https://www.google.com/maps/search/?api=1&query='+memo.location.latitude+','+memo.location.longitude} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">{memo.place||'저장한 위치'} <span>지도 보기</span></a>:memo.place}</p>}
+   {memo.tags.length>0&&<div className="memo-tags">{memo.tags.map(tag=><span key={tag}>#{tag}</span>)}</div>}
+   {message&&<p className="memo-detail-status" role="status">{message}</p>}
+  </div>
+  <footer className="memo-detail-actions">{memo.sample?<button type="button" className="button primary" onClick={onCreate}><Icon name="plus"/>새글 등록</button>:<>
+   <button type="button" disabled={busy} aria-pressed={memo.favorite} onClick={onFavorite}><Icon name="bookmark"/>{memo.favorite?'즐겨찾기 해제':'즐겨찾기'}</button>
+   {memo.mine&&<><button type="button" disabled={busy} onClick={onEdit}><Icon name="type"/>수정</button><button type="button" disabled={busy} onClick={onDelete}><Icon name="trash"/>삭제</button></>}
+  </>}</footer>
+ </dialog>;
+}
+function sampleMemos(today:string):DisplayMemo[]{
+ const base={...emptyMemo(today),id:'sample-park',ownerId:'sample',ownerName:'샘플',mine:false,favorite:false,createdAt:'',updatedAt:'',photos:[],sample:true};
+ return [
+  {...base,title:'공원에서 보낸 오후',body:'함께 걷고 웃었던 순간을 남겨요. 사진과 현재 위치를 담으면 나중에 더 생생하게 떠올릴 수 있어요.',category:'OUTING',time:'15:30',samplePhoto:'/briefing/park.jpg',place:'우리 동네 공원 · 장소 예시',tags:['주말','산책']},
+  {...base,id:'sample-growth',title:'처음 혼자 해낸 날',body:'“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 더보기에서 전체 글과 사진·위치를 보고, 오래 기억할 글은 즐겨찾기에 담아 보세요.',category:'FAMILY',time:'09:00',visibility:'GROUP',tags:['성장','기억할말']}
+ ];
+}
