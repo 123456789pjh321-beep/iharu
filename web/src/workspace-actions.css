@@ -1,4 +1,5 @@
 .workspace-action-toolbar {
+  flex: none;
   padding: 8px 10px 4px;
   background: var(--surface);
 }
@@ -6,7 +7,10 @@
   display: grid;
   gap: 6px;
 }
-.workspace-action-grid > button {
+.workspace-action-toolbar > .workspace-action-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.workspace-action-grid > :is(button, .workspace-action-empty) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,8 +26,9 @@
   font: inherit;
   font-size: .75rem;
   font-weight: 650;
-  cursor: pointer;
 }
+.workspace-action-grid > button { cursor: pointer; }
+.workspace-action-empty { pointer-events: none; }
 .workspace-action-grid > button .icon {
   width: 24px;
   height: 24px;
@@ -42,7 +47,7 @@
   outline: 2px solid var(--focus, var(--primary));
   outline-offset: 2px;
 }
-.workspace-action-toolbar .workspace-action-grid > button {
+.workspace-action-toolbar .workspace-action-grid > :is(button, .workspace-action-empty) {
   min-height: 64px;
   gap: 5px;
   font-size: .7rem;
@@ -58,7 +63,7 @@
   .workspace-action-grid {
     gap: 4px;
   }
-  .workspace-action-grid > button {
+  .workspace-action-grid > :is(button, .workspace-action-empty) {
     min-height: 68px;
     padding: 8px 1px;
     border-radius: 10px;
@@ -68,7 +73,7 @@
     width: 21px;
     height: 21px;
   }
-  .workspace-action-toolbar .workspace-action-grid > button {
+  .workspace-action-toolbar .workspace-action-grid > :is(button, .workspace-action-empty) {
     min-height: 60px;
     font-size: .64rem;
   }

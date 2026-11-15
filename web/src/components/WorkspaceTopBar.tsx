@@ -1,15 +1,17 @@
-import {createContext,Fragment,useCallback,useContext,useLayoutEffect,useMemo,useRef,useState,type ReactNode} from 'react';
+import {Children,createContext,Fragment,useCallback,useContext,useLayoutEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {useLocation} from 'react-router-dom';
 import './workspace-topbar.css';
 import {WorkspaceGroupFilter} from './WorkspaceGroupFilter';
 import {useWorkspaceGate} from './WorkspaceGate';
 
-type Slot='toolbar'|'members';
+type Slot='toolbar'|'members'|'actions';
 type Entry={owner:symbol;content:ReactNode;active:boolean};
-type Bar={identity:string;route:string;toolbar?:Entry;members?:Entry};
-const routes=new Set(['/timetable','/calendar','/today/calendar','/tuition','/timeline']);
+type Bar={identity:string;route:string}&Partial<Record<Slot,Entry>>;
+const actionRoutes=new Set(['/timetable','/tuition','/timeline']);
+const routes=new Set([...actionRoutes,'/calendar','/today/calendar']);
 const routeKey=(path:string)=>path==='/calendar'?'/today/calendar':path;
+const actionSlots=7;
 const Commands=createContext<{
  publish:(route:string,slot:Slot,owner:symbol,content:ReactNode)=>void;
  retire:(route:string,slot:Slot,owner:symbol)=>void;
@@ -51,7 +53,23 @@ export function WorkspaceTopBarHost(){
   {bar?.toolbar?.content}
   <WorkspaceGroupFilter key={'groups:'+route}/>
   <Fragment key={'members:'+bar?.route}>{bar?.members?.content}</Fragment>
+  {actionRoutes.has(route)&&(bar?.route===route&&bar.actions?.active?bar.actions.content:<WorkspaceActionRow/>)}
  </div>,target);
+}
+
+function WorkspaceActionRow({label,children}:{label?:string;children?:ReactNode}){
+ const actions=Children.toArray(children);
+ return <div className="workspace-action-toolbar" data-workspace-actions>
+  <div className="workspace-action-grid" role={label?'group':undefined} aria-label={label}>
+   {actions}
+   {Array.from({length:Math.max(0,actionSlots-actions.length)},(_,index)=>
+    <span className="workspace-action-empty" key={'empty-'+index} aria-hidden="true"/>)}
+  </div>
+ </div>;
+}
+
+export function WorkspaceTopBarActions({label,children}:{label:string;children:ReactNode}){
+ return <WorkspaceTopBarSlot slot="actions"><WorkspaceActionRow label={label}>{children}</WorkspaceActionRow></WorkspaceTopBarSlot>;
 }
 
 export function WorkspaceTopBarSlot({slot,children}:{slot:Slot;children:ReactNode}){

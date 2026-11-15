@@ -60,10 +60,15 @@ test('swipes real months without opening details or interfering with vertical sc
    for(let n=1;n<=8;n++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:from.x+(to.x-from.x)*n/8,y:from.y+(to.y-from.y)*n/8,id:1}]});await page.waitForTimeout(18);}
    await cdp.send('Input.dispatchTouchEvent',{type:cancel?'touchCancel':'touchEnd',touchPoints:[]});
   }
+  const visibleSwipeY=(region:Locator)=>region.evaluate(node=>{
+   const box=node.getBoundingClientRect(),panel=node.closest('.auth-panel')?.getBoundingClientRect();
+   const top=Math.max(box.top,panel?.top??0,0);
+   const bottom=Math.min(box.bottom,panel?.bottom??innerHeight,innerHeight);
+   return top+Math.min((bottom-top)/2,70);
+  });
   async function swipe(region:Locator,left:boolean,cancel=false){
    const box=(await region.boundingBox())!;
-   const viewport=page.viewportSize()!;
-   const y=Math.min(Math.max(box.y,80)+Math.min(box.height/2,75),viewport.height-30);
+   const y=await visibleSwipeY(region);
    const start={x:box.x+(left?box.width-24:24),y};
    await expect.poll(()=>region.evaluate((node,point)=>node.contains(document.elementFromPoint(point.x,point.y)),start)).toBe(true);
    await touch(start,{x:box.x+(left?24:box.width-24),y:y+2},cancel);
@@ -79,7 +84,9 @@ test('swipes real months without opening details or interfering with vertical sc
   await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).tap();await expect(page.getByRole('dialog',{name:'메모 작성'})).toBeVisible();await page.getByRole('button',{name:'메모 작성 닫기'}).tap();await expect(month).toHaveValue('2026-12');
   await page.screenshot({path:'test-results/memo-swipe-390.png',animations:'disabled'});
   await page.setViewportSize({width:1440,height:900});const box=(await area.boundingBox())!;
-  await page.mouse.move(box.x+box.width-30,box.y+70);await page.mouse.down();await page.mouse.move(box.x+30,box.y+71,{steps:10});await page.mouse.up();
+  const start={x:box.x+box.width-30,y:await visibleSwipeY(area)};
+  await expect.poll(()=>area.evaluate((node,point)=>node.contains(document.elementFromPoint(point.x,point.y)),start)).toBe(true);
+  await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(box.x+30,start.y+1,{steps:10});await page.mouse.up();
   await expect(month).toHaveValue('2027-01');await settled();await expect(page.getByRole('dialog')).toHaveCount(0);
   await area.hover();await page.mouse.wheel(-180,0);await expect(month).toHaveValue('2026-12');await settled();
   await page.setViewportSize({width:390,height:900});await page.locator('#auth-main').evaluate(node=>node.scrollTop=0);await settled();await page.emulateMedia({reducedMotion:'reduce'});await expect.poll(()=>page.evaluate(()=>matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));await swipe(area,true);await expect(month).toHaveValue('2027-01');await settled();

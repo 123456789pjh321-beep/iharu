@@ -29,7 +29,6 @@
 
 
 
-.ledger-menu .workspace-action-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 720px; }
 .ledger-controls {
   display: flex;
   flex-wrap: wrap;
