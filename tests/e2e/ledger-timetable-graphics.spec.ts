@@ -28,8 +28,11 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await page.setViewportSize({width:390,height:900});
  const post=await signIn(page,'ledger-menu-graphics');
  for(const data of [
-  {title:'간식',date:'2027-02-03',amount:2000,ledgerFlow:'EXPENSE',ledgerCategory:'FOOD'},
-  {title:'버스',date:'2027-02-20',amount:3000,ledgerFlow:'EXPENSE',ledgerCategory:'TRANSPORT',note:'정기 이용'},
+  {title:'학원비',date:'2027-02-02',amount:580000,ledgerFlow:'EXPENSE',ledgerCategory:'EDUCATION'},
+  {title:'간식',date:'2027-02-03',amount:272000,ledgerFlow:'EXPENSE',ledgerCategory:'FOOD'},
+  {title:'버스',date:'2027-02-20',amount:370000,ledgerFlow:'EXPENSE',ledgerCategory:'TRANSPORT',note:'정기 이용'},
+  {title:'마트',date:'2027-02-22',amount:229900,ledgerFlow:'EXPENSE',ledgerCategory:'GROCERIES'},
+  {title:'기타 소액',date:'2027-02-11',amount:100,ledgerFlow:'EXPENSE',ledgerCategory:'OTHER_EXPENSE'},
   {title:'월급',date:'2027-02-01',amount:8000,ledgerFlow:'INCOME',ledgerCategory:'SALARY'},
  ])expect((await post('/api/v1/workspace/items.create',{kind:'FEE',data})).ok()).toBe(true);
  await page.clock.setFixedTime(new Date('2027-02-15T09:30:00+09:00'));
@@ -48,12 +51,27 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  const ring=current.getByRole('img',{name:'어디에 썼나요? 원형 그래프'});
  await expect(ring).toHaveAttribute('data-renderer','phaser',{timeout:15000});
  await expect(ring.locator('canvas')).toHaveCount(1);
- const expense=current.locator('.ledger-stat-card').filter({has:page.getByRole('heading',{name:'어디에 썼나요?'})});
- await expect(expense).toContainText('5,000원');
- await expect(expense.getByRole('button',{name:/교통·자동차/})).toContainText('60%');
+ await expect(ring.locator('.graphic-ring-center strong')).toHaveText('1,452,000원');
+ await expect(ring.locator('.graphic-ring-label strong')).toHaveText(['교육·학원','교통·자동차','식비','생활용품']);
+ await expect(ring.locator('.graphic-ring-label small')).toHaveText(['580,000원','370,000원','272,000원','229,900원']);
+ await expect(ring.locator('.graphic-ring-label .icon')).toHaveCount(4);
+ const expense=current.getByRole('list',{name:'지출 분류별 내역'});
+ await expect(expense.getByRole('listitem')).toHaveCount(5);
+ await expect(expense.getByRole('button',{name:/교통·자동차/})).toContainText('25.5%');
+ await expect(expense.getByRole('button',{name:/그 밖에 쓴 돈/})).toContainText('100원');
+ const income=current.getByRole('img',{name:'어디에서 받았나요? 원형 그래프'});
+ await expect(income.locator('.graphic-ring-center strong')).toHaveText('8,000원');
+ await expect(income.locator('.graphic-ring-label strong')).toHaveText('월급');
+ await expect(income.locator('.graphic-ring-label small')).toHaveText('8,000원');
  await expect(current.locator('.ledger-trend-row').last()).toContainText('수입 8,000원');
- await page.screenshot({path:'test-results/ledger-graphic-390.png',animations:'disabled'});
- await clickRing(ring,.3,163);
+ for(const width of [320,499,1440]){
+  await page.setViewportSize({width,height:940});
+  await expect(ring).toBeInViewport({ratio:.8});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:`test-results/ledger-infographic-${width}.png`,animations:'disabled'});
+ }
+ await page.setViewportSize({width:390,height:900});
+ await clickRing(ring,.51,151);
  const list=current.getByRole('region',{name:'가계부 내역'});
  await expect(list.getByRole('combobox',{name:'분류',exact:true})).toHaveValue('TRANSPORT');
  await expect(list.locator('.ledger-entry')).toHaveCount(1);
@@ -64,7 +82,7 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await expect(list).toContainText('조건에 맞는 내역이 없어요.');
  await list.getByRole('button',{name:'필터 초기화'}).click();
  await list.getByRole('combobox',{name:'정렬',exact:true}).selectOption('newest');
- await expect(list.locator('.ledger-entry h3')).toHaveText(['버스','간식']);
+ await expect(list.locator('.ledger-entry h3')).toHaveText(['마트','버스','기타 소액','간식','학원비']);
  await menu.getByRole('button',{name:'계산기',exact:true}).click();
  const calc=page.getByRole('region',{name:'가계부 계산기'}),output=calc.getByLabel('계산 결과');
  await expect(calc).toBeVisible();
@@ -115,9 +133,9 @@ test('weekly timetable opens a touchable daily infographic and a 24-hour ring fo
  const views=graphic.getByRole('group',{name:'그래픽 표시'});
  await expect(views.getByRole('button',{name:'하루 일과'})).toHaveAttribute('aria-pressed','true');
  await expect(routine).toHaveAttribute('data-renderer','phaser',{timeout:15000});
- await expect(routine.locator('.graphic-routine-label strong')).toHaveText(['아침 모임','겹친 활동']);
- await expect(routine.locator('.graphic-routine-label small')).toHaveText(['09:00–10:15','09:30–11:00']);
- await expect(routine.locator('.graphic-routine-label .icon')).toHaveCount(2);
+ await expect(routine.locator('.graphic-ring-label strong')).toHaveText(['아침 모임','겹친 활동']);
+ await expect(routine.locator('.graphic-ring-label small')).toHaveText(['09:00–10:15','09:30–11:00']);
+ await expect(routine.locator('.graphic-ring-label .icon')).toHaveCount(2);
  await expect(graphic.getByRole('list',{name:'시간순 일정'}).getByRole('listitem')).toHaveCount(2);
  await expect(graphic.locator('.graphic-now')).toHaveText('현재 09:45');
  await expect(graphic.getByRole('button',{name:'아침 모임 · 수정'})).toContainText('진행 중');
@@ -141,18 +159,18 @@ test('weekly timetable opens a touchable daily infographic and a 24-hour ring fo
  await expect(graphic.getByRole('button',{name:'화요일 수업 · 수정'})).toBeVisible();
  await expect(graphic.locator('.graphic-now')).toHaveCount(0);
  await views.getByRole('button',{name:'하루 일과'}).click();
- await expect(routine.locator('.graphic-routine-label strong')).toHaveText(Array.from({length:6},(_,i)=>'화요일 일과 '+(i+1)));
+ await expect(routine.locator('.graphic-ring-label strong')).toHaveText(Array.from({length:6},(_,i)=>'화요일 일과 '+(i+1)));
  const pages=graphic.getByRole('group',{name:'일과 인포그래픽 페이지'});
  await page.setViewportSize({width:320,height:940});
  await expect(pages).toBeInViewport();
  await expect(pages).toContainText('1 / 2');
  await page.screenshot({path:'test-results/timetable-infographic-six-320.png',animations:'disabled'});
  await pages.getByRole('button',{name:'다음 일과'}).click();
- await expect(routine.locator('.graphic-routine-label strong')).toHaveText(['화요일 수업']);
+ await expect(routine.locator('.graphic-ring-label strong')).toHaveText(['화요일 수업']);
  await expect(pages).toContainText('2 / 2');
  await expect(graphic.getByRole('list',{name:'시간순 일정'}).getByRole('listitem')).toHaveCount(7);
  await page.locator('[data-timetable-date="2027-02-17"]').click();
- await expect(routine.locator('.graphic-routine-label')).toHaveCount(0);
+ await expect(routine.locator('.graphic-ring-label')).toHaveCount(0);
  await expect(graphic.getByText('등록된 일정이 없어요.',{exact:true})).toBeVisible();
  await menu.getByRole('button',{name:'달력',exact:true}).click();
  await expect(graphic).toHaveCount(0);

@@ -1,28 +1,37 @@
 import type {WorkspaceItem} from '../../../shared/workspace';
 import {ledgerStatistics,ledgerWon as won,type LedgerCategory,type LedgerCategoryTotal,type LedgerFilter,type LedgerFlow} from '../../../shared/ledger';
-import {GraphicRing,type RingSlice} from './GraphicRing';
-import {Icon} from './Icon';
+import {GraphicRing,type RingAnnotation} from './GraphicRing';
+import {Icon,type IconName} from './Icon';
+import {infographicSlices} from './ring-model';
 
-const chartColors=['#168575','#456eaa','#ae5f82','#b17a30','#7b6fb0','#488da2','#bc6048','#598854','#885b9b','#3e7d94'];
+const chartColors=['#247467','#365f91','#92516f','#8c6025','#685696','#9e4f3a','#39727f','#506938','#704976','#52637f'];
+const categoryIcons:Record<LedgerCategory,IconName>={
+ SALARY:'wallet',SIDE_INCOME:'graph',ALLOWANCE:'wallet',REFUND:'repeat',OTHER_INCOME:'plus',
+ EDUCATION:'book',FOOD:'utensils',GROCERIES:'basket',TRANSPORT:'bus',HOUSING:'home',
+ HEALTH:'heart',SHOPPING:'bag',LEISURE:'ticket',INSURANCE:'shield',OTHER_EXPENSE:'more',
+};
 const percent=new Intl.NumberFormat('ko-KR',{style:'percent',maximumFractionDigits:1});
 
 function CategoryChart({title,flow,total,rows,onSelect,engineEnabled}:{title:string;flow:LedgerFlow;total:number;rows:LedgerCategoryTotal[];onSelect:(flow:LedgerFlow,id:LedgerCategory)=>void;engineEnabled:boolean}){
- let position=0;
- const slices:RingSlice[]=rows.map((row,index)=>{
-  const from=position;
-  position+=total?row.amount/total:0;
-  return {id:row.id,from,to:Math.min(position,1),lane:0,color:chartColors[index%chartColors.length]};
+ const chartRows=rows.map((row,index)=>({...row,color:chartColors[index%chartColors.length]}));
+ const positiveRows=chartRows.filter(row=>row.amount>0);
+ const slices=infographicSlices(positiveRows.map(({id,amount,color})=>({id,weight:amount,color})));
+ const annotations:RingAnnotation[]=positiveRows.flatMap((row,index)=>{
+  const {from,to}=slices[index],width=to-from;
+  if(width<.045)return [];
+  const caption=width>=.14?{title:row.label,detail:won(row.amount)}:undefined;
+  return [{id:row.id,turn:(from+to)/2,icon:categoryIcons[row.id],caption}];
  });
  return <section className="ledger-stat-card">
   <h3>{title}</h3>
   {total>0?<div className="ledger-category-chart">
-   <GraphicRing slices={slices} label={title+' 원형 그래프'} engineEnabled={engineEnabled} onSelect={id=>{
+   <GraphicRing kind="infographic" slices={slices} annotations={annotations} label={title+' 원형 그래프'} engineEnabled={engineEnabled} onSelect={id=>{
     const category=rows.find(row=>row.id===id);
     if(category)onSelect(flow,category.id);
    }} center={<><small>{flow==='INCOME'?'총수입':'총지출'}</small><strong>{won(total)}</strong></>}/>
-   <ul>
-    {rows.map((row,index)=><li key={row.id}><button type="button" onClick={()=>onSelect(flow,row.id)}>
-     <span className="ledger-chart-key" style={{background:chartColors[index%chartColors.length]}}/>
+   <ul aria-label={flow==='INCOME'?'수입 분류별 내역':'지출 분류별 내역'}>
+    {chartRows.map(row=><li key={row.id}><button type="button" onClick={()=>onSelect(flow,row.id)}>
+     <span className="ledger-chart-key" style={{background:row.color}}/>
      <span>{row.label}</span>
      <span className="ledger-chart-value"><strong>{won(row.amount)}</strong><small>{percent.format(row.amount/total)}</small></span>
      <Icon name="chevron"/>

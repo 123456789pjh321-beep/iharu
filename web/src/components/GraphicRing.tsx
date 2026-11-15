@@ -1,8 +1,15 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {ringAngle,ringBands,ringCenter,ringHit,ringSize,type RingKind,type RingModel,type RingSlice} from './ring-model';
+import {Icon,type IconName} from './Icon';
 
 export type {RingSlice} from './ring-model';
+export type RingAnnotation={id:string;turn:number;icon:IconName;caption?:{title:string;detail:string}};
 type Engine=ReturnType<typeof import('./phaser-ring').startPhaserRing>;
+
+function ringPosition(turn:number,radius:number){
+ const angle=ringAngle(turn);
+ return {left:(ringCenter+Math.cos(angle)*radius)/ringSize*100+'%',top:(ringCenter+Math.sin(angle)*radius)/ringSize*100+'%'};
+}
 
 function RingPreview({model}:{model:RingModel}){
  const track=model.kind==='infographic'&&model.slices.length?'transparent':model.dark?'#34423d':'#e7eeeb';
@@ -24,8 +31,8 @@ function RingPreview({model}:{model:RingModel}){
  </div>;
 }
 
-export function GraphicRing({slices,kind='share',now,label,center,annotations,onSelect,engineEnabled=true}:{
- slices:RingSlice[];kind?:RingKind;now?:number;label:string;center:ReactNode;annotations?:ReactNode;
+export function GraphicRing({slices,kind,now,label,center,annotations,onSelect,engineEnabled=true}:{
+ slices:RingSlice[];kind:RingKind;now?:number;label:string;center:ReactNode;annotations?:RingAnnotation[];
  onSelect:(id:string)=>void;engineEnabled?:boolean;
 }){
  const host=useRef<HTMLDivElement>(null),engine=useRef<Engine|null>(null);
@@ -58,7 +65,8 @@ export function GraphicRing({slices,kind='share',now,label,center,annotations,on
   };
  },[engineEnabled]);
  const engineReady=engineEnabled&&ready;
- return <div className={'graphic-ring'+(kind==='share'?'':' graphic-'+kind)} role="img" aria-label={label}
+ const annotationRadius=annotations?.length?ringBands(model)[0].radius:0;
+ return <div className={'graphic-ring graphic-'+kind} role="img" aria-label={label}
   data-renderer={engineReady?'phaser':'css'} data-selectable={slices.length>0||undefined}
   onClick={event=>{
    const box=event.currentTarget.getBoundingClientRect();
@@ -67,13 +75,14 @@ export function GraphicRing({slices,kind='share',now,label,center,annotations,on
   }}>
   {!engineReady&&<RingPreview model={model}/>}
   <div className="graphic-ring-engine" aria-hidden="true" ref={host}/>
-  {kind==='clock'&&Array.from({length:8},(_,index)=>{
-   const angle=ringAngle(index/8);
-   const x=(ringCenter+Math.cos(angle)*224)/ringSize*100,y=(ringCenter+Math.sin(angle)*224)/ringSize*100;
-   return <span className="graphic-clock-hour" aria-hidden="true" key={index}
-    style={{left:x+'%',top:y+'%'}}>{String(index*3).padStart(2,'0')}</span>;
-  })}
-  {annotations&&<div className="graphic-ring-annotations" aria-hidden="true">{annotations}</div>}
+  {kind==='clock'&&Array.from({length:8},(_,index)=><span className="graphic-clock-hour" aria-hidden="true" key={index}
+   style={ringPosition(index/8,224)}>{String(index*3).padStart(2,'0')}</span>)}
+  {!!annotations?.length&&<div className="graphic-ring-annotations" aria-hidden="true">
+   {annotations.map(({id,turn,icon,caption})=><div className="graphic-ring-label" key={id} style={ringPosition(turn,annotationRadius)}>
+    <Icon name={icon}/>
+    {caption&&<><strong>{caption.title}</strong><small>{caption.detail}</small></>}
+   </div>)}
+  </div>}
   <div className="graphic-ring-center" aria-hidden="true">{center}</div>
  </div>;
 }

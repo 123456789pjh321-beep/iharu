@@ -7,7 +7,6 @@ export async function waitForAppReady(page:Page){
 }
 
 export async function selectCalendarView(page:Page,view:'월간'|'주간'|'일간'){
- await page.locator('summary[aria-label="달력 보기 선택"]').click();
  await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:view,exact:true}).click();
 }
 export async function openMemberPreferences(page:Page){

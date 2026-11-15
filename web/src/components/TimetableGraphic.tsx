@@ -4,7 +4,7 @@ import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import {GraphicRing,type RingSlice} from './GraphicRing';
 import {Icon,type IconName} from './Icon';
 import {eventColor} from './scheduleColors';
-import {ringAngle,ringBands,ringCenter,ringSize} from './ring-model';
+import {infographicSlices} from './ring-model';
 
 const dateCaption=new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'Asia/Seoul'});
 const routineColors=['#247467','#365f91','#92516f','#8c6025','#685696','#9e4f3a'];
@@ -29,23 +29,15 @@ function RoutineInfographic({items,caption,day,center,edit}:{
  const pageCount=Math.ceil(items.length/routinePageSize);
  const page=Math.min(selectedPage,Math.max(0,pageCount-1));
  const visibleItems=items.slice(page*routinePageSize,(page+1)*routinePageSize);
- const portion=1/Math.max(1,visibleItems.length),gap=Math.min(.01,portion*.07);
- const slices:RingSlice[]=visibleItems.map((item,index)=>({
-  id:item.id,from:index*portion+gap,to:(index+1)*portion-gap,lane:0,color:routineColors[index],
- }));
- const [{radius}]=ringBands({kind:'infographic',slices});
+ const slices=infographicSlices(visibleItems.map((item,index)=>({id:item.id,weight:1,color:routineColors[index]})));
  return <>
   <GraphicRing kind="infographic" label={`${caption} 하루 일과 인포그래픽`} slices={slices} center={center}
    onSelect={id=>{const item=visibleItems.find(row=>row.id===id);if(item)edit(item);}}
    annotations={visibleItems.map((item,index)=>{
-    const angle=ringAngle((index+.5)*portion);
-    const left=(ringCenter+Math.cos(angle)*radius)/ringSize*100,top=(ringCenter+Math.sin(angle)*radius)/ringSize*100;
+    const {from,to}=slices[index];
     const time=scheduleTimeCaption(item,day);
-    return <div className="graphic-routine-label" key={item.id} style={{left:left+'%',top:top+'%'}}>
-     <Icon name={routineIcon(item)}/>
-     <strong>{item.data.title}</strong>
-     <small>{item.data.allDay?'종일':item.data.startTime&&item.data.endTime?time.replace(/\s+–\s+/g,'–'):'시간 미정'}</small>
-    </div>;
+    const detail=item.data.allDay?'종일':item.data.startTime&&item.data.endTime?time.replace(/\s+–\s+/g,'–'):'시간 미정';
+    return {id:item.id,turn:(from+to)/2,icon:routineIcon(item),caption:{title:item.data.title,detail}};
    })}/>
   {pageCount>1&&<div className="timetable-routine-pagination" role="group" aria-label="일과 인포그래픽 페이지">
    <button type="button" className="button compact" disabled={page===0} aria-label="이전 일과" onClick={()=>setPage(page-1)}>
