@@ -1,6 +1,7 @@
 .workspace-action-toolbar {
+  --workspace-action-height: 53px;
   flex: none;
-  padding: 6px 10px 4px;
+  padding: calc(6px * var(--workspace-topbar-scale, 1)) 10px calc(4px * var(--workspace-topbar-scale, 1));
   background: var(--surface);
 }
 .workspace-action-grid {
@@ -51,17 +52,19 @@
   outline-offset: 2px;
 }
 .workspace-action-toolbar .workspace-action-grid > :is(button, .workspace-action-empty) {
-  min-height: 53px;
-  padding-block: 3px;
-  gap: 3px;
+  min-height: calc(var(--workspace-action-height) * var(--workspace-topbar-scale, 1));
+  padding-block: calc(3px * var(--workspace-topbar-scale, 1));
+  gap: calc(3px * var(--workspace-topbar-scale, 1));
   font-size: .7rem;
+  line-height: 1.2;
 }
 .workspace-action-toolbar .workspace-action-grid > button .icon {
-  width: 21px;
-  height: 21px;
+  width: calc(21px * var(--workspace-topbar-scale, 1));
+  height: calc(21px * var(--workspace-topbar-scale, 1));
 }
 @media (max-width: 420px) {
   .workspace-action-toolbar {
+    --workspace-action-height: 49px;
     padding-inline: 8px;
   }
   .workspace-action-grid {
@@ -78,7 +81,6 @@
     height: 21px;
   }
   .workspace-action-toolbar .workspace-action-grid > :is(button, .workspace-action-empty) {
-    min-height: 49px;
     font-size: .64rem;
   }
 }

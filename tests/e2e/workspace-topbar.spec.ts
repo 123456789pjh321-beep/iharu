@@ -83,17 +83,29 @@ test('uses each menu’s own saved members, current month actions and invitation
    '/tuition':['달력','내역','그래프','계산기'],
    '/timeline':['노트','녹음기','카메라','스캔','파일','스케치','휴지통'],
   };
-  for(const width of [320,500,820,1440]){
-   await page.setViewportSize({width,height:900});let baseline:unknown,actionGeometry:unknown;
+  for(const [width,height] of [[320,740],[390,844],[500,900],[820,900],[1440,900],[844,390]]){
+   await page.setViewportSize({width,height});let baseline:unknown,actionGeometry:unknown;
    for(const [label,path] of [['시간표','/timetable'],['달력','/today/calendar'],['가계부','/tuition'],['타임라인','/timeline']]){
     await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
     await expect(bar(page).locator('.member-preference-options svg')).toHaveCount(2);await unchangedChrome(page);
     const geometry=await bar(page).evaluate(node=>{
-     const box=(selector:string)=>{const r=node.querySelector(selector)!.getBoundingClientRect();return [r.x,r.y,r.width,r.height].map(n=>Math.round(n));};
+     const box=(selector:string)=>{const r=node.querySelector(selector)!.getBoundingClientRect();return [r.x,r.y,r.width,r.height].map(n=>Math.round(n*10)/10);};
      const title=node.querySelector('.workspace-date-picker>span,.workspace-toolbar-title')!,style=getComputedStyle(title);
-     return {toolbar:box('.workspace-toolbar'),row:box('.member-preference-row'),invite:box('.group-invite-shortcut'),options:box('.member-preference-options'),chip:box('.member-filters>button'),titleX:Math.round(title.getBoundingClientRect().x),font:style.fontSize};
+     return {
+      toolbar:box('.workspace-toolbar'),date:box('.workspace-date-picker,span.workspace-toolbar-title'),
+      group:box('.workspace-group-filter'),groupChip:box('.workspace-group-chips>button'),plus:box('.group-add-shortcut'),
+      row:box('.member-preference-row'),invite:box('.group-invite-shortcut'),options:box('.member-preference-options'),
+      chip:box('.member-filters>button'),titleX:Math.round(title.getBoundingClientRect().x),font:style.fontSize,
+     };
     });
-    if(baseline)expect(geometry).toEqual(baseline);else baseline=geometry;
+    for(const [box,original] of [
+     [geometry.toolbar,52],[geometry.date,44],[geometry.group,42],[geometry.groupChip,32],[geometry.plus,32],
+     [geometry.row,40],[geometry.invite,32],[geometry.options,40],[geometry.chip,32],
+    ] as const)expect(box[3]).toBeCloseTo(original*.8,1);
+    const {date,...sharedGeometry}=geometry;
+    expect(date[1]).toBeCloseTo(geometry.toolbar[1]+(geometry.toolbar[3]-date[3])/2,1);
+    if(baseline)expect(sharedGeometry).toEqual(baseline);else baseline=sharedGeometry;
+    if(label==='시간표'||label==='달력')expect((await bar(page).locator('.weather-button').boundingBox())!.height).toBeCloseTo(36*.8,1);
     const actions=bar(page).locator('[data-workspace-actions]');
     const labels=actionLabels[path];
     if(labels){
@@ -111,9 +123,18 @@ test('uses each menu’s own saved members, current month actions and invitation
       const {x,y,width,height}=node.getBoundingClientRect();
       return [x,y,width,height].map(value=>Math.round(value*10)/10);
      }));
-     expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?49:53));
+     expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?39.2:42.4));
+     expect(await actions.getByRole('button').evaluateAll(buttons=>buttons.every(button=>{
+      const rect=button.getBoundingClientRect();
+      return [...button.children].every(child=>{
+       const bounds=child.getBoundingClientRect();
+       return bounds.top>=rect.top&&bounds.bottom<=rect.bottom;
+      });
+     }))).toBe(true);
      if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
     }else await expect(actions).toHaveCount(0);
+    const originalHeight=52+42+40+(labels?(width<=420?59:63):0);
+    expect((await bar(page).boundingBox())!.height).toBeCloseTo(originalHeight*.8,0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
     await page.screenshot({path:`test-results/topbar-aligned-${path.split('/').pop()}-${width}.png`,animations:'disabled'});
    }
