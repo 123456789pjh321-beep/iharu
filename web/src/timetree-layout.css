@@ -100,26 +100,26 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 /* Horizontal week rules replace the boxed grid. Dates use a regular weight. */
 .workspace-page:where([data-timetree]) .direct-calendar{background:var(--surface)}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-view-menu>summary svg{width:21px;height:21px}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--muted)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-weekdays>span{color:var(--calendar-secondary-ink)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-grid{gap:0;border:0;background:var(--surface)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-month-content .calendar-week-row{--calendar-week-header:44px;border:0;background:var(--surface)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-month-content .calendar-week-row:is(.has-holiday,.has-day-badge){--calendar-week-header:62px}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row::after{height:1px;background:var(--workspace-grid-line)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row>.calendar-cell{padding:var(--calendar-week-header) 2px 4px;border:0;border-radius:0;box-shadow:none;background:var(--surface);min-height:0}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row>.calendar-cell.outside{background:var(--surface)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-week-row>.calendar-cell.selected{background:var(--accent-soft)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-target{padding:3px 0 0;justify-content:center;align-items:flex-start;gap:0;background:transparent}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-target>span{width:20px;height:20px;font-size:clamp(10px,1.5vw,12px);font-weight:400;line-height:20px;color:var(--ink)}
-.workspace-page:where([data-timetree]) .direct-calendar .holiday-date .calendar-day-target>span{color:var(--holiday-ink)}
-.workspace-page:where([data-timetree]) .direct-calendar .saturday-date .calendar-day-target>span{color:var(--weekend-ink)}
-.workspace-page:where([data-timetree]) .direct-calendar .outside .calendar-day-target>span{opacity:.28}
-.workspace-page:where([data-timetree]) .direct-calendar .is-today .calendar-day-target>span{background:var(--ink);color:var(--surface);font-weight:700}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--muted)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays>span{color:var(--calendar-secondary-ink)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-grid{gap:0;border:0;background:var(--surface)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row{--calendar-week-header:44px;border:0;background:var(--surface)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row:is(.has-holiday,.has-day-badge){--calendar-week-header:62px}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row::after{height:1px;background:var(--workspace-grid-line)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell{padding:var(--calendar-week-header) 2px 4px;border:0;border-radius:0;box-shadow:none;background:var(--surface);min-height:0}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell.outside{background:var(--surface)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell.selected{background:var(--accent-soft)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-target{padding:3px 0 0;justify-content:center;align-items:flex-start;gap:0;background:transparent}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-target>span{width:20px;height:20px;font-size:clamp(10px,1.5vw,12px);font-weight:400;line-height:20px;color:var(--ink)}
+.workspace-page:where([data-timetree]) .calendar-month-content .holiday-date .calendar-day-target>span{color:var(--holiday-ink)}
+.workspace-page:where([data-timetree]) .calendar-month-content .saturday-date .calendar-day-target>span{color:var(--weekend-ink)}
+.workspace-page:where([data-timetree]) .calendar-month-content .outside .calendar-day-target>span{opacity:.28}
+.workspace-page:where([data-timetree]) .calendar-month-content .is-today .calendar-day-target>span{background:var(--ink);color:var(--surface);font-weight:700}
 .calendar-lunar{position:absolute;left:0;right:0;top:25px;z-index:1;text-align:center;font-size:clamp(9px,1.3vw,11px);font-weight:400;line-height:14px;color:var(--calendar-secondary-ink,var(--muted));pointer-events:none;font-variant-numeric:tabular-nums}
 .calendar-cell.outside .calendar-lunar{opacity:.3}
 /* UI152: holiday and eve labels share a solid, compact calendar lane. */
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-badge{position:absolute;left:1px;right:1px;top:38px;z-index:1;display:block;height:20px;padding:1px 2px;border-radius:3px;background:var(--calendar-holiday-fill);color:#fff;text-align:center;font-size:12px;line-height:18px;letter-spacing:-.035em;font-weight:750;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-day-badge.calendar-observance{background:var(--calendar-observance-fill)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-badge{position:absolute;left:1px;right:1px;top:38px;z-index:1;display:block;height:20px;padding:1px 2px;border-radius:3px;background:var(--calendar-holiday-fill);color:#fff;text-align:center;font-size:12px;line-height:18px;letter-spacing:-.035em;font-weight:750;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-badge.calendar-observance{background:var(--calendar-observance-fill)}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-week-events{top:var(--calendar-week-header);grid-auto-rows:24px;row-gap:4px}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-week-events>.calendar-event{margin-inline:2px;border:0;border-radius:3px;padding:2px 4px;gap:3px;background:color-mix(in srgb,var(--event-color) 12%,var(--surface));color:var(--ink);min-height:24px;height:24px}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-event strong{font-size:12px;font-weight:500;line-height:1.4}
@@ -224,20 +224,12 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .group-chat .chat-room-header{min-height:var(--workspace-toolbar-height);padding:6px var(--workspace-inset);border-color:var(--line)}
 .workspace-page:where([data-timetree]) .guest-chat-actions{padding-inline:var(--workspace-inset)}
 
-/* Ledger controls remain on one row; only its calendar dividers are changed. */
+/* The ledger's calendar spans the same full width as the schedule calendar. */
 .auth-app.workspace-page:where([data-timetree]) .auth-panel .fee-workspace{padding:0;border:0}
 .workspace-page:where([data-timetree]) .ledger-content{padding:6px var(--workspace-inset) 24px}
+.workspace-page:where([data-timetree]) .ledger-calendar-content{padding-inline:0}
+.workspace-page:where([data-timetree]) .ledger-calendar-content>.ledger-summary{margin-inline:var(--workspace-inset)}
 .workspace-page:where([data-timetree]) .ledger-controls{padding-inline:var(--workspace-inset);border-color:var(--line)}
-.workspace-page:where([data-timetree]) .tuition-weekdays{height:var(--workspace-weekday-height);padding:4px 0 3px;box-sizing:border-box;font-size:12px;line-height:18px}
-.workspace-page:where([data-timetree]) .tuition-weekdays>span{color:var(--calendar-secondary-ink)}
-.workspace-page:where([data-timetree]) .tuition-date-grid{gap:0;border-top:1px solid var(--line)}
-.workspace-page:where([data-timetree]) .tuition-date,.workspace-page:where([data-timetree]) .tuition-date-empty{border:0;border-bottom:1px solid var(--workspace-grid-line);border-radius:0;background:var(--surface);box-shadow:none}
-.workspace-page:where([data-timetree]) .tuition-date>span{width:20px;height:20px;font-size:clamp(10px,1.5vw,12px);font-weight:400;line-height:20px}
-.workspace-page:where([data-timetree]) .tuition-date>strong{max-width:100%;white-space:nowrap;font-size:clamp(9px,2.65vw,12px)}
-.workspace-page:where([data-timetree]) .tuition-date:nth-child(7n+1)>span{color:var(--holiday-ink)}
-.workspace-page:where([data-timetree]) .tuition-date:nth-child(7n)>span{color:var(--weekend-ink)}
-.workspace-page:where([data-timetree]) .tuition-date[aria-pressed=true]{background:var(--accent-soft);box-shadow:none;border-color:var(--workspace-grid-line)}
-.workspace-page:where([data-timetree]) .tuition-date[aria-current=date]>span{background:var(--ink);color:var(--surface)}
 
 @media(max-width:760px){
  .workspace-page:where([data-timetree]) .workspace-date-picker{font-size:var(--workspace-title-size)}
