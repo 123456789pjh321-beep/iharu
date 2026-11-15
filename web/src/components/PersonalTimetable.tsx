@@ -8,6 +8,7 @@ import {eventColor} from './scheduleColors';
 import {useMemberPreference} from './MemberPreferenceFilter';
 import {CalendarMemberPreferenceFilter} from './CalendarMemberPreferenceFilter';
 import {WorkspaceToolbar} from './WorkspaceToolbar';
+import {WorkspaceTopBarActions} from './WorkspaceTopBar';
 import {TimetableGraphic} from './TimetableGraphic';
 import {Icon} from './Icon';
 
@@ -47,10 +48,10 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,prev
   {embedded?<div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}</span>{currentSummary}</div>:<>
    <WorkspaceToolbar title="시간표" navigation={<span className="workspace-toolbar-title">{Number(today.slice(0,4))}년 {Number(today.slice(5,7))}월</span>}>{currentSummary}</WorkspaceToolbar>
    {!!members.length&&<CalendarMemberPreferenceFilter preview={preview} members={members} selection={selection} label="시간표 구성원 필터"/>}
-   <div className="workspace-action-toolbar timetable-menu"><div className="workspace-action-grid" role="group" aria-label="시간표 보기">
+   <WorkspaceTopBarActions label="시간표 보기">
     <button type="button" aria-pressed={!showGraphic} onClick={()=>setView('calendar')}><Icon name="calendar"/><span>달력</span></button>
     <button type="button" aria-pressed={showGraphic} onClick={()=>setView('graphic')}><Icon name="graph"/><span>그래픽</span></button>
-   </div></div>
+   </WorkspaceTopBarActions>
    <div className="timetable-weekdays timetable-day-headings" role="group" aria-label="요일 선택">
     {dates.map(date=>{
      const dow=new Date(date+'T12:00:00Z').getUTCDay(),holiday=holidays.name(date);

@@ -65,9 +65,13 @@ test('uses each menu’s own saved members, current month actions and invitation
   await bar(page).getByRole('button',{name:'그룹 초대 공유',exact:true}).click();await expect(page.getByRole('dialog',{name:'그룹 초대 공유'})).toBeVisible();await expect(page.getByLabel('발급한 그룹 초대 링크',{exact:true})).toBeVisible();await page.getByRole('button',{name:'그룹 초대 닫기'}).click();
   await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await selected('시간표 구성원 필터',true,false);await unchangedChrome(page);
   await nav(page).getByRole('link',{name:'달력',exact:true}).click();await selected('달력 구성원 필터',true,true);await unchangedChrome(page);
-  // Timeline uses the identical common toolbar, invite shortcut and member controls.
-  for(const width of [320,520,820,1440]){
-   await page.setViewportSize({width,height:900});let baseline:unknown;
+  const actionLabels:Record<string,string[]>={
+   '/timetable':['달력','그래픽'],
+   '/tuition':['달력','내역','그래프','계산기'],
+   '/timeline':['노트','녹음기','카메라','스캔','파일','스케치','휴지통'],
+  };
+  for(const width of [320,500,820,1440]){
+   await page.setViewportSize({width,height:900});let baseline:unknown,actionGeometry:unknown;
    for(const [label,path] of [['시간표','/timetable'],['달력','/today/calendar'],['가계부','/tuition'],['타임라인','/timeline']]){
     await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
     await expect(bar(page).locator('.member-preference-options svg')).toHaveCount(2);await unchangedChrome(page);
@@ -77,6 +81,23 @@ test('uses each menu’s own saved members, current month actions and invitation
      return {toolbar:box('.workspace-toolbar'),row:box('.member-preference-row'),invite:box('.group-invite-shortcut'),options:box('.member-preference-options'),chip:box('.member-filters>button'),titleX:Math.round(title.getBoundingClientRect().x),font:style.fontSize};
     });
     if(baseline)expect(geometry).toEqual(baseline);else baseline=geometry;
+    const actions=bar(page).locator('[data-workspace-actions]');
+    const labels=actionLabels[path];
+    if(labels){
+     const emptyCount=7-labels.length;
+     const slots=actions.locator('.workspace-action-grid > *');
+     await expect(slots).toHaveText([...labels,...Array<string>(emptyCount).fill('')]);
+     await expect(actions.getByRole('button')).toHaveCount(labels.length);
+     const blanks=actions.locator('.workspace-action-empty[aria-hidden="true"]');
+     await expect(blanks).toHaveCount(emptyCount);
+     expect(await blanks.evaluateAll(nodes=>nodes.every(node=>
+      (node as HTMLElement).tabIndex===-1&&getComputedStyle(node).pointerEvents==='none'))).toBe(true);
+     const boxes=await slots.evaluateAll(nodes=>nodes.map(node=>{
+      const {x,y,width,height}=node.getBoundingClientRect();
+      return [x,y,width,height].map(value=>Math.round(value*10)/10);
+     }));
+     if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
+    }else await expect(actions).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
     await page.screenshot({path:`test-results/topbar-aligned-${path.split('/').pop()}-${width}.png`,animations:'disabled'});
    }
@@ -97,6 +118,8 @@ test('retains inert chrome during slow navigation and keeps it fixed while conte
  let release:()=>void=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});
  await page.route('**/api/v1/workspace/me',async route=>{await gate;await route.continue();});
  await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await expect(bar(page).locator('.workspace-topbar-content[aria-busy=true][inert]')).toHaveCount(1);await unchangedChrome(page);await expect(bar(page).locator('.workspace-toolbar')).toBeVisible();
+ await expect(bar(page).locator('[data-workspace-actions] .workspace-action-empty')).toHaveCount(7);
+ await expect(bar(page).locator('[data-workspace-actions] button')).toHaveCount(0);
  release();await page.unrouteAll({behavior:'wait'});await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);await expect(page.locator('.timetable-grid')).toBeVisible();await unchangedChrome(page);
  await page.locator('.timetable-scroll').evaluate(node=>{node.scrollTop=500;});expect((await bar(page).boundingBox())!.y).toBe(top);
  // Navigating out must not leave an old date/member toolbar behind.

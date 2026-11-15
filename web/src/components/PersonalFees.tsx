@@ -1,6 +1,7 @@
 import {LedgerBudget} from './LedgerBudget';
 import {LedgerStatistics} from './LedgerStatistics';
 import {LedgerCalculator} from './LedgerCalculator';
+import {WorkspaceTopBarActions} from './WorkspaceTopBar';
 import {TuitionDaySheet} from './TuitionDaySheet';
 import {useState} from 'react';
 import {MonthSwipeArea} from './MonthSwipeArea';
@@ -169,11 +170,11 @@ export function PersonalFees({viewerId,defaultMemberIds,saveDefaultMembers,previ
  };
  return <div className="personal-fees-full ledger-workspace">
   {memberFilter}
-  <div className="workspace-action-toolbar ledger-menu"><div className="workspace-action-grid" role="group" aria-label="가계부 보기">
+  <WorkspaceTopBarActions label="가계부 보기">
    {ledgerViews.map(([id,name,icon])=><button type="button" key={id} aria-pressed={view===id} onClick={()=>selectView(id)}>
     <Icon name={icon}/><span>{name}</span>
    </button>)}
-  </div></div>
+  </WorkspaceTopBarActions>
   <div hidden={view==='calculator'}>
    <div className="ledger-controls">
     <div className="ledger-flow-filter" role="group" aria-label="보고 싶은 내역">

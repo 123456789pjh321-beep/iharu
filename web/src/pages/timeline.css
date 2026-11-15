@@ -76,6 +76,5 @@
 @media(prefers-reduced-motion:reduce){.memo-detail[open],.memo-editor[open],.memo-detail[open]::backdrop,.memo-editor[open]::backdrop{animation:none}}
 html[data-motion=reduced] :is(.memo-detail[open],.memo-editor[open]),html[data-motion=reduced] :is(.memo-detail[open],.memo-editor[open])::backdrop{animation:none}
 
-.memo-quick-tools .memo-tools{grid-template-columns:repeat(7,minmax(0,1fr))}
 .memo-trash-guide{font-size:.8rem;line-height:1.65;color:var(--muted);margin:0 0 12px}.memo-trash-guide strong{color:var(--ink)}
 .memo-trash-list{list-style:none;margin:0;padding:0}.memo-trash-list li{padding:14px 0;border-bottom:1px solid var(--line)}.memo-trash-list li:last-child{border-bottom:0}.memo-trash-list h3{font-size:.94rem;margin:0 0 7px}.memo-trash-list p{font-size:.74rem;color:var(--muted);margin:4px 0}.memo-trash-actions{display:flex;gap:8px;align-items:center;margin-top:12px}.memo-trash-actions .button{min-height:40px}.memo-trash-actions .icon{width:15px;height:15px}.memo-trash-actions span{font-size:.74rem;color:var(--muted)}.memo-trash-error{font-size:.8rem;color:var(--danger);line-height:1.6}.memo-trash .memo-empty p{font-size:.8rem;color:var(--muted)}
