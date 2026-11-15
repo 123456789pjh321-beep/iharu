@@ -1,6 +1,5 @@
 .graphic-ring {
   position: relative;
-  width: min(100%, 248px);
   aspect-ratio: 1;
   margin-inline: auto;
   user-select: none;
@@ -67,7 +66,7 @@
   inset: 0;
   pointer-events: none;
 }
-.graphic-routine-label {
+.graphic-ring-label {
   position: absolute;
   width: 27%;
   transform: translate(-50%, -50%);
@@ -78,8 +77,8 @@
   text-align: center;
   line-height: 1.2;
 }
-.graphic-routine-label .icon { width: clamp(14px, 3vw, 26px); height: clamp(14px, 3vw, 26px); }
-.graphic-routine-label strong {
+.graphic-ring-label .icon { width: clamp(14px, 3vw, 26px); height: clamp(14px, 3vw, 26px); }
+.graphic-ring-label strong {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -87,7 +86,7 @@
   overflow-wrap: anywhere;
   font-size: clamp(.69rem, 1.6vw, .92rem);
 }
-.graphic-routine-label small {
+.graphic-ring-label small {
   color: inherit;
   font-size: clamp(.625rem, 1.34vw, .75rem);
   white-space: nowrap;

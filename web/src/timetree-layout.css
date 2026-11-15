@@ -32,21 +32,8 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .workspace-date-picker>span{font-weight:750}
 .workspace-page:where([data-timetree]) .workspace-date-picker>.icon{width:13px;height:13px;color:var(--muted)}
 .workspace-page:where([data-timetree]) .workspace-toolbar-actions{gap:4px;flex-shrink:0}
-.workspace-page:where([data-timetree]) :is(.icon-button,.calendar-view-menu>summary){color:var(--ink);border:0;background:transparent;box-shadow:none}
+.workspace-page:where([data-timetree]) .icon-button{color:var(--ink);border:0;background:transparent;box-shadow:none}
 .workspace-page:where([data-timetree]) :is(a,button,input,summary,select,textarea):focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-
-/* Calendar view controls live behind the small stacked-view icon. */
-.calendar-view-menu{position:relative;z-index:12;flex-shrink:0}
-.calendar-view-menu>summary{display:grid;place-items:center;width:44px;height:44px;padding:0;cursor:pointer;list-style:none;border-radius:10px}
-.calendar-view-menu>summary::-webkit-details-marker{display:none}
-.calendar-view-menu>summary svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2.4}
-.calendar-view-menu>summary svg circle{fill:currentColor;stroke:none}
-.calendar-view-menu[open]>summary{background:var(--surface-sub)}
-.calendar-view-options{position:absolute;right:0;top:48px;min-width:160px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 8px 24px #00000015}
-.calendar-view-options button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;font-size:15px;cursor:pointer}
-.calendar-view-options button[aria-pressed=true]{background:var(--mint)}
-.calendar-view-options button>.icon{width:18px;height:18px}
-.calendar-view-options button>.icon:last-child:not(:first-child){margin-left:auto}
 
 /* A single row of people. Selection/default management moves into its dialog. */
 .workspace-page:where([data-timetree]) .member-preference{flex-shrink:0;padding:0 12px 0 8px;margin:0;background:var(--surface)}
@@ -99,7 +86,6 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 
 /* Horizontal week rules replace the boxed grid. Dates use a regular weight. */
 .workspace-page:where([data-timetree]) .direct-calendar{background:var(--surface)}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-view-menu>summary svg{width:21px;height:21px}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--muted)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays>span{color:var(--calendar-secondary-ink)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-grid{gap:0;border:0;background:var(--surface)}

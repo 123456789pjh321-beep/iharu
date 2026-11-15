@@ -36,6 +36,19 @@ test('keeps the same top and bottom chrome across all four menus without changin
   }
  }
  await nav(page).getByRole('link',{name:'달력',exact:true}).click();await bar(page).getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await expect(page.locator('[data-pager-current] .calendar-cell[data-date="2027-02-19"]')).toBeVisible();
+ const calendarViews=bar(page).getByRole('group',{name:'달력 보기',exact:true});
+ await expect(bar(page).locator('.calendar-view-menu')).toHaveCount(0);
+ const calendarView=(name:string)=>calendarViews.getByRole('button',{name,exact:true});
+ await expect(calendarView('월간')).toHaveAttribute('aria-pressed','true');
+ await calendarView('주간').click();
+ await expect(calendarView('주간')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('[data-pager-current] .calendar-grid.week-view .calendar-cell')).toHaveCount(7);
+ await calendarView('일간').click();
+ await expect(calendarView('일간')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('[data-pager-current] .calendar-daily')).toBeVisible();
+ await expect(bar(page).getByLabel('달력 날짜 선택',{exact:true})).toHaveValue('2027-02-01');
+ await calendarView('월간').click();
+ await expect(bar(page).getByLabel('달력 월 선택',{exact:true})).toHaveValue('2027-02');
  await bar(page).getByRole('button',{name:/구성원 필터 설정/}).click();await expect(page.getByRole('dialog',{name:'조회할 구성원'})).toBeVisible();
  // Browser back closes a filter sheet owned by the previous menu.
  await page.goBack();await expect(page).toHaveURL(origin+'/timetable');await expect(page.getByRole('dialog',{name:'조회할 구성원'})).not.toBeVisible();await unchangedChrome(page);
@@ -67,6 +80,7 @@ test('uses each menu’s own saved members, current month actions and invitation
   await nav(page).getByRole('link',{name:'달력',exact:true}).click();await selected('달력 구성원 필터',true,true);await unchangedChrome(page);
   const actionLabels:Record<string,string[]>={
    '/timetable':['달력','그래픽'],
+   '/today/calendar':['월간','주간','일간'],
    '/tuition':['달력','내역','그래프','계산기'],
    '/timeline':['노트','녹음기','카메라','스캔','파일','스케치','휴지통'],
   };
@@ -83,24 +97,22 @@ test('uses each menu’s own saved members, current month actions and invitation
     if(baseline)expect(geometry).toEqual(baseline);else baseline=geometry;
     const actions=bar(page).locator('[data-workspace-actions]');
     const labels=actionLabels[path];
-    if(labels){
-     const emptyCount=7-labels.length;
-     const slots=actions.locator('.workspace-action-grid > *');
-     await expect(slots).toHaveText([...labels,...Array<string>(emptyCount).fill('')]);
-     await expect(actions.getByRole('button')).toHaveCount(labels.length);
-     const blanks=actions.locator('.workspace-action-empty[aria-hidden="true"]');
-     await expect(blanks).toHaveCount(emptyCount);
-     expect(await blanks.evaluateAll(nodes=>nodes.every(node=>{
-      const style=getComputedStyle(node);
-      return (node as HTMLElement).tabIndex===-1&&style.visibility==='hidden'&&style.pointerEvents==='none';
-     }))).toBe(true);
-     const boxes=await slots.evaluateAll(nodes=>nodes.map(node=>{
-      const {x,y,width,height}=node.getBoundingClientRect();
-      return [x,y,width,height].map(value=>Math.round(value*10)/10);
-     }));
-     expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?49:53));
-     if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
-    }else await expect(actions).toHaveCount(0);
+    const emptyCount=7-labels.length;
+    const slots=actions.locator('.workspace-action-grid > *');
+    await expect(slots).toHaveText([...labels,...Array<string>(emptyCount).fill('')]);
+    await expect(actions.getByRole('button')).toHaveCount(labels.length);
+    const blanks=actions.locator('.workspace-action-empty[aria-hidden="true"]');
+    await expect(blanks).toHaveCount(emptyCount);
+    expect(await blanks.evaluateAll(nodes=>nodes.every(node=>{
+     const style=getComputedStyle(node);
+     return (node as HTMLElement).tabIndex===-1&&style.visibility==='hidden'&&style.pointerEvents==='none';
+    }))).toBe(true);
+    const boxes=await slots.evaluateAll(nodes=>nodes.map(node=>{
+     const {x,y,width,height}=node.getBoundingClientRect();
+     return [x,y,width,height].map(value=>Math.round(value*10)/10);
+    }));
+    expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?49:53));
+    if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
     await page.screenshot({path:`test-results/topbar-aligned-${path.split('/').pop()}-${width}.png`,animations:'disabled'});
    }

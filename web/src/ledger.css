@@ -87,7 +87,18 @@
   .ledger-list-filters label:first-child { grid-column: auto; }
 }
 
-.ledger-category-chart { display: grid; align-items: center; gap: 10px; }
+.ledger-stat-grid > :only-child { grid-column: 1 / -1; }
+.ledger-category-chart { display: grid; gap: 10px; width: min(100%, 480px); margin-inline: auto; }
+.ledger-category-chart .graphic-infographic { container-type: inline-size; }
+.ledger-category-chart .graphic-ring-center strong { font-size: clamp(.77rem, 4.35cqi, 1.2rem); }
+.ledger-category-chart .graphic-ring-label .icon { width: clamp(14px, 5.3cqi, 23px); height: clamp(14px, 5.3cqi, 23px); }
+.ledger-category-chart .graphic-ring-label strong { font-size: clamp(.69rem, 3.75cqi, .93rem); }
+.ledger-category-chart .graphic-ring-label small {
+  max-width: 100%;
+  font-size: clamp(.625rem, 3.2cqi, .78rem);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .ledger-category-chart ul { display: grid; gap: 3px; margin: 0; padding: 0; list-style: none; }
 .ledger-category-chart li > button {
   min-width: 0;
@@ -112,10 +123,7 @@
 .ledger-chart-key { width: 9px; height: 9px; border-radius: 50%; }
 .ledger-chart-value { display: grid; gap: 2px; text-align: right; font-variant-numeric: tabular-nums; }
 .ledger-chart-value small { color: var(--muted); font-size: .68rem; }
-.ledger-category-chart .icon { width: 12px; height: 12px; color: var(--muted); }
-@media (min-width: 1020px) {
-  .ledger-category-chart { grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); }
-}
+.ledger-category-chart li .icon { width: 12px; height: 12px; color: var(--muted); }
 
 .ledger-calculator {
   display: grid;
