@@ -58,7 +58,7 @@ BEGIN
  'bodyFormat',coalesce(p->'bodyFormat',old_data->'bodyFormat','"PLAIN"'::jsonb),
  'checklist',coalesce(p->'checklist',old_data->'checklist','[]'::jsonb));
  IF jsonb_typeof(extra->'notebook')<>'string' OR char_length(extra->>'notebook')>40
- OR extra->>'bodyFormat' NOT IN ('PLAIN','MARKDOWN') OR jsonb_typeof(extra->'checklist')<>'array' OR jsonb_array_length(extra->'checklist')>50
+ OR jsonb_typeof(extra->'bodyFormat')<>'string' OR extra->>'bodyFormat' NOT IN ('PLAIN','MARKDOWN') OR jsonb_typeof(extra->'checklist')<>'array' OR jsonb_array_length(extra->'checklist')>50
  OR EXISTS(SELECT 1 FROM jsonb_array_elements(extra->'checklist') c WHERE jsonb_typeof(c)<>'object' OR NOT c ?& ARRAY['id','text','done'] OR jsonb_typeof(c->'text')<>'string' OR char_length(btrim(c->>'text')) NOT BETWEEN 1 AND 240 OR jsonb_typeof(c->'done')<>'boolean' OR c->>'id' !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
  OR (SELECT count(*)<>count(DISTINCT c->>'id') FROM jsonb_array_elements(extra->'checklist') c)
  OR (p?'attachments' AND (jsonb_typeof(p->'attachments')<>'array' OR jsonb_array_length(p->'attachments')>4))

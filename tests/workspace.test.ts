@@ -659,7 +659,7 @@ it('persists rich capture and private attachment bytes, preserves old client edi
  expect(saved.attachments[0]).not.toHaveProperty('data');const attachment=saved.attachments[0].id;
  expect(await a.ok('memos.attachment',{id:attachment})).toMatchObject({data:input.attachments[0].data,mime:'text/plain'});
  expect((await b.req(api+'memos.attachment',{id:attachment})).status).toBe(404);
- expect((await a.ok('memos.list',{query:'성장 노트'})).total).toBe(1);expect((await a.ok('memos.list',{query:'준비물'})).total).toBe(1);
+ expect(await a.ok('memos.notebooks')).toMatchObject({items:[{name:'성장 노트',count:1}]});expect((await a.ok('memos.list',{notebook:'없는 노트북'})).total).toBe(0);expect((await a.ok('memos.list',{query:'성장 노트'})).total).toBe(1);expect((await a.ok('memos.list',{query:'준비물'})).total).toBe(1);
  const legacy={...memoInput(),id:input.id,version:1};const updated=await a.ok('memos.save',legacy);expect(updated).toMatchObject({version:2,notebook:'성장 노트',checklist:input.checklist,attachments:[{id:attachment}]});
  const clear=await a.ok('memos.save',{...legacy,version:2,attachments:[],checklist:[]});expect(clear.attachments).toEqual([]);expect((await a.req(api+'memos.attachment',{id:attachment})).status).toBe(404);
  for(const sql of ['SELECT * FROM app_private.workspace_memo_attachments',"SELECT app_private.workspace_memo_command_v20('workspace.memos.list','{}')"])await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,sql);})).rejects.toMatchObject({code:'42501'});

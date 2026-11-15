@@ -7,7 +7,7 @@ export function MemoCamera({scan,onFile,onClose,onActive}:{scan:boolean;onFile:(
  const [state,setState]=useState<'idle'|'asking'|'live'|'review'|'saving'>('idle'),[error,setError]=useState(''),[rotation,setRotation]=useState(0),[crop,setCrop]=useState(0),[mono,setMono]=useState(true);
  const activeRef=useRef(onActive);activeRef.current=onActive;
  useEffect(()=>{live.current=true;return()=>{live.current=false;generation.current++;releaseStream(stream.current);activeRef.current(false);};},[]);
- useEffect(()=>{onActive(state==='asking'||state==='live'||state==='saving');},[state,onActive]);
+ useEffect(()=>{onActive(state!=='idle');},[state,onActive]);
  useEffect(()=>{const hide=()=>{if(document.hidden){generation.current++;releaseStream(stream.current);stream.current=null;setState(s=>s==='live'||s==='asking'?'idle':s);}};document.addEventListener('visibilitychange',hide);return()=>document.removeEventListener('visibilitychange',hide);},[]);
  useEffect(()=>{if(state!=='review'||!preview.current||!source.current)return;const raw=source.current,c=preview.current;
  const x=Math.round(raw.width*crop/100),y=Math.round(raw.height*crop/100),w=raw.width-x*2,h=raw.height-y*2,swap=rotation%180!==0;
@@ -22,7 +22,7 @@ export function MemoCamera({scan,onFile,onClose,onActive}:{scan:boolean;onFile:(
  async function take(){const v=video.current;if(!v?.videoWidth||!v.videoHeight){setError('카메라가 준비되면 촬영해 주세요.');return;}
  const c=document.createElement('canvas'),scale=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));c.width=Math.round(v.videoWidth*scale);c.height=Math.round(v.videoHeight*scale);c.getContext('2d')?.drawImage(v,0,0,c.width,c.height);releaseStream(stream.current);stream.current=null;source.current=c;setRotation(0);setCrop(0);setState('review');}
  async function add(){if(!preview.current||state==='saving')return;setState('saving');setError('');try{await onFile(await canvasFile(preview.current,(scan?'문서스캔-':'사진-')+Date.now()+'.jpg'));if(live.current)onClose();}catch(e){if(live.current){setError((e as Error).message);setState('review');}}}
- return <section className="memo-capture-panel" aria-label={scan?'문서 스캔':'카메라 촬영'}><div className="memo-section-heading"><strong><Icon name={scan?'scan':'camera'}/> {scan?'문서 스캔':'카메라'}</strong><button type="button" className="icon-button" aria-label="카메라 닫기" onClick={onClose} disabled={state==='saving'}><Icon name="close"/></button></div>
+ return <section className="memo-capture-panel" aria-label={scan?'문서 스캔':'카메라 촬영'}><div className="memo-section-heading"><strong><Icon name={scan?'scan':'camera'}/> {scan?'문서 스캔':'카메라'}</strong><button type="button" className="icon-button" aria-label="카메라 닫기" onClick={()=>{if(state!=='review'||window.confirm('첨부하지 않은 촬영 결과를 지우고 닫을까요?'))onClose();}} disabled={state==='saving'}><Icon name="close"/></button></div>
  <p className="memo-hint">{scan?'문서를 반듯하게 촬영하고 여백·회전·흑백 보정을 조절해요.':'카메라 켜기를 누르면 권한을 요청해요. 촬영 후 확인하고 첨부해요.'}</p>
  {state==='live'&&<video ref={video} className="memo-camera-video" autoPlay muted playsInline aria-label="카메라 미리보기"/>}
  {(state==='review'||state==='saving')&&<canvas ref={preview} className="memo-scan-preview" aria-label="촬영 결과 미리보기"/>}

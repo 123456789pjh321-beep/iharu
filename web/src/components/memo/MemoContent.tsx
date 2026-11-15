@@ -42,12 +42,13 @@ export function MemoChecklist({items,onChange}:{items:ChecklistItem[];onChange?:
  {onChange&&<button type="button" className="button compact" disabled={items.length>=50} onClick={()=>onChange([...items,{id:crypto.randomUUID(),text:'',done:false}])}><Icon name="plus"/>할 일 추가</button>}</section>;
 }
 export function MemoAttachmentCard({attachment,spaceId,onRemove}:{attachment:MemoAttachmentInput;spaceId?:string|null;onRemove?:()=>void}){
- const [url,setUrl]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(false),live=useRef(true),objectUrl=useRef('');
- useEffect(()=>{live.current=true;return()=>{live.current=false;URL.revokeObjectURL(objectUrl.current);};},[attachment]);
- async function open(){if(loading||url)return;setLoading(true);setError('');try{
+ const [url,setUrl]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(false),live=useRef(true),objectUrl=useRef(''),generation=useRef(0);
+ const identity=('id' in attachment?attachment.id:attachment.data)+':'+(spaceId??'current');
+ useEffect(()=>{live.current=true;generation.current++;setUrl('');setLoading(false);setError('');return()=>{live.current=false;generation.current++;URL.revokeObjectURL(objectUrl.current);objectUrl.current='';};},[identity]);
+ async function open(){if(loading||url)return;const ticket=generation.current;setLoading(true);setError('');try{
   const result='data' in attachment?attachment:await workspaceRequest<{data:string;mime:string}>('memos.attachment',{id:attachment.id},spaceId);
-  if(!live.current)return;const next=URL.createObjectURL(dataBlob(result.data,result.mime));objectUrl.current=next;setUrl(next);
- }catch(e){if(live.current)setError((e as Error).message);}finally{if(live.current)setLoading(false);}}
+  if(!live.current||ticket!==generation.current)return;const next=URL.createObjectURL(dataBlob(result.data,result.mime));objectUrl.current=next;setUrl(next);
+ }catch(e){if(live.current&&ticket===generation.current)setError((e as Error).message);}finally{if(live.current&&ticket===generation.current)setLoading(false);}}
  const audio=attachment.mime.startsWith('audio/'),picture=attachment.mime.startsWith('image/');
  return <article className="memo-attachment-card" aria-label={attachment.name}><div className="memo-attachment-summary"><Icon name={audio?'mic':picture?'image':'file'}/><div><strong>{attachment.name}</strong><small>{({FILE:'파일',AUDIO:'오디오',SCAN:'문서 스캔',SKETCH:'스케치'})[attachment.kind]} · {(attachment.size/1000).toFixed(0)}KB</small></div>{onRemove&&<button type="button" className="icon-button" aria-label={attachment.name+' 삭제'} onClick={onRemove}><Icon name="close"/></button>}</div>
  {url?<>{audio&&<audio controls preload="metadata" src={url} aria-label={attachment.name+' 재생'}/ >}{picture&&<img src={url} alt={attachment.name}/>}<a className="button compact" download={attachment.name} href={url}>파일 내려받기</a></>:<button type="button" className="button compact" disabled={loading} onClick={()=>void open()}>{loading?'불러오는 중…':audio?'녹음 듣기':picture?'이미지 보기':'파일 열기'}</button>}{error&&<p role="alert" className="memo-error">{error}</p>}</article>;
