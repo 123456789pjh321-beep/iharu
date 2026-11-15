@@ -1,7 +1,3 @@
-import {briefingConsentVersion} from '../../shared/briefing.js';
-import {briefingWorkerCommand} from '../../server/briefing/worker.js';
-import type {BriefingFeed} from '../../shared/briefing.js';
-import {sealOpenAiKey} from '../../server/admin/ai-credentials.js';
 import {childPasswordHash} from '../../server/child-accounts/routes.js';
 // CI-only disposable PostgreSQL. Never run against a Supabase/Preview/production database.
 import assert from 'node:assert/strict';
@@ -553,40 +549,35 @@ try{
   await assert.rejects(family1.command({...a,workspaceGroup:other.group.id},'workspace.items.get',{id:shared.id}),{message:'GROUP_NOT_FOUND'});
   await assert.rejects(query(db1,"SELECT app_private.workspace_command_before_multi_groups('workspace.me','{}')"),{code:'42501'});
  });
- await check('UI137 encrypted AI credentials serialize rotations and deny runtime table access',async()=>{
-  const fixtureMaster='ab'.repeat(32),version=(await family1.command<{version:number}>(a,'ai.credentials.read')).version;
-  const results=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'ai.credentials.save',{version,...sealOpenAiKey('sk-isolated-pg-fixture-provider-key-'+i,fixtureMaster)})));
-  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal((results.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.message,'VERSION_CONFLICT');
-  const state=await family1.command<{configured:boolean;version:number}>(a,'ai.credentials.read');assert.equal(state.configured,true);assert.equal(state.version,version+1);assert.equal('ciphertext' in state,false);
-  await assert.rejects(family2.command(b,'ai.credentials.get'),{message:'ADMIN_REQUIRED'});await assert.rejects(query(db1,'SELECT * FROM app_private.ai_provider_settings'),{code:'42501'});
-  await family1.command(a,'ai.credentials.remove',{version:state.version});assert.equal((await family1.command<{configured:boolean}>(a,'ai.credentials.read')).configured,false);
- });
- let briefingLease:{id:string;token:string;day:string};
- await check('UI139 worker leases are unique across real connections and no runtime role can read private briefing tables',async()=>{
-  const v=(await family1.command<{version:number}>(a,'ai.credentials.read')).version;
-  await family1.command(a,'ai.credentials.save',{version:v,...sealOpenAiKey('sk-isolated-ui139-pg-provider-key','ab'.repeat(32))});
-  await family1.command(a,'briefing.preferences.save',{enabled:true,region:'경기도 수원시',consent:true,consentVersion:briefingConsentVersion,version:0});
-  await admin.query("UPDATE app_private.briefing_preferences SET enabled_at=now()-interval '2 days'");
-  await briefingWorkerCommand(worker1,'enqueue');
-  const leases=await Promise.all([worker1,worker2].map(db=>briefingWorkerCommand<{state:string;id:string;token:string;day:string}>(db,'claim.public')));
-  assert.equal(leases.filter(l=>l.state==='LEASED').length,1);briefingLease=leases.find(l=>l.state==='LEASED')!;
-  for(const table of ['briefing_preferences','briefing_posts','briefing_jobs','briefing_usage'])await assert.rejects(query(db1,'SELECT * FROM app_private.'+table),{code:'42501'});
-  await assert.rejects(briefingWorkerCommand(db1,'claim.public'),{code:'42501'});await assert.rejects(query(worker1,'SELECT * FROM app_private.briefing_jobs'),{code:'42501'});
- });
- await check('UI139 concurrent completions publish once with private feedback and atomic per-day post limits',async()=>{
-  const item={fingerprint:'1'.repeat(64),contentHash:'2'.repeat(64),category:'FACILITY',title:'격리된 도서관 이용 변경',summary:'PostgreSQL 권한과 중복 게시를 검증하는 가상 소식입니다.',reason:'검증용 일정',action:'원문 확인',sourceUrl:'https://www.suwon.go.kr/notice/139',sourceName:'격리 공식 출처',evidenceQuote:'격리된 공식 근거',validFrom:briefingLease.day,validUntil:addDays(briefingLease.day,6),matchKey:'수원중앙도서관',score:95,urgent:false};
-  const result=await Promise.all([worker1,worker2].map(db=>briefingWorkerCommand<{state:string}>(db,'complete',{id:briefingLease.id,token:briefingLease.token,items:[item]})));
-  assert.equal(result.filter(r=>r.state==='DONE').length,1);assert.equal(result.filter(r=>r.state==='STALE_LEASE').length,1);
-  const feed=await family1.command<BriefingFeed>(a,'briefing.read');assert.equal(feed.posts.length,1);assert.equal(feed.posts[0].items.length,1);
-  await assert.rejects(family2.command(b,'briefing.feedback',{postId:feed.posts[0].id,action:'saved',value:true}),{message:'NOT_FOUND'});
-  await family1.command(a,'briefing.feedback',{postId:feed.posts[0].id,action:'saved',value:true});assert.equal((await family2.command<BriefingFeed>(a,'briefing.read',{saved:true})).posts.length,1);
- });
- await check('UI139 withdrawal racing a leased completion cannot deadlock or retain readable analysis',async()=>{
-  await admin.query('DELETE FROM app_private.briefing_jobs');await briefingWorkerCommand(worker1,'enqueue');
-  const lease=await briefingWorkerCommand<{id:string;token:string}>(worker1,'claim.public');
-  const results=await Promise.allSettled([family1.command(a,'briefing.preferences.save',{enabled:false,region:'경기도 수원시',consent:false,version:1}),briefingWorkerCommand(worker2,'complete',{id:lease.id,token:lease.token,items:[]})]);
-  assert.equal(results.filter(r=>r.status==='rejected').length,0);assert.equal((await family2.command<BriefingFeed>(a,'briefing.read')).posts.length,0);
-  assert.equal((await admin.query('SELECT * FROM app_private.briefing_usage')).rowCount!>0,true);
+ await check('AI briefing commands are disabled and ordinary maintenance keeps the prior expiry windows',async()=>{
+  assert.equal((await admin.query('SELECT enabled FROM app_private.briefing_system WHERE id')).rows[0].enabled,false);
+  await assert.rejects(query(db1,"SELECT app_private.briefing_command('briefing.read','{}')"),{code:'42501'});
+  await assert.rejects(query(db1,"SELECT app_private.ai_credentials_command('ai.credentials.get','{}')"),{code:'42501'});
+  await assert.rejects(query(worker1,"SELECT app_private.briefing_worker('claim.public','{}')"),{code:'42501'});
+  await assert.rejects(query(worker1,'SELECT id FROM app_private.briefing_posts'),{code:'42501'});
+  await assert.rejects(query(worker1,"SELECT app_private.cron_step_before_briefing_retirement(gen_random_uuid(),'retention')"),{code:'42501'});
+
+  const {id:profileId}=(await admin.query('SELECT id FROM app_private.workspace_profiles WHERE member_id=$1',[a.memberId])).rows[0];
+  const expired=randomUUID(),recent=randomUUID(),lease=randomUUID();
+  await admin.query(`INSERT INTO app_private.briefing_posts(id,profile_id,day,kind,region,items,owners,updated_at)
+   VALUES($1,$3,current_date-91,'REGULAR','검증 지역','[{}]','{}',now()-interval '91 days'),
+         ($2,$3,current_date,'REGULAR','검증 지역','[{}]','{}',now())`,[expired,recent,profileId]);
+  await admin.query('INSERT INTO app_private.briefing_feedback(post_id,saved) VALUES($1,true),($2,true)',[expired,recent]);
+  await admin.query(`INSERT INTO app_private.briefing_jobs(profile_id,day,run_at,created_at,state,preference_version)
+   VALUES($1,current_date-3,now()-interval '3 days',now()-interval '3 days','CANCELLED',0)`,[profileId]);
+  await admin.query(`INSERT INTO app_private.briefing_usage(token,day,phase,model,created_at)
+   VALUES($1,current_date-91,'SEARCH','fixture',now()-interval '91 days'),
+         ($2,current_date,'SEARCH','fixture',now())`,[expired,recent]);
+  await admin.query(`INSERT INTO app_private.cron_runs(slot,token,state,source,lease_until)
+   VALUES(now(),$1,'RUNNING','manual',now()+interval '90 seconds')`,[lease]);
+
+  const [step]=await query<{data:{retiredBriefing:{jobs:number;posts:number;usage:number}}}>(worker1,
+   "SELECT app_private.cron_step($1,'retention') data",[lease]);
+  assert.deepEqual(step.data.retiredBriefing,{jobs:1,posts:1,usage:1});
+  assert.deepEqual((await admin.query('SELECT post_id FROM app_private.briefing_feedback')).rows,[{post_id:recent}]);
+  assert.deepEqual((await admin.query('SELECT id FROM app_private.briefing_posts')).rows,[{id:recent}]);
+  assert.deepEqual((await admin.query('SELECT token FROM app_private.briefing_usage')).rows,[{token:recent}]);
+  await query(worker1,"SELECT app_private.cron_finish($1,'{}',NULL)",[lease]);
  });
  await check('UI83 concurrent admin writes have one winner and role/session revocation takes effect immediately',async()=>{
   const edits=await Promise.allSettled([family1,family2].map((f,i)=>f.command(a,'admin.member.update',{id:b.memberId,version:0,name:'운영 동시 변경 '+i,reason:'실제 PostgreSQL 충돌 검사'})));

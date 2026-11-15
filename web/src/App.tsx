@@ -1,4 +1,3 @@
-const BriefingPage=lazy(()=>import('./pages/Briefing'));
 import {AndroidWidgetLink} from './pages/AndroidWidgetLink';
 import {NotificationsPage} from './pages/Notifications';
 import {NotificationSettings} from './pages/NotificationSettings';
@@ -88,9 +87,9 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
   <Route path="/account-deletion" element={<AccountDeletionPage/>}/>
   <Route path="/more/service" element={<WorkspaceEntry mode="service"/>}/>
   {(['notices','blog'] as const).flatMap(mode=>[<Route key={mode} path={'/more/'+mode} element={<WorkspaceEntry mode={mode}/>}/>,<Route key={mode+'-post'} path={'/more/'+mode+'/:slug'} element={<WorkspaceEntry mode={mode}/>}/>])}
-  <Route path="/admin" element={<RequireWorkspaceAccount><Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense></RequireWorkspaceAccount>}/>
+  <Route path="/admin" element={<AdminEntry/>}/>
   <Route path="/timeline" element={<Suspense fallback={<Loading label="타임라인을 열고 있어요"/>}><TimelinePage/></Suspense>}/>
-  <Route path="/briefing" element={<RequireWorkspaceAccount><Suspense fallback={<Loading label="브리핑을 열고 있어요"/>}><BriefingPage/></Suspense></RequireWorkspaceAccount>}/>
+  <Route path="/briefing/*" element={<Navigate to="/timetable" replace/>}/>
   <Route path="/chat" element={<WorkspaceEntry mode="chat"/>}/><Route path="/child/chat" element={<WorkspaceEntry mode="chat"/>}/>
   <Route path="/timetable" element={<WorkspaceEntry mode="timetable"/>}/><Route path="/today/timetable" element={<Navigate to="/timetable" replace/>}/><Route path="/legal/:section" element={<LegalPage/>}/><Route path="/privacy" element={<RequireWorkspaceAccount><PrivacyPage/></RequireWorkspaceAccount>}/><Route path="/location" element={<Navigate to="/timetable" replace/>}/><Route path="/today" element={<WorkspaceLanding/>}/><Route path="/tuition" element={<WorkspaceEntry mode="fees"/>}/><Route path="/records" element={<WorkspaceEntry mode="records"/>}/><Route path="/today/calendar" element={<WorkspaceEntry mode="calendar"/>}/><Route path="/today/repeats" element={<WorkspaceEntry mode="repeats"/>}/>
 
@@ -108,8 +107,13 @@ export default function App(){return <BrowserRouter><RouteEffects/><Routes>
 function WorkspaceLanding(){const {health}=useWorkspaceGate(),{search}=useLocation();if(health.loading)return <AuthLayout wide><Loading/></AuthLayout>;return health.data?.data.demoEnabled||new URLSearchParams(search).get('legacy')==='1'?<Shell/>:<Navigate to="/timetable" replace/>;}
 function NotificationAlias(){const {search}=useLocation();return new URLSearchParams(search).get('legacy')==='1'?<NotificationsPage/>:<Navigate to="/notification-settings" replace/>;}
 function ScheduleAlias({repeats=false}:{repeats?:boolean}){const {health}=useWorkspaceGate();if(health.loading)return <Loading/>;if(health.data?.data.demoEnabled)return <Shell/>;return <Navigate to={repeats?'/today/repeats':'/today/calendar'} replace/>;}
-
-
+function AdminEntry(){
+ const {search}=useLocation();
+ if(new URLSearchParams(search).get('section')==='ai')return <Navigate to="/admin" replace/>;
+ return <RequireWorkspaceAccount>
+  <Suspense fallback={<Loading label="관리 화면을 열고 있습니다"/>}><AdminConsole/></Suspense>
+ </RequireWorkspaceAccount>;
+}
 
 function WorkspaceEntry({mode}:{mode:PersonalMode}){const {search}=useLocation(),{health,session}=useWorkspaceGate();if(health.loading||session.loading)return <AuthLayout wide><Loading/></AuthLayout>;const legacy=new URLSearchParams(search).get('legacy')==='1'||health.data?.data.demoEnabled;if(!legacy&&session.error)return <AuthLayout wide><ErrorState message={session.error} retry={session.retry}/></AuthLayout>;if(!legacy&&session.data?.authenticated&&session.data.assurance==='LOW')return <AuthLayout wide><section className="account-card"><h1>로그인이 완료됐어요</h1><p>시간표와 그룹 공유를 사용하려면 계정 확인을 마쳐 주세요.</p><Link className="button primary" to="/account">계정 확인</Link></section></AuthLayout>;if(!legacy&&session.data?.authenticated&&!session.data.emailVerified)return <AuthLayout wide><section className="account-card"><span className="badge green">로그인 완료</span><h1>{mode==='home'?'오늘의 일정':'이메일 확인'}</h1><p>개인 자료와 그룹 공유를 사용하려면 이메일을 연결하고 확인해 주세요.</p><Link className="button primary" to="/account/email">이메일 연결</Link></section></AuthLayout>;if(mode==='family')return <FamilyPage legacy={legacy}/>;if(!legacy)return <PersonalWorkspace mode={mode}/>;return mode==='calendar'||mode==='repeats'?<SchedulePage mode={mode==='calendar'?'calendar':'repeats'}/>:mode==='chat'?<Suspense fallback={<Loading/>}><ChatPage childMode={location.pathname.startsWith('/child')}/></Suspense>:<Shell/>;}
 function AccountEntry(){const {session:s}=useWorkspaceGate();if(s.loading)return <AuthLayout wide><Loading/></AuthLayout>;return s.data?.authenticated?<AccountPage/>:<PersonalWorkspace mode="account"/>;}

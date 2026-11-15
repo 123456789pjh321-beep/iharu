@@ -230,7 +230,7 @@ function MemoDetail({memo,busy,message,onClose,onPhoto,onCreate,onEdit,onFavorit
 function sampleMemos(today:string):DisplayMemo[]{
  const base={...emptyMemo(today),id:'sample-park',ownerId:'sample',ownerName:'샘플',mine:false,favorite:false,createdAt:'',updatedAt:'',photos:[],attachments:[],sample:true};
  return [
-  {...base,title:'공원에서 보낸 오후',body:'함께 걷고 웃었던 순간을 남겨요. 사진과 현재 위치를 담으면 나중에 더 생생하게 떠올릴 수 있어요.',category:'OUTING',time:'15:30',samplePhoto:'/briefing/park.jpg',place:'우리 동네 공원 · 장소 예시',tags:['주말','산책']},
+  {...base,title:'공원에서 보낸 오후',body:'함께 걷고 웃었던 순간을 남겨요. 사진과 현재 위치를 담으면 나중에 더 생생하게 떠올릴 수 있어요.',category:'OUTING',time:'15:30',samplePhoto:'/timeline/park.jpg',place:'우리 동네 공원 · 장소 예시',tags:['주말','산책']},
   {...base,id:'sample-growth',title:'처음 혼자 해낸 날',body:'“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 게시글을 누르면 전체 글과 사진·위치를 볼 수 있어요. 오래 기억할 글은 즐겨찾기에 담아 보세요.',category:'FAMILY',time:'09:00',visibility:'GROUP',tags:['성장','기억할말']}
  ];
 }

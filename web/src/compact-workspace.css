@@ -25,7 +25,6 @@ html[data-theme=dark] .workspace-mobile-nav{
 .workspace-mobile-nav .rail-icon .icon{width:20px;height:20px;stroke-width:1.8}
 .workspace-mobile-nav .rail-active-dot{display:none}
 .workspace-mobile-nav .rail-icon+span{white-space:nowrap}
-.workspace-mobile-nav a[href='/briefing']>.rail-icon+span{letter-spacing:-.045em}
 @media(max-width:360px){
  .workspace-mobile-nav{padding-inline:max(2px,env(safe-area-inset-left)) max(2px,env(safe-area-inset-right))}
  .workspace-mobile-nav>:is(a,button){font-size:10px}

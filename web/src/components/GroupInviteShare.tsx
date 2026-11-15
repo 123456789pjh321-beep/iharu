@@ -9,7 +9,7 @@ import {useWorkspaceGate} from './WorkspaceGate';
 const shareLabel='그룹 초대 공유';
 const issueDescription='새 링크를 만들면 이전 링크는 즉시 폐기됩니다. 유효한 최신 링크로 여러 명을 초대할 수 있어요. 개인 공간의 자료는 공유되지 않으며, 해당 그룹에 등록한 자료만 함께 봅니다.';
 const inlineShortcutRoutes=new Set([
- '/timetable','/today/calendar','/tuition','/chat','/child/chat','/timeline','/briefing',
+ '/timetable','/today/calendar','/tuition','/chat','/child/chat','/timeline',
  '/more','/settings','/help','/family','/notification-settings','/admin','/account','/privacy','/account-deletion',
 ]);
 const GroupInviteShareContext=createContext<{dialogId:string;canInvite:boolean;open:()=>void}|null>(null);

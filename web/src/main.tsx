@@ -24,7 +24,6 @@ import './brand.css';
 import './guest-entry.css';
 import './chat-rooms.css';
 import './ledger.css';
-import './briefing-location.css';
 import './timetree-layout.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><ExperienceProvider><App/></ExperienceProvider></StrictMode>);
 

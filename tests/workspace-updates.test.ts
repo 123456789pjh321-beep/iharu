@@ -14,3 +14,8 @@ it('does not resurrect an acknowledged dot from an older poll or leak another ac
  expect(mergeMenuUpdates({profileId:'a',updates:{chat:{revision:2,seen:0}}},{profileId:'b',updates:{}})).toEqual({profileId:'b',updates:{}});
  expect(hasMenuUpdate(null,'chat')).toBe(false);
 });
+it('ignores retired menu updates returned for existing accounts',()=>{
+ const oldResponse={profileId:'a',updates:{briefing:{revision:3,seen:0},chat:{revision:4,seen:2}}};
+ expect(menuForPath('/briefing')).toBeUndefined();
+ expect(mergeMenuUpdates(null,oldResponse)).toEqual({profileId:'a',updates:{chat:{revision:4,seen:2}}});
+});
