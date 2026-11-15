@@ -3,7 +3,7 @@ import {setEntryTime} from './entry-controls';
 import {test,expect} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 
-test('fixed timetable ignores horizontal gestures, keeps vertical scroll and saves button-selected family schedules',async({browser,request})=>{
+test('timetable swipes between the weekly grid and graphic while preserving the selected date and scroll',async({browser,request})=>{
  test.setTimeout(120000);
  const context=await browser.newContext({baseURL:origin,hasTouch:true,isMobile:true,viewport:{width:390,height:900}});
  const page=await context.newPage(),errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
@@ -24,16 +24,38 @@ test('fixed timetable ignores horizontal gestures, keeps vertical scroll and sav
   for(const label of ['월','화','수','목','금'])await weekdays.getByLabel(label,{exact:true}).check();
   await editor.getByRole('button',{name:'저장',exact:true}).click();await expect(editor).toHaveCount(0);await expect(page.locator('.timetable-event').filter({hasText:'유치원'})).toHaveAttribute('data-span','5');
   const before=await page.locator('[data-timetable-date]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-timetable-date')));
-  const cdp=await context.newCDPSession(page),head=(await page.locator('.timetable-day-headings').boundingBox())!;
-  for(const direction of [1,-1]){
-   const x=head.x+(direction===1?head.width-10:10),end=head.x+(direction===1?10:head.width-10),y=head.y+15;
+  await page.setViewportSize({width:390,height:700});
+  const display=page.locator('.timetable-display'),pane=page.locator('.timetable-weekly .timetable-scroll');
+  const graphic=page.getByRole('region',{name:'그래픽 시간표'});
+  await page.locator('[data-timetable-date="2026-11-03"]').click();
+  await pane.evaluate(el=>{el.scrollTop=110;});
+  const scrollTop=await pane.evaluate(el=>el.scrollTop);
+  expect(scrollTop).toBeGreaterThan(0);
+  const cdp=await context.newCDPSession(page);
+  async function swipe(direction:number,tracksFinger=false){
+   const bounds=(await display.locator('.timetable-view-pager').boundingBox())!;
+   const x=bounds.x+bounds.width*(direction>0?.86:.14),end=bounds.x+bounds.width*(direction>0?.14:.86),y=bounds.y+bounds.height*.45;
    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});
    for(let n=1;n<=8;n++)await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+(end-x)*n/8,y,id:1}]});
+   if(tracksFinger)await expect(display.locator('.calendar-page-track')).toHaveAttribute('data-paging','dragging');
    await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   await expect(display.locator('.calendar-page-track')).not.toHaveAttribute('data-paging',/dragging|settling/);
   }
-  const pane=page.locator('.timetable-weekly .timetable-scroll,[data-pager-current] .timetable-scroll');await pane.hover();await page.mouse.wheel(400,0);await page.mouse.wheel(-400,0);
+  await swipe(1,true);
+  await expect(display).toHaveAttribute('data-timetable-view','graphic');
+  await expect(graphic.getByRole('heading',{name:'11월 3일 화요일'})).toBeVisible();
+  await expect(graphic.getByRole('button',{name:'유치원 · 수정'})).toBeVisible();
+  await swipe(1);
+  await expect(display).toHaveAttribute('data-timetable-view','graphic');
+  await swipe(-1);
+  await expect(display).toHaveAttribute('data-timetable-view','calendar');
+  await expect.poll(()=>pane.evaluate(el=>el.scrollTop)).toBe(scrollTop);
+  await swipe(-1);
+  await expect(display).toHaveAttribute('data-timetable-view','calendar');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('[data-timetable-date="2026-11-03"]')).toHaveAttribute('aria-pressed','true');
   expect(await page.locator('[data-timetable-date]').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-timetable-date')))).toEqual(before);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
-  await page.setViewportSize({width:390,height:700});await pane.evaluate(el=>{el.scrollTop=0;});await pane.hover();await page.mouse.wheel(0,300);await expect.poll(()=>pane.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
+  await pane.evaluate(el=>{el.scrollTop=0;});await pane.hover();await page.mouse.wheel(0,300);await expect.poll(()=>pane.evaluate(el=>el.scrollTop)).toBeGreaterThan(0);
   for(const width of [320,820,1440]){
    await page.setViewportSize({width,height:900});await expect(page.locator('.timetable-day-column')).toHaveCount(7);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await pane.evaluate(el=>{el.scrollTop=el.scrollHeight;});await page.screenshot({path:`test-results/ui105-fixed-timetable-${width}.png`});

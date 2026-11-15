@@ -3,11 +3,13 @@ import {flushSync} from 'react-dom';
 import {useExperience} from './Experience';
 import {pageIntent,releaseVelocity,settleDuration,type PointerSample} from './paging-physics';
 type Gesture={id:number;x:number;y:number;axis:'x'|'y'|null;width:number;samples:PointerSample[]};
+type PagingOptions={enabled?:boolean;canMove?:(direction:number)=>boolean};
 /** Adjacent content moves with the finger. Commit only after settling, without an empty frame. */
-export function useCalendarPager(target:RefObject<HTMLDivElement|null>,period:string,view:string,onMove:(delta:number)=>void,enabled=true):HTMLAttributes<HTMLDivElement>{
- const {preferences}=useExperience(),current=useRef({period,view,onMove,quiet:preferences.quiet});
+export function useCalendarPager(target:RefObject<HTMLDivElement|null>,period:string,view:string,onMove:(delta:number)=>void,{enabled=true,canMove}:PagingOptions={}):HTMLAttributes<HTMLDivElement>{
+ const {preferences}=useExperience(),current=useRef({period,view,onMove,canMove,quiet:preferences.quiet});
  const gesture=useRef<Gesture|null>(null),animation=useRef<Animation|null>(null),pending=useRef(0),frame=useRef(0),offset=useRef(0),suppressClick=useRef(0),pendingTap=useRef<ReturnType<typeof setTimeout>|null>(null);
  const quiet=()=>current.current.quiet||window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const allowed=(direction:number)=>current.current.canMove?.(direction)??true;
  const cancelTap=()=>{if(pendingTap.current!==null){clearTimeout(pendingTap.current);pendingTap.current=null;}};
  const clearMotion=()=>{cancelAnimationFrame(frame.current);frame.current=0;offset.current=0;pending.current=0;animation.current?.cancel();animation.current=null;const node=target.current;if(node){node.style.removeProperty('transform');node.style.removeProperty('will-change');delete node.dataset.paging;}};
  const commit=()=>{const direction=pending.current;clearMotion();if(direction)flushSync(()=>current.current.onMove(direction));};
@@ -20,8 +22,8 @@ export function useCalendarPager(target:RefObject<HTMLDivElement|null>,period:st
   void motion.finished.then(()=>{if(animation.current===motion)commit();}).catch(()=>{});
  };
  const returnHome=()=>settle(0,0);
- const move=(direction:number,velocity=0)=>{if(pending.current)commit();const node=target.current;if(node)settle(-direction*node.clientWidth,direction,velocity);};
- useLayoutEffect(()=>{const changed=current.current.period!==period||current.current.view!==view;current.current={period,view,onMove,quiet:preferences.quiet};if(changed||!enabled){gesture.current=null;clearMotion();}},[period,view,onMove,enabled,preferences.quiet]);
+ const move=(direction:number,velocity=0)=>{if(pending.current)commit();const node=target.current;if(!node)return;if(!allowed(direction)){returnHome();return;}settle(-direction*node.clientWidth,direction,velocity);};
+ useLayoutEffect(()=>{const changed=current.current.period!==period||current.current.view!==view;current.current={period,view,onMove,canMove,quiet:preferences.quiet};if(changed||!enabled){gesture.current=null;clearMotion();}},[period,view,onMove,canMove,enabled,preferences.quiet]);
  useEffect(()=>{
   const node=target.current?.parentElement;if(!enabled||!node)return;
   let distance=0,last=0,changed=false;
@@ -38,7 +40,7 @@ export function useCalendarPager(target:RefObject<HTMLDivElement|null>,period:st
  return {
   onDragStart:event=>event.preventDefault(),
   onPointerDown:event=>{cancelTap();if(!event.isPrimary){gesture.current=null;returnHome();return;}if(event.button!==0||(event.target as Element).closest('input,textarea,select,[contenteditable=true]'))return;if(pending.current)commit();else clearMotion();suppressClick.current=0;gesture.current={id:event.pointerId,x:event.clientX,y:event.clientY,axis:null,width:event.currentTarget.clientWidth,samples:[{x:event.clientX,t:performance.now()}]};},
-  onPointerMove:event=>{const active=gesture.current;if(!active||active.id!==event.pointerId)return;const x=event.clientX-active.x,y=event.clientY-active.y;if(!active.axis&&Math.max(Math.abs(x),Math.abs(y))>=10){if(Math.abs(x)>Math.abs(y)*1.35){active.axis='x';event.currentTarget.setPointerCapture(event.pointerId);}else if(Math.abs(y)>Math.abs(x)*1.15)active.axis='y';}if(active.axis!=='x')return;event.preventDefault();const now=performance.now();active.samples=active.samples.filter(sample=>now-sample.t<120);active.samples.push({x:event.clientX,t:now});if(quiet())return;offset.current=Math.max(-active.width,Math.min(active.width,x));if(!frame.current)frame.current=requestAnimationFrame(()=>{frame.current=0;const node=target.current;if(node){node.style.transform=`translate3d(${offset.current}px,0,0)`;node.style.willChange='transform';node.dataset.paging='dragging';}});},
+  onPointerMove:event=>{const active=gesture.current;if(!active||active.id!==event.pointerId)return;const x=event.clientX-active.x,y=event.clientY-active.y;if(!active.axis&&Math.max(Math.abs(x),Math.abs(y))>=10){if(Math.abs(x)>Math.abs(y)*1.35){active.axis='x';event.currentTarget.setPointerCapture(event.pointerId);}else if(Math.abs(y)>Math.abs(x)*1.15)active.axis='y';}if(active.axis!=='x')return;event.preventDefault();const now=performance.now();active.samples=active.samples.filter(sample=>now-sample.t<120);active.samples.push({x:event.clientX,t:now});if(quiet())return;offset.current=allowed(x<0?1:-1)?Math.max(-active.width,Math.min(active.width,x)):0;if(!frame.current)frame.current=requestAnimationFrame(()=>{frame.current=0;const node=target.current;if(node){node.style.transform=`translate3d(${offset.current}px,0,0)`;node.style.willChange='transform';node.dataset.paging='dragging';}});},
   onPointerUp:event=>{const active=gesture.current;if(!active||active.id!==event.pointerId)return;gesture.current=null;const x=event.clientX-active.x,y=event.clientY-active.y;if(active.axis!=='x'){
    // Mouse drags still produce a click even when vertical scrolling did not move.
    // Do not open a date (including an adjacent month's date) after a drag.

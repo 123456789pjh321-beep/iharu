@@ -124,10 +124,13 @@ test('weekly timetable opens a touchable daily infographic and a 24-hour ring fo
  await page.goto('/timetable');
  await waitForAppReady(page);
  const menu=page.getByRole('group',{name:'시간표 보기'});
- await expect(menu.getByRole('button')).toHaveText(['달력','그래픽']);
+ await expect(menu.getByRole('button',{name:'달력',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('[data-workspace-topbar] [data-workspace-actions]')).toHaveCount(0);
  await expect(page.locator('.timetable-grid')).toBeVisible();
  expect(engineRequests).toEqual([]);
- await menu.getByRole('button',{name:'그래픽',exact:true}).click();
+ await menu.getByRole('button',{name:'그래픽',exact:true}).focus();
+ await page.keyboard.press('Enter');
+ await expect(menu.getByRole('button',{name:'그래픽',exact:true})).toHaveAttribute('aria-pressed','true');
  const graphic=page.getByRole('region',{name:'그래픽 시간표'});
  const routine=graphic.getByRole('img',{name:/하루 일과 인포그래픽/});
  const views=graphic.getByRole('group',{name:'그래픽 표시'});
