@@ -92,12 +92,9 @@ test('uses each menu’s own saved members, current month actions and invitation
   await expect(page.getByRole('dialog')).toHaveCount(1);await closeMemberPreferences(page);
   await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await selected('시간표 구성원 필터',true,false);await unchangedChrome(page);
   await nav(page).getByRole('link',{name:'달력',exact:true}).click();await selected('달력 구성원 필터',true,true);await unchangedChrome(page);
-  const actionLabels:Record<string,string[]>={
-   '/tuition':['달력','내역','그래프','계산기'],
-   '/timeline':['노트','녹음기','카메라','스캔','파일','스케치','휴지통'],
-  };
+  const timelineActions=['노트','녹음기','카메라','스캔','파일','스케치','휴지통'];
   for(const [width,height] of [[320,740],[390,844],[500,900],[820,900],[1440,900],[844,390]]){
-   await page.setViewportSize({width,height});let baseline:unknown,actionGeometry:unknown;
+   await page.setViewportSize({width,height});let baseline:unknown;
    for(const [label,path] of [['시간표','/timetable'],['달력','/today/calendar'],['가계부','/tuition'],['타임라인','/timeline']]){
     await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
     await expect(bar(page).locator('.member-preference-row')).toHaveCount(0);await unchangedChrome(page);
@@ -117,35 +114,28 @@ test('uses each menu’s own saved members, current month actions and invitation
     expect(date[1]).toBeCloseTo(geometry.toolbar[1]+(geometry.toolbar[3]-date[3])/2,1);
     if(baseline)expect(sharedGeometry).toEqual(baseline);else baseline=sharedGeometry;
     if(label==='시간표'||label==='달력')expect((await bar(page).locator('.weather-button').boundingBox())!.height).toBeCloseTo(36,1);
-    const picker=bar(page).locator('.workspace-group-filter > .calendar-view-picker > summary');
+    const picker=bar(page).locator('.workspace-group-filter > .workspace-view-picker > summary');
+    if(path==='/today/calendar'||path==='/tuition'){
+     await expect(picker).toHaveAccessibleName(path==='/tuition'?'가계부 보기 · 달력':'달력 보기 · 월간');
+     const control=(await picker.boundingBox())!;
+     expect(control.height).toBe(32);
+     expect(control.y).toBeCloseTo(geometry.plus[1],1);
+     expect(control.x+control.width).toBeCloseTo(geometry.group[0]+geometry.group[2]-12,1);
+    }else await expect(picker).toHaveCount(0);
     if(path==='/today/calendar'){
-     const [control,top,calendar,bottom]=await Promise.all([
-      picker.boundingBox(),bar(page).boundingBox(),
+     const [top,calendar,bottom]=await Promise.all([
+      bar(page).boundingBox(),
       page.locator('[data-pager-current] .calendar-month-content').boundingBox(),nav(page).boundingBox(),
      ]);
-     expect(control!.height).toBe(32);
-     expect(control!.x+control!.width).toBeCloseTo(geometry.group[0]+geometry.group[2]-12,1);
      expect(calendar!.y).toBeCloseTo(top!.y+top!.height,0);
      expect(calendar!.y+calendar!.height).toBeCloseTo(bottom!.y,0);
-    }else await expect(picker).toHaveCount(0);
+    }
     const actions=bar(page).locator('[data-workspace-actions]');
-    const labels=actionLabels[path];
-    if(labels){
-     const emptyCount=7-labels.length;
+    if(path==='/timeline'){
      const slots=actions.locator('.workspace-action-grid > *');
-     await expect(slots).toHaveText([...labels,...Array<string>(emptyCount).fill('')]);
-     await expect(actions.getByRole('button')).toHaveCount(labels.length);
-     const blanks=actions.locator('.workspace-action-empty[aria-hidden="true"]');
-     await expect(blanks).toHaveCount(emptyCount);
-     expect(await blanks.evaluateAll(nodes=>nodes.every(node=>{
-      const style=getComputedStyle(node);
-      return (node as HTMLElement).tabIndex===-1&&style.visibility==='hidden'&&style.pointerEvents==='none';
-     }))).toBe(true);
-     const boxes=await slots.evaluateAll(nodes=>nodes.map(node=>{
-      const {x,y,width,height}=node.getBoundingClientRect();
-      return [x,y,width,height].map(value=>Math.round(value*10)/10);
-     }));
-     expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?49:53));
+     await expect(slots).toHaveText(timelineActions);
+     const heights=await slots.evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));
+     expect(heights).toEqual(Array(timelineActions.length).fill(width<=420?49:53));
      expect(await actions.getByRole('button').evaluateAll(buttons=>buttons.every(button=>{
       const rect=button.getBoundingClientRect();
       return [...button.children].every(child=>{
@@ -153,9 +143,8 @@ test('uses each menu’s own saved members, current month actions and invitation
        return bounds.top>=rect.top&&bounds.bottom<=rect.bottom;
       });
      }))).toBe(true);
-     if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
     }else await expect(actions).toHaveCount(0);
-    const originalHeight=52+42+(labels?(width<=420?59:63):0);
+    const originalHeight=52+42+(path==='/timeline'?(width<=420?59:63):0);
     expect((await bar(page).boundingBox())!.height).toBeCloseTo(originalHeight,0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
     await page.screenshot({path:`test-results/topbar-aligned-${path.split('/').pop()}-${width}.png`,animations:'disabled'});

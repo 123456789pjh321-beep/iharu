@@ -6,11 +6,17 @@ export async function waitForAppReady(page:Page){
  await expect(page.locator('#root')).not.toHaveAttribute('inert');
 }
 
-export async function selectCalendarView(page:Page,view:'월간'|'주간'|'일간'){
- const trigger=page.getByLabel(/^달력 보기 · /);
- await trigger.click();
- await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:view,exact:true}).click();
- await expect(trigger).toHaveAccessibleName('달력 보기 · '+view);
+async function selectWorkspaceView(page:Page,label:string,view:string,method:'click'|'tap'){
+ const trigger=page.getByLabel(new RegExp(`^${label} · `));
+ await trigger[method]();
+ await page.getByRole('group',{name:label,exact:true}).getByRole('button',{name:view,exact:true})[method]();
+ await expect(trigger).toHaveAccessibleName(`${label} · ${view}`);
+}
+export function selectCalendarView(page:Page,view:'월간'|'주간'|'일간'){
+ return selectWorkspaceView(page,'달력 보기',view,'click');
+}
+export function selectLedgerView(page:Page,view:'달력'|'내역'|'그래프'|'계산기',method:'click'|'tap'='click'){
+ return selectWorkspaceView(page,'가계부 보기',view,method);
 }
 export function workspaceGroupButton(page:Page,name?:string){
  const groups=page.locator('.workspace-topbar .workspace-group-chips');

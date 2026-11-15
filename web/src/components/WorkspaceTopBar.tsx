@@ -10,8 +10,7 @@ type Slot='toolbar'|'members'|'groupTrailing'|'actions';
 type Entry={owner:symbol;content:ReactNode;active:boolean;groupId:string|null};
 type Bar={identity:string;route:string}&Partial<Record<Slot,Entry>>;
 type MembersRequest={route:string;ownerId:string|null;groupId:string|null;trigger:HTMLButtonElement};
-const actionRoutes=new Set(['/tuition','/timeline']);
-const toolbarRoutes=new Set(['/timetable','/calendar','/today/calendar','/today/repeats',...actionRoutes]);
+const toolbarRoutes=new Set(['/timetable','/calendar','/today/calendar','/today/repeats','/tuition','/timeline']);
 const routes=new Set([...toolbarRoutes,'/chat','/child/chat']);
 const routeKey=(path:string)=>path==='/calendar'?'/today/calendar':path;
 const actionSlots=7;
@@ -68,7 +67,7 @@ export function WorkspaceTopBarHost(){
   }}/>
   {opened&&<WorkspaceMembersDialog id={dialogId} groupName={group?.name||'샘플 데이터'} members={group?.members}
    trigger={opened.trigger} onDismiss={()=>setRequest(null)}>{memberSlot}</WorkspaceMembersDialog>}
-  {actionRoutes.has(route)&&(bar?.route===route&&bar.actions?.active?bar.actions.content:<WorkspaceActionRow/>)}
+  {route==='/timeline'&&(bar?.route===route&&bar.actions?.active?bar.actions.content:<WorkspaceActionRow/>)}
  </div>,target);
 }
 

@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 import {writeFile} from 'node:fs/promises';
-import {waitForAppReady} from '../helpers/workspace-ui';
+import {waitForAppReady,selectLedgerView} from '../helpers/workspace-ui';
 
 const origin='http://127.0.0.1:4174',password='tuition-touch-fixture-2026';
 for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference'] as const){
@@ -49,7 +49,7 @@ for(const width of [390,820])for(const reducedMotion of ['reduce','no-preference
    // The first intentional tap after a swipe must not be swallowed or doubled.
    await page.locator('[data-pager-current] .calendar-cell[data-date="2026-12-01"] .calendar-day-target').tap();await page.waitForTimeout(650);await expect(sheet).toBeVisible();await expect(sheet).toContainText('터치 피아노');
    await sheet.getByRole('button',{name:'날짜 가계부 닫기'}).tap();await expect(sheet).toHaveCount(0);
-   await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).tap();await expect(page.locator('[data-pager-current] .tuition-ledger')).toBeVisible();await page.getByRole('button',{name:'터치 피아노 수정',exact:true}).tap();await expect(editor).toBeVisible();expect(errors).toEqual([]);
+   await selectLedgerView(page,'내역','tap');await expect(page.locator('[data-pager-current] .tuition-ledger')).toBeVisible();await page.getByRole('button',{name:'터치 피아노 수정',exact:true}).tap();await expect(editor).toBeVisible();expect(errors).toEqual([]);
   }finally{
    if(!page.isClosed()){
     const path=test.info().outputPath('touch-event-order.json');await writeFile(path,JSON.stringify(await page.evaluate(()=>(window as unknown as {touchTrace?:object[]}).touchTrace||[]),null,2));await test.info().attach('touch-event-order',{path,contentType:'application/json'});
