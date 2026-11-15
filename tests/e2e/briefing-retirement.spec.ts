@@ -19,8 +19,8 @@ test('retired briefing links open the timetable and the settings omit briefing a
 
 test('administrator links for the retired provider open the existing admin overview',async({page})=>{
  await page.goto('/admin?section=ai');
- await expect(page).toHaveURL(origin+'/admin');
  await expect(page.getByRole('dialog').getByRole('heading',{name:'계정 확인 이용을 위해 로그인해 주세요'})).toBeVisible();
+ await expect(page).toHaveURL(origin+'/admin?signin=1');
 
  const email='retired-briefing-admin@example.test',password='briefing-admin-fixture-password';
  const post=(path:string,data:object)=>page.request.post(path,{headers:{Origin:origin},data});
