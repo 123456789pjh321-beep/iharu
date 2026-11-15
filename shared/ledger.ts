@@ -8,6 +8,10 @@ export const ledgerCategories=[
 ] as const;
 export type LedgerFlow=typeof ledgerFlows[number];
 export type LedgerCategory=typeof ledgerCategories[number]['id'];
+export type LedgerCategoryTotal={id:LedgerCategory;label:string;amount:number};
+export type LedgerEntryPreset={flow:LedgerFlow;amount:number};
+export const ledgerAmountLimit=1_000_000_000;
+export const ledgerWon=(amount:number)=>amount.toLocaleString('ko-KR')+'원';
 export const ledgerCategoryIds=ledgerCategories.map(c=>c.id);
 export const ledgerMethodLabels={CASH:'현금',CARD:'카드',TRANSFER:'계좌이체',OTHER:'미지정'};
 export function ledgerFlow(item:WorkspaceItem):LedgerFlow{return item.data.ledgerFlow||'EXPENSE';}
@@ -18,9 +22,22 @@ export function ledgerMonth(items:WorkspaceItem[],month:string,members:readonly 
  const query=filter.query?.trim().toLocaleLowerCase('ko-KR')||'';
  const fees=tuitionMonth(items,month,members).fees.filter(i=>(!filter.flow||filter.flow==='ALL'||ledgerFlow(i)===filter.flow)&&(!filter.category||filter.category==='ALL'||ledgerCategory(i).id===filter.category)&&(!query||[i.data.title,i.data.note,i.fee?.payerName,ledgerCategory(i).label].join(' ').toLocaleLowerCase('ko-KR').includes(query)));
  let income=0,expense=0;
- const days=new Map<string,{items:WorkspaceItem[];income:number;expense:number}>(),categories=new Map<string,{label:string;amount:number}>();
- for(const i of fees){const amount=i.data.amount||0,incoming=ledgerFlow(i)==='INCOME',date=i.fee!.dueDate,day=days.get(date)||{items:[],income:0,expense:0};day.items.push(i);if(incoming){income+=amount;day.income+=amount;}else{expense+=amount;day.expense+=amount;const c=ledgerCategory(i),bucket=categories.get(c.id)||{label:c.label,amount:0};bucket.amount+=amount;categories.set(c.id,bucket);}days.set(date,day);}
- return {fees,days,income,expense,balance:income-expense,categories:[...categories.values()].sort((a,b)=>b.amount-a.amount)};
+ const days=new Map<string,{items:WorkspaceItem[];income:number;expense:number}>();
+ const categories=new Map<LedgerCategory,LedgerCategoryTotal>(),incomeCategories=new Map<LedgerCategory,LedgerCategoryTotal>();
+ for(const item of fees){
+  const amount=item.data.amount||0,flow=ledgerFlow(item),date=item.fee!.dueDate;
+  const day=days.get(date)||{items:[],income:0,expense:0};
+  day.items.push(item);
+  if(flow==='INCOME'){income+=amount;day.income+=amount;}else{expense+=amount;day.expense+=amount;}
+  days.set(date,day);
+  const {id,label}=ledgerCategory(item);
+  const totals=flow==='INCOME'?incomeCategories:categories;
+  const category=totals.get(id)||{id,label,amount:0};
+  category.amount+=amount;
+  totals.set(id,category);
+ }
+ const ranked=(data:Map<LedgerCategory,LedgerCategoryTotal>)=>[...data.values()].sort((a,b)=>b.amount-a.amount);
+ return {fees,days,income,expense,balance:income-expense,categories:ranked(categories),incomeCategories:ranked(incomeCategories)};
 }
 export function ledgerCSV(items:WorkspaceItem[]){
  const cell=(v:string|number)=>{let s=String(v);if(typeof v==='string'&&/^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};

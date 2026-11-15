@@ -3,7 +3,7 @@ import {workspaceItemInput,workspaceValidationMessage,type WorkspaceMe,type Work
 import {clockValue,minutesOf,periodDays,shiftDate,shiftMonth} from '../../../shared/entry-input';
 import {FormNotice} from './AuthLayout';
 import {Icon} from './Icon';
-import {ledgerCategories,ledgerMethodLabels,type LedgerFlow,type LedgerCategory} from '../../../shared/ledger';
+import {ledgerCategories,ledgerMethodLabels,type LedgerFlow,type LedgerCategory,type LedgerEntryPreset} from '../../../shared/ledger';
 import {PlusButton} from './PlusButton';
 import {useSlidingDialog} from './useSlidingDialog';
 import {calendarColors} from './PersonalCalendar';
@@ -11,16 +11,19 @@ import {ScheduleMemberPicker} from './ScheduleMemberPicker';
 import {EntryDatePicker} from './EntryDatePicker';
 import {EntryTimeRange} from './EntryTimeRange';
 import {workspaceRequest} from '../workspace-api';
-export type Editor={kind:WorkspaceKind;item?:WorkspaceItem;draft?:WorkspaceItem;date:string;time?:string};
+export type Editor={kind:WorkspaceKind;item?:WorkspaceItem;draft?:WorkspaceItem;date:string;time?:string;feePreset?:LedgerEntryPreset};
 const days=['일','월','화','수','목','금','토'];
-export function PersonalEditor({kind:initialKind,item,draft,date,time,scheduleKind,me,members,copy,close,saved}:Editor&{scheduleKind?:'EVENT'|'REPEAT';me:WorkspaceMe;members:WorkspaceMember[];copy:(item:WorkspaceItem)=>void;close:()=>void;saved:()=>Promise<void>}){
+export function PersonalEditor({kind:initialKind,item,draft,date,time,feePreset,scheduleKind,me,members,copy,close,saved}:Editor&{scheduleKind?:'EVENT'|'REPEAT';me:WorkspaceMe;members:WorkspaceMember[];copy:(item:WorkspaceItem)=>void;close:()=>void;saved:()=>Promise<void>}){
  const {ref,closing,closeWithAnimation}=useSlidingDialog();
  const [kind]=useState(scheduleKind||initialKind),[busy,setBusy]=useState(false),[error,setError]=useState(''),[allDay,setAllDay]=useState((item||draft)?.data.allDay||false),[color,setColor]=useState((item||draft)?.data.color??Math.max(0,members.findIndex(m=>m.id===((item||draft)?.data.assigneeId||me.id)))%calendarColors.length),[eventFrequency,setEventFrequency]=useState<NonNullable<WorkspaceData['calendarFrequency']>>((item||draft)?.data.calendarFrequency||'ONCE'),[feeFrequency,setFeeFrequency]=useState<'ONCE'|'MONTHLY'>((item||draft)?((item||draft)?.data.feeFrequency||'ONCE'):'ONCE'),[confirmDelete,setConfirmDelete]=useState(false),[dirty,setDirty]=useState(false);const data=(item||draft)?.data,readonly=!!item&&!item.mine,isEvent=kind==='EVENT'||kind==='REPEAT',locked=useRef(false);
- const [flow,setFlow]=useState<LedgerFlow>(data?.ledgerFlow||'EXPENSE'),[category,setCategory]=useState<LedgerCategory>(data?.ledgerCategory||(data?'EDUCATION':'OTHER_EXPENSE'));
+ const initialFlow=data?.ledgerFlow??feePreset?.flow??'EXPENSE';
+ const initialAmount=data?.amount??feePreset?.amount;
+ const [flow,setFlow]=useState<LedgerFlow>(initialFlow);
+ const [category,setCategory]=useState<LedgerCategory>(data?.ledgerCategory??(initialFlow==='INCOME'?'OTHER_INCOME':data?'EDUCATION':'OTHER_EXPENSE'));
  const [startDate,setStartDate]=useState(data?.date||date),[untilDate,setUntilDate]=useState(data?.untilDate||''),[endDate,setEndDate]=useState(data?.endDate||data?.date||date);
  const [startTime,setStartTime]=useState(data?.startTime||time||'16:00'),[endTime,setEndTime]=useState(data?.endTime||clockValue(Math.min(1439,minutesOf(time||'16:00')+60)));
  const [weekdays,setWeekdays]=useState(data?.weekdays.length?data.weekdays:[new Date((data?.date||date)+'T12:00:00Z').getUTCDay()]);
- const [datePicking,setDatePicking]=useState(false),[amount,setAmount]=useState(data?.amount===undefined?'':new Intl.NumberFormat('ko-KR').format(data.amount));
+ const [datePicking,setDatePicking]=useState(false),[amount,setAmount]=useState(initialAmount===undefined?'':initialAmount.toLocaleString('ko-KR'));
  const weekdaysEdited=useRef(!!data?.weekdays.length);
  const changeDates=(start:string,end:string)=>{setStartDate(start);if(kind==='EVENT')setEndDate(start!==startDate&&(end===startDate||end<start)?start:end);else setUntilDate(end);setDirty(true);if(kind==='EVENT'&&!weekdaysEdited.current&&/^\d{4}-\d{2}-\d{2}$/.test(start))setWeekdays([new Date(start+'T12:00:00Z').getUTCDay()]);};
  const changeDays=(value:number[])=>{weekdaysEdited.current=true;setWeekdays(value);setDirty(true);};

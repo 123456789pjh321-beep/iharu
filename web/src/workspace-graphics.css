@@ -1,0 +1,113 @@
+.graphic-ring {
+  position: relative;
+  width: min(100%, 248px);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  user-select: none;
+}
+.graphic-ring[data-selectable] { cursor: pointer; }
+.graphic-ring-engine,
+.graphic-ring-preview {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.graphic-ring-engine canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+.graphic-ring-preview > div {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.graphic-ring-center {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 51%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 5px;
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+.graphic-ring-center small { color: var(--muted); font-size: .73rem; }
+.graphic-ring-center strong { color: var(--ink); overflow-wrap: anywhere; font-size: clamp(.94rem, 2.25vw, 1.38rem); }
+.graphic-clock { width: min(100%, 410px); }
+.graphic-clock .graphic-ring-center { width: 38%; }
+.graphic-clock .graphic-ring-center strong { font-size: clamp(1.08rem, 3vw, 1.75rem); }
+.graphic-clock-hour {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: clamp(.66rem, 1.5vw, .78rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  pointer-events: none;
+}
+.graphic-clock .graphic-now { color: var(--holiday-ink); font-weight: 650; }
+.timetable-menu { flex: none; }
+.timetable-menu .workspace-action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 360px; }
+.timetable-graphic {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 12px var(--workspace-inset, 16px) 24px;
+  overflow: auto;
+  overscroll-behavior-y: contain;
+  background: var(--canvas);
+}
+.timetable-graphic-dial,.timetable-graphic-list {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.timetable-graphic-list header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+.timetable-graphic-list h2 { margin: 0; font-size: .9rem; }
+.timetable-graphic-list p { margin: 9px 0; color: var(--muted); font-size: .82rem; }
+.timetable-graphic-list ul { display: grid; gap: 6px; padding: 0; margin: 0; list-style: none; }
+.timetable-graphic-list li > button,
+.timetable-graphic-next {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  font-size: .78rem;
+  cursor: pointer;
+}
+.timetable-graphic-list li > button:hover,.timetable-graphic-next:hover { background: var(--surface-sub); }
+.timetable-graphic-list li > button[data-current],.timetable-graphic-next { border-color: transparent; background: var(--mint); }
+.timetable-graphic-list .icon,.timetable-graphic-next .icon { flex: none; width: 15px; height: 15px; }
+.timetable-graphic-swatch { width: 5px; align-self: stretch; flex: none; border-radius: 4px; }
+.timetable-graphic-entry { display: grid; gap: 3px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.timetable-graphic-entry small { color: var(--muted); }
+.timetable-graphic-current,.timetable-graphic-next > span { font-size: .68rem; color: var(--primary); white-space: nowrap; }
+.timetable-graphic-next strong { flex: 1; overflow-wrap: anywhere; }
+@media (min-width: 660px) {
+  .timetable-graphic { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
