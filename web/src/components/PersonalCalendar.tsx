@@ -33,7 +33,7 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
  const openDay=(date:string)=>{selectDay(date);if(guestCreate)create(date);else setDetail(date);};
  const editOnDay=(item:WorkspaceItem,date:string)=>{setDay(date);edit(item);};
  const move=(delta:number)=>{if(view!=='month'){selectDay(addDays(day,delta*(view==='week'?7:1)));}else{const date=new Date(Number(month.slice(0,4)),Number(month.slice(5))-1+delta,1),m=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');setMonth(m);setDay(m+'-01');}};
- const renderDateWeather=(dates:string[])=>weather.days.some(forecast=>dates.includes(forecast.date))
+ const renderDateWeather=(dates:string[])=>dates.some(weather.hasDate)
   ?(date:string)=><WeatherDateButton weather={weather} date={date}/>
   :undefined;
  const renderPage=(offset:number)=>{

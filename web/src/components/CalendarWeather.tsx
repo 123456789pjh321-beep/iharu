@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {Cloud,CloudDrizzle,CloudFog,CloudHail,CloudLightning,CloudRain,CloudSnow,CloudSun,Sun,Wind} from 'lucide-react';
 import {calendarWeatherSchema,weatherRegions,type CalendarWeather,type WeatherDay} from '../../../shared/calendar-weather';
+import {addDays,koreaToday} from '../../../shared/schedules';
 import {Icon} from './Icon';
 import {useSlidingDialog} from './useSlidingDialog';
 import './calendar-weather.css';
@@ -21,8 +22,10 @@ export function useCalendarWeather(enabled=true){
  const [forecast,setForecast]=useState<{region:string;data:CalendarWeather}|null>(null);
  const [detailDate,setDetailDate]=useState<string|null>(null);
  const [revision,setRevision]=useState(0);
+ const open=enabled&&detailDate!==null;
+ const today=koreaToday(),lastDate=addDays(today,9);
  useEffect(()=>{
-  if(!enabled)return;
+  if(!open)return;
   const controller=new AbortController();
   const load=async()=>{
    try{
@@ -37,7 +40,7 @@ export function useCalendarWeather(enabled=true){
   void load();
   const timer=window.setInterval(()=>{if(!document.hidden)void load();},900_000);
   return()=>{window.clearInterval(timer);controller.abort();};
- },[enabled,region.id,revision]);
+ },[open,region.id,revision]);
  const data=forecast?.region===region.id?forecast.data:null;
  const status=data?.status??'loading';
  const days=data?.status==='ok'?data.days:[];
@@ -47,7 +50,12 @@ export function useCalendarWeather(enabled=true){
   setRegion(found);
   try{localStorage.setItem(regionStorage,id);}catch{/* The current view still keeps its selection. */}
  }
- return {region,status,days,detailDate,selectRegion,showDetail:setDetailDate,
+ function showDetail(date:string|null){
+  if(date===null)setForecast(null);
+  setDetailDate(date);
+ }
+ const hasDate=(date:string)=>enabled&&date>=today&&date<=lastDate;
+ return {region,status,days,detailDate,selectRegion,showDetail,hasDate,
   reload:()=>{setForecast(null);setRevision(value=>value+1);}};
 }
 
@@ -71,29 +79,24 @@ function WeatherAttribution(){
  return <div className="weather-attribution" aria-label="날씨 정보 출처">
   <span className="weather-google-maps" translate="no">Google Maps</span>
   <span>날씨 정보 제공: <a href="https://kr.weathernews.com/" target="_blank" rel="noreferrer">웨더뉴스</a></span>
+  <span className="weather-data-credit" translate="no">Source: Includes weather data from Google.</span>
  </div>;
 }
 
 export function WeatherToolbar({weather,date}:{weather:WeatherView;date:string}){
- if(weather.status==='disabled'||weather.status==='loading')return null;
- const selected=weather.days.find(day=>day.date===date);
- return <div className="weather-toolbar">
-  {weather.status==='ok'&&<WeatherAttribution/>}
-  <button type="button" className="weather-button" aria-haspopup="dialog"
+ return <button type="button" className="weather-button" aria-haspopup="dialog"
    aria-label={`${weather.region.label} ${dateLabel(date)} 날씨 상세`}
-   title={`${weather.region.label} · ${selected?.description||'날씨 상세'}`} onClick={()=>weather.showDetail(date)}>
-   <WeatherGlyph condition={selected?.condition}/>
-  </button>
- </div>;
+   title="날씨 상세" onClick={()=>weather.showDetail(date)}>
+  <WeatherGlyph/>
+ </button>;
 }
 
 export function WeatherDateButton({weather,date}:{weather:WeatherView;date:string}){
- const day=weather.days.find(forecast=>forecast.date===date);
- if(!day)return null;
+ if(!weather.hasDate(date))return null;
  return <button type="button" className="weather-date-button" aria-haspopup="dialog" data-weather-date={date}
-  aria-label={`${dateLabel(date)} 날씨 · ${day.description||weather.region.label}`}
-  title={day.description} onClick={()=>weather.showDetail(date)}>
-  <WeatherGlyph condition={day.condition}/>
+  aria-label={`${dateLabel(date)} 날씨 상세`}
+  title={`${dateLabel(date)} 날씨 상세`} onClick={()=>weather.showDetail(date)}>
+  <WeatherGlyph/>
  </button>;
 }
 
@@ -135,9 +138,10 @@ function WeatherDetailsDialog({weather,date}:{weather:WeatherView;date:string}){
    </div>}
    {day?<ForecastDetails day={day}/>:weather.status==='loading'?<p role="status">날씨를 불러오는 중이에요.</p>
     :weather.status==='ok'?<p role="status">{dateLabel(date)} 예보가 없어요. 오늘부터 최대 10일의 예보를 확인할 수 있어요.</p>
+    :weather.status==='disabled'?<p role="status">날씨 예보 연결을 준비 중이에요.</p>
     :<div className="weather-unavailable"><p role="status">날씨를 불러오지 못했어요.</p><button type="button" className="button compact" onClick={weather.reload}>다시 불러오기</button></div>}
-   {weather.status==='ok'&&<WeatherAttribution/>}
   </div>
+  {weather.status==='ok'&&<WeatherAttribution/>}
  </dialog>;
 }
 

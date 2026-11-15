@@ -75,7 +75,7 @@ export function PersonalTimetable({day,items,members,loading,calendar,preview=fa
      </button>;
     })}
    </div>
-   {dates.some(date=>weather.days.some(forecast=>forecast.date===date))&&<div className="timetable-weather-row" role="group" aria-label="요일별 날씨">
+   {dates.some(weather.hasDate)&&<div className="timetable-weather-row" role="group" aria-label="요일별 날씨">
     {dates.map(date=><div key={date}><WeatherDateButton weather={weather} date={date}/></div>)}
    </div>}
   </>}
