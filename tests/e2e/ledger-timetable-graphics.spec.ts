@@ -107,6 +107,108 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await expect(output).toHaveText('1,700');
 });
 
+test('financial calculators show live results, validate inputs and keep each tool’s draft',async({page})=>{
+ test.setTimeout(65000);
+ await page.setViewportSize({width:390,height:844});
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator.clipboard,'writeText',{value:async (value:string)=>{
+   document.documentElement.dataset.copiedCalculation=value;
+  }});
+ });
+ await page.goto('/tuition');
+ await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'계산기',exact:true}).click();
+
+ const calc=page.getByRole('region',{name:'가계부 계산기'});
+ const tab=(name:string)=>calc.getByRole('group',{name:'계산기 종류'}).getByRole('button',{name,exact:true});
+ const tool=(name:string)=>calc.getByRole('group',{name:'계산 도구'}).getByRole('button',{name,exact:true});
+ const field=(name:string)=>calc.getByRole('textbox',{name,exact:true});
+ const output=calc.locator('.economy-result output');
+
+ await calc.focus();await page.keyboard.type('4500+50');
+ await calc.getByRole('button',{name:'결과 복사',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-copied-calculation','4550');
+ await tab('부동산').click();
+ await field('대출금액').fill('120,000,000');
+ await field('연 금리').fill('6');
+ await field('상환 기간').fill('120');
+ await expect(output).toHaveText('1,332,246원');
+ const method=calc.getByRole('combobox',{name:'상환 방식'});
+ await method.selectOption({label:'원금균등'});
+ await expect(output).toHaveText('1,600,000원');
+ await expect(calc.locator('dl')).toContainText('1,005,000원');
+ await method.selectOption({label:'만기일시'});
+ await expect(output).toHaveText('600,000원');
+ await expect(calc.locator('dl')).toContainText('120,600,000원');
+ await page.screenshot({path:'test-results/ledger-finance-loan-390.png',animations:'disabled'});
+
+ await tool('임대수익률').click();
+ await field('매입가').fill('300000000');
+ await field('임대보증금 선택').fill('300000000');
+ await field('월 임대료').fill('1200000');
+ await expect(output).toHaveText('—');
+ await expect(calc.getByText('임대보증금은 매입가보다 작아야 해요.')).toBeVisible();
+ await field('임대보증금 선택').fill('30000000');
+ await field('연 비용 선택').fill('1200000');
+ await expect(output).toHaveText('4.89%');
+ await expect(calc.locator('dl')).toContainText('13,200,000원');
+
+ await tab('세금').click();
+ await field('입력 금액').fill('11,00');
+ await expect(field('입력 금액')).toHaveAttribute('aria-invalid','true');
+ await expect(output).toHaveText('—');
+ await field('입력 금액').fill('110000');
+ await expect(output).toHaveText('11,000원');
+ await calc.getByRole('button',{name:'부가세 포함',exact:true}).click();
+ await expect(output).toHaveText('10,000원');
+ await expect(calc.locator('dl')).toContainText('100,000원');
+ await tool('세후 이자').click();
+ await field('세전 이자').fill('100000');
+ await expect(field('적용 세율')).toHaveValue('15.4');
+ await expect(output).toHaveText('84,600원');
+ await field('적용 세율').fill('0');
+ await expect(output).toHaveText('100,000원');
+ await field('적용 세율').fill('100.01');
+ await expect(field('적용 세율')).toHaveAttribute('aria-invalid','true');
+ await expect(output).toHaveText('—');
+
+ await tab('주식').click();
+ await field('1주 매수가').fill('50000');
+ await field('1주 매도가').fill('55000');
+ await field('거래 수량').fill('100');
+ await expect(output).toHaveText('500,000원');
+ await expect(field('매수 수수료 선택')).not.toBeVisible();
+ await calc.getByText('거래 비용 입력',{exact:false}).click();
+ await field('매수 수수료 선택').fill('1000');
+ await field('매도 수수료·세금 선택').fill('12000');
+ await expect(output).toHaveText('487,000원');
+ await expect(calc.locator('dl')).toContainText('9.74%');
+ await field('1주 매도가').fill('45000');
+ await expect(output).toHaveText('-513,000원');
+ await expect(output).toHaveAttribute('data-negative','true');
+ await tool('평균단가').click();
+ await field('보유 평균단가').fill('50000');
+ await field('보유 수량').fill('100');
+ await field('추가 매수가').fill('42000');
+ await field('추가 수량').fill('50');
+ await expect(output).toHaveText('47,333.33원');
+ for(const [width,height] of [[320,844],[390,844],[1024,900],[844,390]]){
+  await page.setViewportSize({width,height});
+  expect(await calc.evaluate(element=>element.scrollWidth<=element.clientWidth)).toBe(true);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await expect(output).toBeVisible();
+ }
+ await page.setViewportSize({width:390,height:844});
+ await page.evaluate(()=>document.documentElement.dataset.theme='dark');
+ await page.screenshot({path:'test-results/ledger-finance-stock-dark-390.png',animations:'disabled'});
+ await tab('부동산').click();
+ await expect(tool('임대수익률')).toHaveAttribute('aria-pressed','true');
+ await expect(output).toHaveText('4.89%');
+ await tool('대출 상환').click();
+ await expect(output).toHaveText('600,000원');
+ await tab('기본').click();
+ await expect(calc.getByLabel('계산 결과')).toHaveText('4,550');
+});
+
 test('weekly timetable opens a touchable daily infographic and a 24-hour ring for the selected day',async({page})=>{
  await page.setViewportSize({width:390,height:900});
  const post=await signIn(page,'weekly-graphic');
