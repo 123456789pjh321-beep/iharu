@@ -9,11 +9,29 @@ export async function waitForAppReady(page:Page){
 export async function selectCalendarView(page:Page,view:'월간'|'주간'|'일간'){
  await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:view,exact:true}).click();
 }
-export async function openMemberPreferences(page:Page){
- const dialog=page.getByRole('dialog',{name:'조회할 구성원',exact:true});
- if(!await dialog.isVisible())await page.getByRole('button',{name:/^구성원 필터 설정 ·/}).click();
+export function workspaceGroupButton(page:Page,name?:string){
+ const groups=page.locator('.workspace-topbar .workspace-group-chips');
+ return name?groups.getByRole('button',{name,exact:true}):groups.locator('button[aria-haspopup=dialog][aria-pressed=true],button.guest-sample-badge');
+}
+export function workspaceMembersDialog(page:Page){
+ return page.getByRole('dialog',{name:/^(조회할 구성원|그룹 구성원)$/});
+}
+export async function openMemberPreferences(page:Page,name?:string){
+ const dialog=workspaceMembersDialog(page);
+ if(!await dialog.isVisible())await workspaceGroupButton(page,name).click();
  await expect(dialog).toBeVisible();
+ if(name)await expect(dialog.locator('.workspace-members-group')).toHaveText(name);
  return dialog;
+}
+export async function closeMemberPreferences(page:Page){
+ const dialog=workspaceMembersDialog(page);
+ await dialog.getByRole('button',{name:/^(선택 )?완료$/}).click();
+ await expect(dialog).toHaveCount(0);
+}
+export async function chooseWorkspaceGroup(page:Page,name:string){
+ if(name==='개인')await workspaceGroupButton(page,name).click();
+ else{await openMemberPreferences(page,name);await closeMemberPreferences(page);}
+ await expect(workspaceGroupButton(page,name)).toHaveAttribute('aria-pressed','true');
 }
 export async function selectAllMembers(page:Page){
  const dialog=await openMemberPreferences(page);

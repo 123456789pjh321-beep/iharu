@@ -1,4 +1,5 @@
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
+import {closeMemberPreferences,openMemberPreferences,workspaceGroupButton} from '../helpers/workspace-ui';
 
 const origin='http://127.0.0.1:4174';
 const password='group-invite-browser-password';
@@ -43,7 +44,7 @@ async function issue(page:Page){
  await page.keyboard.press('Escape');await expect(dialog).toBeHidden();await page.getByRole('button',{name:'그룹 목록',exact:true}).click();return link;
 }
 
-test('group invite shortcut creates one link per click and fits member filters across the workspace',async({page,request})=>{
+test('group invite link issues and shares inside the members dialog across workspace menus',async({page,request})=>{
  test.setTimeout(70000);
  await page.addInitScript(()=>{
   Object.defineProperty(navigator,'share',{configurable:true,value:async ({url}:ShareData)=>{
@@ -55,45 +56,25 @@ test('group invite shortcut creates one link per click and fits member filters a
  });
  await page.goto('/timetable');
  await expect(page.locator('[data-guest-workspace]')).toBeVisible();
- await expect(page.getByRole('button',{name:'그룹 초대 공유',exact:true})).toHaveCount(0);
+ const preview=await openMemberPreferences(page);
+ await expect(preview.getByRole('button',{name:'그룹 초대 공유',exact:true})).toHaveCount(0);
+ await closeMemberPreferences(page);
  await register(page,request,'group-shortcut-host@example.test','초대 단축 버튼');
  const created=await page.request.post('/api/v1/workspace/group.create',{headers:{Origin:origin},data:{name:'초대 테스트 그룹',description:'',color:0,clientRequestId:crypto.randomUUID()}});expect(created.ok()).toBe(true);
  await page.goto('/timetable');
  const menu=page.getByRole('navigation',{name:'모바일 주 메뉴'});
- const shortcut=page.getByRole('button',{name:'그룹 초대 공유',exact:true});
- const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
- const filteredMenus=['시간표','달력','가계부','타임라인'];
+ const standalone=page.getByRole('dialog',{name:'그룹 초대 공유'});
  let issueRequests=0;
  page.on('request',request=>{if(request.url().endsWith('/api/v1/workspace/invite.link.issue'))issueRequests++;});
  const urls=new Set<string>();
  for(const label of ['시간표','달력','가계부','타임라인','대화','더보기']){
   await menu.getByRole('link',{name:label,exact:true}).click();
-  const toolbar=label==='대화'?'.chat-rooms-toolbar':'.workspace-toolbar-actions';
-  const position=filteredMenus.includes(label)?'.member-preference-row > .group-invite-shortcut:first-child':toolbar+' > .group-invite-shortcut';
-  await expect(shortcut).toHaveCount(1);
-  await expect(page.locator(position)).toBeVisible();
-  await expect(shortcut).toHaveText('');
-  if(filteredMenus.includes(label)){
-   const row=page.locator('.member-preference-row');
-   const chip=row.locator('.member-filter-bar > .member-filters > button').first();
-   await expect(chip).toBeVisible();
-   const geometry=await row.evaluate(node=>{
-    const plus=node.querySelector('.group-invite-shortcut')!.getBoundingClientRect();
-    const chip=node.querySelector('.member-filter-bar > .member-filters > button')!.getBoundingClientRect();
-    return {plusHeight:plus.height,chipHeight:chip.height,plusY:plus.y,chipY:chip.y};
-   });
-   expect(geometry.plusHeight).toBe(geometry.chipHeight);
-   expect(geometry.plusY).toBeCloseTo(geometry.chipY);
-  }else if(label==='대화'){
-   const chatRow=page.locator(toolbar);
-   const geometry=await chatRow.evaluate(node=>{
-    const invite=node.querySelector('.group-invite-shortcut')!.getBoundingClientRect();
-    const create=node.querySelector('.chat-room-create')!.getBoundingClientRect();
-    return {inviteHeight:invite.height,createHeight:create.height,inviteY:invite.y,createY:create.y};
-   });
-   expect(geometry.inviteHeight).toBe(geometry.createHeight);
-   expect(geometry.inviteY).toBeCloseTo(geometry.createY);
-  }
+  const inGroup=label!=='더보기',openCount=issueRequests;
+  await expect(page.locator('.member-preference-row')).toHaveCount(0);
+  const dialog=inGroup?await openMemberPreferences(page,'초대 테스트 그룹'):standalone;
+  const shortcut=(inGroup?dialog:page).getByRole('button',{name:'그룹 초대 공유',exact:true});
+  expect(issueRequests).toBe(openCount);
+  if(label==='대화')await expect(dialog.getByRole('list',{name:'그룹 구성원 목록'})).toContainText('초대 단축 버튼');
   const [response]=await Promise.all([
    page.waitForResponse(r=>r.url().endsWith('/api/v1/workspace/invite.link.issue')),
    shortcut.click()
@@ -112,9 +93,15 @@ test('group invite shortcut creates one link per click and fits member filters a
   urls.add(url);
   await expect(dialog.getByRole('button',{name:'그룹 초대 공유',exact:true})).toBeEnabled();
   await expect(dialog.getByRole('button',{name:'그룹 초대 링크 복사'})).toBeEnabled();
-  await page.keyboard.press('Escape');
+  if(inGroup){
+   await expect(page.getByRole('dialog')).toHaveCount(1);
+   await dialog.getByRole('button',{name:'그룹 초대 링크 복사'}).click();
+   await expect(page.locator('html')).toHaveAttribute('data-invite-copied',url);
+   await closeMemberPreferences(page);await expect(workspaceGroupButton(page)).toBeFocused();
+  }else await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
  }
+ const shortcut=page.getByRole('button',{name:'그룹 초대 공유',exact:true}),dialog=standalone;
  await shortcut.click();
  const linkField=dialog.getByLabel('발급한 그룹 초대 링크');
  await expect(linkField).toBeVisible();

@@ -1,4 +1,4 @@
-import {openMemberPreferences,selectAllMembers} from '../helpers/workspace-ui';
+import {closeMemberPreferences,openMemberPreferences,selectAllMembers,workspaceGroupButton} from '../helpers/workspace-ui';
 import {test,expect,type APIRequestContext} from '@playwright/test';
 const origin='http://127.0.0.1:4174',password='privacy-fixture-password-2026';test.use({baseURL:origin});
 async function signup(client:APIRequestContext,email:string,name='검증 계정'){expect((await client.post('/api/auth/sign-up/email',{headers:{Origin:origin},data:{ageAtLeast14:true,email,name,password,callbackURL:'/login?verified=1'}})).ok()).toBe(true);const mail=await(await client.get('/__test__/mail')).json();await client.get(mail.find((m:{to:string})=>m.to===email).url);expect((await client.post('/api/auth/sign-in/email',{headers:{Origin:origin},data:{email,password}})).ok()).toBe(true);await api(client,'workspace/me');}
@@ -46,14 +46,20 @@ test('login copy is concise and location is absent from production navigation an
  await page.setViewportSize({width:390,height:844});
  await signup(page.request,'ui84-location@example.test');let maps=0;page.on('request',r=>{if(/dapi.kakao.com.*maps/.test(r.url()))maps++;});await page.goto('/today');await expect(page.locator('.personal-timetable')).toBeVisible();await expect(page.locator('[data-home-section="location"]')).toHaveCount(0);await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await expect(page.getByRole('link',{name:'위치',exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'개인정보 관리',exact:true})).toBeVisible();await page.goto('/location');await expect(page).toHaveURL(/\/timetable$/);expect(maps).toBe(0);
 });
-test('monthly family filters keep their full height and remain clickable on short and narrow screens',async({page,playwright})=>{
+test('monthly family filters fit the group popup and remain clickable on short and narrow screens',async({page,playwright})=>{
  await signup(page.request,'ui84-calendar@example.test','그룹 호스트');for(let i=0;i<4;i++){const child=await playwright.request.newContext({baseURL:origin});try{const c=await api(page.request,'workspace/invite.issue',{consent:true});await api(child,'workspace/child.signup',{loginId:'ui84_filter_'+i,name:'그룹 구성원 '+i,password,code:c.code});}finally{await child.dispose();}}
  for(const [width,height] of [[320,600],[390,844],[727,1034],[1440,900]]){
-  await page.setViewportSize({width,height});await page.goto('/today/calendar');const filters=page.getByRole('group',{name:'달력 구성원 필터',exact:true});await expect(filters.getByRole('button',{name:'그룹 호스트',exact:true})).toBeVisible();
-  const boxes=await filters.evaluate(el=>{const r=el.getBoundingClientRect(),b=el.querySelector('button')!.getBoundingClientRect(),w=document.querySelector('[data-pager-current] .calendar-weekdays')!.getBoundingClientRect();return {height:r.height,top:r.top,bottom:r.bottom,buttonHeight:b.height,buttonTop:b.top,buttonBottom:b.bottom,weekdayTop:w.top};});
-  expect(boxes.buttonHeight).toBeGreaterThanOrEqual(32);expect(boxes.height).toBeGreaterThanOrEqual(boxes.buttonHeight);expect(boxes.buttonTop).toBeGreaterThanOrEqual(boxes.top);expect(boxes.buttonBottom).toBeLessThanOrEqual(boxes.bottom);expect(boxes.weekdayTop).toBeGreaterThanOrEqual(boxes.bottom-1);
-  const options=await openMemberPreferences(page),member=options.getByRole('button',{name:'그룹 구성원 3',exact:true});await expect(member).toBeVisible();await member.click();await expect(member).toHaveAttribute('aria-pressed','true');await options.getByRole('button',{name:'선택 완료',exact:true}).click();await expect(filters.getByRole('button',{name:'그룹 구성원 3',exact:true})).toHaveAttribute('aria-pressed','true');
-  await selectAllMembers(page);await expect(filters.getByRole('button',{pressed:true})).toHaveCount(5);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/v2-calendar-filters-${width}.png`,animations:'disabled'});
+  await page.setViewportSize({width,height});await page.goto('/today/calendar');
+  await expect(page.locator('.member-preference-row')).toHaveCount(0);
+  const options=await openMemberPreferences(page),member=options.getByRole('button',{name:'그룹 구성원 3',exact:true});
+  await expect(options.getByRole('button',{name:'그룹 호스트',exact:true})).toBeVisible();
+  expect((await member.boundingBox())!.height).toBeGreaterThanOrEqual(32);
+  await member.click();await expect(member).toHaveAttribute('aria-pressed','true');
+  await closeMemberPreferences(page);await expect(workspaceGroupButton(page)).toBeFocused();
+  await selectAllMembers(page);await openMemberPreferences(page);
+  await expect(options.locator('.member-filters>button:not(.member-select-all)[aria-pressed=true]')).toHaveCount(5);
+  expect(await options.evaluate(node=>node.scrollWidth<=node.clientWidth)).toBe(true);
+  await page.screenshot({path:`test-results/v2-calendar-filters-${width}.png`,animations:'disabled'});await closeMemberPreferences(page);
  }
 });
 test('admin saves an unpublished legal draft and replies to a scoped privacy request',async({page,request,playwright})=>{

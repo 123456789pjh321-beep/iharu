@@ -1,4 +1,4 @@
-import {waitForAppReady,openMemberPreferences,selectAllMembers,saveMemberPreference} from '../helpers/workspace-ui';
+import {waitForAppReady,closeMemberPreferences,openMemberPreferences,selectAllMembers,saveMemberPreference} from '../helpers/workspace-ui';
 import {setEntryTime} from './entry-controls';
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 import {koreaToday} from '../../shared/schedules';
@@ -11,8 +11,8 @@ async function issue(page:Page){
  const me=await(await page.request.post('/api/v1/workspace/me',{headers:{Origin:origin},data:{}})).json();
  if(!me.family){const created=await page.request.post('/api/v1/workspace/group.create',{headers:{Origin:origin},data:{name:'기본그룹',description:'',color:0,clientRequestId:crypto.randomUUID()}});expect(created.ok()).toBe(true);}
  await page.goto('/timetable');await waitForAppReady(page);
- await page.getByRole('button',{name:'그룹 초대 공유',exact:true}).click();
- const dialog=page.getByRole('dialog',{name:'그룹 초대 공유'});
+ const dialog=await openMemberPreferences(page);
+ await dialog.getByRole('button',{name:'그룹 초대 공유',exact:true}).click();
  const field=dialog.getByLabel('발급한 그룹 초대 링크');
  await expect(field).toBeVisible();
  const url=await field.inputValue();
@@ -101,7 +101,8 @@ test('calendar and tuition member preferences stay independent across menus and 
  await page.goto('/today/calendar');await waitForAppReady(page);await selectAllMembers(page);const current=page.locator('[data-pager-current]');await expect(current).toContainText('일반사용자 일정');await expect(current).toContainText('하나 오전 수업');await expect(current).toContainText('둘 오후 수업');await current.locator('.calendar-cell[data-date="'+today+'"] .calendar-day-target>span').click();await expect(page.locator('.day-sheet-event strong')).toHaveText(['일반사용자 일정','하나 오전 수업','둘 오후 수업','그룹 전체 일정']);await page.getByRole('button',{name:'날짜 일정 닫기',exact:true}).click();
  await only('필터 그룹 하나');await expect(current).toContainText('하나 오전 수업');await expect(current).toContainText('그룹 전체 일정');await expect(current).not.toContainText('둘 오후 수업');
  await page.goto('/tuition');await waitForAppReady(page);await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).click();await only('필터 그룹 둘');await expect(current.locator('.ledger-summary-expense dd')).toHaveText('60,000원');await expect(current.locator('.ledger-entry h3')).toHaveText(['둘 교재']);
- await page.goto('/today/calendar');await waitForAppReady(page);await expect(current).toContainText('하나 오전 수업');await expect(current).not.toContainText('둘 오후 수업');await expect(page.getByRole('group',{name:'달력 구성원 필터',exact:true}).getByRole('button',{name:'필터 그룹 하나',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.goto('/today/calendar');await waitForAppReady(page);await expect(current).toContainText('하나 오전 수업');await expect(current).not.toContainText('둘 오후 수업');
+ const calendarMembers=await openMemberPreferences(page);await expect(calendarMembers.getByRole('button',{name:'필터 그룹 하나',exact:true})).toHaveAttribute('aria-pressed','true');await closeMemberPreferences(page);
  await page.goto('/tuition');await waitForAppReady(page);await expect(current.locator('.ledger-summary-expense dd')).toHaveText('60,000원');
  for(const width of [320,390,768,1320]){await page.setViewportSize({width,height:1000});const options=await openMemberPreferences(page);await expect(options.getByRole('button',{name:'필터 그룹 둘',exact:true})).toBeInViewport();await options.getByRole('button',{name:'선택 완료',exact:true}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:`test-results/v2-independent-filters-${width}.png`});}
 
@@ -118,7 +119,8 @@ for(const width of [320,768,1440])test(`all functional canvases and calendar edi
    if(path==='/timetable'){await expect(page.getByLabel('시간표 날짜 선택')).toHaveCount(0);await expect(page.locator('[data-timetable-date]')).toHaveCount(7);await page.getByRole('button',{name:koreaToday()+' 09:00 일정 등록',exact:true}).click();}
    else{
     const input=page.getByLabel(path==='/today/calendar'?'달력 월 선택':'조회 월',{exact:true});await input.fill('2026-12');await input.fill('2027-01');await expect(input).toHaveValue('2027-01');await input.fill('2026-12');
-    const picker=(await page.locator('.workspace-date-picker').boundingBox())!;expect(picker.height).toBeGreaterThanOrEqual(44);expect(picker.x).toBeGreaterThanOrEqual(0);expect(picker.x+picker.width).toBeLessThanOrEqual(width);
+    const picker=(await page.locator('.workspace-date-picker').boundingBox())!;
+    expect(picker.height).toBeCloseTo(path==='/records'?44:44*.8,1);expect(picker.x).toBeGreaterThanOrEqual(0);expect(picker.x+picker.width).toBeLessThanOrEqual(width);
     if(path==='/today/calendar'){await page.locator('[data-pager-current] .calendar-cell[data-date="2026-12-01"] .calendar-day-target>span').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();}
     else if(path==='/tuition'){await page.locator('[data-pager-current] .calendar-cell[data-date="2026-12-01"] .calendar-day-target').click();await page.getByRole('button',{name:'이 날짜에 가계부 추가'}).click();}
     else await page.getByRole('button',{name:'메모 추가',exact:true}).click();

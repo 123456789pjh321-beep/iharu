@@ -1,5 +1,6 @@
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 import {koreaToday} from '../../shared/schedules';
+import {closeMemberPreferences,openMemberPreferences,workspaceGroupButton} from '../helpers/workspace-ui';
 const origin='http://127.0.0.1:4174',password='persistent-topbar-fixture-2026';
 test.use({baseURL:origin,viewport:{width:520,height:900}});
 const nav=(page:Page)=>page.getByRole('navigation',{name:'모바일 주 메뉴'});
@@ -49,7 +50,8 @@ test('keeps the same top and bottom chrome across all four menus without changin
  await expect(bar(page).getByLabel('달력 날짜 선택',{exact:true})).toHaveValue('2027-02-01');
  await calendarView('월간').click();
  await expect(bar(page).getByLabel('달력 월 선택',{exact:true})).toHaveValue('2027-02');
- await bar(page).getByRole('button',{name:/구성원 필터 설정/}).click();await expect(page.getByRole('dialog',{name:'조회할 구성원'})).toBeVisible();
+ await expect(bar(page).locator('.member-preference-row')).toHaveCount(0);
+ await openMemberPreferences(page);
  // Browser back closes a filter sheet owned by the previous menu.
  await page.goBack();await expect(page).toHaveURL(origin+'/timetable');await expect(page.getByRole('dialog',{name:'조회할 구성원'})).not.toBeVisible();await unchangedChrome(page);
  await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await page.setViewportSize({width:320,height:900});await rememberChrome(page);
@@ -66,16 +68,24 @@ test('uses each menu’s own saved members, current month actions and invitation
   for(const [scope,memberIds] of [['timetable',[me.id]],['calendar',[member.id]],['fees',[me.id,member.id]]] as const)await command(page.request,'member-filter.preference.save',{scope,memberIds});
   const today=koreaToday();
   for(const owner of [page,other])for(const kind of ['REPEAT','EVENT','FEE'])await command(owner.request,'items.create',{kind,data:{title:(owner===page?'내':'그룹')+' '+kind,date:today,weekdays:[new Date(today+'T12:00:00Z').getUTCDay()],startTime:'09:00',endTime:'10:00',amount:1000}});
-  await page.goto('/timetable');await expect(bar(page).getByRole('group',{name:'시간표 구성원 필터',exact:true})).toBeVisible();await rememberChrome(page);
-  const selected=async(label:string,host:boolean,guest:boolean)=>{const group=bar(page).getByRole('group',{name:label,exact:true});await expect(group.getByRole('button',{name:'topbar-host',exact:true})).toHaveAttribute('aria-pressed',String(host));await expect(group.getByRole('button',{name:'topbar-member',exact:true})).toHaveAttribute('aria-pressed',String(guest));};
+  await page.goto('/timetable');await expect(workspaceGroupButton(page)).toBeVisible();await rememberChrome(page);
+  const selected=async(label:string,host:boolean,guest:boolean)=>{
+   const dialog=await openMemberPreferences(page),group=dialog.getByRole('group',{name:label+' 전체 구성원',exact:true});
+   await expect(group.getByRole('button',{name:'topbar-host',exact:true})).toHaveAttribute('aria-pressed',String(host));
+   await expect(group.getByRole('button',{name:'topbar-member',exact:true})).toHaveAttribute('aria-pressed',String(guest));
+   await closeMemberPreferences(page);
+  };
   await selected('시간표 구성원 필터',true,false);await expect(page.locator('.timetable-title').filter({hasText:'내 REPEAT'})).toHaveCount(1);await expect(page.locator('.timetable-title').filter({hasText:'그룹 REPEAT'})).toHaveCount(0);
   await nav(page).getByRole('link',{name:'달력',exact:true}).click();await selected('달력 구성원 필터',false,true);await unchangedChrome(page);await expect(page.locator('[data-pager-current]')).toContainText('그룹 EVENT');await expect(page.locator('[data-pager-current]')).not.toContainText('내 EVENT');
   await bar(page).getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await expect(page.locator('[data-pager-current] .calendar-cell[data-date="2027-02-19"]')).toBeVisible();
-  await bar(page).getByRole('button',{name:/구성원 필터 설정/}).click();await page.getByRole('dialog',{name:'조회할 구성원'}).getByRole('button',{name:'topbar-host',exact:true}).click();await page.getByRole('dialog',{name:'조회할 구성원'}).getByRole('button',{name:/첫 화면으로 저장$/}).click();await expect(page.getByRole('dialog',{name:'조회할 구성원'}).getByRole('button',{name:/첫 화면으로 설정됨/})).toBeDisabled();await page.keyboard.press('Escape');
+  const calendarMembers=await openMemberPreferences(page);await calendarMembers.getByRole('button',{name:'topbar-host',exact:true}).click();await calendarMembers.getByRole('button',{name:/첫 화면으로 저장$/}).click();await expect(calendarMembers.getByRole('button',{name:/첫 화면으로 설정됨/})).toBeDisabled();await page.keyboard.press('Escape');
   await nav(page).getByRole('link',{name:'가계부',exact:true}).click();await selected('가계부 구성원 필터',true,true);await unchangedChrome(page);await bar(page).getByLabel('조회 월',{exact:true}).fill(today.slice(0,7));await expect(page.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('2,000원');
-  await nav(page).getByRole('link',{name:'타임라인',exact:true}).click();await selected('메모 작성자',true,true);await unchangedChrome(page);await bar(page).getByRole('group',{name:'메모 작성자',exact:true}).getByRole('button',{name:'topbar-host',exact:true}).click();await selected('메모 작성자',false,true);
+  await nav(page).getByRole('link',{name:'타임라인',exact:true}).click();await selected('메모 작성자',true,true);await unchangedChrome(page);
+  await (await openMemberPreferences(page)).getByRole('button',{name:'topbar-host',exact:true}).click();await closeMemberPreferences(page);await selected('메모 작성자',false,true);
   await bar(page).getByLabel('타임라인 조회 월').fill('2027-03');await expect(page.locator('[data-pager-current] .memo-empty')).toContainText('이번 달');
-  await bar(page).getByRole('button',{name:'그룹 초대 공유',exact:true}).click();await expect(page.getByRole('dialog',{name:'그룹 초대 공유'})).toBeVisible();await expect(page.getByLabel('발급한 그룹 초대 링크',{exact:true})).toBeVisible();await page.getByRole('button',{name:'그룹 초대 닫기'}).click();
+  const invitePopup=await openMemberPreferences(page);await invitePopup.getByRole('button',{name:'그룹 초대 공유',exact:true}).click();
+  await expect(invitePopup.getByLabel('발급한 그룹 초대 링크',{exact:true})).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(1);await closeMemberPreferences(page);
   await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await selected('시간표 구성원 필터',true,false);await unchangedChrome(page);
   await nav(page).getByRole('link',{name:'달력',exact:true}).click();await selected('달력 구성원 필터',true,true);await unchangedChrome(page);
   const actionLabels:Record<string,string[]>={
@@ -87,20 +97,18 @@ test('uses each menu’s own saved members, current month actions and invitation
    await page.setViewportSize({width,height});let baseline:unknown,actionGeometry:unknown;
    for(const [label,path] of [['시간표','/timetable'],['달력','/today/calendar'],['가계부','/tuition'],['타임라인','/timeline']]){
     await nav(page).getByRole('link',{name:label,exact:true}).click();await expect(bar(page).locator('[data-topbar-route]')).toHaveAttribute('data-topbar-route',path);await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
-    await expect(bar(page).locator('.member-preference-options svg')).toHaveCount(2);await unchangedChrome(page);
+    await expect(bar(page).locator('.member-preference-row')).toHaveCount(0);await unchangedChrome(page);
     const geometry=await bar(page).evaluate(node=>{
      const box=(selector:string)=>{const r=node.querySelector(selector)!.getBoundingClientRect();return [r.x,r.y,r.width,r.height].map(n=>Math.round(n*10)/10);};
      const title=node.querySelector('.workspace-date-picker>span,.workspace-toolbar-title')!,style=getComputedStyle(title);
      return {
       toolbar:box('.workspace-toolbar'),date:box('.workspace-date-picker,span.workspace-toolbar-title'),
       group:box('.workspace-group-filter'),groupChip:box('.workspace-group-chips>button'),plus:box('.group-add-shortcut'),
-      row:box('.member-preference-row'),invite:box('.group-invite-shortcut'),options:box('.member-preference-options'),
-      chip:box('.member-filters>button'),titleX:Math.round(title.getBoundingClientRect().x),font:style.fontSize,
+      titleX:Math.round(title.getBoundingClientRect().x),font:style.fontSize,
      };
     });
     for(const [name,original] of [
      ['toolbar',52],['date',44],['group',42],['groupChip',32],['plus',32],
-     ['row',40],['invite',32],['options',44],['chip',32],
     ] as const)expect(geometry[name][3],`${path} at ${width}px · ${name}`).toBeCloseTo(original*.8,1);
     const {date,...sharedGeometry}=geometry;
     expect(date[1]).toBeCloseTo(geometry.toolbar[1]+(geometry.toolbar[3]-date[3])/2,1);
@@ -133,16 +141,16 @@ test('uses each menu’s own saved members, current month actions and invitation
      }))).toBe(true);
      if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
     }else await expect(actions).toHaveCount(0);
-    const originalHeight=52+42+40+(labels?(width<=420?59:63):0);
+    const originalHeight=52+42+(labels?(width<=420?59:63):0);
     expect((await bar(page).boundingBox())!.height).toBeCloseTo(originalHeight*.8,0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
     await page.screenshot({path:`test-results/topbar-aligned-${path.split('/').pop()}-${width}.png`,animations:'disabled'});
    }
   }
-  await bar(page).getByRole('button',{name:/구성원 필터 설정/}).click();const filter=page.getByRole('dialog',{name:'조회할 구성원'});
+  const filter=await openMemberPreferences(page);
   await expect(filter).toBeVisible();await expect(filter.getByRole('button',{name:/첫 화면으로/})).toHaveCount(0);
   await filter.getByRole('button',{name:'topbar-host',exact:true}).click();await filter.getByRole('button',{name:'선택 완료'}).click();await selected('메모 작성자',false,true);
-  await bar(page).getByRole('button',{name:/구성원 필터 설정/}).click();await filter.getByRole('button',{name:'전체선택',exact:true}).click();await page.keyboard.press('Escape');await selected('메모 작성자',true,true);
+  await openMemberPreferences(page);await filter.getByRole('button',{name:'전체선택',exact:true}).click();await page.keyboard.press('Escape');await selected('메모 작성자',true,true);
   const saved=await command(page.request,'me');expect(saved.memberFilterPreferences.timetable).toEqual([me.id]);expect(saved.memberFilterPreferences.calendar).toHaveLength(2);expect(saved.memberFilterPreferences.fees).toHaveLength(2);
  }finally{await context.close();}
 });

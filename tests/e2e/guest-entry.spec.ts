@@ -161,7 +161,7 @@ test('native Back from Google restores a cached login sheet that can retry or cl
  }finally{await context.close();await browser.close();}
 });
 
-test('timetable and calendar share member chips and the TimeTree bottom navigation', async ({page}) => {
+test('timetable and calendar share the sample group button and compact bottom navigation', async ({page}) => {
  await page.setViewportSize({width:390,height:844});
  await page.goto('/timetable');await ready(page);
  const workspace=page.locator('.auth-app.workspace-page');
@@ -171,10 +171,12 @@ test('timetable and calendar share member chips and the TimeTree bottom navigati
  const timetableSize=await grid.boundingBox();
  const timetableNav=await nav.boundingBox();
  await expect(workspace).toHaveAttribute('data-timetree','/timetable');
- await expect(nav).toHaveCSS('height','80px');
+ await expect(nav).toHaveCSS('height','64px');
  const activeIcon=nav.locator('a[aria-current="page"] .rail-icon');
  const timetableIcon=(await activeIcon.boundingBox())!;
- const selectedChip=page.locator('.member-preference-row .member-filters>button[aria-pressed=true]').first();
+ const selectedChip=page.locator('.workspace-group-chips>.guest-sample-badge');
+ await expect(selectedChip).toBeVisible();
+ await expect(page.locator('.member-preference-row')).toHaveCount(0);
  const chipStyle=()=>selectedChip.evaluate(el=>{const style=getComputedStyle(el);return [style.height,style.borderRadius,style.fontSize,style.backgroundColor];});
  const timetableChip=await chipStyle();
  for(const [label,route,content] of [
@@ -187,7 +189,7 @@ test('timetable and calendar share member chips and the TimeTree bottom navigati
   await expect(workspace).toHaveAttribute('data-timetree',route);
   await expect(page.locator(content)).toBeVisible();
   await expect(nav.getByRole('link',{name:label,exact:true})).toHaveAttribute('aria-current','page');
-  await expect(nav).toHaveCSS('height','80px');
+  await expect(nav).toHaveCSS('height','64px');
   if(label==='달력'){
    const calendarIcon=(await activeIcon.boundingBox())!;
    expect([calendarIcon.width,calendarIcon.height]).toEqual([timetableIcon.width,timetableIcon.height]);
@@ -219,7 +221,7 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
    position:bar.position,height:bar.height,background:bar.backgroundColor,border:bar.borderTopColor,
    text:tab.color,textSize:tab.fontSize,tabBackground:tab.backgroundColor,
    capsuleWidth:capsule.width,capsuleHeight:capsule.height,capsuleRadius:capsule.borderRadius,
-   capsuleBackground:capsule.backgroundColor,iconWidth:icon.width,
+   iconWidth:icon.width,
   };
  });
  const mainMenus=[
@@ -234,9 +236,17 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   await expect(nav.getByRole('link',{name:'시간표',exact:true})).toHaveAttribute('aria-current','page');
   const reference=await appearance();
   expect(reference).toMatchObject({
-   position:'fixed',height:height<500?'64px':'80px',tabBackground:'rgba(0, 0, 0, 0)',
-   capsuleWidth:width<=360?'46px':'56px',capsuleHeight:'34px',capsuleRadius:'20px',iconWidth:'20px',
+   position:'fixed',tabBackground:'rgba(0, 0, 0, 0)',
+   capsuleWidth:width<=360?'46px':'56px',capsuleHeight:height<500?'26px':'28px',capsuleRadius:'16px',iconWidth:'20px',
   });
+  expect(parseFloat(reference.height)).toBeCloseTo(height<500?51.2:64,1);
+  const colors=await nav.locator('.rail-icon').evaluateAll(icons=>icons.map(icon=>getComputedStyle(icon).color));
+  expect(new Set(colors).size).toBe(7);
+  await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(23, 109, 99)');
+  expect(await nav.evaluate(node=>[...node.children].every(child=>{
+   const item=child.getBoundingClientRect(),bar=node.getBoundingClientRect();
+   return item.height>=44&&item.top>=bar.top&&item.bottom<=bar.bottom;
+  }))).toBe(true);
   const routes=width===320?[...mainMenus,...moreMenus.map(path=>[path,'더보기'])]:[['/account','더보기'],['/settings','설정']];
   for(const [path,label] of routes){
    await page.goto(path);
@@ -251,7 +261,8 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  await page.goto('/timetable');
  const darkReference=await appearance();
- expect(darkReference).toMatchObject({background:'rgb(25, 28, 27)',capsuleBackground:'rgb(37, 75, 56)'});
+ expect(darkReference).toMatchObject({background:'rgb(25, 28, 27)'});
+ await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(144, 219, 201)');
  await page.goto('/account');
  await expect(nav.getByRole('link',{name:'더보기',exact:true})).toHaveAttribute('aria-current','page');
  expect(await appearance()).toEqual(darkReference);

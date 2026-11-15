@@ -23,7 +23,8 @@ test('shows two-line summaries and opens complete photo/location memos with pers
  await editor.getByLabel('제목',{exact:true}).fill('우리 동네 산책');await editor.getByLabel('글',{exact:true}).fill('오늘은 도서관에서 새로운 책을 읽었어요.\n두 번째 줄과 아주 긴 기록도 상세 화면에서는 줄임 없이 모두 읽을 수 있어요. '.repeat(8));await editor.getByLabel('카테고리',{exact:true}).selectOption('OUTING');await editor.getByLabel('장소',{exact:true}).fill('중앙 도서관');await editor.getByLabel(/태그/).fill('주말, 책');await editor.getByRole('button',{name:'현재 위치 담기'}).click();await expect(editor.getByText(/좌표 저장됨/)).toBeVisible();
  await editor.getByLabel('사진 선택',{exact:true}).setInputFiles({name:'memo.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAGklEQVR4nGOYcGEB2YhhVPOo5lHNo5oHVjMAm3IgLq+00UgAAAAASUVORK5CYII=','base64')});await expect(editor.getByAltText('첨부 사진 1')).toBeVisible();await editor.getByRole('button',{name:'메모 저장'}).click();await expect(editor).toHaveCount(0);
  const card=page.getByRole('article',{name:'우리 동네 산책'});await expect(card).toContainText('나만 보기');await expect(card.getByRole('img')).toHaveCount(0);await expect(card.getByRole('link')).toHaveCount(0);await expect(page.getByRole('region',{name:'샘플 메모'})).toHaveCount(0);await expect(page.getByRole('button',{name:'전체',exact:true})).toHaveCount(0);
- await expect(page.getByRole('group',{name:'메모 작성자'}).getByRole('button',{name:'memo-browser',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(page.getByRole('group',{name:'조회할 그룹',exact:true}).getByRole('button',{name:'개인',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('[data-workspace-topbar] .member-filters')).toHaveCount(0);
  await expect.poll(()=>card.locator('.memo-preview-body').evaluate(node=>node.clientHeight<=parseFloat(getComputedStyle(node).lineHeight)+1)).toBe(true);
  await card.click();const detail=page.getByRole('dialog',{name:'글 상세'});await expect(detail.getByRole('link',{name:/중앙 도서관/})).toHaveAttribute('href',/37.28,127.01/);await detail.locator('.memo-photo-container').scrollIntoViewIfNeeded();await expect(detail.getByRole('img')).toBeVisible();await expect(detail.locator('.memo-body')).toContainText('두 번째 줄');await expect(detail.getByText('#주말',{exact:true})).toBeVisible();
  await detail.getByRole('button',{name:'즐겨찾기',exact:true}).click();await expect(detail.getByRole('button',{name:'즐겨찾기 해제'})).toHaveAttribute('aria-pressed','true');await detail.getByRole('button',{name:/사진 1 크게 보기/}).click();await expect(page.getByRole('dialog',{name:'사진 크게 보기'})).toBeVisible();await page.getByRole('button',{name:'사진 닫기'}).click();await expect(detail).toBeVisible();
@@ -40,7 +41,7 @@ test('keeps draft photos and text through save/refresh failures and reloads an o
  page.once('dialog',dialog=>dialog.accept());await page.reload();await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();editor=page.getByRole('dialog',{name:'메모 작성'});await expect(editor.getByLabel('글',{exact:true})).toHaveValue('연결이 끊겨도 유지');await editor.getByRole('button',{name:'메모 저장'}).click();await expect(page.getByLabel('타임라인 조회 월')).toHaveValue('2026-02');await expect(page.getByRole('article',{name:'남아 있어야 하는 초안'})).toBeVisible();
 });
 
-test('swipes real months without opening details or interfering with vertical scrolling and member controls',async({browser})=>{
+test('swipes real months without opening details or interfering with vertical scrolling and group controls',async({browser})=>{
  test.setTimeout(120000);
  const context=await browser.newContext({baseURL:origin,hasTouch:true,isMobile:true,viewport:{width:390,height:900}}),page=await context.newPage();
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
@@ -77,7 +78,8 @@ test('swipes real months without opening details or interfering with vertical sc
   await page.getByRole('article',{name:'1월 기록',exact:true}).tap();await expect(page.getByRole('dialog',{name:'글 상세'})).toBeVisible();await page.getByRole('button',{name:'글 상세 닫기'}).tap();
   await swipe(area,false);await expect(month).toHaveValue('2026-12');await settled();
   await swipe(area,true,true);await expect(month).toHaveValue('2026-12');await settled();
-  const member=page.getByRole('group',{name:'메모 작성자'});await swipe(member,true);await expect(month).toHaveValue('2026-12');await expect(member.getByRole('button',{name:'memo-swipes',exact:true})).toHaveAttribute('aria-pressed','true');
+  const groups=page.getByRole('group',{name:'조회할 그룹',exact:true});await swipe(groups,true);await expect(month).toHaveValue('2026-12');
+  await expect(groups.getByRole('button',{name:'개인',exact:true})).toHaveAttribute('aria-pressed','true');await expect(page.getByRole('dialog')).toHaveCount(0);
   const scrollPosition=()=>page.evaluate(()=>Array.from(document.querySelectorAll('*')).reduce((sum,node)=>sum+node.scrollTop,0)),before=await scrollPosition();
   await touch({x:230,y:700},{x:232,y:380});await expect.poll(scrollPosition).toBeGreaterThan(before+50);await expect(month).toHaveValue('2026-12');
   await expect.poll(async()=>{
