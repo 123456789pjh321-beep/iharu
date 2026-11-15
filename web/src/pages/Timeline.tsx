@@ -155,14 +155,8 @@ function Timeline({me}:{me:WorkspaceMe|null}){
    const next=selectedOwners.includes(id)?selectedOwners.filter(value=>value!==id):[...selectedOwners,id];
    selectOwners(next.length?next:[id]);
   },selectAll:()=>selectOwners(members.map(member=>member.id))}} label="메모 작성자"/>:<WorkspaceTopBarSlot slot="members">{null}</WorkspaceTopBarSlot>}
-  <div className="memo-compose"><button type="button" className="memo-new-row" aria-label="새글 등록" onClick={()=>create()}>
-   <span className="memo-compose-icon"><Icon name="plus"/></span>
-   <span className="memo-compose-copy"><strong>새글 등록</strong><small>오늘의 순간을 남겨보세요</small></span>
-   <span className="memo-compose-media" aria-hidden="true"><Icon name="image"/><Icon name="pin"/></span>
-   <Icon name="chevron"/>
-  </button></div>
   <div className="memo-quick-tools"><div className="memo-tools" role="group" aria-label="빠른 기록">{memoTools.map(([id,label,icon])=><button type="button" key={id} onClick={()=>create(id)}><Icon name={icon}/><span>{label}</span></button>)}</div></div>
-  <div className="memo-notebook-filter">{(notebooks.length>0||notebook)&&<label><Icon name="book"/><span className="sr-only">노트북별 보기</span><select aria-label="노트북별 보기" value={notebook} onChange={e=>{setNotebook(e.target.value);setOffset(0);}}><option value="">모든 노트북</option>{notebooks.map(n=><option key={n.name} value={n.name}>{n.name} ({n.count})</option>)}</select></label>}</div>
+  <div className="memo-notebook-filter">{(notebooks.length>0||notebook)&&<label><Icon name="book"/><span className="sr-only">노트별 보기</span><select aria-label="노트별 보기" value={notebook} onChange={e=>{setNotebook(e.target.value);setOffset(0);}}><option value="">모든 노트</option>{notebooks.map(n=><option key={n.name} value={n.name}>{n.name} ({n.count})</option>)}</select></label>}</div>
   <p className="memo-status" role="status">{message}</p>
   <MonthSwipeArea month={month} onChange={selectMonth}>{renderMonth}</MonthSwipeArea>
   {selected&&<MemoDetail memo={selected} busy={busy===selected.id} message={message} onClose={()=>{setSelectedId('');setViewPhoto('');}} onPhoto={setViewPhoto} onCreate={()=>{setSelectedId('');create();}} onEdit={()=>{
