@@ -1,11 +1,11 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {ringAngle,ringBands,ringCenter,ringHit,ringSize,type RingModel,type RingSlice} from './ring-model';
+import {ringAngle,ringBands,ringCenter,ringHit,ringSize,type RingKind,type RingModel,type RingSlice} from './ring-model';
 
 export type {RingSlice} from './ring-model';
 type Engine=ReturnType<typeof import('./phaser-ring').startPhaserRing>;
 
 function RingPreview({model}:{model:RingModel}){
- const track=model.dark?'#34423d':'#e7eeeb';
+ const track=model.kind==='infographic'&&model.slices.length?'transparent':model.dark?'#34423d':'#e7eeeb';
  return <div className="graphic-ring-preview" aria-hidden="true">
   {ringBands(model).map((band,lane)=>{
    const segments=model.slices.filter(slice=>slice.lane===lane&&slice.to>slice.from);
@@ -24,13 +24,14 @@ function RingPreview({model}:{model:RingModel}){
  </div>;
 }
 
-export function GraphicRing({slices,clock=false,now,label,center,onSelect,engineEnabled=true}:{
- slices:RingSlice[];clock?:boolean;now?:number;label:string;center:ReactNode;onSelect:(id:string)=>void;engineEnabled?:boolean;
+export function GraphicRing({slices,kind='share',now,label,center,annotations,onSelect,engineEnabled=true}:{
+ slices:RingSlice[];kind?:RingKind;now?:number;label:string;center:ReactNode;annotations?:ReactNode;
+ onSelect:(id:string)=>void;engineEnabled?:boolean;
 }){
  const host=useRef<HTMLDivElement>(null),engine=useRef<Engine|null>(null);
  const [ready,setReady]=useState(false);
  const [dark,setDark]=useState(()=>document.documentElement.dataset.theme==='dark');
- const model={slices,clock,now,dark};
+ const model={slices,kind,now,dark};
  const current=useRef<RingModel>(model);
 
  useEffect(()=>{
@@ -42,7 +43,7 @@ export function GraphicRing({slices,clock=false,now,label,center,onSelect,engine
  useEffect(()=>{
   current.current=model;
   engine.current?.update(model);
- },[slices,clock,now,dark]);
+ },[slices,kind,now,dark]);
  useEffect(()=>{
   setReady(false);
   if(!engineEnabled)return;
@@ -57,7 +58,7 @@ export function GraphicRing({slices,clock=false,now,label,center,onSelect,engine
   };
  },[engineEnabled]);
  const engineReady=engineEnabled&&ready;
- return <div className={'graphic-ring'+(clock?' graphic-clock':'')} role="img" aria-label={label}
+ return <div className={'graphic-ring'+(kind==='share'?'':' graphic-'+kind)} role="img" aria-label={label}
   data-renderer={engineReady?'phaser':'css'} data-selectable={slices.length>0||undefined}
   onClick={event=>{
    const box=event.currentTarget.getBoundingClientRect();
@@ -66,12 +67,13 @@ export function GraphicRing({slices,clock=false,now,label,center,onSelect,engine
   }}>
   {!engineReady&&<RingPreview model={model}/>}
   <div className="graphic-ring-engine" aria-hidden="true" ref={host}/>
-  {clock&&Array.from({length:8},(_,index)=>{
+  {kind==='clock'&&Array.from({length:8},(_,index)=>{
    const angle=ringAngle(index/8);
    const x=(ringCenter+Math.cos(angle)*224)/ringSize*100,y=(ringCenter+Math.sin(angle)*224)/ringSize*100;
    return <span className="graphic-clock-hour" aria-hidden="true" key={index}
     style={{left:x+'%',top:y+'%'}}>{String(index*3).padStart(2,'0')}</span>;
   })}
+  {annotations&&<div className="graphic-ring-annotations" aria-hidden="true">{annotations}</div>}
   <div className="graphic-ring-center" aria-hidden="true">{center}</div>
  </div>;
 }
