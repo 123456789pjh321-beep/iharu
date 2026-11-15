@@ -4,16 +4,18 @@ export const fullTurn=Math.PI*2;
 export const ringAngle=(fraction:number)=>fraction*fullTurn-Math.PI/2;
 
 export type RingSlice={id:string;from:number;to:number;lane:number;color:string};
-export type RingModel={slices:RingSlice[];clock:boolean;now?:number;dark:boolean};
+export type RingKind='share'|'clock'|'infographic';
+export type RingModel={slices:RingSlice[];kind:RingKind;now?:number;dark:boolean};
 
-export function ringBands(model:Pick<RingModel,'slices'|'clock'>){
- if(!model.clock)return [{radius:163,width:46}];
+export function ringBands(model:Pick<RingModel,'slices'|'kind'>){
+ if(model.kind==='infographic')return [{radius:151,width:130}];
+ if(model.kind==='share')return [{radius:163,width:46}];
  const count=model.slices.reduce((maximum,slice)=>Math.max(maximum,slice.lane+1),1);
  const spacing=Math.min(29,82/Math.max(1,count-1));
  return Array.from({length:count},(_,index)=>({radius:177-index*spacing,width:spacing*.72}));
 }
 
-export function ringHit(model:Pick<RingModel,'slices'|'clock'>,x:number,y:number){
+export function ringHit(model:Pick<RingModel,'slices'|'kind'>,x:number,y:number){
  const radius=Math.hypot(x-ringCenter,y-ringCenter);
  const turn=((Math.atan2(y-ringCenter,x-ringCenter)+Math.PI/2+fullTurn)%fullTurn)/fullTurn;
  const bands=ringBands(model);

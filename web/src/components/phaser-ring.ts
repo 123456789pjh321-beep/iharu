@@ -4,7 +4,9 @@ import {fullTurn,ringAngle,ringBands,ringCenter,ringSize,type RingModel} from '.
 function drawRing(graphics:Phaser.GameObjects.Graphics,model:RingModel){
  const bands=ringBands(model),track=model.dark?0x34423d:0xe7eeeb;
  graphics.clear();
- for(const band of bands)graphics.lineStyle(band.width,track).strokeCircle(ringCenter,ringCenter,band.radius);
+ if(model.kind!=='infographic'||model.slices.length===0){
+  for(const band of bands)graphics.lineStyle(band.width,track).strokeCircle(ringCenter,ringCenter,band.radius);
+ }
  for(const slice of model.slices){
   if(slice.to<=slice.from)continue;
   const band=bands[slice.lane];
@@ -15,7 +17,7 @@ function drawRing(graphics:Phaser.GameObjects.Graphics,model:RingModel){
    graphics.beginPath().arc(ringCenter,ringCenter,band.radius,ringAngle(slice.from),ringAngle(slice.to)).strokePath();
   }
  }
- if(!model.clock)return;
+ if(model.kind!=='clock')return;
  for(let hour=0;hour<24;hour++){
   const angle=hour*fullTurn/24-Math.PI/2;
   const major=hour%3===0,inside=major?200:203,outside=209;

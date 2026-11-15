@@ -49,7 +49,50 @@
   color: var(--muted);
   pointer-events: none;
 }
-.graphic-clock .graphic-now { color: var(--holiday-ink); font-weight: 650; }
+.graphic-clock .graphic-now,.graphic-infographic .graphic-now { color: var(--holiday-ink); font-weight: 650; }
+.graphic-infographic { width: min(100%, 430px); }
+.graphic-infographic .graphic-ring-center {
+  width: 33%;
+  aspect-ratio: 1;
+  align-content: center;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.graphic-infographic .graphic-ring-center small { font-size: clamp(.63rem, 1.3vw, .73rem); }
+.graphic-ring-annotations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.graphic-routine-label {
+  position: absolute;
+  width: 27%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  color: #fff;
+  text-align: center;
+  line-height: 1.2;
+}
+.graphic-routine-label .icon { width: clamp(14px, 3vw, 26px); height: clamp(14px, 3vw, 26px); }
+.graphic-routine-label strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: clamp(.69rem, 1.6vw, .92rem);
+}
+.graphic-routine-label small {
+  color: inherit;
+  font-size: clamp(.625rem, 1.34vw, .75rem);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .timetable-graphic {
   min-width: 0;
   min-height: 0;
@@ -69,6 +112,37 @@
   border-radius: 14px;
   background: var(--surface);
 }
+.timetable-graphic-views {
+  display: flex;
+  width: fit-content;
+  margin-inline: auto;
+  padding: 3px;
+  gap: 3px;
+  border-radius: 9px;
+  background: var(--surface-sub);
+}
+.timetable-graphic-views button {
+  min-height: 34px;
+  padding-inline: 10px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: .75rem;
+  cursor: pointer;
+}
+.timetable-graphic-views button[aria-pressed=true] { color: var(--primary); background: var(--mint); font-weight: 650; }
+.timetable-routine-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: .72rem;
+  color: var(--muted);
+}
+.timetable-routine-pagination .icon { width: 15px; height: 15px; }
 .timetable-graphic-list header {
   display: flex;
   flex-wrap: wrap;

@@ -89,13 +89,16 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await expect(output).toHaveText('1,700');
 });
 
-test('weekly timetable preserves its calendar and renders a touchable ring for the selected day',async({page})=>{
+test('weekly timetable opens a touchable daily infographic and a 24-hour ring for the selected day',async({page})=>{
  await page.setViewportSize({width:390,height:900});
  const post=await signIn(page,'weekly-graphic');
  for(const data of [
   {title:'아침 모임',startTime:'09:00',endTime:'10:15',weekdays:[1],color:0},
   {title:'겹친 활동',startTime:'09:30',endTime:'11:00',weekdays:[1],color:1},
   {title:'화요일 수업',startTime:'14:00',endTime:'15:00',weekdays:[2],color:2},
+  ...['07','08','09','10','11','12'].map((hour,index)=>({
+   title:'화요일 일과 '+(index+1),startTime:hour+':00',endTime:hour+':30',weekdays:[2],color:index,
+  })),
  ])expect((await post('/api/v1/workspace/items.create',{kind:'REPEAT',data:{date:'2027-02-15',...data}})).ok()).toBe(true);
  await page.clock.setFixedTime(new Date('2027-02-15T09:45:00+09:00'));
  const engineRequests:string[]=[];
@@ -107,26 +110,52 @@ test('weekly timetable preserves its calendar and renders a touchable ring for t
  await expect(page.locator('.timetable-grid')).toBeVisible();
  expect(engineRequests).toEqual([]);
  await menu.getByRole('button',{name:'그래픽',exact:true}).click();
- const graphic=page.getByRole('region',{name:'그래픽 시간표'}),ring=graphic.getByRole('img',{name:/24시간 원형 시간표/});
- await expect(ring).toHaveAttribute('data-renderer','phaser',{timeout:15000});
+ const graphic=page.getByRole('region',{name:'그래픽 시간표'});
+ const routine=graphic.getByRole('img',{name:/하루 일과 인포그래픽/});
+ const views=graphic.getByRole('group',{name:'그래픽 표시'});
+ await expect(views.getByRole('button',{name:'하루 일과'})).toHaveAttribute('aria-pressed','true');
+ await expect(routine).toHaveAttribute('data-renderer','phaser',{timeout:15000});
+ await expect(routine.locator('.graphic-routine-label strong')).toHaveText(['아침 모임','겹친 활동']);
+ await expect(routine.locator('.graphic-routine-label small')).toHaveText(['09:00–10:15','09:30–11:00']);
+ await expect(routine.locator('.graphic-routine-label .icon')).toHaveCount(2);
  await expect(graphic.getByRole('list',{name:'시간순 일정'}).getByRole('listitem')).toHaveCount(2);
  await expect(graphic.locator('.graphic-now')).toHaveText('현재 09:45');
  await expect(graphic.getByRole('button',{name:'아침 모임 · 수정'})).toContainText('진행 중');
  for(const width of [320,689,1440]){
   await page.setViewportSize({width,height:940});
-  await expect(ring).toBeInViewport({ratio:.8});
+  await expect(routine).toBeInViewport({ratio:.8});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.screenshot({path:`test-results/timetable-graphic-${width}.png`,animations:'disabled'});
+  await page.screenshot({path:`test-results/timetable-infographic-${width}.png`,animations:'disabled'});
  }
- await clickRing(ring,9.75/24,148);
  const editor=page.getByRole('dialog',{name:'수정'});
+ await clickRing(routine,.25,151);
+ await expect(editor.getByLabel('제목',{exact:true})).toHaveValue('아침 모임');
+ await editor.getByRole('button',{name:'편집 닫기'}).click();
+ await views.getByRole('button',{name:'24시간',exact:true}).click();
+ const ring=graphic.getByRole('img',{name:/24시간 원형 시간표/});
+ await expect(ring).toHaveAttribute('data-renderer','phaser',{timeout:15000});
+ await clickRing(ring,9.75/24,148);
  await expect(editor.getByLabel('제목',{exact:true})).toHaveValue('겹친 활동');
  await editor.getByRole('button',{name:'편집 닫기'}).click();
  await page.locator('[data-timetable-date="2027-02-16"]').click();
  await expect(graphic.getByRole('button',{name:'화요일 수업 · 수정'})).toBeVisible();
  await expect(graphic.locator('.graphic-now')).toHaveCount(0);
+ await views.getByRole('button',{name:'하루 일과'}).click();
+ await expect(routine.locator('.graphic-routine-label strong')).toHaveText(Array.from({length:6},(_,i)=>'화요일 일과 '+(i+1)));
+ const pages=graphic.getByRole('group',{name:'일과 인포그래픽 페이지'});
+ await page.setViewportSize({width:320,height:940});
+ await expect(pages).toBeInViewport();
+ await expect(pages).toContainText('1 / 2');
+ await page.screenshot({path:'test-results/timetable-infographic-six-320.png',animations:'disabled'});
+ await pages.getByRole('button',{name:'다음 일과'}).click();
+ await expect(routine.locator('.graphic-routine-label strong')).toHaveText(['화요일 수업']);
+ await expect(pages).toContainText('2 / 2');
+ await expect(graphic.getByRole('list',{name:'시간순 일정'}).getByRole('listitem')).toHaveCount(7);
+ await page.locator('[data-timetable-date="2027-02-17"]').click();
+ await expect(routine.locator('.graphic-routine-label')).toHaveCount(0);
+ await expect(graphic.getByText('등록된 일정이 없어요.',{exact:true})).toBeVisible();
  await menu.getByRole('button',{name:'달력',exact:true}).click();
  await expect(graphic).toHaveCount(0);
  await expect(page.locator('.timetable-grid')).toBeVisible();
- await expect(page.locator('[data-timetable-date="2027-02-16"]')).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('[data-timetable-date="2027-02-17"]')).toHaveAttribute('aria-pressed','true');
 });
