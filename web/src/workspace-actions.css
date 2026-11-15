@@ -28,7 +28,10 @@
   font-weight: 650;
 }
 .workspace-action-grid > button { cursor: pointer; }
-.workspace-action-empty { pointer-events: none; }
+.workspace-action-empty {
+  visibility: hidden;
+  pointer-events: none;
+}
 .workspace-action-grid > button .icon {
   width: 24px;
   height: 24px;
