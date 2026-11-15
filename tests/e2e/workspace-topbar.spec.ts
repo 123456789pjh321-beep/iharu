@@ -98,6 +98,7 @@ test('uses each menu’s own saved members, current month actions and invitation
       const {x,y,width,height}=node.getBoundingClientRect();
       return [x,y,width,height].map(value=>Math.round(value*10)/10);
      }));
+     expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?49:53));
      if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
     }else await expect(actions).toHaveCount(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
