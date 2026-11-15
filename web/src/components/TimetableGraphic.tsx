@@ -22,8 +22,8 @@ function routineIcon(item:WorkspaceItem):IconName{
  return hour<12?'sun':hour>=18?'moon':'clock';
 }
 
-function RoutineInfographic({items,caption,day,center,edit}:{
- items:WorkspaceItem[];caption:string;day:string;center:ReactNode;edit:(item:WorkspaceItem)=>void;
+function RoutineInfographic({items,caption,day,center,edit,engineEnabled}:{
+ items:WorkspaceItem[];caption:string;day:string;center:ReactNode;edit:(item:WorkspaceItem)=>void;engineEnabled:boolean;
 }){
  const [selectedPage,setPage]=useState(0);
  const pageCount=Math.ceil(items.length/routinePageSize);
@@ -31,7 +31,7 @@ function RoutineInfographic({items,caption,day,center,edit}:{
  const visibleItems=items.slice(page*routinePageSize,(page+1)*routinePageSize);
  const slices=infographicSlices(visibleItems.map((item,index)=>({id:item.id,weight:1,color:routineColors[index]})));
  return <>
-  <GraphicRing kind="infographic" label={`${caption} 하루 일과 인포그래픽`} slices={slices} center={center}
+  <GraphicRing kind="infographic" label={`${caption} 하루 일과 인포그래픽`} slices={slices} center={center} engineEnabled={engineEnabled}
    onSelect={id=>{const item=visibleItems.find(row=>row.id===id);if(item)edit(item);}}
    annotations={visibleItems.map((item,index)=>{
     const {from,to}=slices[index];
@@ -51,9 +51,9 @@ function RoutineInfographic({items,caption,day,center,edit}:{
  </>;
 }
 
-export function TimetableGraphic({day,today,now,items,members,loading,create,edit}:{
+export function TimetableGraphic({day,today,now,items,members,loading,create,edit,engineEnabled}:{
  day:string;today:string;now:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;
- create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void;
+ create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void;engineEnabled:boolean;
 }){
  const [view,setView]=useState<'infographic'|'clock'>('infographic');
  const slots=timetableLayout(items,undefined,day);
@@ -70,8 +70,9 @@ export function TimetableGraphic({day,today,now,items,members,loading,create,edi
     <button type="button" aria-pressed={view==='infographic'} onClick={()=>setView('infographic')}>하루 일과</button>
     <button type="button" aria-pressed={view==='clock'} onClick={()=>setView('clock')}>24시간</button>
    </div>
-   {view==='infographic'?<RoutineInfographic key={day} items={loading?[]:items} day={day} caption={caption} center={center} edit={edit}/>
+   {view==='infographic'?<RoutineInfographic key={day} items={loading?[]:items} day={day} caption={caption} center={center} edit={edit} engineEnabled={engineEnabled}/>
    :<GraphicRing kind="clock" label={`${caption} 24시간 원형 시간표`} slices={slices}
+    engineEnabled={engineEnabled}
     now={currentMinute===undefined?undefined:currentMinute/1440}
     onSelect={id=>{
      const row=slots.find(slot=>slot.item.id+':'+slot.start===id);

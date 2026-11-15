@@ -8,7 +8,8 @@ import {useWorkspaceGate} from './WorkspaceGate';
 type Slot='toolbar'|'members'|'actions';
 type Entry={owner:symbol;content:ReactNode;active:boolean};
 type Bar={identity:string;route:string}&Partial<Record<Slot,Entry>>;
-const routes=new Set(['/timetable','/tuition','/timeline','/calendar','/today/calendar']);
+const actionRoutes=new Set(['/tuition','/timeline','/today/calendar']);
+const routes=new Set(['/timetable','/calendar',...actionRoutes]);
 const routeKey=(path:string)=>path==='/calendar'?'/today/calendar':path;
 const actionSlots=7;
 const Commands=createContext<{
@@ -52,7 +53,7 @@ export function WorkspaceTopBarHost(){
   {bar?.toolbar?.content}
   <WorkspaceGroupFilter key={'groups:'+route}/>
   <Fragment key={'members:'+bar?.route}>{bar?.members?.content}</Fragment>
-  {bar?.route===route&&bar.actions?.active?bar.actions.content:<WorkspaceActionRow/>}
+  {actionRoutes.has(route)&&(bar?.route===route&&bar.actions?.active?bar.actions.content:<WorkspaceActionRow/>)}
  </div>,target);
 }
 
