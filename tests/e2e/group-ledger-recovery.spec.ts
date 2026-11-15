@@ -25,7 +25,7 @@ test('month changes stay silent, hide the bottom register button and keep daily 
  await page.getByLabel('조회 월',{exact:true}).fill('2027-02');
  await expect(page.getByRole('region',{name:'나의 월 예산'})).toContainText('500,000원');
  expect(await page.evaluate(()=>(window as unknown as {budgetMessages:string[]}).budgetMessages)).toEqual([]);
- await page.locator('.tuition-date[data-date="2027-02-20"]').click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();
+ await page.locator('.calendar-cell[data-date="2027-02-20"] .calendar-day-target').click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();
  await expect(page.getByRole('dialog',{name:'가계부 등록',exact:true})).toBeVisible();
  await page.screenshot({path:'test-results/group-ledger-entry.png'});
 });

@@ -23,7 +23,7 @@ test('labeled registration actions, modal entry/exit, dirty cancellation, save a
  });
  for(const width of [390,1024])for(const [path,label,title] of [['/tuition','가계부 추가','가계부 등록'],['/records','메모 추가','메모 작성']]){
   await page.setViewportSize({width,height:900});await page.goto(path);
-  if(path==='/tuition'){await page.locator('[data-pager-current] .tuition-date').first().click();}
+  if(path==='/tuition'){await page.locator('[data-pager-current] .calendar-cell:not(.outside) .calendar-day-target').first().click();}
   const add=path==='/tuition'?page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}):page.locator('.workspace-add-action');if(path!=='/tuition')await expect(add).toHaveAccessibleName(label);await expect(add).toHaveText('등록');
   const box=(await add.boundingBox())!;expect(box.width).toBeGreaterThanOrEqual(64);expect(box.height).toBeGreaterThanOrEqual(40);
   await add.click();const editor=page.getByRole('dialog',{name:title,exact:true});
