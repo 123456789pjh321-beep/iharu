@@ -34,7 +34,7 @@ export function MemoPhoto({id,alt,onOpen}:{id:string;alt:string;onOpen?:(src:str
 }
 
 export type MemoTool='notebook'|'record'|'camera'|'scan'|'file'|'sketch'|null;
-export const memoTools:[Exclude<MemoTool,null>,string,IconName][]=[['notebook','노트북','book'],['record','녹음기','mic'],['camera','카메라','camera'],['scan','스캔','scan'],['file','파일','file'],['sketch','스케치','sketch']];
+export const memoTools:[Exclude<MemoTool,null>,string,IconName][]=[['notebook','노트','book'],['record','녹음기','mic'],['camera','카메라','camera'],['scan','스캔','scan'],['file','파일','file'],['sketch','스케치','sketch']];
 export function MemoEditor({initial,profileId,spaceId,initialTool=null,onClose,onSaved}:{initial:MemoDraft;profileId:string;spaceId:string|null;initialTool?:MemoTool;onClose:()=>void;onSaved:(date:string)=>void}){
  const dialog=useRef<HTMLDialogElement>(null),pending=useRef(false),mounted=useRef(true),photoInput=useRef<HTMLInputElement>(null),fileInput=useRef<HTMLInputElement>(null),processing=useRef(false),draftRef=useRef(initial),locateVersion=useRef(0);
  const [draft,setDraft]=useState<MemoDraft>(()=>({...emptyCapture,...initial,...(!spaceId?{visibility:'PRIVATE' as const}:{})}));
@@ -70,7 +70,7 @@ export function MemoEditor({initial,profileId,spaceId,initialTool=null,onClose,o
  <form onSubmit={e=>{e.preventDefault();void save();}}><header><div><h2 id="memo-editor-title">{draft.version?'메모 수정':'메모 작성'}</h2><span className="memo-editor-scope"><Icon name={draft.visibility==='PRIVATE'?'shield':'users'}/>{draft.visibility==='PRIVATE'?'나만 보는 기록':'현재 그룹에 공유'}</span></div><button type="button" className="icon-button" aria-label="메모 작성 닫기" onClick={close} disabled={busy||photoBusy}><Icon name="close"/></button></header>
  <div className="memo-editor-body"><fieldset disabled={busy}><legend className="sr-only">메모 내용</legend>
  <div className="memo-tools" role="group" aria-label="기록 도구">{memoTools.map(([id,label,icon])=><button type="button" key={id} aria-pressed={tool===id} disabled={photoBusy||sensorActive} onClick={()=>choose(id)}><Icon name={icon}/><span>{label}</span></button>)}</div>
- {tool==='notebook'&&<section className="memo-capture-panel"><label>노트북<input aria-label="노트북" value={draft.notebook||''} maxLength={40} onChange={e=>patch({notebook:e.target.value})} placeholder="예: 아이의 성장, 가족의 기록"/></label><p className="memo-hint">같은 이름으로 기록을 묶어요. 노트북도 선택한 개인·그룹 안에서만 사용돼요.</p></section>}
+ {tool==='notebook'&&<section className="memo-capture-panel"><label>노트<input aria-label="노트" value={draft.notebook||''} maxLength={40} onChange={e=>patch({notebook:e.target.value})} placeholder="예: 아이의 성장, 가족의 기록"/></label><p className="memo-hint">같은 이름으로 기록을 묶어요. 노트도 선택한 개인·그룹 안에서만 사용돼요.</p></section>}
  {tool==='record'&&<MemoRecorder onAdd={a=>addAttachments([a])} onClose={()=>setTool(null)} onActive={onActive}/>}
  {(tool==='camera'||tool==='scan')&&<MemoCamera key={tool} scan={tool==='scan'} onFile={tool==='scan'?async f=>addAttachments([await prepareAttachment(f,'SCAN')]):addPhoto} onClose={()=>setTool(null)} onActive={onActive}/>}
  {tool==='sketch'&&<MemoSketch onActive={onActive} onFile={async f=>addAttachments([await prepareAttachment(f,'SKETCH')])} onClose={()=>setTool(null)}/>}

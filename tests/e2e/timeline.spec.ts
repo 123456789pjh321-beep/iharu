@@ -13,13 +13,13 @@ test('shows two guide memos without login and uses the requested menu order at e
  for(const width of [320,520,820,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);await page.screenshot({path:`test-results/memo-samples-${width}.png`,fullPage:true,animations:'disabled'});}
  await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await expect(page.getByRole('region',{name:'샘플 메모'}).getByRole('article')).toHaveCount(2);
  for(const width of [320,520]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);await page.screenshot({path:`test-results/memo-feed-dark-${width}.png`,fullPage:true,animations:'disabled'});}
- await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByRole('heading',{name:'메모를 저장하려면 로그인해 주세요'})).toBeVisible();
+ await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByRole('heading',{name:'메모를 저장하려면 로그인해 주세요'})).toBeVisible();
 });
 test('shows two-line summaries and opens complete photo/location memos with persistent editing',async({page,context})=>{
  await login(page,'memo-browser');await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:37.28,longitude:127.01,accuracy:12});
  const today=koreaToday();for(const kind of ['EVENT','FEE'])expect((await page.request.post('/api/v1/workspace/items.create',{headers:{Origin:origin},data:{kind,data:{title:'연동하지 않는 '+kind,date:today,weekdays:[],allDay:true,place:'',note:'',paid:false,...(kind==='FEE'?{amount:1000}:{})}}})).ok()).toBe(true);
  await page.setViewportSize({width:320,height:800});await page.goto('/timeline');await expect(page.getByRole('region',{name:'샘플 메모'}).getByRole('article')).toHaveCount(2);await expect(page.getByText('연동하지 않는 EVENT')).toHaveCount(0);
- await page.getByRole('button',{name:'새글 등록',exact:true}).click();const editor=page.getByRole('dialog',{name:'메모 작성'});
+ await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();const editor=page.getByRole('dialog',{name:'메모 작성'});
  await editor.getByLabel('제목',{exact:true}).fill('우리 동네 산책');await editor.getByLabel('글',{exact:true}).fill('오늘은 도서관에서 새로운 책을 읽었어요.\n두 번째 줄과 아주 긴 기록도 상세 화면에서는 줄임 없이 모두 읽을 수 있어요. '.repeat(8));await editor.getByLabel('카테고리',{exact:true}).selectOption('OUTING');await editor.getByLabel('장소',{exact:true}).fill('중앙 도서관');await editor.getByLabel(/태그/).fill('주말, 책');await editor.getByRole('button',{name:'현재 위치 담기'}).click();await expect(editor.getByText(/좌표 저장됨/)).toBeVisible();
  await editor.getByLabel('사진 선택',{exact:true}).setInputFiles({name:'memo.png',mimeType:'image/png',buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAGklEQVR4nGOYcGEB2YhhVPOo5lHNo5oHVjMAm3IgLq+00UgAAAAASUVORK5CYII=','base64')});await expect(editor.getByAltText('첨부 사진 1')).toBeVisible();await editor.getByRole('button',{name:'메모 저장'}).click();await expect(editor).toHaveCount(0);
  const card=page.getByRole('article',{name:'우리 동네 산책'});await expect(card).toContainText('나만 보기');await expect(card.getByRole('img')).toHaveCount(0);await expect(card.getByRole('link')).toHaveCount(0);await expect(page.getByRole('region',{name:'샘플 메모'})).toHaveCount(0);await expect(page.getByRole('button',{name:'전체',exact:true})).toHaveCount(0);
@@ -34,10 +34,10 @@ test('shows two-line summaries and opens complete photo/location memos with pers
  page.once('dialog',dialog=>dialog.accept());await detail.getByRole('button',{name:'삭제',exact:true}).click();await expect(detail).toHaveCount(0);await expect(card).toHaveCount(0);await expect(page.getByRole('region',{name:'샘플 메모'}).getByRole('article')).toHaveCount(2);
 });
 test('keeps draft photos and text through save/refresh failures and reloads an older month after saving',async({page})=>{
- await login(page,'memo-recovery');await page.goto('/timeline');await page.getByRole('button',{name:'새글 등록',exact:true}).click();let editor=page.getByRole('dialog',{name:'메모 작성'});await editor.getByLabel('제목',{exact:true}).fill('남아 있어야 하는 초안');await editor.getByLabel('글',{exact:true}).fill('연결이 끊겨도 유지');await editor.getByLabel('날짜',{exact:true}).fill('2026-02-03');
+ await login(page,'memo-recovery');await page.goto('/timeline');await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();let editor=page.getByRole('dialog',{name:'메모 작성'});await editor.getByLabel('제목',{exact:true}).fill('남아 있어야 하는 초안');await editor.getByLabel('글',{exact:true}).fill('연결이 끊겨도 유지');await editor.getByLabel('날짜',{exact:true}).fill('2026-02-03');
  await page.route('**/api/v1/workspace/memos.save',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'연결을 확인해 주세요.'}})}),{times:1});await editor.getByRole('button',{name:'메모 저장'}).click();await expect(editor.getByRole('alert')).toContainText('연결을 확인');await expect(editor.getByLabel('글',{exact:true})).toHaveValue('연결이 끊겨도 유지');
  await page.route('**/api/v1/workspace/memos.list',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'연결 오류'}})}),{times:1});await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await expect(editor.getByLabel('글',{exact:true})).toHaveValue('연결이 끊겨도 유지');await expect(editor.getByRole('status')).toContainText('임시 보관');
- page.once('dialog',dialog=>dialog.accept());await page.reload();await page.getByRole('button',{name:'새글 등록',exact:true}).click();editor=page.getByRole('dialog',{name:'메모 작성'});await expect(editor.getByLabel('글',{exact:true})).toHaveValue('연결이 끊겨도 유지');await editor.getByRole('button',{name:'메모 저장'}).click();await expect(page.getByLabel('타임라인 조회 월')).toHaveValue('2026-02');await expect(page.getByRole('article',{name:'남아 있어야 하는 초안'})).toBeVisible();
+ page.once('dialog',dialog=>dialog.accept());await page.reload();await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();editor=page.getByRole('dialog',{name:'메모 작성'});await expect(editor.getByLabel('글',{exact:true})).toHaveValue('연결이 끊겨도 유지');await editor.getByRole('button',{name:'메모 저장'}).click();await expect(page.getByLabel('타임라인 조회 월')).toHaveValue('2026-02');await expect(page.getByRole('article',{name:'남아 있어야 하는 초안'})).toBeVisible();
 });
 
 test('swipes real months without opening details or interfering with vertical scrolling and member controls',async({browser})=>{
@@ -76,7 +76,7 @@ test('swipes real months without opening details or interfering with vertical sc
   const scrollPosition=()=>page.evaluate(()=>Array.from(document.querySelectorAll('*')).reduce((sum,node)=>sum+node.scrollTop,0)),before=await scrollPosition();
   await touch({x:230,y:700},{x:232,y:380});await expect.poll(scrollPosition).toBeGreaterThan(before+50);await expect(month).toHaveValue('2026-12');
   await page.locator('.workspace-toolbar').scrollIntoViewIfNeeded();await page.waitForTimeout(350);
-  await page.getByRole('button',{name:'새글 등록',exact:true}).tap();await expect(page.getByRole('dialog',{name:'메모 작성'})).toBeVisible();await page.getByRole('button',{name:'메모 작성 닫기'}).tap();await expect(month).toHaveValue('2026-12');
+  await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).tap();await expect(page.getByRole('dialog',{name:'메모 작성'})).toBeVisible();await page.getByRole('button',{name:'메모 작성 닫기'}).tap();await expect(month).toHaveValue('2026-12');
   await page.screenshot({path:'test-results/memo-swipe-390.png',animations:'disabled'});
   await page.setViewportSize({width:1440,height:900});const box=(await area.boundingBox())!;
   await page.mouse.move(box.x+box.width-30,box.y+70);await page.mouse.down();await page.mouse.move(box.x+30,box.y+71,{steps:10});await page.mouse.up();
@@ -106,7 +106,7 @@ test('slides cards and the full-screen editor up while keeping actions visible a
  await expect.poll(()=>page.evaluate(()=>(window as unknown as {memoSheetMotions:{kind:string;from:string}[]}).memoSheetMotions.some(m=>m.kind==='memo-detail'&&m.from==='translateY(100%)'))).toBe(true);
  await page.screenshot({path:'test-results/memo-bottom-sheet-390.png',animations:'disabled'});
  await page.keyboard.press('Escape');await expect(trigger).toBeFocused();await page.keyboard.press('Space');await expect(detail).toBeVisible();await page.mouse.click(4,4);await expect(detail).toHaveCount(0);
- await page.getByRole('button',{name:'새글 등록',exact:true}).click();const editor=page.getByRole('dialog',{name:'메모 작성'});
+ await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();const editor=page.getByRole('dialog',{name:'메모 작성'});
  await expect.poll(()=>page.evaluate(()=>(window as unknown as {memoSheetMotions:{kind:string;from:string}[]}).memoSheetMotions.some(m=>m.kind==='memo-editor'&&m.from==='translateY(100%)'))).toBe(true);
  await editor.getByLabel('제목',{exact:true}).fill('넓은 화면에서도 유지되는 초안');
  for(const [width,height] of [[320,900],[520,900],[820,900],[1440,900],[320,500]]){
@@ -122,7 +122,7 @@ test('slides cards and the full-screen editor up while keeping actions visible a
  }
  page.once('dialog',dialog=>dialog.accept());await editor.getByRole('button',{name:'메모 작성 닫기'}).click();
  await page.emulateMedia({reducedMotion:'reduce'});await card.click();await expect(detail).toBeVisible();expect(await detail.evaluate(node=>getComputedStyle(node).animationName)).toBe('none');await page.keyboard.press('Escape');
- await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(editor).toBeVisible();expect(await editor.evaluate(node=>getComputedStyle(node).animationName)).toBe('none');await editor.getByRole('button',{name:'메모 작성 닫기'}).click();
+ await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();await expect(editor).toBeVisible();expect(await editor.evaluate(node=>getComputedStyle(node).animationName)).toBe('none');await editor.getByRole('button',{name:'메모 작성 닫기'}).click();
  await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await page.setViewportSize({width:520,height:900});
- await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(editor).toBeVisible();await page.screenshot({path:'test-results/memo-editor-dark-520.png',animations:'disabled'});
+ await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();await expect(editor).toBeVisible();await page.screenshot({path:'test-results/memo-editor-dark-520.png',animations:'disabled'});
 });

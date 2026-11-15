@@ -23,21 +23,21 @@ test('creates groups from the menu, accepts an invitation without leaving anothe
   await register(guest,'구성원');await command(guest,'memos.save',memo('구성원의 개인 기록'));await command(guest,'group.create',{name:'친구 모임',description:'',color:1,clientRequestId:crypto.randomUUID()});
   await guest.goto(url);await guest.getByRole('button',{name:'초대 수락',exact:true}).click();await guest.getByRole('link',{name:'그룹 관리 열기'}).click();await expect(guest.locator('.managed-group')).toHaveCount(2);
   await nav(page).getByRole('link',{name:'타임라인',exact:true}).click();await expect(page.getByRole('article',{name:'그룹장의 개인 기록',exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:'새글 등록',exact:true}).click();const entry=page.getByRole('dialog',{name:'메모 작성'});await entry.getByLabel('제목',{exact:true}).fill('기본그룹 공유 기록');await entry.getByLabel('공유 범위').selectOption('GROUP');await entry.getByRole('button',{name:'메모 저장'}).click();await expect(page.getByRole('article',{name:'기본그룹 공유 기록',exact:true})).toBeVisible();
+  await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();const entry=page.getByRole('dialog',{name:'메모 작성'});await entry.getByLabel('제목',{exact:true}).fill('기본그룹 공유 기록');await entry.getByLabel('공유 범위').selectOption('GROUP');await entry.getByRole('button',{name:'메모 저장'}).click();await expect(page.getByRole('article',{name:'기본그룹 공유 기록',exact:true})).toBeVisible();
   await nav(guest).getByRole('link',{name:'타임라인',exact:true}).click();await expect(guest.getByRole('article',{name:'기본그룹 공유 기록',exact:true})).toBeVisible();await expect(guest.getByRole('article',{name:'그룹장의 개인 기록',exact:true})).toHaveCount(0);
   await filter(guest).getByRole('button',{name:'개인',exact:true}).click();await expect(guest.getByRole('article',{name:'구성원의 개인 기록',exact:true})).toBeVisible();await expect(guest.getByRole('article',{name:'기본그룹 공유 기록',exact:true})).toHaveCount(0);
   await filter(guest).getByRole('button',{name:'친구 모임',exact:true}).click();await expect(guest.getByRole('article',{name:'구성원의 개인 기록',exact:true})).toHaveCount(0);await guest.reload();await expect(filter(guest).getByRole('button',{name:'친구 모임',exact:true})).toHaveAttribute('aria-pressed','true');
-  await filter(page).getByRole('button',{name:'개인',exact:true}).click();await expect(page.getByRole('article',{name:'그룹장의 개인 기록',exact:true})).toBeVisible();await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(page.getByLabel('공유 범위').locator('option')).toHaveCount(1);await page.getByRole('button',{name:'메모 작성 닫기'}).click();
+  await filter(page).getByRole('button',{name:'개인',exact:true}).click();await expect(page.getByRole('article',{name:'그룹장의 개인 기록',exact:true})).toBeVisible();await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();await expect(page.getByLabel('공유 범위').locator('option')).toHaveCount(1);await page.getByRole('button',{name:'메모 작성 닫기'}).click();
   // A private unfinished draft cannot be restored in a group editor.
   const me=await command(page,'me');
   await page.evaluate(({id,draft})=>sessionStorage.setItem('iharu-memo-draft:'+id,JSON.stringify({draft,expiresAt:Date.now()+86400000})),{id:me.id,draft:memo('개인 임시 글')});
-  await page.getByRole('button',{name:'새글 등록',exact:true}).click();
+  await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();
   await expect(page.getByLabel('제목',{exact:true})).toHaveValue('개인 임시 글');
   await expect(page.getByLabel('공유 범위')).toHaveValue('PRIVATE');
   await page.reload();
   await expect(page.getByRole('article',{name:'그룹장의 개인 기록',exact:true})).toBeVisible();
-  await filter(page).getByRole('button',{name:'기본그룹',exact:true}).click();await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('');await page.getByRole('button',{name:'메모 작성 닫기'}).click();
-  await filter(page).getByRole('button',{name:'개인',exact:true}).click();await page.getByRole('button',{name:'새글 등록',exact:true}).click();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('개인 임시 글');
+  await filter(page).getByRole('button',{name:'기본그룹',exact:true}).click();await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('');await page.getByRole('button',{name:'메모 작성 닫기'}).click();
+  await filter(page).getByRole('button',{name:'개인',exact:true}).click();await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();await expect(page.getByLabel('제목',{exact:true})).toHaveValue('개인 임시 글');
   page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'메모 작성 닫기'}).click();
   await nav(page).getByRole('link',{name:'그룹관리',exact:true}).click();await page.getByRole('region',{name:'기본그룹 그룹',exact:true}).locator('.group-card-title').click();await expect(card.locator('.group-member-list .group-member-row')).toHaveCount(2);
   await card.locator('.group-manage-options summary').click();page.once('dialog',d=>d.accept());await card.getByRole('button',{name:'구성원 내보내기',exact:true}).click();await expect(card.locator('.group-member-list .group-member-row')).toHaveCount(1);
