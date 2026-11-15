@@ -1,5 +1,6 @@
 import {pushCron} from './push/service.js';
 import {holidayCalendarRoutes} from './schedules/holiday-calendar.js';
+import {calendarWeatherRoutes} from './schedules/weather.js';
 import {legalRoutes} from './legal/routes.js';
 import {workspaceRoutes} from './workspace/routes.js';
 import {androidWidgetRoutes} from './widgets/routes.js';
@@ -59,6 +60,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
     return c.json(envelope(dashboardSchema).parse({ data:getDemoDashboard(parsed.data.child, parsed.data.month), meta:meta(c.get('requestId'), 'demo') }));
   });
   app.route('/', holidayCalendarRoutes());
+  app.route('/', calendarWeatherRoutes(config.environment));
   app.route('/', accountRoutes(authRuntime));
   app.route('/', legalRoutes(authRuntime,familyRuntime));
   app.route('/', adminRoutes(authRuntime,familyRuntime));

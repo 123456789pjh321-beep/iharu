@@ -89,8 +89,9 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--muted)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays>span{color:var(--calendar-secondary-ink)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-grid{gap:0;border:0;background:var(--surface)}
-.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row{--calendar-week-header:44px;border:0;background:var(--surface)}
-.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row:is(.has-holiday,.has-day-badge){--calendar-week-header:62px}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row{--calendar-week-header:calc(44px + var(--weather-row-height,0px));border:0;background:var(--surface)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row:is(.has-holiday,.has-day-badge){--calendar-week-header:calc(62px + var(--weather-row-height,0px))}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row.has-weather{--weather-row-height:22px}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row::after{height:1px;background:var(--workspace-grid-line)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell{padding:var(--calendar-week-header) 2px 4px;border:0;border-radius:0;box-shadow:none;background:var(--surface);min-height:0}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell.outside{background:var(--surface)}
