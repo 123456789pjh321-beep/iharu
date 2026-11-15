@@ -286,7 +286,7 @@
 .economy-input input::placeholder { color: var(--muted); opacity: .8; }
 html[data-theme=dark] .economy-input input { background: transparent; }
 .economy-input:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
-.economy-input input:focus { outline: 0; box-shadow: none; }
+.ledger-calculator .economy-input input:focus { outline: 0; box-shadow: none; }
 .economy-input span { flex: 0 0 auto; padding-right: 8px; color: var(--muted); font-size: .72rem; }
 .economy-method select { padding: 6px 9px; font: inherit; font-size: .85rem; }
 .economy-input:has([aria-invalid=true]) { border-color: var(--holiday-ink); }
