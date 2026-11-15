@@ -41,8 +41,9 @@ export function WorkspaceTopBarMount(){
 
 // Render from inside the page providers, preserving invitation/login contexts.
 export function WorkspaceTopBarHost(){
- const {pathname}=useLocation(),{bar,target}=useContext(State),{groupBusy}=useWorkspaceGate(),route=routeKey(pathname);
+ const {pathname}=useLocation(),{bar,target}=useContext(State),{access,groupBusy}=useWorkspaceGate(),route=routeKey(pathname);
  const active=routes.has(pathname),pending=groupBusy||!bar||bar.route!==route||!bar.toolbar?.active;
+ const personalSpace=access.identity!==null&&access.identity.family===null;
  useLayoutEffect(()=>{
   if(!target)return;
   target.querySelectorAll<HTMLDialogElement>('dialog[open]').forEach(dialog=>dialog.close());
@@ -52,7 +53,7 @@ export function WorkspaceTopBarHost(){
  return createPortal(<div className="workspace-topbar-content" data-topbar-route={bar?.route} aria-busy={pending} inert={pending}>
   {bar?.toolbar?.content}
   <WorkspaceGroupFilter key={'groups:'+route}/>
-  <Fragment key={'members:'+bar?.route}>{bar?.members?.content}</Fragment>
+  {!personalSpace&&<Fragment key={'members:'+bar?.route}>{bar?.members?.content}</Fragment>}
   {actionRoutes.has(route)&&(bar?.route===route&&bar.actions?.active?bar.actions.content:<WorkspaceActionRow/>)}
  </div>,target);
 }
