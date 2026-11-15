@@ -15,6 +15,8 @@ import './personal-workspace.css';
 import './direct-workspace.css';
 import './timetable.css';
 import './workspace-controls.css';
+import './workspace-actions.css';
+import './workspace-graphics.css';
 import './compact-workspace.css';
 import './entry-input.css';
 import './usability.css';

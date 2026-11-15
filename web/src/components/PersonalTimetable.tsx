@@ -8,6 +8,8 @@ import {eventColor} from './scheduleColors';
 import {useMemberPreference} from './MemberPreferenceFilter';
 import {CalendarMemberPreferenceFilter} from './CalendarMemberPreferenceFilter';
 import {WorkspaceToolbar} from './WorkspaceToolbar';
+import {TimetableGraphic} from './TimetableGraphic';
+import {Icon} from './Icon';
 
 const weekday=['일','월','화','수','목','금','토'];
 const minuteHeight=.8;
@@ -16,6 +18,8 @@ const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:
 export function PersonalTimetable({day,items,members,loading,embedded=false,preview=false,setDay,create,edit,viewerId,defaultMemberIds,saveDefaultMembers}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;embedded?:boolean;preview?:boolean;viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays((embedded?day:koreaToday()).slice(0,7));
  const selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}); const [now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
+ const [view,setView]=useState<'calendar'|'graphic'>('calendar');
+ const showGraphic=!embedded&&view==='graphic';
  useEffect(()=>{const update=()=>setNow(koreaTime()),timer=setInterval(update,30000);window.addEventListener('focus',update);return()=>{clearInterval(timer);window.removeEventListener('focus',update);};},[]);
  const member=embedded?'all':selection.memberIds;
  const memberKey=embedded?'all':[...selection.memberIds].sort().join(',');
@@ -28,12 +32,13 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,prev
  const firstSlot=Math.floor(startMinute/15),lastSlot=Math.ceil(endMinute/15)-1,activeSlot=Math.min(lastSlot,Math.max(firstSlot,slot));
  const ticks=[startMinute,...Array.from({length:Math.floor(endMinute/60)-Math.floor(startMinute/60)},(_,n)=>(Math.floor(startMinute/60)+n+1)*60).filter(minute=>minute-startMinute>=20&&endMinute-minute>=20),endMinute];
  useLayoutEffect(()=>{
+  if(showGraphic){scrolledDay.current='';return;}
   const key=period+':'+memberKey+':'+startMinute+':'+endMinute;
   if(loading||scrolledDay.current===key||!scroller.current)return;
   scrolledDay.current=key;
   const current=timeMinutes(now),target=showToday&&current>=startMinute&&current<endMinute?current:startMinute;
   scroller.current.scrollTop=Math.max(0,(target-startMinute)*minuteHeight-scroller.current.clientHeight*.3);
- },[period,memberKey,loading,startMinute,endMinute,now,showToday]);
+ },[period,memberKey,loading,startMinute,endMinute,now,showToday,showGraphic]);
  const content=(item:WorkspaceItem,interval?:{start:number;end:number})=><><strong className="timetable-title">{item.data.title}</strong><span className="timetable-range">{embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)}</span></>;
  const label=(item:WorkspaceItem,interval?:{start:number;end:number})=>`${item.data.title} · ${scheduleAssignee(item,members)} · ${embedded&&interval?`${timeLabel(interval.start)} – ${timeLabel(interval.end)}`:scheduleTimeCaption(item,embedded?day:undefined)} · ${item.mine?'수정':'상세'}`;
  const currentCaption=currentEvents.map(item=>`${scheduleAssignee(item,members)} · ${item.data.title}`).join(' / ');
@@ -42,6 +47,10 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,prev
   {embedded?<div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}</span>{currentSummary}</div>:<>
    <WorkspaceToolbar title="시간표" navigation={<span className="workspace-toolbar-title">{Number(today.slice(0,4))}년 {Number(today.slice(5,7))}월</span>}>{currentSummary}</WorkspaceToolbar>
    {!!members.length&&<CalendarMemberPreferenceFilter preview={preview} members={members} selection={selection} label="시간표 구성원 필터"/>}
+   <div className="workspace-action-toolbar timetable-menu"><div className="workspace-action-grid" role="group" aria-label="시간표 보기">
+    <button type="button" aria-pressed={!showGraphic} onClick={()=>setView('calendar')}><Icon name="calendar"/><span>달력</span></button>
+    <button type="button" aria-pressed={showGraphic} onClick={()=>setView('graphic')}><Icon name="graph"/><span>그래픽</span></button>
+   </div></div>
    <div className="timetable-weekdays timetable-day-headings" role="group" aria-label="요일 선택">
     {dates.map(date=>{
      const dow=new Date(date+'T12:00:00Z').getUTCDay(),holiday=holidays.name(date);
@@ -53,7 +62,9 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,prev
    </div>
   </>}
   {holidays.name(day)&&<p className={'timetable-holiday holiday-label'+(embedded?'':' sr-only')}>{holidays.name(day)}</p>}
-  <div className="calendar-viewport timetable-viewport"><div className="timetable-day" aria-busy={loading}>
+  {showGraphic?<TimetableGraphic day={selectedDay} today={today} now={now} items={lanes.find(lane=>lane.date===selectedDay)?.events||[]}
+   members={members} loading={loading} create={create} edit={edit}/>
+  :<div className="calendar-viewport timetable-viewport"><div className="timetable-day" aria-busy={loading}>
    {lanes.some(lane=>lane.allDay.length>0)&&<div className="timetable-all-day"><span>종일</span><div className="timetable-all-day-columns" style={{gridTemplateColumns:`repeat(${dates.length},minmax(0,1fr))`}}>{lanes.map(lane=><div key={lane.date}>{lane.allDay.map(item=><button type="button" key={item.id} className="timetable-card timetable-all-day-card" style={{'--event-color':eventColor(item,members)} as CSSProperties} onClick={()=>edit(item)} aria-label={label(item)} title={label(item)} data-timetable-item={item.id}>{content(item)}</button>)}</div>)}</div></div>}
    <div className="timetable-scroll" ref={scroller} data-calendar-scroll aria-label="하루 시간 눈금">
     <div className="timetable-grid" data-start-minute={startMinute} data-end-minute={endMinute} style={{height:(endMinute-startMinute)*minuteHeight,'--timetable-line-offset':`${(60-startMinute%60)%60*minuteHeight}px`} as CSSProperties}>
@@ -79,7 +90,7 @@ export function PersonalTimetable({day,items,members,loading,embedded=false,prev
      </div>
     </div>
    </div>
-  </div></div>
+  </div></div>}
   {holidays.unavailable&&<p className="holiday-status" role="status">이 연도의 공휴일 정보를 확인하지 못했어요.</p>}
  </section>;
 }
