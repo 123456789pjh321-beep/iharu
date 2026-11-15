@@ -597,6 +597,18 @@ try{
   await family1.command(a,'admin.member.sessions.revoke',{id:b.memberId,version:1,reason:'분실 기기 세션 종료 검증'});await assert.rejects(family2.command(b,'workspace.me'),{message:'AUTH_REQUIRED'});
   const history=await family1.command<{total:number}>(a,'admin.history',{category:'ADMIN',targetId:b.memberId});assert.equal(history.total,4);
  });
+ await check('trash restore versus purge has one winner and keeps account scope and bytes atomic',async()=>{
+  const actor={...a,workspaceGroup:'personal'},input={id:randomUUID(),version:0,title:'휴지통 동시성',body:'복원과 삭제 경합',date:'2026-11-15',time:'09:30',category:'DAILY',tags:[],place:'',location:null,visibility:'PRIVATE',photos:[],attachments:[{name:'note.txt',mime:'text/plain',kind:'FILE',size:5,data:'aGVsbG8='}]};
+  await family1.command(actor,'workspace.memos.save',input);
+  await family1.command(actor,'workspace.memos.delete',{id:input.id,version:1});
+  const results=await Promise.allSettled([family1.command(actor,'workspace.memos.trash.restore',{id:input.id,version:2}),family2.command(actor,'workspace.memos.trash.purge',{id:input.id,version:2})]);
+  assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+  assert.equal((results.find(r=>r.status==='rejected') as PromiseRejectedResult).reason.message,'NOT_FOUND');
+  const remaining=(await admin.query('SELECT version,deleted_at FROM app_private.workspace_memos WHERE id=$1',[input.id])).rows;
+  const files=(await admin.query('SELECT id FROM app_private.workspace_memo_attachments WHERE memo_id=$1',[input.id])).rows;
+  if(remaining.length){assert.equal(remaining[0].version,3);assert.equal(remaining[0].deleted_at,null);assert.equal(files.length,1);}else assert.equal(files.length,0);
+  await assert.rejects(query(db1,"SELECT app_private.workspace_memo_command_capture('workspace.memos.list','{}')"),{code:'42501'});
+ });
  await check('UI84 legal drafts have optimistic locks and private tables; publication snapshots cannot be overwritten',async()=>{
   const draft={operatorName:'PG 테스트',privacyOfficer:'PG 담당자',contactEmail:'privacy@example.test',terms:'테스트 이용약관',privacy:'테스트 개인정보',children:'어린이 안내',processors:'검증용 위탁 없음',transfers:'검증용 국외 이전 없음',retention:'검증용 보유 기간',reviewNotes:'내부 전용'};
   const results=await Promise.allSettled([family1,family2].map(f=>f.command(a,'legal.admin.save',{version:0,draft,reason:'동시 초안 저장 검증'})));
