@@ -98,10 +98,10 @@ test('uses each menu’s own saved members, current month actions and invitation
       chip:box('.member-filters>button'),titleX:Math.round(title.getBoundingClientRect().x),font:style.fontSize,
      };
     });
-    for(const [box,original] of [
-     [geometry.toolbar,52],[geometry.date,44],[geometry.group,42],[geometry.groupChip,32],[geometry.plus,32],
-     [geometry.row,40],[geometry.invite,32],[geometry.options,40],[geometry.chip,32],
-    ] as const)expect(box[3]).toBeCloseTo(original*.8,1);
+    for(const [name,original] of [
+     ['toolbar',52],['date',44],['group',42],['groupChip',32],['plus',32],
+     ['row',40],['invite',32],['options',44],['chip',32],
+    ] as const)expect(geometry[name][3],`${path} at ${width}px · ${name}`).toBeCloseTo(original*.8,1);
     const {date,...sharedGeometry}=geometry;
     expect(date[1]).toBeCloseTo(geometry.toolbar[1]+(geometry.toolbar[3]-date[3])/2,1);
     if(baseline)expect(sharedGeometry).toEqual(baseline);else baseline=sharedGeometry;
@@ -159,5 +159,9 @@ test('retains inert chrome during slow navigation and keeps it fixed while conte
  release();await page.unrouteAll({behavior:'wait'});await expect(bar(page).locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);await expect(page.locator('.timetable-grid')).toBeVisible();await unchangedChrome(page);
  await page.locator('.timetable-scroll').evaluate(node=>{node.scrollTop=500;});expect((await bar(page).boundingBox())!.y).toBe(top);
  // Navigating out must not leave an old date/member toolbar behind.
- await nav(page).getByRole('link',{name:'더보기',exact:true}).click();await expect(bar(page)).toHaveCount(0);await page.goBack();await expect(bar(page).getByRole('group',{name:'시간표 구성원 필터',exact:true})).toBeVisible();
+ await nav(page).getByRole('link',{name:'더보기',exact:true}).click();await expect(bar(page)).toHaveCount(0);
+ await page.goBack();
+ await expect(bar(page).locator('[data-topbar-route="/timetable"][aria-busy=false]')).toHaveCount(1);
+ await expect(bar(page).getByRole('button',{name:'개인',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(bar(page).locator('.member-preference-row')).toHaveCount(0);
 });
