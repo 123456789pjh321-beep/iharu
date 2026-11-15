@@ -45,6 +45,8 @@ test('shows date-specific weather in the timetable and calendar and remembers th
  const current=page.locator('[data-pager-current]');
  const dateWeather=current.locator('[data-weather-date="2026-11-20"]');
  await expect(dateWeather).toBeVisible();
+ await expect(current.locator('.calendar-week-row.has-weather')).toHaveCount(2);
+ await expect(current.locator('.calendar-week-row.has-weather').filter({hasNot:page.locator('[data-weather-date]')})).toHaveCount(0);
  await dateWeather.click();
  await expect(details.getByText('약한 비',{exact:true})).toBeVisible();
  await details.getByRole('button',{name:'날씨 상세 닫기'}).click();

@@ -71,6 +71,11 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
  const renderDateWeather=(dates:string[])=>dates.some(weather.hasDate)
   ?(date:string)=><WeatherDateButton weather={weather} date={date}/>
   :undefined;
+ const minimumWeekHeight=(dates:string[],layout:ReturnType<typeof calendarWeekLayout>,withWeather:boolean)=>{
+  const dateHeight=dates.some(date=>calendarDayBadge(date,holidays.name(date)))?62:44;
+  const eventRows=layout.runs.length?layout.rows:0;
+  return dateHeight+eventRows*28+(layout.hidden.some(Boolean)?28:4)+(withWeather?weatherRowHeight:0);
+ };
  const renderPage=(offset:number)=>{
   if(view==='day')return <PersonalTimetable calendar={{view:'day'}} day={addDays(day,offset)} items={shown}
    members={members} loading={loading} setDay={selectDay} create={create} edit={edit}/>;
@@ -78,11 +83,9 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
    const date=addDays(day,offset*7),dates=timetableWeekDates(date);
    const dateWeather=renderDateWeather(dates);
    const layout=calendarWeekLayout(untimed,dates);
-   const rows=layout.runs.length?layout.rows:0,overflow=layout.hidden.some(Boolean);
-   const dateHeight=dates.some(day=>calendarDayBadge(day,holidays.name(day)))?62:44;
    const header=<div className="calendar-week-header">
-    {rows>0&&<span>종일</span>}
-    <CalendarGrid weekly weekCount={1} rowMinimum={dateHeight+rows*28+(overflow?28:4)+(dateWeather?weatherRowHeight:0)}>
+    {layout.runs.length>0&&<span>종일</span>}
+    <CalendarGrid weekly weekCount={1} rowMinimum={minimumWeekHeight(dates,layout,!!dateWeather)}>
      <CalendarWeekRow dates={dates} layout={layout} members={members} month={date.slice(0,7)} day={date}
       today={today} holidayName={holidays.name} openDay={openDay} edit={editOnDay} dateWeather={dateWeather}/>
     </CalendarGrid>
@@ -91,14 +94,11 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
     setDay={selectDay} create={create} edit={editOnDay}/>;
   }
   const pageMonth=shiftMonth(month,offset);
-  const weeks=monthWeeks(pageMonth).map(dates=>({dates,layout:calendarWeekLayout(shown,dates)}));
-  const dateWeather=renderDateWeather(weeks.flatMap(week=>week.dates));
-  // Reserve the same date/holiday and event space for every row. A short viewport
-  // scrolls the complete grid instead of letting a holiday row enlarge and clip it.
-  const lanes=Math.max(...weeks.map(week=>week.layout.runs.length?week.layout.rows:0)),overflow=weeks.some(week=>week.layout.hidden.some(Boolean));
-  const rowMinimum=64+lanes*28+(overflow?28:4)+(dateWeather?weatherRowHeight:0);
+  const weeks=monthWeeks(pageMonth).map(dates=>({dates,layout:calendarWeekLayout(shown,dates),dateWeather:renderDateWeather(dates)}));
+  // Keep rows even and reserve enough space for the week with the most content.
+  const rowMinimum=Math.max(68,...weeks.map(({dates,layout,dateWeather})=>minimumWeekHeight(dates,layout,!!dateWeather)));
   return <CalendarGrid key={weeks[0].dates[0]} weekCount={weeks.length} rowMinimum={rowMinimum}>
-   {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={openDay} edit={editOnDay} dateWeather={dateWeather}/>)}
+   {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={openDay} edit={editOnDay} dateWeather={week.dateWeather}/>)}
   </CalendarGrid>;
  };
  return <section className="direct-calendar" aria-label="일정 달력">
