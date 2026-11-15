@@ -136,10 +136,11 @@ test('group switches retain topbar and bottom navigation without document reload
  for(const path of ['/timetable','/today/calendar','/tuition','/timeline']){
   await page.goto(path);await expect(page.locator('.workspace-topbar-content[aria-busy=false]')).toHaveCount(1);
   await page.evaluate(()=>Object.assign(window,{fixedChrome:{bar:document.querySelector('[data-workspace-topbar]'),toolbar:document.querySelector('.workspace-topbar .workspace-toolbar'),nav:document.querySelector('.workspace-mobile-nav'),plus:document.querySelector('.group-add-shortcut')}}));
-  const bar=page.locator('[data-workspace-topbar]'),beforeBar=(await bar.boundingBox())!,beforeNav=(await nav(page).boundingBox())!;
+  const bar=page.locator('[data-workspace-topbar]');
   let documents=0,bootstrap=0;const observe=(r:import('@playwright/test').Request)=>{if(r.isNavigationRequest()&&r.frame()===page.mainFrame())documents++;if(/\/api\/(health|account\/session)$/.test(r.url()))bootstrap++;};page.on('request',observe);
   const selected=await filter(page).locator('[aria-pressed=true]').innerText();
   for(const name of ['개인','그룹 하나','그룹 둘'].filter(name=>name!==selected)){
+   const beforeBar=(await bar.boundingBox())!,beforeNav=(await nav(page).boundingBox())!;
    let release!:()=>void,started!:()=>void;const held=new Promise<void>(r=>{release=r;}),pending=new Promise<void>(r=>{started=r;});
    const handler=async(route:import('@playwright/test').Route)=>{const response=await route.fetch();started();await held;await route.fulfill({response});};await page.route('**/workspace/group.select',handler);
    try{
