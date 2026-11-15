@@ -651,3 +651,36 @@ it('rotates only the chosen group link and scopes host actions, leaving and clos
  await a.ok('group.archive',{groupId:two.id,version:g.version});expect((await b.ok('group.list')).groups).toEqual([]);
  expect((await a.ok('group.list')).groups.map((v:{id:string})=>v.id)).toEqual([one.id]);
 });
+
+it('persists rich capture and private attachment bytes, preserves old client edits and deletes atomically',async()=>{
+ const a=await parent('capture-owner'),b=await parent('capture-other');
+ const input={...memoInput('복합 기록'),notebook:'성장 노트',bodyFormat:'MARKDOWN',body:'## 배운 것\n**소중한 순간**',checklist:[{id:crypto.randomUUID(),text:'준비물 챙기기',done:true}],attachments:[{name:'안내.txt',mime:'text/plain',kind:'FILE',data:Buffer.from('준비물 안내').toString('base64'),size:Buffer.byteLength('준비물 안내')}]};
+ const saved=await a.ok('memos.save',input);expect(saved).toMatchObject({notebook:'성장 노트',bodyFormat:'MARKDOWN',checklist:input.checklist,attachments:[{name:'안내.txt',size:Buffer.byteLength('준비물 안내')}]});
+ expect(saved.attachments[0]).not.toHaveProperty('data');const attachment=saved.attachments[0].id;
+ expect(await a.ok('memos.attachment',{id:attachment})).toMatchObject({data:input.attachments[0].data,mime:'text/plain'});
+ expect((await b.req(api+'memos.attachment',{id:attachment})).status).toBe(404);
+ expect(await a.ok('memos.notebooks')).toMatchObject({items:[{name:'성장 노트',count:1}]});expect((await a.ok('memos.list',{notebook:'없는 노트북'})).total).toBe(0);expect((await a.ok('memos.list',{query:'성장 노트'})).total).toBe(1);expect((await a.ok('memos.list',{query:'준비물'})).total).toBe(1);
+ const legacy={...memoInput(),id:input.id,version:1};const updated=await a.ok('memos.save',legacy);expect(updated).toMatchObject({version:2,notebook:'성장 노트',checklist:input.checklist,attachments:[{id:attachment}]});
+ const clear=await a.ok('memos.save',{...legacy,version:2,attachments:[],checklist:[]});expect(clear.attachments).toEqual([]);expect((await a.req(api+'memos.attachment',{id:attachment})).status).toBe(404);
+ for(const sql of ['SELECT * FROM app_private.workspace_memo_attachments',"SELECT app_private.workspace_memo_command_v20('workspace.memos.list','{}')"])await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,sql);})).rejects.toMatchObject({code:'42501'});
+});
+it('keeps attachments inside their exact group and author, blocks stolen references and stale edits',async()=>{
+ const a=await parent('capture-host'),b=await parent('capture-member');
+ const input={...memoInput('그룹 파일'),visibility:'GROUP',attachments:[{name:'메모.txt',mime:'text/plain',kind:'FILE',data:'dGVzdA==',size:4}]};
+ const personal=await a.ok('memos.save',input);const invitation=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invitation.code});
+ const shared=await a.ok('memos.save',{...input,id:crypto.randomUUID()});const aid=shared.attachments[0].id;
+ expect((await b.req(api+'memos.attachment',{id:personal.attachments[0].id})).status).toBe(404);expect(await b.ok('memos.attachment',{id:aid})).toMatchObject({data:'dGVzdA=='});
+ expect((await b.req(api+'memos.save',{...input,id:shared.id,version:1})).status).toBe(403);
+ const stolen={...input,id:crypto.randomUUID(),attachments:[{id:aid}]};expect((await a.req(api+'memos.save',stolen)).status).toBe(400);expect((await a.ok('memos.list')).total).toBe(1);
+ const updated=await a.ok('memos.save',{...input,id:shared.id,version:1,attachments:[{id:aid}]});expect(updated.attachments[0].id).toBe(aid);
+ expect((await a.req(api+'memos.save',{...input,id:shared.id,version:1})).status).toBe(409);
+ await a.ok('group.create',{name:'다른 그룹',description:'',color:0,clientRequestId:crypto.randomUUID()});expect((await a.req(api+'memos.attachment',{id:aid})).status).toBe(404);
+});
+it('rejects invalid capture payloads, disguised active files and total byte overflow without partial records',async()=>{
+ const a=await parent('capture-validation'),base=memoInput();
+ const file={name:'hello.txt',mime:'text/plain',kind:'FILE',data:'aGVsbG8=',size:5};
+ for(const attachments of [[{...file,size:6}],[{...file,name:'../hello.txt'}],[{...file,name:'x.html',mime:'text/html'}],[{...file,name:'x.pdf',mime:'application/pdf'}],[{...file,kind:'SCAN'}],Array(5).fill(file)])expect((await a.req(api+'memos.save',{...base,attachments})).status).toBe(400);
+ for(const extra of [{bodyFormat:'HTML'},{notebook:'n'.repeat(41)},{checklist:[{id:crypto.randomUUID(),text:'x',done:'yes'}]},{checklist:Array(51).fill({id:crypto.randomUUID(),text:'x',done:false})}])expect((await a.req(api+'memos.save',{...base,...extra})).status).toBe(400);
+ const large={...file,data:Buffer.alloc(1_450_000,97).toString('base64'),size:1_450_000};expect((await a.req(api+'memos.save',{...base,attachments:[large,large]})).status).toBe(400);
+ expect((await a.ok('memos.list')).total).toBe(0);
+});
