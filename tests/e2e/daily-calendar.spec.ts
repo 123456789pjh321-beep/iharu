@@ -1,4 +1,4 @@
-import {selectAllMembers,selectCalendarView,setCalendarTheme} from '../helpers/workspace-ui';
+import {closeMemberPreferences,openMemberPreferences,selectAllMembers,selectCalendarView,setCalendarTheme} from '../helpers/workspace-ui';
 import {test,expect} from '@playwright/test';
 import {addDays,koreaToday} from '../../shared/schedules';
 const origin='http://127.0.0.1:4174';
@@ -28,10 +28,13 @@ test('calendar daily view identifies each family member and shares timed CRUD wi
   await expect(daily.locator('.timetable-title')).toHaveText(['그룹 기념일','어린이 수업','일반사용자 회의']);
   await expect(daily.locator('.timetable-card').nth(0)).toHaveAccessibleName(/전체/);await expect(daily.locator('.timetable-card').nth(1)).toHaveAccessibleName(/가상 서하/);await expect(daily.locator('.timetable-card').nth(2)).toHaveAccessibleName(/일간 일반사용자/);
   await expect(page.locator('.timetable-toolbar,.timetable-filters,.calendar-weekdays')).toHaveCount(0);
-  const memberFilter=page.getByRole('group',{name:'달력 구성원 필터'});
+  const toggleMember=async(name:string)=>{
+   await (await openMemberPreferences(page)).getByRole('button',{name,exact:true}).click();
+   await closeMemberPreferences(page);
+  };
   await expect(page.getByRole('textbox',{name:/일정 검색/})).toHaveCount(0);
-  await memberFilter.getByRole('button',{name:'일간 일반사용자',exact:true}).click();await expect(daily.locator('.timetable-title')).toHaveText(['그룹 기념일','어린이 수업']);
-  await selectAllMembers(page);await memberFilter.getByRole('button',{name:'가상 서하',exact:true}).click();await expect(daily.locator('.timetable-title')).toHaveText(['그룹 기념일','일반사용자 회의']);
+  await toggleMember('일간 일반사용자');await expect(daily.locator('.timetable-title')).toHaveText(['그룹 기념일','어린이 수업']);
+  await selectAllMembers(page);await toggleMember('가상 서하');await expect(daily.locator('.timetable-title')).toHaveText(['그룹 기념일','일반사용자 회의']);
   await selectAllMembers(page);
   for(const width of [320,390,1440]){await page.setViewportSize({width,height:900});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await expect(daily.getByRole('button',{name:/어린이 수업 · 가상 서하/})).toBeVisible();await page.screenshot({path:`test-results/ui82-calendar-daily-${width}.png`});}
   await page.setViewportSize({width:390,height:844});await setCalendarTheme(page,'어둡게');await selectCalendarView(page,'일간');await selectAllMembers(page);

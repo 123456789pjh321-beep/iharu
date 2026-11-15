@@ -7,10 +7,6 @@
 .chat-workspace,.guest-chat-sample{--chat-control-height:40px}
 .chat-rooms{flex-shrink:0;border-bottom:1px solid var(--line);padding:0 16px 10px}
 .chat-rooms-toolbar{display:flex;align-items:center;gap:var(--chat-toolbar-gap);min-width:0}
-.workspace-page:where([data-timetree]) .chat-workspace.full>.workspace-group-filter:has(>.group-add-shortcut){
- padding-inline:var(--workspace-inset);
- column-gap:calc(var(--chat-toolbar-gap) + var(--chat-room-list-padding));
-}
 .chat-room-create.button{display:flex;align-items:center;justify-content:center;flex-shrink:0;box-sizing:border-box;height:var(--chat-control-height);min-height:var(--chat-control-height);font-size:.76rem;gap:6px;padding:0 12px;white-space:nowrap}
 .chat-room-create .icon{width:17px;height:17px}
 .chat-room-list{display:flex;align-items:center;flex:1;min-width:0;gap:8px;overflow-x:auto;scrollbar-width:none;padding:var(--chat-room-list-padding);max-width:100%}

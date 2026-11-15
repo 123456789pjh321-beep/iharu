@@ -1,4 +1,4 @@
-import {openMemberPreferences,selectAllMembers,saveMemberPreference} from '../helpers/workspace-ui';
+import {closeMemberPreferences,openMemberPreferences,selectAllMembers,saveMemberPreference,workspaceGroupButton} from '../helpers/workspace-ui';
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 import {koreaToday} from '../../shared/schedules';
 const origin='http://127.0.0.1:4174',password='shared-filter-fixture-2026';test.use({baseURL:origin,reducedMotion:'reduce'});
@@ -10,16 +10,32 @@ test('calendar and tuition share multiple-member controls, save independently ac
  try{
   await parent(page,'shared-filter-a@example.test','필터 A');await parent(b,'shared-filter-b@example.test','필터 B');const invite=await call(page.request,'invite.issue',{consent:true});await call(b.request,'family.join',{code:invite.code});const am=await call(page.request,'me'),bm=await call(b.request,'me');
   for(const [name,id,amount] of [['A',am.id,100000],['B',bm.id,200000]] as const){await call(page.request,'items.create',{kind:'EVENT',data:{title:name+' 약속',date:koreaToday(),allDay:true,assigneeId:id}});await call(page.request,'items.create',{kind:'FEE',data:{title:name+' 수업',date:koreaToday(),amount,assigneeId:id,feeFrequency:'ONCE',paid:true}});}
-  const filters=(p:Page,label:string)=>p.getByRole('group',{name:label+' 구성원 필터',exact:true}),calendar=filters(page,'달력');
-  await page.goto('/today/calendar');await expect(calendar.getByRole('button',{name:'전체 보기',exact:true})).toHaveCount(0);await expect(calendar.getByRole('button',{name:'필터 A',exact:true})).toHaveAttribute('aria-pressed','true');await selectAllMembers(page);await expect(page.locator('.calendar-event')).toHaveCount(2);await saveMemberPreference(page);await expect(page.locator('.timetable-preference')).toContainText('설정됨');
-  await page.goto('/tuition');const fees=filters(page,'가계부');await expect(fees.getByRole('button',{name:'필터 B',exact:true})).toHaveAttribute('aria-pressed','false');await selectAllMembers(page);await expect(page.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('300,000원');await saveMemberPreference(page);await expect(page.locator('.timetable-preference')).toContainText('설정됨');await fees.getByRole('button',{name:'필터 A',exact:true}).click();await expect(page.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('200,000원');await page.reload();await expect(page.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('300,000원');
-  await page.goto('/today/calendar');await calendar.getByRole('button',{name:'필터 A',exact:true}).click();await saveMemberPreference(page);await expect(page.locator('.timetable-preference')).toContainText('설정됨');await calendar.getByRole('button',{name:'필터 B',exact:true}).click();await expect(page.locator('.timetable-preference-message:visible')).toContainText('한 명 이상');
-  await login(other,'shared-filter-a@example.test');await other.goto('/today/calendar');await expect(filters(other,'달력').getByRole('button',{name:'필터 A',exact:true})).toHaveAttribute('aria-pressed','false');await expect(filters(other,'달력').getByRole('button',{name:'필터 B',exact:true})).toHaveAttribute('aria-pressed','true');await other.goto('/tuition');await expect(other.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('300,000원');
-  await page.goto('/timetable');await expect(filters(page,'시간표').getByRole('button',{name:'필터 B',exact:true})).toHaveAttribute('aria-pressed','false');await selectAllMembers(page);await expect(filters(page,'시간표').getByRole('button',{name:'필터 B',exact:true})).toHaveAttribute('aria-pressed','true');
+  const member=(p:Page,name:string)=>p.getByRole('dialog',{name:'조회할 구성원'}).getByRole('button',{name,exact:true});
+  await page.goto('/today/calendar');await openMemberPreferences(page);
+  await expect(member(page,'필터 A')).toHaveAttribute('aria-pressed','true');
+  await selectAllMembers(page);await expect(page.locator('.calendar-event')).toHaveCount(2);await saveMemberPreference(page);
+  await page.goto('/tuition');await openMemberPreferences(page);
+  await expect(member(page,'필터 B')).toHaveAttribute('aria-pressed','false');
+  await selectAllMembers(page);await expect(page.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('300,000원');
+  await saveMemberPreference(page);
+  await openMemberPreferences(page);await member(page,'필터 A').click();await closeMemberPreferences(page);
+  await expect(page.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('200,000원');
+  await page.reload();await expect(page.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('300,000원');
+  await page.goto('/today/calendar');await openMemberPreferences(page);await member(page,'필터 A').click();await saveMemberPreference(page);
+  const calendar=await openMemberPreferences(page);
+  await expect(calendar.locator('.timetable-preference')).toContainText('설정됨');
+  await member(page,'필터 B').click();await expect(calendar.locator('.timetable-preference-message')).toContainText('한 명 이상');
+  await closeMemberPreferences(page);
+  await login(other,'shared-filter-a@example.test');await other.goto('/today/calendar');await openMemberPreferences(other);
+  await expect(member(other,'필터 A')).toHaveAttribute('aria-pressed','false');await expect(member(other,'필터 B')).toHaveAttribute('aria-pressed','true');
+  await other.goto('/tuition');await expect(other.locator('[data-pager-current] .ledger-summary-expense dd')).toHaveText('300,000원');
+  await page.goto('/timetable');await openMemberPreferences(page);await expect(member(page,'필터 B')).toHaveAttribute('aria-pressed','false');
+  await selectAllMembers(page);await openMemberPreferences(page);await expect(member(page,'필터 B')).toHaveAttribute('aria-pressed','true');
+  await closeMemberPreferences(page);
   for(const path of ['/today/calendar','/tuition']){
    await page.goto(path);
    for(const width of [320,820,1440]){
-    await page.setViewportSize({width,height:1000});const trigger=page.getByRole('button',{name:/^구성원 필터 설정 ·/});await expect(trigger).toBeVisible();
+    await page.setViewportSize({width,height:1000});const trigger=workspaceGroupButton(page);await expect(trigger).toBeVisible();
     const chooser=await openMemberPreferences(page);await expect(chooser.getByRole('button',{name:'전체선택',exact:true})).toBeVisible();await chooser.getByRole('button',{name:'전체선택',exact:true}).click();await chooser.getByRole('button',{name:'선택 완료',exact:true}).click();await expect(trigger).toBeFocused();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    }

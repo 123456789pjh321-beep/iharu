@@ -6,7 +6,6 @@ import {Icon} from './Icon';
 import {ConversationStickers,ConversationStickerArt} from './ConversationStickers';
 import {conversationSticker,type ConversationSticker} from '../../../shared/conversation-stickers';
 import {FormNotice} from './AuthLayout';
-import {WorkspaceGroupFilter} from './WorkspaceGroupFilter';
 import {ChatRooms} from './ChatRooms';
 import {LeaveChatRoom} from './LeaveChatRoom';
 import {workspaceRequest} from '../workspace-api';
@@ -27,7 +26,7 @@ export function PersonalChat(props:ChatProps){
  useEffect(()=>{if(compact)return;const update=()=>{if(!document.hidden)void refreshRooms().catch(()=>{});};update();const timer=setInterval(update,5000);window.addEventListener('focus',update);return()=>{++generation.current;clearInterval(timer);window.removeEventListener('focus',update);};},[refreshRooms,compact,revision]);
  const room=rooms.find(room=>room.id===selected);
  return <section className={'chat-workspace '+(compact?'compact':'full')} aria-label="대화 공간">
-  {!compact&&<><WorkspaceGroupFilter/><ChatRooms me={me} rooms={rooms} selected={selected} select={setSelected} error={error} created={async id=>{const next=await refreshRooms();if(!next?.some(room=>room.id===id))throw new Error('대화방 목록을 다시 확인해 주세요.');setSelected(id);}}/></>}
+  {!compact&&<ChatRooms me={me} rooms={rooms} selected={selected} select={setSelected} error={error} created={async id=>{const next=await refreshRooms();if(!next?.some(room=>room.id===id))throw new Error('대화방 목록을 다시 확인해 주세요.');setSelected(id);}}/>}
   <RoomChat left={()=>{if(!room)return;++generation.current;const prefix=me.id+':'+(me.family?.id||'')+':'+room.id+':';for(const key of props.cache?.keys()||[])if(key.startsWith(prefix))props.cache?.delete(key);setSelected(null);setRooms(old=>old.filter(value=>value.id!==room.id));void refreshRooms().catch(()=>{});}} key={me.id+':'+(me.family?.id||'')+':'+(selected||'default')} {...props} room={room}/>
  </section>;
 }

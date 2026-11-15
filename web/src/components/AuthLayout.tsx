@@ -15,7 +15,7 @@ export {FormNotice} from './Common';
 
 type LayoutProps={children:ReactNode;wide?:boolean;personalChild?:boolean};
 const FrameContext=createContext(false);
-const timeTreeRoutes=new Set(['/timetable','/calendar','/today/calendar','/chat','/child/chat','/timeline','/tuition','/more','/settings','/family']);
+const timeTreeRoutes=new Set(['/timetable','/calendar','/today/calendar','/today/repeats','/chat','/child/chat','/timeline','/tuition','/more','/settings','/family']);
 export function AuthLayout(props:LayoutProps){return useContext(FrameContext)?<>{props.children}</>:<AuthLayoutRoot {...props}/>;}
 export function AuthEntryFrame({children,inline=false}:{children:ReactNode;inline?:boolean}){const content=<FrameContext.Provider value>{children}</FrameContext.Provider>;return inline?content:<AuthLayout>{content}</AuthLayout>;}
 export function WorkspaceFrame(){return <WorkspaceGateProvider><EntryAccessProvider><StableWorkspaceFrame/></EntryAccessProvider></WorkspaceGateProvider>;}
