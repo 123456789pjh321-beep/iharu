@@ -1,12 +1,11 @@
 import {z} from 'zod';
 
 export const accountDeletionRequestPath='/privacy?request=delete';
-const paths=new Set(['/timetable','/today/calendar','/today/repeats','/chat','/timeline','/briefing','/child/chat','/tuition','/records','/family','/family/invite','/invite','/account','/account/email','/account/reauth','/privacy',accountDeletionRequestPath,'/notification-settings','/more','/settings','/help','/more/service','/more/notices','/more/blog','/admin']);
-/** Auth returns are exact app destinations, including explicitly supported settings and saved views. */
+const paths=new Set(['/timetable','/today/calendar','/today/repeats','/chat','/timeline','/child/chat','/tuition','/records','/family','/family/invite','/invite','/account','/account/email','/account/reauth','/privacy',accountDeletionRequestPath,'/notification-settings','/more','/settings','/help','/more/service','/more/notices','/more/blog','/admin']);
+/** Auth returns are exact app destinations. */
 export function entryReturnPath(value:unknown):string{
  if(typeof value!=='string')return '/timetable';
  if(/^\/android\/widgets\?challenge=[A-Za-z0-9_-]{43}$/.test(value))return value;
- if(value==='/admin?section=ai'||value==='/briefing?settings=1'||value==='/briefing?view=saved')return value;
  return paths.has(value)||/^\/more\/(notices|blog)\/[a-z0-9-]{1,100}$/.test(value)?value:'/timetable';
 }
 const pageIntent=z.object({type:z.literal('page'),path:z.string()}).strict();

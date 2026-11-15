@@ -33,6 +33,8 @@ describe('P07-F07 cron lease and maintenance',()=>{
   const run=vi.fn(async()=>({state:'DONE'})),app=scheduleCron(async()=>database.db,run,{CRON_SECRET:secret});
   for(const path of ['/api/cron/tick','/api/internal/schedule-maintenance','/api/internal/notification-maintenance'])expect((await app.request(path,{headers})).status).toBe(200);
   expect(run).toHaveBeenCalledTimes(3);expect((await app.request('/api/cron/tick',{method:'POST',headers})).status).toBe(404);
+  expect((await app.request('/api/cron/briefing',{headers})).status).toBe(404);
+  expect(run).toHaveBeenCalledTimes(3);
   expect((await scheduleCron(async()=>{throw Error('private-url');},run,{CRON_SECRET:secret}).request('/api/cron/tick',{headers})).status).toBe(503);
   expect(JSON.stringify(error.mock.calls)).not.toContain('private-url');error.mockRestore();info.mockRestore();
  });

@@ -204,7 +204,6 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .chat-rooms-heading h1{font-size:24px;color:var(--ink)}
 .workspace-page:where([data-timetree]) .ledger-controls{box-shadow:none}
 .workspace-page:where([data-timetree]) .ledger-tabs,.workspace-page:where([data-timetree]) .ledger-flow-filter{background:var(--surface-sub)}
-.workspace-page:where([data-timetree]) .briefing-page{color:var(--ink)}
 
 /* Shared positions and dividers use the calendar's measurements. */
 .workspace-page:where([data-timetree]) .auth-panel>.workspace-toolbar,.workspace-page:where([data-timetree]) .guest-workspace>.workspace-toolbar{position:sticky;top:0;z-index:16;flex-shrink:0}
@@ -212,9 +211,6 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .workspace-page-heading h1{font-size:var(--workspace-title-size)}
 .workspace-page:where([data-timetree]) .more-screen{width:100%;flex:0 0 auto}
 .workspace-page:where([data-timetree]) .settings-screen{padding:0 0 24px}
-.workspace-page:where([data-timetree]) .briefing-screen{padding:8px var(--workspace-inset) 24px;flex:0 0 auto}
-.workspace-page:where([data-timetree])[data-timetree='/briefing'] .guest-feature{padding:8px var(--workspace-inset) 24px}
-.workspace-page:where([data-timetree]) .location-access-prompt{flex:0 0 auto;padding-inline:var(--workspace-inset)}
 
 /* Keep the conversation composer inside the same reserved navigation space. */
 .workspace-page:where([data-timetree]) .chat-rooms{padding:0 var(--workspace-inset);min-height:var(--workspace-member-height);box-sizing:border-box}

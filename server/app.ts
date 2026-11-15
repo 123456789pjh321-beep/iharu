@@ -1,4 +1,3 @@
-import {briefingRoutes} from './briefing/routes.js';
 import {pushCron} from './push/service.js';
 import {holidayCalendarRoutes} from './schedules/holiday-calendar.js';
 import {legalRoutes} from './legal/routes.js';
@@ -27,9 +26,8 @@ import {readRealtimeConfig,type RealtimeConfig} from './messages/realtime.js';
 import {messageRoutes} from './messages/routes.js';
 import {messageCatalog} from '../shared/message-catalog.js';
 import { dailyRoutes } from './daily/routes.js';
-import {aiCredentialDefaults,type AiCredentialDependencies} from './admin/ai-credentials.js';
 
-export function createApp(config: AppConfig = readConfig(), authRuntime: () => AuthService | null = getAuthRuntime, familyRuntime: () => Promise<FamilyService | null> = getFamilyRuntime, realtimeConfig:()=>RealtimeConfig|null=readRealtimeConfig, aiDependencies:AiCredentialDependencies=aiCredentialDefaults, fixtureOptions?:{legacyInviteFixtures?:boolean}) {
+export function createApp(config: AppConfig = readConfig(), authRuntime: () => AuthService | null = getAuthRuntime, familyRuntime: () => Promise<FamilyService | null> = getFamilyRuntime, realtimeConfig:()=>RealtimeConfig|null=readRealtimeConfig, fixtureOptions?:{legacyInviteFixtures?:boolean}) {
   const app = new Hono<{ Variables: { requestId: string } }>();
   app.use('*', secureHeaders());
   app.use('*', async (c, next) => {
@@ -63,8 +61,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.route('/', holidayCalendarRoutes());
   app.route('/', accountRoutes(authRuntime));
   app.route('/', legalRoutes(authRuntime,familyRuntime));
-  app.route('/', adminRoutes(authRuntime,familyRuntime,aiDependencies));
-  app.route('/', briefingRoutes(authRuntime,familyRuntime));
+  app.route('/', adminRoutes(authRuntime,familyRuntime));
   app.route('/', guardianRoutes(authRuntime,familyRuntime));
   // Isolated fixtures use retired operations to construct pre-existing accounts.
   app.route('/', workspaceRoutes(authRuntime,familyRuntime,config.environment==='local'&&fixtureOptions?.legacyInviteFixtures===true));
@@ -78,6 +75,7 @@ export function createApp(config: AppConfig = readConfig(), authRuntime: () => A
   app.route('/', scheduleCron());
   app.route('/', pushCron(familyRuntime));
   app.all('/api/v1/*', async c => {
+    if (/^\/api\/v1\/(?:briefing(?:\/|$)|admin\/ai\.)/.test(c.req.path)) return c.notFound();
     const principal = await resolvePrincipal(c.req.raw, authRuntime());
     if (!isAuthenticated(principal)) return c.json({ error:{ code:'AUTH_REQUIRED', message:'로그인이 필요해요.' }, requestId:c.get('requestId') }, 401);
     if (principal.assurance !== 'HIGH' || !principal.emailVerified || !principal.accessReady) return c.json({ error:{ code:'ACCESS_NOT_READY', message:'계정 확인과 그룹 연결이 필요해요.' }, requestId:c.get('requestId') }, 403);

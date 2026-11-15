@@ -40,6 +40,16 @@ describe('P01 API boundaries', () => {
     expect(response.status).toBe(404);
     expect(response.headers.get('content-type')).toContain('application/json');
   });
+  it('retires briefing and provider operations without requiring a session or service', async () => {
+    const paths=['/api/v1/briefing','/api/v1/briefing/read','/api/v1/briefing/preferences.save',
+      '/api/v1/briefing/feedback','/api/v1/briefing/admin.read','/api/v1/briefing/admin.save',
+      '/api/v1/admin/ai.read','/api/v1/admin/ai.check','/api/v1/admin/ai.save','/api/v1/admin/ai.remove'];
+    for(const path of paths){
+      const response=await app.request(path,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      expect(response.status,path).toBe(404);
+      expect(apiErrorSchema.parse(await response.json()).error.code).toBe('NOT_FOUND');
+    }
+  });
   it('disables demo in production even if requested', async () => {
     const production = createApp({ environment:'production', demoEnabled:true });
     expect((await production.request('/api/demo/dashboard')).status).toBe(404);

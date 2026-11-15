@@ -7,7 +7,6 @@ import {DisplaySettings,useExperience} from './Experience';
 import {useOptionalWorkspaceGate} from './WorkspaceGate';
 import {GroupInviteManager} from './GroupInviteManager';
 import {GroupInviteShareButton} from './GroupInviteShare';
-import {BriefingLocationSettings} from './BriefingLocation';
 import {useRef,useState} from 'react';
 import {WorkspaceToolbar} from './WorkspaceToolbar';
 import {MorePageHeading} from './MorePageHeading';
@@ -37,11 +36,8 @@ export function WorkspaceMore({me}:{me:WorkspaceMe|null}){
 }
 export function WorkspaceSettings(){
  const {preferences,setPreference}=useExperience();
- const gate=useOptionalWorkspaceGate();
  return <section className="more-screen settings-screen" aria-labelledby="settings-title"><MorePageHeading title="설정" id="settings-title"/>
   <div className="more-section"><h2>화면</h2><div className="more-group"><div className="settings-row"><div><strong>화면 밝기</strong><p>편안하게 볼 수 있는 화면을 선택해요.</p></div><DisplaySettings/></div><div className="settings-row"><div><strong id="quiet-label">움직임 줄이기</strong><p id="quiet-help">전환 효과를 줄이고 바로 이동해요.</p></div><button type="button" role="switch" aria-checked={preferences.quiet} aria-labelledby="quiet-label" aria-describedby="quiet-help" className="setting-switch" onClick={()=>setPreference({quiet:!preferences.quiet})}><span/></button></div></div><p className="settings-note">화면 설정은 이 기기에 저장됩니다. 기기의 ‘동작 줄이기’ 설정도 함께 적용돼요.</p></div>
-  <BriefingLocationSettings/>
-  {gate?.access.identity?.role!=='CHILD'&&<div className="more-section"><h2>AI 브리핑</h2><div className="more-group"><Link className="more-row" to="/briefing?settings=1"><span><Icon name="settings"/>브리핑 설정</span><Icon name="chevron"/></Link><Link className="more-row" to="/briefing?view=saved"><span><Icon name="bookmark"/>보관한 소식</span><Icon name="chevron"/></Link></div></div>}
   <div className="more-section"><h2>알림과 도움말</h2><div className="more-group"><Link className="more-row" to="/notification-settings"><span><Icon name="bell"/>알림설정</span><Icon name="chevron"/></Link><Link className="more-row" to="/help"><span><Icon name="book"/>사용 가이드</span><Icon name="chevron"/></Link></div></div>
  </section>;
 }
