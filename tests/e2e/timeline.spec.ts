@@ -80,7 +80,11 @@ test('swipes real months without opening details or interfering with vertical sc
   const member=page.getByRole('group',{name:'메모 작성자'});await swipe(member,true);await expect(month).toHaveValue('2026-12');await expect(member.getByRole('button',{name:'memo-swipes',exact:true})).toHaveAttribute('aria-pressed','true');
   const scrollPosition=()=>page.evaluate(()=>Array.from(document.querySelectorAll('*')).reduce((sum,node)=>sum+node.scrollTop,0)),before=await scrollPosition();
   await touch({x:230,y:700},{x:232,y:380});await expect.poll(scrollPosition).toBeGreaterThan(before+50);await expect(month).toHaveValue('2026-12');
-  await page.locator('.workspace-toolbar').scrollIntoViewIfNeeded();await page.waitForTimeout(350);
+  await expect.poll(async()=>{
+   const position=await scrollPosition();
+   await page.waitForTimeout(150);
+   return await scrollPosition()===position;
+  }).toBe(true);
   await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).tap();await expect(page.getByRole('dialog',{name:'메모 작성'})).toBeVisible();await page.getByRole('button',{name:'메모 작성 닫기'}).tap();await expect(month).toHaveValue('2026-12');
   await page.screenshot({path:'test-results/memo-swipe-390.png',animations:'disabled'});
   await page.setViewportSize({width:1440,height:900});const box=(await area.boundingBox())!;
