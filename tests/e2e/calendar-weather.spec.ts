@@ -45,15 +45,26 @@ test('shows date-specific weather in the timetable and calendar and remembers th
  const current=page.locator('[data-pager-current]');
  const dateWeather=current.locator('[data-weather-date="2026-11-20"]');
  await expect(dateWeather).toBeVisible();
+ await expect(current.locator('.calendar-week-row.has-weather')).toHaveCount(2);
+ await expect(current.locator('.calendar-week-row.has-weather').filter({hasNot:page.locator('[data-weather-date]')})).toHaveCount(0);
  await dateWeather.click();
  await expect(details.getByText('약한 비',{exact:true})).toBeVisible();
  await details.getByRole('button',{name:'날씨 상세 닫기'}).click();
+ await expect(details).toHaveCount(0);
+ const dateButton=current.getByRole('button',{name:'2026-11-20 일정 보기',exact:true});
+ await dateButton.click();
+ const loginClose=page.getByRole('button',{name:'로그인 창 닫기',exact:true});
+ await expect(loginClose).toBeVisible();
+ await loginClose.click();
+ await expect(loginClose).toHaveCount(0);
  await selectCalendarView(page,'주간');
  await expect(dateWeather).toBeVisible();
  for(const width of [320,499,1100]){
   await page.setViewportSize({width,height:940});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(topWeather).toBeInViewport();
+  const dateBounds=(await dateButton.boundingBox())!, weatherBounds=(await dateWeather.boundingBox())!;
+  expect(dateBounds.y+dateBounds.height).toBeLessThanOrEqual(weatherBounds.y);
   await page.screenshot({path:`test-results/calendar-weather-week-${width}.png`,animations:'disabled'});
  }
  await selectCalendarView(page,'일간');

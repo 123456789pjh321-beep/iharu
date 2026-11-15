@@ -7,7 +7,10 @@ export async function waitForAppReady(page:Page){
 }
 
 export async function selectCalendarView(page:Page,view:'월간'|'주간'|'일간'){
+ const trigger=page.getByLabel(/^달력 보기 · /);
+ await trigger.click();
  await page.getByRole('group',{name:'달력 보기',exact:true}).getByRole('button',{name:view,exact:true}).click();
+ await expect(trigger).toHaveAccessibleName('달력 보기 · '+view);
 }
 export function workspaceGroupButton(page:Page,name?:string){
  const groups=page.locator('.workspace-topbar .workspace-group-chips');

@@ -85,7 +85,7 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .timetable-weekly .timetable-card:hover{background:color-mix(in srgb,var(--event-color) 20%,var(--surface))}
 
 /* Horizontal week rules replace the boxed grid. Dates use a regular weight. */
-.workspace-page:where([data-timetree]) .direct-calendar{background:var(--surface)}
+.workspace-page:where([data-timetree]) .direct-calendar{flex:1 1 0;min-height:0;height:auto;background:var(--surface)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--muted)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays>span{color:var(--calendar-secondary-ink)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-grid{gap:0;border:0;background:var(--surface)}

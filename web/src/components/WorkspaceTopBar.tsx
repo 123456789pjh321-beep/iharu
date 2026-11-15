@@ -6,12 +6,12 @@ import {WorkspaceGroupFilter} from './WorkspaceGroupFilter';
 import {WorkspaceMembersDialog} from './WorkspaceMembersDialog';
 import {useOptionalWorkspaceGate,useWorkspaceGate} from './WorkspaceGate';
 
-type Slot='toolbar'|'members'|'actions';
+type Slot='toolbar'|'members'|'groupTrailing'|'actions';
 type Entry={owner:symbol;content:ReactNode;active:boolean;groupId:string|null};
 type Bar={identity:string;route:string}&Partial<Record<Slot,Entry>>;
 type MembersRequest={route:string;ownerId:string|null;groupId:string|null;trigger:HTMLButtonElement};
-const actionRoutes=new Set(['/tuition','/timeline','/today/calendar']);
-const toolbarRoutes=new Set(['/timetable','/calendar','/today/repeats',...actionRoutes]);
+const actionRoutes=new Set(['/tuition','/timeline']);
+const toolbarRoutes=new Set(['/timetable','/calendar','/today/calendar','/today/repeats',...actionRoutes]);
 const routes=new Set([...toolbarRoutes,'/chat','/child/chat']);
 const routeKey=(path:string)=>path==='/calendar'?'/today/calendar':path;
 const actionSlots=7;
@@ -50,6 +50,7 @@ export function WorkspaceTopBarHost(){
  const groupId=group?.id??null;
  const pending=groupBusy||access.status==='checking'||(withToolbar&&(!bar||bar.route!==route||!bar.toolbar?.active));
  const memberSlot=bar?.route===route&&bar.members?.active&&bar.members.groupId===groupId?bar.members.content:null;
+ const groupTrailing=bar?.route===route&&bar.groupTrailing?.active?bar.groupTrailing.content:null;
  const preview=access.status==='guest'&&!!memberSlot;
  const canOpen=preview||!!group&&(!!memberSlot||!withToolbar||route==='/today/repeats');
  const opened=!pending&&canOpen&&request?.route===route&&request.ownerId===ownerId&&request.groupId===groupId?request:null;
@@ -62,7 +63,7 @@ export function WorkspaceTopBarHost(){
  if(!routes.has(pathname)||!target)return null;
  return createPortal(<div className="workspace-topbar-content" data-topbar-route={withToolbar?bar?.route:route} aria-busy={pending} inert={pending}>
   {withToolbar&&bar?.toolbar?.content}
-  <WorkspaceGroupFilter key={'groups:'+route} preview={preview} dialogId={dialogId} onMembers={(selectedId,trigger)=>{
+  <WorkspaceGroupFilter key={'groups:'+route} preview={preview} dialogId={dialogId} trailing={groupTrailing} onMembers={(selectedId,trigger)=>{
    setRequest({route,ownerId,groupId:selectedId,trigger});
   }}/>
   {opened&&<WorkspaceMembersDialog id={dialogId} groupName={group?.name||'샘플 데이터'} members={group?.members}

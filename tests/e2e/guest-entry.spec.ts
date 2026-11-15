@@ -161,7 +161,7 @@ test('native Back from Google restores a cached login sheet that can retry or cl
  }finally{await context.close();await browser.close();}
 });
 
-test('timetable and calendar share the sample group button and compact bottom navigation', async ({page}) => {
+test('timetable and calendar share the sample group button and bottom navigation', async ({page}) => {
  await page.setViewportSize({width:390,height:844});
  await page.goto('/timetable');await ready(page);
  const workspace=page.locator('.auth-app.workspace-page');
@@ -171,7 +171,7 @@ test('timetable and calendar share the sample group button and compact bottom na
  const timetableSize=await grid.boundingBox();
  const timetableNav=await nav.boundingBox();
  await expect(workspace).toHaveAttribute('data-timetree','/timetable');
- await expect(nav).toHaveCSS('height','64px');
+ await expect(nav).toHaveCSS('height','80px');
  const activeIcon=nav.locator('a[aria-current="page"] .rail-icon');
  const timetableIcon=(await activeIcon.boundingBox())!;
  const selectedChip=page.locator('.workspace-group-chips>.guest-sample-badge');
@@ -189,7 +189,7 @@ test('timetable and calendar share the sample group button and compact bottom na
   await expect(workspace).toHaveAttribute('data-timetree',route);
   await expect(page.locator(content)).toBeVisible();
   await expect(nav.getByRole('link',{name:label,exact:true})).toHaveAttribute('aria-current','page');
-  await expect(nav).toHaveCSS('height','64px');
+  await expect(nav).toHaveCSS('height','80px');
   if(label==='달력'){
    const calendarIcon=(await activeIcon.boundingBox())!;
    expect([calendarIcon.width,calendarIcon.height]).toEqual([timetableIcon.width,timetableIcon.height]);
@@ -237,9 +237,9 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   const reference=await appearance();
   expect(reference).toMatchObject({
    position:'fixed',tabBackground:'rgba(0, 0, 0, 0)',
-   capsuleWidth:width<=360?'46px':'56px',capsuleHeight:height<500?'26px':'28px',capsuleRadius:'16px',iconWidth:'20px',
+   capsuleWidth:width<=360?'46px':'56px',capsuleHeight:'34px',capsuleRadius:'20px',iconWidth:'20px',
   });
-  expect(parseFloat(reference.height)).toBeCloseTo(height<500?51.2:64,1);
+  expect(parseFloat(reference.height)).toBeCloseTo(height<=500?64:80,1);
   const colors=await nav.locator('.rail-icon').evaluateAll(icons=>icons.map(icon=>getComputedStyle(icon).color));
   expect(new Set(colors).size).toBe(7);
   await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(23, 109, 99)');
