@@ -26,17 +26,17 @@ export function CalendarGrid({label,weekCount,rowMinimum=68,weekly=false,childre
  </section>;
 }
 
-export function CalendarWeek({dates,month,selectedDate,today,holidayName,openDay,dayDetails,eventRows=0,children}:{
+export function CalendarWeek({dates,month,selectedDate,today,holidayName,openDay,dayDetails,dateWeather,eventRows=0,children}:{
  dates:string[];month:string;selectedDate:string|null;today:string;holidayName:(date:string)=>string;
  openDay:(date:string)=>void;dayDetails:(date:string,holiday:string,index:number)=>{label:string;disabled?:boolean;content?:ReactNode};
- eventRows?:number;children?:ReactNode;
+ dateWeather?:(date:string)=>ReactNode;eventRows?:number;children?:ReactNode;
 }){
  const cells=dates.map(date=>{
   const holiday=holidayName(date);
   return {date,holiday,badge:calendarDayBadge(date,holiday)};
  });
  const hasHoliday=cells.some(cell=>cell.holiday),hasBadge=cells.some(cell=>cell.badge);
- return <div className={'calendar-week-row'+(hasHoliday?' has-holiday':'')+(hasBadge?' has-day-badge':'')}
+ return <div className={'calendar-week-row'+(hasHoliday?' has-holiday':'')+(hasBadge?' has-day-badge':'')+(dateWeather?' has-weather':'')}
   data-week-start={dates[0]} style={{'--calendar-event-rows':eventRows} as CSSProperties}>
   {cells.map(({date,holiday,badge},index)=>{
    const weekday=new Date(date+'T12:00:00Z').getUTCDay();
@@ -55,6 +55,7 @@ export function CalendarWeek({dates,month,selectedDate,today,holidayName,openDay
     <small className="calendar-lunar" aria-hidden="true">{lunarDateCaption(date)}</small>
     {badge&&<span className={'calendar-day-badge '+(badge.tone==='holiday'?'calendar-holiday':'calendar-observance')}
      title={badge.sourceLabel}>{badge.label}</span>}
+    {dateWeather?.(date)}
     {content}
    </div>;
   })}

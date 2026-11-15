@@ -10,6 +10,7 @@ import {CalendarMemberPreferenceFilter} from './CalendarMemberPreferenceFilter';
 import {WorkspaceToolbar} from './WorkspaceToolbar';
 import {WorkspaceTopBarActions} from './WorkspaceTopBar';
 import {TimetableGraphic} from './TimetableGraphic';
+import {useCalendarWeather,WeatherDateButton,WeatherDialog,WeatherToolbar} from './CalendarWeather';
 import {Icon} from './Icon';
 
 const weekday=['일','월','화','수','목','금','토'];
@@ -21,6 +22,7 @@ type Interval={start:number;end:number};
 const timedKey=(date:string,item:WorkspaceItem,start:number)=>date+':'+item.id+':'+start;
 export function PersonalTimetable({day,items,members,loading,calendar,preview=false,setDay,create,edit,viewerId,defaultMemberIds,saveDefaultMembers}:{day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading:boolean;calendar?:CalendarTimetable;preview?:boolean;viewerId?:string;defaultMemberIds?:string[];saveDefaultMembers?:(ids:string[])=>Promise<void>;setDay:(date:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem,date:string)=>void}){
  const embedded=!!calendar,calendarWeek=calendar?.view==='week';
+ const weather=useCalendarWeather(!embedded);
  const holidays=useHolidays((embedded?day:koreaToday()).slice(0,7));
  const selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}); const [now,setNow]=useState(koreaTime),[slot,setSlot]=useState(36),scroller=useRef<HTMLDivElement>(null),scrolledDay=useRef('');
  const [view,setView]=useState<'calendar'|'graphic'>('calendar');
@@ -56,7 +58,9 @@ export function PersonalTimetable({day,items,members,loading,calendar,preview=fa
  const currentSummary=showToday&&!loading?<div className={'timetable-current-summary'+(currentCaption?'':' empty')} aria-label="현재 진행 중인 일정"><strong>지금</strong><span title={currentCaption||undefined}>{currentCaption||'등록된 일정이 없는 시간이에요'}</span></div>:null;
  return <section className={'personal-timetable'+(calendarWeek?' calendar-weekly':embedded?' calendar-daily':' timetable-weekly')} aria-label={calendarWeek?'주간 일정':embedded?'일간 일정':'주간 시간표'}>
   {calendar?.view==='week'?calendar.header:embedded?<div className="timetable-summary"><span>{loading?'불러오는 중':`${events.length}개 일정`}</span>{currentSummary}</div>:<>
-   <WorkspaceToolbar title="시간표" navigation={<span className="workspace-toolbar-title">{Number(today.slice(0,4))}년 {Number(today.slice(5,7))}월</span>}>{currentSummary}</WorkspaceToolbar>
+   <WorkspaceToolbar title="시간표" navigation={<span className="workspace-toolbar-title">{Number(today.slice(0,4))}년 {Number(today.slice(5,7))}월</span>}>
+    {currentSummary}<WeatherToolbar weather={weather} date={selectedDay}/>
+   </WorkspaceToolbar>
    {!!members.length&&<CalendarMemberPreferenceFilter preview={preview} members={members} selection={selection} label="시간표 구성원 필터"/>}
    <WorkspaceTopBarActions label="시간표 보기">
     <button type="button" aria-pressed={!showGraphic} onClick={()=>setView('calendar')}><Icon name="calendar"/><span>달력</span></button>
@@ -71,6 +75,9 @@ export function PersonalTimetable({day,items,members,loading,calendar,preview=fa
      </button>;
     })}
    </div>
+   {dates.some(date=>weather.days.some(forecast=>forecast.date===date))&&<div className="timetable-weather-row" role="group" aria-label="요일별 날씨">
+    {dates.map(date=><div key={date}><WeatherDateButton weather={weather} date={date}/></div>)}
+   </div>}
   </>}
   {!calendarWeek&&holidays.name(day)&&<p className={'timetable-holiday holiday-label'+(embedded?'':' sr-only')}>{holidays.name(day)}</p>}
   {showGraphic?<TimetableGraphic day={selectedDay} today={today} now={now} items={lanes.find(lane=>lane.date===selectedDay)?.events||[]}
@@ -112,5 +119,6 @@ export function PersonalTimetable({day,items,members,loading,calendar,preview=fa
    </div>
   </div></div>}
   {!calendarWeek&&holidays.unavailable&&<p className="holiday-status" role="status">이 연도의 공휴일 정보를 확인하지 못했어요.</p>}
+  {!embedded&&<WeatherDialog weather={weather}/>}
  </section>;
 }

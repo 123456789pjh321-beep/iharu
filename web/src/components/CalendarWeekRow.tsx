@@ -1,11 +1,11 @@
-import type {CSSProperties,MouseEvent} from 'react';
+import type {CSSProperties,MouseEvent,ReactNode} from 'react';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
 import type {calendarWeekLayout,CalendarRun} from '../../../shared/calendar-layout';
 import {scheduleAssignee,scheduleTimeCaption} from '../../../shared/workspace-schedules';
 import {eventColor} from './scheduleColors';
 import {CalendarWeek} from './CalendarGrid';
 
-export function CalendarWeekRow({dates,layout,members,month,day,today,holidayName,openDay,edit}:{dates:string[];layout:ReturnType<typeof calendarWeekLayout>;members:WorkspaceMember[];month:string;day:string;today:string;holidayName:(date:string)=>string;openDay:(date:string)=>void;edit:(item:WorkspaceItem,date:string)=>void}){
+export function CalendarWeekRow({dates,layout,members,month,day,today,holidayName,openDay,edit,dateWeather}:{dates:string[];layout:ReturnType<typeof calendarWeekLayout>;members:WorkspaceMember[];month:string;day:string;today:string;holidayName:(date:string)=>string;openDay:(date:string)=>void;edit:(item:WorkspaceItem,date:string)=>void;dateWeather?:(date:string)=>ReactNode}){
  const {runs,hidden,rows}=layout;
  function openRun(event:MouseEvent<HTMLButtonElement>,run:CalendarRun){
   const bounds=event.currentTarget.getBoundingClientRect();
@@ -13,7 +13,7 @@ export function CalendarWeekRow({dates,layout,members,month,day,today,holidayNam
   const occurrence=run.days[index];
   if(occurrence.items.length===1)edit(occurrence.items[0],occurrence.date);else openDay(occurrence.date);
  }
- return <CalendarWeek dates={dates} month={month} selectedDate={day} today={today} holidayName={holidayName}
+ return <CalendarWeek dates={dates} month={month} selectedDate={day} today={today} holidayName={holidayName} dateWeather={dateWeather}
   openDay={openDay} eventRows={rows} dayDetails={(date,holiday,index)=>({
    label:`${date}${holiday?' '+holiday:''} 일정 보기`,
    content:hidden[index]>0&&<button type="button" className="calendar-overflow"
