@@ -43,6 +43,22 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  useEffect(()=>{if(!me)return;let active=true;setNotebooks([]);workspaceRequest<{items:{name:string;count:number}[]}>('memos.notebooks',{},me.family?.id??null).then(r=>{if(active)setNotebooks(r.items);}).catch(()=>{});return()=>{active=false;};},[me?.id,me?.family?.id,refresh]);
  const [trashOpen,setTrashOpen]=useState(false);
  const trashTrigger=useRef<HTMLButtonElement>(null);
+ const focusAfterTrash=useRef(false);
+ useEffect(()=>{
+  if(trashOpen||!focusAfterTrash.current)return;
+  const button=trashTrigger.current,panel=button?.closest('.auth-panel');
+  if(!button||!panel)return;
+  // Restoring an older month can keep the content hidden until its loading overlay leaves.
+  // Restore keyboard focus once the trigger is visible, without guessing a network delay.
+  const observer=new MutationObserver(restoreFocus);
+  function restoreFocus(){
+   if(!button?.isConnected||getComputedStyle(button).visibility!=='visible'||document.querySelector('dialog[open]'))return;
+   button.focus({preventScroll:true});
+   if(document.activeElement===button){focusAfterTrash.current=false;observer.disconnect();}
+  }
+  observer.observe(panel,{childList:true});restoreFocus();
+  return()=>observer.disconnect();
+ },[trashOpen]);
  const [initialTool,setInitialTool]=useState<MemoTool>(null);
  const [busy,setBusy]=useState(''),[viewPhoto,setViewPhoto]=useState('');
  const previousSpace=useRef(me?.family?.id);
@@ -165,7 +181,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   {selected&&<MemoDetail memo={selected} busy={busy===selected.id} message={message} onClose={()=>{setSelectedId('');setViewPhoto('');}} onPhoto={setViewPhoto} onCreate={()=>{setSelectedId('');create();}} onEdit={()=>{
    setSelectedId('');setInitialTool(null);setDraft({...selected,photos:selected.photos.map(photo=>({id:photo.id}))});
   }} onFavorite={()=>void action(selected,'memos.favorite')} onDelete={()=>{if(window.confirm('이 글과 사진·파일을 휴지통으로 이동할까요? 휴지통에서 다시 복원할 수 있어요.'))void action(selected,'memos.delete');}}/>}
-  {trashOpen&&me&&previousSpace.current===me.family?.id&&<MemoTrash key={me.family?.id||'personal'} spaceId={me.family?.id||null} spaceName={me.family?.name||'개인'} onClose={()=>{setTrashOpen(false);requestAnimationFrame(()=>trashTrigger.current?.focus({preventScroll:true}));}} onChanged={date=>{if(date){selectMonth(date.slice(0,7));setOwnerIds([]);setNotebook('');}reload();}}/>}
+  {trashOpen&&me&&previousSpace.current===me.family?.id&&<MemoTrash key={me.family?.id||'personal'} spaceId={me.family?.id||null} spaceName={me.family?.name||'개인'} onClose={()=>{focusAfterTrash.current=true;setTrashOpen(false);}} onChanged={date=>{if(date){selectMonth(date.slice(0,7));setOwnerIds([]);setNotebook('');}reload();}}/>}
   {draft&&me&&<MemoEditor initial={draft} initialTool={initialTool} profileId={me.id} spaceId={me.family?.id||null} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));setOwnerIds([]);setNotebook('');reload();setMessage('메모를 저장했어요.');}}/>}
   <dialog ref={viewer} className="memo-photo-viewer" aria-label="사진 크게 보기" onClose={()=>setViewPhoto('')} onClick={e=>{if(e.target===e.currentTarget)setViewPhoto('');}}><button type="button" className="icon-button" aria-label="사진 닫기" onClick={()=>setViewPhoto('')}><Icon name="close"/></button>{viewPhoto&&<img src={viewPhoto} alt="메모 첨부 사진 확대"/>}</dialog>
  </div></AuthLayout>;
