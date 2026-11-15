@@ -11,10 +11,11 @@ import {PersonalTimetable} from './PersonalTimetable';
 export {calendarColors,eventColor} from './scheduleColors';
 import {addDays,koreaToday} from '../../../shared/schedules';
 import type {WorkspaceItem,WorkspaceMember} from '../../../shared/workspace';
-import {dailySchedules,matchesMember} from '../../../shared/workspace-schedules';
+import {dailySchedules,matchesMember,timetableWeekDates} from '../../../shared/workspace-schedules';
 export {visibleOn} from '../../../shared/workspace-schedules';
 import {PeriodPager,shiftMonth} from './PeriodPager';
 import {calendarWeekLayout} from '../../../shared/calendar-layout';
+import {calendarDayBadge} from '../../../shared/calendar-day-badge';
 import {Icon} from './Icon';
 const calendarViews=[['month','월간','calendar'],['week','주간','calendarWeek'],['day','일간','calendarDay']] as const;
 
@@ -23,20 +24,38 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
  const [view,setView]=useState<typeof calendarViews[number][0]>('month'),selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}),member=selection.memberIds;
  const selectDay=(date:string)=>{setDay(date);setMonth(date.slice(0,7));};
  const today=koreaToday();
- const weekStart=addDays(day,-new Date(day+'T12:00:00Z').getUTCDay());
+ const weekStart=timetableWeekDates(day)[0];
  const shown=items.filter(i=>i.kind==='EVENT'&&matchesMember(i,member));
+ const untimed=view==='week'?shown.filter(item=>item.data.allDay||!item.data.startTime||!item.data.endTime):[];
+ const openDay=(date:string)=>{selectDay(date);if(guestCreate)create(date);else setDetail(date);};
+ const editOnDay=(item:WorkspaceItem,date:string)=>{setDay(date);edit(item);};
  const move=(delta:number)=>{if(view!=='month'){selectDay(addDays(day,delta*(view==='week'?7:1)));}else{const date=new Date(Number(month.slice(0,4)),Number(month.slice(5))-1+delta,1),m=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');setMonth(m);setDay(m+'-01');}};
  const renderPage=(offset:number)=>{
-  const pageMonth=view==='month'?shiftMonth(month,offset):addDays(day,offset*(view==='week'?7:1)).slice(0,7);
-  if(view==='day')return <PersonalTimetable embedded day={addDays(day,offset)} items={shown} members={members} loading={loading} setDay={selectDay} create={create} edit={edit}/>;
-  const datesByWeek=view==='week'?[Array.from({length:7},(_,n)=>addDays(weekStart,offset*7+n))]:monthWeeks(pageMonth);
-  const weeks=datesByWeek.map(dates=>({dates,layout:calendarWeekLayout(shown,dates,view==='week'?10:3)}));
+  if(view==='day')return <PersonalTimetable calendar={{view:'day'}} day={addDays(day,offset)} items={shown}
+   members={members} loading={loading} setDay={selectDay} create={create} edit={edit}/>;
+  if(view==='week'){
+   const date=addDays(day,offset*7),dates=timetableWeekDates(date);
+   const layout=calendarWeekLayout(untimed,dates);
+   const rows=layout.runs.length?layout.rows:0,overflow=layout.hidden.some(Boolean);
+   const dateHeight=dates.some(day=>calendarDayBadge(day,holidays.name(day)))?62:44;
+   const header=<div className="calendar-week-header">
+    {rows>0&&<span>종일</span>}
+    <CalendarGrid weekly weekCount={1} rowMinimum={dateHeight+rows*28+(overflow?28:4)}>
+     <CalendarWeekRow dates={dates} layout={layout} members={members} month={date.slice(0,7)} day={date}
+      today={today} holidayName={holidays.name} openDay={openDay} edit={editOnDay}/>
+    </CalendarGrid>
+   </div>;
+   return <PersonalTimetable calendar={{view:'week',header}} day={date} items={shown} members={members} loading={loading}
+    setDay={selectDay} create={create} edit={editOnDay}/>;
+  }
+  const pageMonth=shiftMonth(month,offset);
+  const weeks=monthWeeks(pageMonth).map(dates=>({dates,layout:calendarWeekLayout(shown,dates)}));
   // Reserve the same date/holiday and event space for every row. A short viewport
   // scrolls the complete grid instead of letting a holiday row enlarge and clip it.
   const lanes=Math.max(...weeks.map(week=>week.layout.runs.length?week.layout.rows:0)),overflow=weeks.some(week=>week.layout.hidden.some(Boolean));
-  const rowMinimum=Math.max(view==='week'?300:0,64+lanes*28+(overflow?28:4));
-  return <CalendarGrid key={weeks[0].dates[0]} weekCount={weeks.length} rowMinimum={rowMinimum} weekly={view==='week'}>
-   {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={date=>{selectDay(date);if(guestCreate)create(date);else setDetail(date);}} edit={(item,date)=>{setDay(date);edit(item);}}/>)}
+  const rowMinimum=64+lanes*28+(overflow?28:4);
+  return <CalendarGrid key={weeks[0].dates[0]} weekCount={weeks.length} rowMinimum={rowMinimum}>
+   {weeks.map(week=><CalendarWeekRow key={week.dates[0]} dates={week.dates} layout={week.layout} members={members} month={pageMonth} day={day} today={today} holidayName={holidays.name} openDay={openDay} edit={editOnDay}/>)}
   </CalendarGrid>;
  };
  return <section className="direct-calendar" aria-label="일정 달력">
