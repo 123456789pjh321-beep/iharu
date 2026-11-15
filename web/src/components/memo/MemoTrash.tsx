@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import type {MemoTrashItem,MemoTrashList} from '../../../../shared/memos';
 import {workspaceRequest} from '../../workspace-api';
 import {Icon} from '../Icon';
@@ -8,7 +8,7 @@ export function MemoTrash({spaceId,spaceName,onClose,onChanged}:{spaceId:string|
  const dialog=useRef<HTMLDialogElement>(null),mounted=useRef(false),writeLock=useRef(false);
  const [data,setData]=useState<MemoTrashList|null>(null),[offset,setOffset]=useState(0),[refresh,setRefresh]=useState(0);
  const [loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState('');
- useEffect(()=>{
+ useLayoutEffect(()=>{
   mounted.current=true;const node=dialog.current,opener=document.activeElement instanceof HTMLElement?document.activeElement:null;
   node?.showModal();return()=>{mounted.current=false;node?.close();if(opener?.isConnected)opener.focus({preventScroll:true});};
  },[]);
@@ -21,7 +21,7 @@ export function MemoTrash({spaceId,spaceName,onClose,onChanged}:{spaceId:string|
   }).catch(e=>{if(active)setError((e as Error).message);}).finally(()=>{if(active)setLoading(false);});
   return()=>{active=false;};
  },[offset,refresh,spaceId]);
- function close(){if(!writeLock.current)onClose();}
+ function close(){if(!writeLock.current){dialog.current?.close();onClose();}}
  async function act(item:MemoTrashItem,operation:'restore'|'purge'){
   if(writeLock.current)return;
   if(operation==='purge'&&!window.confirm('“'+item.title+'” 글과 모든 사진·파일을 영구 삭제할까요?\n영구 삭제 후에는 복원할 수 없어요.'))return;
