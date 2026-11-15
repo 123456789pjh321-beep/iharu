@@ -178,11 +178,7 @@ export function LedgerEconomyCalculator({category}: {category: EconomyCategory |
     setDrafts(previous => ({...previous, [active]: update(previous[active] ?? initial)}));
   }
 
-  function changeValue(fieldId: string, text: string) {
-    updateDraft(current => ({...current, values: {...current.values, [fieldId]: text}}));
-  }
-
-  function renderField({field, raw, value, invalid}: typeof inputs[number]) {
+  function renderField({field, raw, invalid}: typeof inputs[number]) {
     const inputId = id + '-' + active + '-' + field.id;
     const error = field.unit === '%'
       ? '0~100% 범위에서 소수 둘째 자리까지 입력해 주세요.'
@@ -194,13 +190,9 @@ export function LedgerEconomyCalculator({category}: {category: EconomyCategory |
           inputMode={field.unit === '%' ? 'decimal' : 'numeric'} maxLength={24}
           aria-invalid={invalid || undefined} aria-required={!field.optional}
           aria-describedby={inputId + '-unit' + (invalid ? ' ' + inputId + '-error' : '')}
-          onChange={event => changeValue(field.id, event.target.value)}
-          onFocus={() => {
-            if (value !== null && raw.includes(',')) changeValue(field.id, String(value));
-          }}
-          onBlur={() => {
-            if (value === null || !raw.trim()) return;
-            changeValue(field.id, (field.unit === '%' ? decimal : whole).format(value));
+          onChange={event => {
+            const text = event.target.value;
+            updateDraft(current => ({...current, values: {...current.values, [field.id]: text}}));
           }}/>
         <span id={inputId + '-unit'}>{field.unit}</span>
       </div>
