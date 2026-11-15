@@ -34,8 +34,16 @@ export async function fetchCalendarForecast(region:WeatherRegion,key:string,requ
   days:'10',pageSize:'10',unitsSystem:'METRIC',languageCode:'ko',
  }).toString();
  const response=await request(url,{headers:{'X-Goog-Api-Key':key},signal:AbortSignal.timeout(7000),redirect:'error'});
- if(!response.ok)throw new Error('WEATHER_API_UNAVAILABLE');
- const {forecastDays}=googleForecast.parse(await response.json());
+ if(!response.ok){
+  console.warn(JSON.stringify({code:'WEATHER_API_UNAVAILABLE',status:response.status}));
+  throw new Error('WEATHER_API_UNAVAILABLE');
+ }
+ const parsed=googleForecast.safeParse(await response.json());
+ if(!parsed.success){
+  console.warn(JSON.stringify({code:'WEATHER_API_RESPONSE_INVALID'}));
+  throw new Error('WEATHER_API_RESPONSE_INVALID');
+ }
+ const {forecastDays}=parsed.data;
  return forecastDays.flatMap(row=>{
   const {year,month,day}=row.displayDate;
   const date=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;

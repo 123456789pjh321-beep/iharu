@@ -1,6 +1,8 @@
 import {expect,test} from '@playwright/test';
 import {selectCalendarView,waitForAppReady} from '../helpers/workspace-ui';
 
+test.use({baseURL:'http://127.0.0.1:4174',reducedMotion:'reduce'});
+
 test('shows date-specific weather in the timetable and calendar and remembers the chosen region',async({page})=>{
  await page.setViewportSize({width:499,height:940});
  await page.clock.setFixedTime(new Date('2026-11-19T10:30:00+09:00'));
