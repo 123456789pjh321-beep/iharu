@@ -179,7 +179,7 @@ test('timetable and calendar share member chips and the TimeTree bottom navigati
  const timetableChip=await chipStyle();
  for(const [label,route,content] of [
   ['달력','/today/calendar','.direct-calendar'],
-  ['대화','/chat','.guest-chat-sample'],
+  ['설정','/settings','.settings-screen'],
   ['가계부','/tuition','.ledger-workspace'],
   ['더보기','/more','.more-guide-area'],
  ]) {
@@ -223,10 +223,10 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   };
  });
  const mainMenus=[
-  ['/today/calendar','달력'],['/chat','대화'],['/timeline','타임라인'],['/tuition','가계부'],['/family','그룹관리'],['/more','더보기'],
+  ['/today/calendar','달력'],['/settings','설정'],['/timeline','타임라인'],['/tuition','가계부'],['/family','그룹관리'],['/more','더보기'],
  ];
  const moreMenus=[
-  '/account','/settings','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',
+  '/account','/chat','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',
  ];
  for(const [width,height] of [[320,844],[820,1000],[1440,900],[844,390]]){
   await page.setViewportSize({width,height});
@@ -237,7 +237,7 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
    position:'fixed',height:height<500?'64px':'80px',tabBackground:'rgba(0, 0, 0, 0)',
    capsuleWidth:width<=360?'46px':'56px',capsuleHeight:'34px',capsuleRadius:'20px',iconWidth:'20px',
   });
-  const routes=width===320?[...mainMenus,...moreMenus.map(path=>[path,'더보기'])]:[['/account','더보기'],['/chat','대화']];
+  const routes=width===320?[...mainMenus,...moreMenus.map(path=>[path,'더보기'])]:[['/account','더보기'],['/settings','설정']];
   for(const [path,label] of routes){
    await page.goto(path);
    await expect(nav.getByRole('link',{name:label,exact:true})).toHaveAttribute('aria-current','page');
