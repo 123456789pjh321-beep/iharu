@@ -83,7 +83,7 @@ test('calendar slides in the chosen direction, survives fast navigation and resp
  await page.setViewportSize({width:390,height:844});await signIn(context,'calendar-motion@example.test');await page.goto('/today/calendar');await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});
  const month=page.getByLabel('달력 월 선택');await month.fill('2026-11');
  async function swipe(delta:number){
-  const bounds=(await page.locator('.calendar-viewport').boundingBox())!,x=bounds.x+bounds.width*(delta>0?.8:.2),y=bounds.y+40;
+  const bounds=(await page.locator('.direct-calendar > .continuous-pager').boundingBox())!,x=bounds.x+bounds.width*(delta>0?.8:.2),y=bounds.y+40;
   await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-delta*bounds.width*.6,y,{steps:8});await page.mouse.up();
  }
  const current=page.locator('[data-pager-current]'),next=page.locator('[data-page-offset="1"]');
@@ -94,7 +94,7 @@ test('calendar slides in the chosen direction, survives fast navigation and resp
  await swipe(1);await swipe(-1);await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);await expect(month).toHaveValue('2026-11');await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.emulateMedia({reducedMotion:'reduce'});await swipe(1);await expect(month).toHaveValue('2026-12');await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);
  expect(await page.locator('.calendar-page-track').evaluate(el=>el.getAnimations().length)).toBe(0);
- await selectCalendarView(page,'주간');await swipe(1);await expect(page.locator('[data-pager-current] .calendar-grid .calendar-cell')).toHaveCount(7);
+ await selectCalendarView(page,'주간');await swipe(1);await expect(page.locator('[data-pager-current] .timetable-day-column')).toHaveCount(7);
  await page.emulateMedia({reducedMotion:'no-preference'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'light',font:'noto',quiet:true})));await page.reload();await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});await month.fill('2026-11');await swipe(1);await expect(month).toHaveValue('2026-12');
  await expect(page.locator('.calendar-motion-snapshot')).toHaveCount(0);expect(await page.locator('.calendar-page-track').evaluate(el=>el.getAnimations().length)).toBe(0);
  }finally{await context.close();}
