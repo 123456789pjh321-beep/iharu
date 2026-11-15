@@ -1,5 +1,5 @@
 import {expect,test,type Locator,type Page} from '@playwright/test';
-import {waitForAppReady} from '../helpers/workspace-ui';
+import {waitForAppReady,selectLedgerView} from '../helpers/workspace-ui';
 
 const origin='http://127.0.0.1:4174';
 const password='graphics-fixture-password-2026';
@@ -39,15 +39,24 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await page.goto('/tuition');
  await waitForAppReady(page);
  const month=page.getByLabel('조회 월',{exact:true});
- const menu=page.getByRole('group',{name:'가계부 보기'}),current=page.locator('[data-pager-current]');
+ const menu=page.getByRole('group',{name:'가계부 보기',exact:true}),current=page.locator('[data-pager-current]');
+ const viewPicker=page.getByRole('region',{name:'그룹 선택'}).getByLabel(/^가계부 보기 · /);
+ await expect(viewPicker).toHaveAccessibleName('가계부 보기 · 달력');
+ await expect(page.locator('[data-workspace-actions]')).toHaveCount(0);
+ await expect(menu).toBeHidden();
+ await viewPicker.click();
  await expect(menu.getByRole('button')).toHaveText(['달력','내역','그래프','계산기']);
  await expect(menu.getByRole('button',{name:'달력',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.screenshot({path:'test-results/ledger-group-view-picker-390.png',animations:'disabled'});
+ await page.keyboard.press('Escape');
+ await expect(menu).toBeHidden();
+ await expect(viewPicker).toBeFocused();
  await month.fill('2027-01');
  await page.getByRole('button',{name:'오늘',exact:true}).click();
  await expect(month).toHaveValue('2027-02');
  await expect(page.locator('.tuition-day-sheet h2')).toContainText('2월 15일');
  await page.getByRole('button',{name:'날짜 가계부 닫기'}).click();
- await menu.getByRole('button',{name:'그래프',exact:true}).click();
+ await selectLedgerView(page,'그래프');
  const ring=current.getByRole('img',{name:'어디에 썼나요? 원형 그래프'});
  await expect(ring).toHaveAttribute('data-renderer','phaser',{timeout:15000});
  await expect(ring.locator('canvas')).toHaveCount(1);
@@ -73,6 +82,7 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await page.setViewportSize({width:390,height:900});
  await clickRing(ring,.51,151);
  const list=current.getByRole('region',{name:'가계부 내역'});
+ await expect(viewPicker).toHaveAccessibleName('가계부 보기 · 내역');
  await expect(list.getByRole('combobox',{name:'분류',exact:true})).toHaveValue('TRANSPORT');
  await expect(list.locator('.ledger-entry')).toHaveCount(1);
  await expect(list.getByRole('button',{name:'버스 수정'})).toBeVisible();
@@ -83,7 +93,7 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await list.getByRole('button',{name:'필터 초기화'}).click();
  await list.getByRole('combobox',{name:'정렬',exact:true}).selectOption('newest');
  await expect(list.locator('.ledger-entry h3')).toHaveText(['마트','버스','기타 소액','간식','학원비']);
- await menu.getByRole('button',{name:'계산기',exact:true}).click();
+ await selectLedgerView(page,'계산기');
  const calc=page.getByRole('region',{name:'가계부 계산기'}),output=calc.getByLabel('계산 결과');
  await expect(calc).toBeVisible();
  await calc.focus();
@@ -116,7 +126,7 @@ test('financial calculators show live results, validate inputs and keep each too
   }});
  });
  await page.goto('/tuition');
- await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'계산기',exact:true}).click();
+ await selectLedgerView(page,'계산기');
 
  const calc=page.getByRole('region',{name:'가계부 계산기'});
  const tab=(name:string)=>calc.getByRole('group',{name:'계산기 종류'}).getByRole('button',{name,exact:true});

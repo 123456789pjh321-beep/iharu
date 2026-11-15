@@ -30,26 +30,26 @@
 .workspace-members-invite .group-invite-issued{min-width:0;margin:0}
 .workspace-members-invite>p{margin:0;color:var(--muted);font-size:.8rem}
 
-.calendar-view-picker{position:relative;flex:none;margin-inline-start:auto}
-.calendar-view-picker>summary{
+.workspace-view-picker{position:relative;flex:none;margin-inline-start:auto}
+.workspace-view-picker>summary{
  display:flex;align-items:center;gap:4px;box-sizing:border-box;height:var(--workspace-topbar-chip-height,32px);
  padding:0 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);
  font-size:12px;font-weight:650;list-style:none;cursor:pointer
 }
-.calendar-view-picker>summary::-webkit-details-marker{display:none}
-.calendar-view-picker :is(summary,button)>.icon{width:15px;height:15px;flex:none}
-.calendar-view-picker>summary>.calendar-view-chevron{width:12px;height:12px;transform:rotate(90deg)}
-.calendar-view-picker[open]>summary>.calendar-view-chevron{transform:rotate(-90deg)}
-.calendar-view-options{
+.workspace-view-picker>summary::-webkit-details-marker{display:none}
+.workspace-view-picker :is(summary,button)>.icon{width:15px;height:15px;flex:none}
+.workspace-view-picker>summary>.workspace-view-chevron{width:12px;height:12px;transform:rotate(90deg)}
+.workspace-view-picker[open]>summary>.workspace-view-chevron{transform:rotate(-90deg)}
+.workspace-view-options{
  position:absolute;inset-block-start:calc(100% + 6px);inset-inline-end:0;z-index:1;display:grid;min-width:104px;
  padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow-raised)
 }
-.calendar-view-options>button{
+.workspace-view-options>button{
  display:flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;border:0;border-radius:7px;
  background:transparent;color:var(--ink);text-align:start;font:inherit;font-size:13px;white-space:nowrap;cursor:pointer
 }
-.calendar-view-options>button:is(:hover,[aria-pressed=true]){background:var(--mint);color:var(--primary)}
-.calendar-view-options>button[aria-pressed=true]{font-weight:750}
+.workspace-view-options>button:is(:hover,[aria-pressed=true]){background:var(--mint);color:var(--primary)}
+.workspace-view-options>button[aria-pressed=true]{font-weight:750}
 
 .workspace-page .workspace-topbar [data-topbar-route='/timetable']>.workspace-toolbar{justify-content:space-between}
 .workspace-page .workspace-topbar [data-topbar-route='/timetable'] .workspace-toolbar-actions{min-width:0;max-width:calc(100% - 116px)}

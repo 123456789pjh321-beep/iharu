@@ -1,4 +1,4 @@
-import {selectCalendarView,setCalendarTheme,waitForAppReady} from '../helpers/workspace-ui';
+import {selectCalendarView,setCalendarTheme,waitForAppReady,selectLedgerView} from '../helpers/workspace-ui';
 import {test,expect,type Page} from '@playwright/test';
 const origin='http://127.0.0.1:4174';test.use({baseURL:origin});
 
@@ -72,7 +72,7 @@ test('holidays, day agenda and full-screen editors use a bottom navigation at ev
    await expect(ledgerDay.locator('header')).toContainText('3월 1일');
    await ledgerDay.getByRole('button',{name:'날짜 가계부 닫기'}).click();
   }
-  await ledgerMonth.fill('2027-03');await page.getByRole('group',{name:'가계부 보기'}).getByRole('button',{name:'내역',exact:true}).click();await page.getByRole('region',{name:'가계부 내역',exact:true}).getByRole('button',{name:'추가',exact:true}).click();await expect(page.getByLabel('날짜',{exact:true})).toHaveValue('2027-03-01');await expect(page.getByRole('button',{name:'저장',exact:true})).toBeInViewport();await page.screenshot({path:`test-results/ui96-fee-editor-${width}.png`,animations:'disabled'});await page.getByRole('button',{name:'편집 닫기'}).click();
+  await ledgerMonth.fill('2027-03');await selectLedgerView(page,'내역');await page.getByRole('region',{name:'가계부 내역',exact:true}).getByRole('button',{name:'추가',exact:true}).click();await expect(page.getByLabel('날짜',{exact:true})).toHaveValue('2027-03-01');await expect(page.getByRole('button',{name:'저장',exact:true})).toBeInViewport();await page.screenshot({path:`test-results/ui96-fee-editor-${width}.png`,animations:'disabled'});await page.getByRole('button',{name:'편집 닫기'}).click();
  }
  await page.setViewportSize({width:820,height:1180});await page.goto('/today/calendar');await page.getByLabel('달력 월 선택').fill('2026-10');await expect(page.locator('[data-date="2026-10-05"] .calendar-holiday')).toHaveText('대체공휴일(개천절)');
  await setCalendarTheme(page,'어둡게');await page.getByLabel('달력 월 선택').fill('2026-10');await page.screenshot({path:'test-results/ui96-calendar-dark.png',animations:'disabled'});
