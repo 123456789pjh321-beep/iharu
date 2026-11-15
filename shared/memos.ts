@@ -8,6 +8,8 @@ export type MemoFields=z.infer<typeof memoFields>;
 export type MemoPhoto={id:string;width:number;height:number};
 export type Memo=MemoFields&{id:string;version:number;ownerId:string;ownerName:string;mine:boolean;favorite:boolean;createdAt:string;updatedAt:string;photos:MemoPhoto[];attachments?:MemoAttachment[]};
 export type MemoList={items:Memo[];total:number;hasAny:boolean};
+export type MemoTrashItem={id:string;title:string;date:string;version:number;deletedAt:string;photoCount:number;attachmentCount:number};
+export type MemoTrashList={items:MemoTrashItem[];total:number};
 export type MemoPhotoInput={id:string}|{data:string;width:number;height:number};
 export type MemoDraft=MemoFields&{id:string;version:number;photos:MemoPhotoInput[];attachments?:MemoAttachmentInput[]};
 export function emptyMemo(date:string):MemoDraft{return {id:crypto.randomUUID(),version:0,title:'',body:'',date,time:new Date().toLocaleTimeString('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit'}),category:'DAILY',tags:[],place:'',location:null,visibility:'PRIVATE',photos:[],notebook:'',bodyFormat:'PLAIN',checklist:[],attachments:[]};}

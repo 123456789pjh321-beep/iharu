@@ -126,3 +126,21 @@ test('slides cards and the full-screen editor up while keeping actions visible a
  await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await page.setViewportSize({width:520,height:900});
  await page.getByRole('group',{name:'빠른 기록'}).getByRole('button',{name:'노트',exact:true}).click();await expect(editor).toBeVisible();await page.screenshot({path:'test-results/memo-editor-dark-520.png',animations:'disabled'});
 });
+
+test('opens rightmost trash, recovers errors, restores original dates and confirms permanent deletion',async({page})=>{
+ await login(page,'memo-trash-browser');
+ const post=async(op:string,data:object={})=>{const response=await page.request.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(response.ok(),await response.text()).toBe(true);return response.json();};
+ const note=await post('memos.save',{id:crypto.randomUUID(),version:0,title:'복원할 추억',body:'보관된 글',date:'2026-02-03',time:'09:30',category:'DAILY',tags:[],place:'',location:null,visibility:'PRIVATE',photos:[],attachments:[{name:'추억.txt',mime:'text/plain',kind:'FILE',data:'aGVsbG8=',size:5}]});
+ await post('memos.delete',{id:note.id,version:1});await page.goto('/timeline');
+ const tools=page.getByRole('group',{name:'빠른 기록'}),trash=page.getByRole('dialog',{name:'휴지통',exact:true});
+ await expect(tools.getByRole('button')).toHaveText(['노트','녹음기','카메라','스캔','파일','스케치','휴지통']);
+ for(const width of [320,520,1440]){await page.setViewportSize({width,height:900});await expect(tools.getByRole('button',{name:'휴지통'})).toBeInViewport();expect(await tools.evaluate(n=>n.scrollWidth<=n.clientWidth)).toBe(true);await page.screenshot({path:`test-results/memo-trash-tools-${width}.png`,animations:'disabled'});}
+ await page.route('**/api/v1/workspace/memos.trash.list',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'잠시 연결이 끊겼어요.'}})}),{times:1});
+ await tools.getByRole('button',{name:'휴지통'}).click();await expect(trash.getByRole('alert')).toContainText('연결');await trash.getByRole('button',{name:'다시 불러오기'}).click();const row=trash.getByRole('article',{name:'복원할 추억'});await expect(row).toContainText('파일 1');
+ await page.route('**/api/v1/workspace/memos.trash.restore',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'복원을 다시 시도해 주세요.'}})}),{times:1});await row.getByRole('button',{name:'복원',exact:true}).click();await expect(trash.getByRole('alert')).toContainText('복원을 다시');await expect(row).toBeVisible();
+ await page.setViewportSize({width:320,height:700});await page.screenshot({path:'test-results/memo-trash-320.png',animations:'disabled'});
+ await row.getByRole('button',{name:'복원',exact:true}).click();await expect(trash.getByText('휴지통이 비어 있어요')).toBeVisible();await trash.getByRole('button',{name:'휴지통 닫기'}).click();await expect(tools.getByRole('button',{name:'휴지통'})).toBeFocused();await expect(page.getByLabel('타임라인 조회 월')).toHaveValue('2026-02');
+ const card=page.getByRole('article',{name:'복원할 추억'});await card.click();const detail=page.getByRole('dialog',{name:'글 상세'});await expect(detail.getByRole('article',{name:'추억.txt'})).toBeVisible();page.once('dialog',d=>d.accept());await detail.getByRole('button',{name:'삭제',exact:true}).click();await expect(detail).toHaveCount(0);
+ await tools.getByRole('button',{name:'휴지통'}).click();await expect(row).toBeVisible();page.once('dialog',d=>d.dismiss());await row.getByRole('button',{name:'영구 삭제',exact:true}).click();await expect(row).toBeVisible();
+ page.once('dialog',d=>d.accept());await row.getByRole('button',{name:'영구 삭제',exact:true}).click();await expect(trash.getByText('휴지통이 비어 있어요')).toBeVisible();await page.reload();await tools.getByRole('button',{name:'휴지통'}).click();await expect(trash.getByText('휴지통이 비어 있어요')).toBeVisible();await page.keyboard.press('Escape');await expect(tools.getByRole('button',{name:'휴지통'})).toBeFocused();
+});

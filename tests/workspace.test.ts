@@ -684,3 +684,51 @@ it('rejects invalid capture payloads, disguised active files and total byte over
  const large={...file,data:Buffer.alloc(1_450_000,97).toString('base64'),size:1_450_000};expect((await a.req(api+'memos.save',{...base,attachments:[large,large]})).status).toBe(400);
  expect((await a.ok('memos.list')).total).toBe(0);
 });
+
+it('retains trashed note bytes, hides all live entrypoints, restores metadata and purges only trashed notes',async()=>{
+ const a=await parent('memo-trash'),guest=new Browser();
+ const input={...memoInput('되살릴 기록'),notebook:'추억',bodyFormat:'MARKDOWN',checklist:[{id:crypto.randomUUID(),text:'기억하기',done:true}],photos:[{data:'/9j/2Q==',width:1,height:1}],attachments:[{name:'기록.txt',kind:'FILE',mime:'text/plain',data:'aGVsbG8=',size:5}]};
+ const saved=await a.ok('memos.save',input),id=saved.id,photoId=saved.photos[0].id,attachmentId=saved.attachments[0].id;
+ await a.ok('memos.favorite',{id,favorite:true});
+ for(const op of ['memos.trash.restore','memos.trash.purge'])expect((await a.req(api+op,{id,version:1})).status).toBe(404);
+ await a.ok('memos.delete',{id,version:1});
+ expect(await a.ok('memos.list')).toMatchObject({items:[],total:0,hasAny:false});
+ expect(await a.ok('memos.notebooks')).toMatchObject({items:[]});
+ const trash=await a.ok('memos.trash.list');expect(trash).toMatchObject({total:1,items:[{id,title:input.title,version:2,photoCount:1,attachmentCount:1}]});
+ expect(trash.items[0].deletedAt).toBeTruthy();expect(trash.items[0].body).toBeUndefined();
+ for(const [op,data] of [['memos.photo',{id:photoId}],['memos.attachment',{id:attachmentId}],['memos.favorite',{id,favorite:false}],['memos.save',{...input,version:2}],['memos.delete',{id,version:2}]] as const)expect((await a.req(api+op,data)).status).toBe(404);
+ expect((await guest.req(api+'memos.trash.list')).status).toBe(401);
+ for(const data of [{limit:0},{offset:-1},{ownerId:id},{groupId:id}])expect((await a.req(api+'memos.trash.list',data)).status).toBe(400);
+ for(const op of ['memos.trash.restore','memos.trash.purge']){
+  expect((await a.req(api+op,{id,version:1})).status).toBe(409);
+  expect((await a.req(api+op,{id,version:0})).status).toBe(400);
+ }
+ await a.ok('memos.trash.restore',{id,version:2});
+ const live=(await a.ok('memos.list')).items[0];expect(live).toMatchObject({id,version:3,favorite:true,notebook:'추억',bodyFormat:'MARKDOWN',checklist:input.checklist,photos:[{id:photoId}],attachments:[{id:attachmentId}]});
+ expect(await a.ok('memos.photo',{id:photoId})).toMatchObject({data:'/9j/2Q=='});expect(await a.ok('memos.attachment',{id:attachmentId})).toMatchObject({data:'aGVsbG8='});
+ expect(await a.ok('memos.trash.list')).toMatchObject({items:[],total:0});
+ await a.ok('memos.delete',{id,version:3});await a.ok('memos.trash.purge',{id,version:4});
+ expect(await a.ok('memos.trash.list')).toMatchObject({items:[],total:0});
+ for(const table of ['workspace_memos','workspace_memo_photos','workspace_memo_attachments','workspace_memo_favorites']){
+  const rows=await query<{count:number}>(database.db,'SELECT count(*)::int AS count FROM app_private.'+table+' WHERE '+(table==='workspace_memos'?'id':'memo_id')+'=$1',[id]);expect(rows[0].count).toBe(0);
+ }
+ expect((await a.req(api+'memos.trash.restore',{id,version:4})).status).toBe(404);
+ for(const name of ['workspace_memo_command_v20','workspace_memo_command_capture'])await expect(database.db.transaction().execute(async tx=>{await query(tx,'SET LOCAL ROLE app_runtime');await query(tx,`SELECT app_private.${name}('workspace.memos.list','{}')`);})).rejects.toMatchObject({code:'42501'});
+});
+it('isolates trash by author and selected space including shared notes and stable pagination',async()=>{
+ const a=await parent('trash-space'),b=await parent('trash-member'),personal=await a.ok('memos.save',memoInput('개인 보관'));
+ await a.ok('memos.delete',{id:personal.id,version:1});
+ const invite=await a.ok('invite.issue',{consent:true});await b.ok('family.join',{code:invite.code});const groupId=(await a.ok('me')).family.id;
+ const shared=await a.ok('memos.save',{...memoInput('그룹 보관'),visibility:'GROUP',photos:[{data:'/9j/2Q==',width:1,height:1}]});
+ await a.ok('memos.delete',{id:shared.id,version:1});
+ expect((await a.ok('memos.trash.list')).items.map((n:{id:string})=>n.id)).toEqual([shared.id]);
+ expect(await b.ok('memos.trash.list')).toMatchObject({items:[],total:0});expect(await b.ok('memos.list')).toMatchObject({total:0,hasAny:false});
+ for(const op of ['memos.trash.restore','memos.trash.purge'])expect((await b.req(api+op,{id:shared.id,version:2})).status).toBe(404);
+ expect((await b.req(api+'memos.photo',{id:shared.photos[0].id})).status).toBe(404);
+ await a.ok('group.select',{groupId:null});expect((await a.ok('memos.trash.list')).items.map((n:{id:string})=>n.id)).toEqual([personal.id]);
+ for(const op of ['memos.trash.restore','memos.trash.purge'])expect((await a.req(api+op,{id:shared.id,version:2})).status).toBe(404);
+ const other=await a.ok('memos.save',memoInput('두 번째'));await a.ok('memos.delete',{id:other.id,version:1});
+ const first=await a.ok('memos.trash.list',{limit:1}),second=await a.ok('memos.trash.list',{limit:1,offset:1});expect(first.total).toBe(2);expect(first.items[0].id).not.toBe(second.items[0].id);
+ await a.ok('memos.trash.restore',{id:personal.id,version:2});expect((await a.ok('memos.list')).items[0]).toMatchObject({id:personal.id,visibility:'PRIVATE'});
+ await a.ok('group.select',{groupId});await a.ok('memos.trash.restore',{id:shared.id,version:2});expect((await b.ok('memos.list')).items[0]).toMatchObject({id:shared.id,visibility:'GROUP'});
+});

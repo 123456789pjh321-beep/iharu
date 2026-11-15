@@ -17,6 +17,7 @@ import {calendarColors} from '../components/scheduleColors';
 import {MemoEditor,MemoPhoto,memoTools,type MemoTool} from '../components/MemoEditor';
 import {workspaceRequest} from '../workspace-api';
 import {MemoBody,MemoChecklist,MemoAttachmentCard} from '../components/memo/MemoContent';
+import {MemoTrash} from '../components/memo/MemoTrash';
 import './timeline.css';
 
 const dayLabel=(date:string)=>new Date(date+'T12:00:00Z').toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'UTC'});
@@ -40,10 +41,11 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  const [message,setMessage]=useState(''),[draft,setDraft]=useState<MemoDraft|null>(null),[selectedId,setSelectedId]=useState('');
  const [notebook,setNotebook]=useState(''),[notebooks,setNotebooks]=useState<{name:string;count:number}[]>([]);
  useEffect(()=>{if(!me)return;let active=true;setNotebooks([]);workspaceRequest<{items:{name:string;count:number}[]}>('memos.notebooks',{},me.family?.id??null).then(r=>{if(active)setNotebooks(r.items);}).catch(()=>{});return()=>{active=false;};},[me?.id,me?.family?.id,refresh]);
+ const [trashOpen,setTrashOpen]=useState(false);
  const [initialTool,setInitialTool]=useState<MemoTool>(null);
  const [busy,setBusy]=useState(''),[viewPhoto,setViewPhoto]=useState('');
  const previousSpace=useRef(me?.family?.id);
- useEffect(()=>{if(previousSpace.current!==me?.family?.id){setDraft(null);setSelectedId('');setViewPhoto('');setNotebook('');previousSpace.current=me?.family?.id;}},[me?.family?.id]);
+ useEffect(()=>{if(previousSpace.current!==me?.family?.id){setTrashOpen(false);setDraft(null);setSelectedId('');setViewPhoto('');setNotebook('');previousSpace.current=me?.family?.id;}},[me?.family?.id]);
  const mounted=useRef(true),writeLock=useRef(false),viewer=useRef<HTMLDialogElement>(null);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  useEffect(()=>{if(viewPhoto)viewer.current?.showModal();else viewer.current?.close();},[viewPhoto]);
@@ -116,7 +118,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   try{
    await workspaceRequest(op,op==='memos.delete'?{id:memo.id,version:memo.version}:{id:memo.id,favorite:!memo.favorite},me?.family?.id??null);
    if(!mounted.current)return;
-   if(op==='memos.delete'){setSelectedId('');setMessage('메모와 첨부를 삭제했어요.');}
+   if(op==='memos.delete'){setSelectedId('');setMessage('휴지통으로 이동했어요. 휴지통에서 복원할 수 있어요.');}
    else{
     setResults(old=>Object.fromEntries(Object.entries(old).map(([value,result])=>[value,{...result,data:result.data?{...result.data,items:result.data.items.map(item=>item.id===memo.id?{...item,favorite:!memo.favorite}:item)}:undefined}])));
     setMessage('즐겨찾기를 변경했어요.');
@@ -155,13 +157,14 @@ function Timeline({me}:{me:WorkspaceMe|null}){
    const next=selectedOwners.includes(id)?selectedOwners.filter(value=>value!==id):[...selectedOwners,id];
    selectOwners(next.length?next:[id]);
   },selectAll:()=>selectOwners(members.map(member=>member.id))}} label="메모 작성자"/>:<WorkspaceTopBarSlot slot="members">{null}</WorkspaceTopBarSlot>}
-  <div className="memo-quick-tools"><div className="memo-tools" role="group" aria-label="빠른 기록">{memoTools.map(([id,label,icon])=><button type="button" key={id} onClick={()=>create(id)}><Icon name={icon}/><span>{label}</span></button>)}</div></div>
+  <div className="memo-quick-tools"><div className="memo-tools" role="group" aria-label="빠른 기록">{memoTools.map(([id,label,icon])=><button type="button" key={id} onClick={()=>create(id)}><Icon name={icon}/><span>{label}</span></button>)}<button type="button" aria-haspopup="dialog" onClick={()=>{if(me)setTrashOpen(true);else requestLogin({title:'휴지통을 보려면 로그인해 주세요',description:'내가 삭제한 글을 확인하고 복원할 수 있어요.'});}}><Icon name="trash"/><span>휴지통</span></button></div></div>
   <div className="memo-notebook-filter">{(notebooks.length>0||notebook)&&<label><Icon name="book"/><span className="sr-only">노트별 보기</span><select aria-label="노트별 보기" value={notebook} onChange={e=>{setNotebook(e.target.value);setOffset(0);}}><option value="">모든 노트</option>{notebooks.map(n=><option key={n.name} value={n.name}>{n.name} ({n.count})</option>)}</select></label>}</div>
   <p className="memo-status" role="status">{message}</p>
   <MonthSwipeArea month={month} onChange={selectMonth}>{renderMonth}</MonthSwipeArea>
   {selected&&<MemoDetail memo={selected} busy={busy===selected.id} message={message} onClose={()=>{setSelectedId('');setViewPhoto('');}} onPhoto={setViewPhoto} onCreate={()=>{setSelectedId('');create();}} onEdit={()=>{
    setSelectedId('');setInitialTool(null);setDraft({...selected,photos:selected.photos.map(photo=>({id:photo.id}))});
-  }} onFavorite={()=>void action(selected,'memos.favorite')} onDelete={()=>{if(window.confirm('이 메모와 사진·파일을 삭제할까요?'))void action(selected,'memos.delete');}}/>}
+  }} onFavorite={()=>void action(selected,'memos.favorite')} onDelete={()=>{if(window.confirm('이 글과 사진·파일을 휴지통으로 이동할까요? 휴지통에서 다시 복원할 수 있어요.'))void action(selected,'memos.delete');}}/>}
+  {trashOpen&&me&&previousSpace.current===me.family?.id&&<MemoTrash key={me.family?.id||'personal'} spaceId={me.family?.id||null} spaceName={me.family?.name||'개인'} onClose={()=>setTrashOpen(false)} onChanged={date=>{if(date){selectMonth(date.slice(0,7));setOwnerIds([]);setNotebook('');}reload();}}/>}
   {draft&&me&&<MemoEditor initial={draft} initialTool={initialTool} profileId={me.id} spaceId={me.family?.id||null} onClose={()=>setDraft(null)} onSaved={date=>{setDraft(null);selectMonth(date.slice(0,7));setOwnerIds([]);setNotebook('');reload();setMessage('메모를 저장했어요.');}}/>}
   <dialog ref={viewer} className="memo-photo-viewer" aria-label="사진 크게 보기" onClose={()=>setViewPhoto('')} onClick={e=>{if(e.target===e.currentTarget)setViewPhoto('');}}><button type="button" className="icon-button" aria-label="사진 닫기" onClick={()=>setViewPhoto('')}><Icon name="close"/></button>{viewPhoto&&<img src={viewPhoto} alt="메모 첨부 사진 확대"/>}</dialog>
  </div></AuthLayout>;
