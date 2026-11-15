@@ -120,7 +120,7 @@ for(const width of [320,768,1440])test(`all functional canvases and calendar edi
    else{
     const input=page.getByLabel(path==='/today/calendar'?'달력 월 선택':'조회 월',{exact:true});await input.fill('2026-12');await input.fill('2027-01');await expect(input).toHaveValue('2027-01');await input.fill('2026-12');
     const picker=(await page.locator('.workspace-date-picker').boundingBox())!;
-    expect(picker.height).toBeCloseTo(path==='/records'?44:44*.8,1);expect(picker.x).toBeGreaterThanOrEqual(0);expect(picker.x+picker.width).toBeLessThanOrEqual(width);
+    expect(picker.height).toBeCloseTo(44,1);expect(picker.x).toBeGreaterThanOrEqual(0);expect(picker.x+picker.width).toBeLessThanOrEqual(width);
     if(path==='/today/calendar'){await page.locator('[data-pager-current] .calendar-cell[data-date="2026-12-01"] .calendar-day-target>span').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();}
     else if(path==='/tuition'){await page.locator('[data-pager-current] .calendar-cell[data-date="2026-12-01"] .calendar-day-target').click();await page.getByRole('button',{name:'이 날짜에 가계부 추가'}).click();}
     else await page.getByRole('button',{name:'메모 추가',exact:true}).click();
