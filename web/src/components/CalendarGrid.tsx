@@ -48,10 +48,12 @@ export function CalendarWeek({dates,month,selectedDate,today,holidayName,openDay
    if(date===today)classes.push('is-today');
    const {label,disabled,content}=dayDetails(date,holiday,index);
    return <div key={date} className={classes.join(' ')} data-date={date}>
-    <button type="button" className="calendar-day-target" aria-label={label} disabled={disabled}
-     aria-current={date===today?'date':undefined} aria-pressed={date===selectedDate} onClick={()=>openDay(date)}>
-     <span>{Number(date.slice(8))}</span>
-    </button>
+    <div className="calendar-date-control">
+     <button type="button" className="calendar-day-target" aria-label={label} disabled={disabled}
+      aria-current={date===today?'date':undefined} aria-pressed={date===selectedDate} onClick={()=>openDay(date)}>
+      <span>{Number(date.slice(8))}</span>
+     </button>
+    </div>
     <small className="calendar-lunar" aria-hidden="true">{lunarDateCaption(date)}</small>
     {badge&&<span className={'calendar-day-badge '+(badge.tone==='holiday'?'calendar-holiday':'calendar-observance')}
      title={badge.sourceLabel}>{badge.label}</span>}

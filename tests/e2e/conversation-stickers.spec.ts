@@ -51,5 +51,15 @@ test('timetable, tuition and calendar creation open their matching editors witho
  await page.goto('/timetable');await page.locator('.timetable-slot[data-time="09:00"]').first().click();await expect(page.getByRole('dialog',{name:'반복 일정 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
  await page.goto('/tuition');await expect(page.locator('.workspace-add-action')).toHaveCount(0);await page.locator('[data-pager-current=true] .calendar-cell:not(.outside) .calendar-day-target').first().click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();await expect(page.getByRole('dialog',{name:'가계부 등록',exact:true})).toBeVisible();await page.getByRole('button',{name:'편집 닫기'}).click();
  for(const path of ['/timetable','/today/calendar']){await page.goto(path);await expect(page.locator('.workspace-add-action')).toHaveCount(0);}
- await page.locator('[data-pager-current] .calendar-cell.is-today .calendar-day-target').click();await page.getByRole('button',{name:'이 날짜에 일정 추가'}).click();await expect(page.getByRole('dialog',{name:'일정 등록',exact:true})).toBeVisible();
+ const todayCell=page.locator('[data-pager-current] .calendar-cell.is-today');
+ const addEvent=page.getByRole('button',{name:'이 날짜에 일정 추가',exact:true});
+ await expect(todayCell.locator('.weather-date-button')).toBeVisible();
+ await todayCell.locator('.calendar-day-target').click();
+ await expect(addEvent).toBeVisible();
+ await page.getByRole('button',{name:'날짜 일정 닫기',exact:true}).click();
+ await expect(addEvent).toHaveCount(0);
+ const cellBounds=(await todayCell.boundingBox())!;
+ await todayCell.click({position:{x:cellBounds.width/2,y:cellBounds.height-4}});
+ await addEvent.click();
+ await expect(page.getByRole('dialog',{name:'일정 등록',exact:true})).toBeVisible();
 });

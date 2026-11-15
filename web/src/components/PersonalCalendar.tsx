@@ -2,11 +2,11 @@ import {CalendarWeekRow} from './CalendarWeekRow';
 import {CalendarGrid,monthWeeks} from './CalendarGrid';
 import {CalendarDaySheet} from './CalendarDaySheet';
 import {useHolidays} from './useHolidays';
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useMemberPreference,type MemberPreferenceProps} from './MemberPreferenceFilter';
 import {CalendarMemberPreferenceFilter} from './CalendarMemberPreferenceFilter';
 import {DateNavigator,WorkspaceToolbar} from './WorkspaceToolbar';
-import {WorkspaceTopBarActions} from './WorkspaceTopBar';
+import {WorkspaceTopBarSlot} from './WorkspaceTopBar';
 import {PersonalTimetable} from './PersonalTimetable';
 import {useCalendarWeather,WeatherDateButton,WeatherDialog,WeatherToolbar} from './CalendarWeather';
 export {calendarColors,eventColor} from './scheduleColors';
@@ -19,12 +19,47 @@ import {calendarWeekLayout} from '../../../shared/calendar-layout';
 import {calendarDayBadge} from '../../../shared/calendar-day-badge';
 import {Icon} from './Icon';
 const calendarViews=[['month','월간','calendar'],['week','주간','calendarWeek'],['day','일간','calendarDay']] as const;
+type CalendarView=typeof calendarViews[number][0];
 const weatherRowHeight=22;
+
+function CalendarViewPicker({view,onSelect}:{view:CalendarView;onSelect:(view:CalendarView)=>void}){
+ const picker=useRef<HTMLDetailsElement>(null),trigger=useRef<HTMLElement>(null);
+ const [,label,icon]=calendarViews.find(([key])=>key===view)!;
+ function close(){
+  if(picker.current)picker.current.open=false;
+  trigger.current?.focus();
+ }
+ useEffect(()=>{
+  function dismiss(event:PointerEvent){
+   const menu=picker.current;
+   if(menu?.open&&event.target instanceof Node&&!menu.contains(event.target))menu.open=false;
+  }
+  document.addEventListener('pointerdown',dismiss);
+  return()=>document.removeEventListener('pointerdown',dismiss);
+ },[]);
+ return <details ref={picker} className="calendar-view-picker" onKeyDown={event=>{
+  if(event.key!=='Escape'||!event.currentTarget.open)return;
+  event.preventDefault();
+  event.stopPropagation();
+  close();
+ }} onBlur={event=>{
+  if(event.relatedTarget&&!event.currentTarget.contains(event.relatedTarget))event.currentTarget.open=false;
+ }}>
+  <summary ref={trigger} aria-label={'달력 보기 · '+label}>
+   <Icon name={icon}/><span>{label}</span><Icon className="calendar-view-chevron" name="chevron"/>
+  </summary>
+  <div className="calendar-view-options" role="group" aria-label="달력 보기">
+   {calendarViews.map(([key,name,symbol])=><button type="button" key={key} aria-pressed={view===key} onClick={()=>{onSelect(key);close();}}>
+    <Icon name={symbol}/><span>{name}</span>
+   </button>)}
+  </div>
+ </details>;
+}
 
 export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,preview=false,month,day,items,members,loading=false,setMonth,setDay,create,edit,guestCreate=false}:MemberPreferenceProps&{month:string;day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading?:boolean;guestCreate?:boolean;setMonth:(v:string)=>void;setDay:(v:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays(month),[detail,setDetail]=useState<string|null>(null);
  const weather=useCalendarWeather();
- const [view,setView]=useState<typeof calendarViews[number][0]>('month'),selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}),member=selection.memberIds;
+ const [view,setView]=useState<CalendarView>('month'),selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}),member=selection.memberIds;
  const selectDay=(date:string)=>{setDay(date);setMonth(date.slice(0,7));};
  const today=koreaToday();
  const weekStart=timetableWeekDates(day)[0];
@@ -71,11 +106,7 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
   <WeatherToolbar weather={weather} date={day}/>
  </WorkspaceToolbar>
  {!!members.length&&<CalendarMemberPreferenceFilter preview={preview} members={members} selection={selection} label="달력 구성원 필터"/>}
- <WorkspaceTopBarActions label="달력 보기">
-  {calendarViews.map(([key,label,icon])=><button type="button" key={key} aria-pressed={view===key} onClick={()=>setView(key)}>
-   <Icon name={icon}/><span>{label}</span>
-  </button>)}
- </WorkspaceTopBarActions>
+ <WorkspaceTopBarSlot slot="groupTrailing"><CalendarViewPicker view={view} onSelect={setView}/></WorkspaceTopBarSlot>
  <PeriodPager period={view==='month'?month:view==='week'?weekStart:day} view={view} onMove={move} renderPage={renderPage}/>
  {holidays.unavailable&&<p className="holiday-status" role="status">이 연도의 공휴일 정보를 확인하지 못했어요.</p>}
  {detail&&<CalendarDaySheet date={detail} holiday={holidays.name(detail)} items={dailySchedules(shown,detail)} members={members} loading={loading} close={()=>setDetail(null)} create={()=>{setDetail(null);create(detail);}} edit={item=>{setDetail(null);edit(item);}}/>}

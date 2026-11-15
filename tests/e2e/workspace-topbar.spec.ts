@@ -1,6 +1,6 @@
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 import {koreaToday} from '../../shared/schedules';
-import {closeMemberPreferences,openMemberPreferences,workspaceGroupButton} from '../helpers/workspace-ui';
+import {closeMemberPreferences,openMemberPreferences,selectCalendarView,workspaceGroupButton} from '../helpers/workspace-ui';
 const origin='http://127.0.0.1:4174',password='persistent-topbar-fixture-2026';
 test.use({baseURL:origin,viewport:{width:520,height:900}});
 const nav=(page:Page)=>page.getByRole('navigation',{name:'모바일 주 메뉴'});
@@ -38,20 +38,24 @@ test('keeps the same top and bottom chrome across all four menus without changin
  }
  await nav(page).getByRole('link',{name:'달력',exact:true}).click();await bar(page).getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await expect(page.locator('[data-pager-current] .calendar-cell[data-date="2027-02-19"]')).toBeVisible();
  const calendarViews=bar(page).getByRole('group',{name:'달력 보기',exact:true});
- await expect(bar(page).locator('.calendar-view-menu')).toHaveCount(0);
- const calendarView=(name:string)=>calendarViews.getByRole('button',{name,exact:true});
- await expect(calendarView('월간')).toHaveAttribute('aria-pressed','true');
- await calendarView('주간').click();
- await expect(calendarView('주간')).toHaveAttribute('aria-pressed','true');
+ const viewTrigger=bar(page).getByRole('region',{name:'그룹 선택'}).getByLabel(/^달력 보기 · /);
+ await expect(viewTrigger).toHaveAccessibleName('달력 보기 · 월간');
+ await expect(calendarViews).toBeHidden();
+ await viewTrigger.focus();await page.keyboard.press('Enter');
+ await expect(calendarViews.getByRole('button',{name:'월간',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.keyboard.press('Escape');await expect(calendarViews).toBeHidden();await expect(viewTrigger).toBeFocused();
+ await selectCalendarView(page,'주간');
+ await expect(calendarViews).toBeHidden();
  await expect(page.locator('[data-pager-current] .calendar-grid.week-view .calendar-cell')).toHaveCount(7);
- await calendarView('일간').click();
- await expect(calendarView('일간')).toHaveAttribute('aria-pressed','true');
+ await selectCalendarView(page,'일간');
  await expect(page.locator('[data-pager-current] .calendar-daily')).toBeVisible();
  await expect(bar(page).getByLabel('달력 날짜 선택',{exact:true})).toHaveValue('2027-02-01');
- await calendarView('월간').click();
+ await selectCalendarView(page,'월간');
  await expect(bar(page).getByLabel('달력 월 선택',{exact:true})).toHaveValue('2027-02');
  await expect(bar(page).locator('.member-preference-row')).toHaveCount(0);
+ await viewTrigger.click();
  await openMemberPreferences(page);
+ await expect(calendarViews).toBeHidden();
  // Browser back closes a filter sheet owned by the previous menu.
  await page.goBack();await expect(page).toHaveURL(origin+'/timetable');await expect(page.getByRole('dialog',{name:'조회할 구성원'})).not.toBeVisible();await unchangedChrome(page);
  await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>localStorage.setItem('iharu:appearance',JSON.stringify({theme:'dark',quiet:true,font:'noto'})));await page.reload();await page.setViewportSize({width:320,height:900});await rememberChrome(page);
@@ -89,7 +93,6 @@ test('uses each menu’s own saved members, current month actions and invitation
   await nav(page).getByRole('link',{name:'시간표',exact:true}).click();await selected('시간표 구성원 필터',true,false);await unchangedChrome(page);
   await nav(page).getByRole('link',{name:'달력',exact:true}).click();await selected('달력 구성원 필터',true,true);await unchangedChrome(page);
   const actionLabels:Record<string,string[]>={
-   '/today/calendar':['월간','주간','일간'],
    '/tuition':['달력','내역','그래프','계산기'],
    '/timeline':['노트','녹음기','카메라','스캔','파일','스케치','휴지통'],
   };
@@ -109,11 +112,22 @@ test('uses each menu’s own saved members, current month actions and invitation
     });
     for(const [name,original] of [
      ['toolbar',52],['date',44],['group',42],['groupChip',32],['plus',32],
-    ] as const)expect(geometry[name][3],`${path} at ${width}px · ${name}`).toBeCloseTo(original*.8,1);
+    ] as const)expect(geometry[name][3],`${path} at ${width}px · ${name}`).toBeCloseTo(original,1);
     const {date,...sharedGeometry}=geometry;
     expect(date[1]).toBeCloseTo(geometry.toolbar[1]+(geometry.toolbar[3]-date[3])/2,1);
     if(baseline)expect(sharedGeometry).toEqual(baseline);else baseline=sharedGeometry;
-    if(label==='시간표'||label==='달력')expect((await bar(page).locator('.weather-button').boundingBox())!.height).toBeCloseTo(36*.8,1);
+    if(label==='시간표'||label==='달력')expect((await bar(page).locator('.weather-button').boundingBox())!.height).toBeCloseTo(36,1);
+    const picker=bar(page).locator('.workspace-group-filter > .calendar-view-picker > summary');
+    if(path==='/today/calendar'){
+     const [control,top,calendar,bottom]=await Promise.all([
+      picker.boundingBox(),bar(page).boundingBox(),
+      page.locator('[data-pager-current] .calendar-month-content').boundingBox(),nav(page).boundingBox(),
+     ]);
+     expect(control!.height).toBe(32);
+     expect(control!.x+control!.width).toBeCloseTo(geometry.group[0]+geometry.group[2]-12,1);
+     expect(calendar!.y).toBeCloseTo(top!.y+top!.height,0);
+     expect(calendar!.y+calendar!.height).toBeCloseTo(bottom!.y,0);
+    }else await expect(picker).toHaveCount(0);
     const actions=bar(page).locator('[data-workspace-actions]');
     const labels=actionLabels[path];
     if(labels){
@@ -131,7 +145,7 @@ test('uses each menu’s own saved members, current month actions and invitation
       const {x,y,width,height}=node.getBoundingClientRect();
       return [x,y,width,height].map(value=>Math.round(value*10)/10);
      }));
-     expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?39.2:42.4));
+     expect(boxes.map(box=>box[3])).toEqual(Array(7).fill(width<=420?49:53));
      expect(await actions.getByRole('button').evaluateAll(buttons=>buttons.every(button=>{
       const rect=button.getBoundingClientRect();
       return [...button.children].every(child=>{
@@ -142,7 +156,7 @@ test('uses each menu’s own saved members, current month actions and invitation
      if(actionGeometry)expect(boxes).toEqual(actionGeometry);else actionGeometry=boxes;
     }else await expect(actions).toHaveCount(0);
     const originalHeight=52+42+(labels?(width<=420?59:63):0);
-    expect((await bar(page).boundingBox())!.height).toBeCloseTo(originalHeight*.8,0);
+    expect((await bar(page).boundingBox())!.height).toBeCloseTo(originalHeight,0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(width);
     await page.screenshot({path:`test-results/topbar-aligned-${path.split('/').pop()}-${width}.png`,animations:'disabled'});
    }

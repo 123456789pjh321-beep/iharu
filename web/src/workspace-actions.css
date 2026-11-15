@@ -1,7 +1,7 @@
 .workspace-action-toolbar {
   --workspace-action-height: 53px;
   flex: none;
-  padding: calc(6px * var(--workspace-topbar-scale, 1)) 10px calc(4px * var(--workspace-topbar-scale, 1));
+  padding: 6px 10px 4px;
   background: var(--surface);
 }
 .workspace-action-grid {
@@ -52,15 +52,15 @@
   outline-offset: 2px;
 }
 .workspace-action-toolbar .workspace-action-grid > :is(button, .workspace-action-empty) {
-  min-height: calc(var(--workspace-action-height) * var(--workspace-topbar-scale, 1));
-  padding-block: calc(3px * var(--workspace-topbar-scale, 1));
-  gap: calc(3px * var(--workspace-topbar-scale, 1));
+  min-height: var(--workspace-action-height);
+  padding-block: 3px;
+  gap: 3px;
   font-size: .7rem;
   line-height: 1.2;
 }
 .workspace-action-toolbar .workspace-action-grid > button .icon {
-  width: calc(21px * var(--workspace-topbar-scale, 1));
-  height: calc(21px * var(--workspace-topbar-scale, 1));
+  width: 21px;
+  height: 21px;
 }
 @media (max-width: 420px) {
   .workspace-action-toolbar {

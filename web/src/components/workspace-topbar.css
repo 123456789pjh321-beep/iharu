@@ -1,30 +1,21 @@
-/* Keep density scoped to the shared bar, including its loading placeholder. */
+/* Keep the toolbar and group controls at their shared workspace sizes. */
 .workspace-topbar{
- --workspace-topbar-scale:.8;
- --workspace-toolbar-height:calc(52px * var(--workspace-topbar-scale));
- --workspace-topbar-control-height:calc(44px * var(--workspace-topbar-scale));
- --workspace-topbar-chip-height:calc(32px * var(--workspace-topbar-scale));
+ --workspace-toolbar-height:52px;
+ --workspace-topbar-control-height:44px;
+ --workspace-topbar-chip-height:32px;
  flex:0 0 auto;position:sticky;top:0;z-index:25;min-width:0;background:var(--surface)
 }
 .workspace-topbar:not([data-group-only]):empty,
 .workspace-topbar:not([data-group-only])>.workspace-topbar-content{min-height:var(--workspace-toolbar-height)}
 .workspace-topbar-content{background:var(--surface)}
-.workspace-page .workspace-topbar .workspace-toolbar{position:static;flex-shrink:0;padding-block:calc(4px * var(--workspace-topbar-scale))}
+.workspace-page .workspace-topbar .workspace-toolbar{position:static;flex-shrink:0;padding-block:4px}
 .workspace-page .workspace-topbar .workspace-toolbar-title{line-height:var(--workspace-topbar-control-height)}
 .workspace-page .workspace-topbar .workspace-date-picker{height:var(--workspace-topbar-control-height);min-height:var(--workspace-topbar-control-height)}
-.workspace-topbar .weather-button{height:calc(36px * var(--workspace-topbar-scale));width:calc(36px * var(--workspace-topbar-scale))}
-.workspace-topbar .weather-button .weather-glyph{width:calc(22px * var(--workspace-topbar-scale));height:calc(22px * var(--workspace-topbar-scale))}
-
-.workspace-topbar .workspace-group-filter{padding-bottom:calc(4px * var(--workspace-topbar-scale))}
 .workspace-topbar[data-group-only] .workspace-group-filter{padding-inline:var(--workspace-inset,16px)}
-.workspace-topbar .workspace-group-chips{padding-block:calc(3px * var(--workspace-topbar-scale))}
 .workspace-topbar .workspace-group-chips>button{
  min-height:var(--workspace-topbar-chip-height);padding-block:2px;line-height:1.4
 }
 .workspace-topbar .group-add-shortcut{width:var(--workspace-topbar-chip-height);height:var(--workspace-topbar-chip-height)}
-.workspace-topbar .group-add-shortcut>.icon{
- width:calc(20px * var(--workspace-topbar-scale));height:calc(20px * var(--workspace-topbar-scale))
-}
 .workspace-topbar .workspace-group-chips>.guest-sample-badge{margin-inline-start:0}
 .workspace-group-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .workspace-group-chips .group-members-chevron{width:12px;height:12px;transform:rotate(90deg)}
@@ -38,6 +29,27 @@
 .workspace-members-invite>.button>.icon{width:16px;height:16px}
 .workspace-members-invite .group-invite-issued{min-width:0;margin:0}
 .workspace-members-invite>p{margin:0;color:var(--muted);font-size:.8rem}
+
+.calendar-view-picker{position:relative;flex:none;margin-inline-start:auto}
+.calendar-view-picker>summary{
+ display:flex;align-items:center;gap:4px;box-sizing:border-box;height:var(--workspace-topbar-chip-height,32px);
+ padding:0 8px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);
+ font-size:12px;font-weight:650;list-style:none;cursor:pointer
+}
+.calendar-view-picker>summary::-webkit-details-marker{display:none}
+.calendar-view-picker :is(summary,button)>.icon{width:15px;height:15px;flex:none}
+.calendar-view-picker>summary>.calendar-view-chevron{width:12px;height:12px;transform:rotate(90deg)}
+.calendar-view-picker[open]>summary>.calendar-view-chevron{transform:rotate(-90deg)}
+.calendar-view-options{
+ position:absolute;inset-block-start:calc(100% + 6px);inset-inline-end:0;z-index:1;display:grid;min-width:104px;
+ padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow-raised)
+}
+.calendar-view-options>button{
+ display:flex;align-items:center;gap:8px;min-height:44px;padding:0 8px;border:0;border-radius:7px;
+ background:transparent;color:var(--ink);text-align:start;font:inherit;font-size:13px;white-space:nowrap;cursor:pointer
+}
+.calendar-view-options>button:is(:hover,[aria-pressed=true]){background:var(--mint);color:var(--primary)}
+.calendar-view-options>button[aria-pressed=true]{font-weight:750}
 
 .workspace-page .workspace-topbar [data-topbar-route='/timetable']>.workspace-toolbar{justify-content:space-between}
 .workspace-page .workspace-topbar [data-topbar-route='/timetable'] .workspace-toolbar-actions{min-width:0;max-width:calc(100% - 116px)}

@@ -53,7 +53,7 @@ html[data-theme=dark] .weather-glyph[data-tone=storm] { color:#d9b3ff; }
 .calendar-cell > .weather-date-button {
   position:absolute;
   inset-inline:0;
-  top:calc(var(--calendar-week-header) - 23px);
+  top:calc(var(--calendar-week-header) - var(--weather-row-height) + 1px);
   z-index:2;
 }
 .timetable-weather-row {
