@@ -41,7 +41,7 @@ test('holidays, day agenda and full-screen editors use a bottom navigation at ev
   const calendarMonth=page.getByLabel('달력 월 선택');
   await calendarMonth.fill('2027-01');
   await calendarMonth.fill('2027-02');
-  const nav=page.locator('.workspace-mobile-nav');await expect(nav).toBeVisible();await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','설정','더보기']);
+  const nav=page.locator('.workspace-mobile-nav');await expect(nav).toBeVisible();await expect(nav.locator(':scope > a,:scope > button')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','더보기']);
   const n=(await nav.boundingBox())!,main=(await page.locator('#auth-main').boundingBox())!;
   expect(n.x).toBe(0);expect(n.width).toBe(width);expect(n.y+n.height).toBeCloseTo(height,0);expect(main.width).toBe(width);expect(main.y+main.height).toBeLessThanOrEqual(n.y+1);await expect(page.locator('.workspace-rail')).toHaveCount(0);
   const cell=page.locator('[data-date="2027-02-09"]');await expect(cell.locator('.calendar-holiday')).toHaveText('대체공휴일(설날)');await expect(cell.locator('.calendar-overflow')).toHaveText('+2개');

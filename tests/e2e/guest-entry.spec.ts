@@ -248,6 +248,7 @@ test('timetable and calendar share the sample group button and bottom navigation
  await page.goto('/timetable');await ready(page);
  const workspace=page.locator('.auth-app.workspace-page');
  const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
+ await expect(nav.getByRole('link')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','더보기']);
  const grid=page.locator('.timetable-grid');
  await expect(grid).toBeVisible();
  const timetableSize=await grid.boundingBox();
@@ -263,7 +264,6 @@ test('timetable and calendar share the sample group button and bottom navigation
  const timetableChip=await chipStyle();
  for(const [label,route,content] of [
   ['달력','/today/calendar','.direct-calendar'],
-  ['설정','/settings','.settings-screen'],
   ['가계부','/tuition','.ledger-workspace'],
   ['더보기','/more','.more-guide-area'],
  ]) {
@@ -279,6 +279,9 @@ test('timetable and calendar share the sample group button and bottom navigation
   }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
+ await page.getByRole('navigation',{name:'더보기 메뉴'}).getByRole('link',{name:'설정',exact:true}).click();
+ await expect(page.locator('.settings-screen')).toBeVisible();
+ await expect(nav.getByRole('link',{name:'더보기',exact:true})).toHaveAttribute('aria-current','page');
  await nav.getByRole('link',{name:'시간표',exact:true}).click();
  await expect(workspace).toHaveAttribute('data-timetree','/timetable');
  await expect(grid).toBeVisible();
@@ -307,10 +310,10 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   };
  });
  const mainMenus=[
-  ['/today/calendar','달력'],['/settings','설정'],['/timeline','타임라인'],['/tuition','가계부'],['/family','그룹관리'],['/more','더보기'],
+  ['/today/calendar','달력'],['/timeline','타임라인'],['/tuition','가계부'],['/family','그룹관리'],['/more','더보기'],
  ];
  const moreMenus=[
-  '/account','/chat','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',
+  '/account','/chat','/settings','/notification-settings','/help','/more/notices','/more/blog','/more/service','/privacy','/records','/legal/terms',
  ];
  for(const [width,height] of [[320,844],[820,1000],[1440,900],[844,390]]){
   await page.setViewportSize({width,height});
@@ -323,13 +326,13 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   });
   expect(parseFloat(reference.height)).toBeCloseTo(height<=500?64:80,1);
   const colors=await nav.locator('.rail-icon').evaluateAll(icons=>icons.map(icon=>getComputedStyle(icon).color));
-  expect(new Set(colors).size).toBe(7);
+  expect(new Set(colors).size).toBe(6);
   await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(50, 107, 93)');
   expect(await nav.evaluate(node=>[...node.children].every(child=>{
    const item=child.getBoundingClientRect(),bar=node.getBoundingClientRect();
    return item.height>=44&&item.top>=bar.top&&item.bottom<=bar.bottom;
   }))).toBe(true);
-  const routes=width===320?[...mainMenus,...moreMenus.map(path=>[path,'더보기'])]:[['/account','더보기'],['/settings','설정']];
+  const routes=width===320?[...mainMenus,...moreMenus.map(path=>[path,'더보기'])]:[['/account','더보기'],['/settings','더보기']];
   for(const [path,label] of routes){
    await page.goto(path);
    await expect(nav.getByRole('link',{name:label,exact:true})).toHaveAttribute('aria-current','page');

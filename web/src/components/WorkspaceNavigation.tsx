@@ -17,7 +17,6 @@ const links:{to:string;label:string;icon:IconName}[]=[
  {to:'/privacy',label:'개인정보 관리',icon:'shield'},
  {to:'/legal/privacy',label:'개인정보처리방침',icon:'book'},
 ];
-const settingsLink:{to:string;label:string;icon:IconName}={to:'/settings',label:'설정',icon:'settings'};
 export function WorkspaceBrand({testMode=false,iconOnly=false}:{testMode?:boolean;iconOnly?:boolean}){return <Link to={testMode?'/test/today':'/timetable'} className={'brand workspace-brand workspace-wordmark'+(iconOnly?' compact-wordmark':'')} aria-label="아이하루"><BrandWordmark/></Link>;}
 export function WorkspaceNavigation({childMode=false,testMode=false,personalChild=false}:{childMode?:boolean;testMode?:boolean;personalChild?:boolean}){
  const {pathname}=useLocation(),gate=useOptionalWorkspaceGate();
@@ -26,20 +25,19 @@ export function WorkspaceNavigation({childMode=false,testMode=false,personalChil
  useEffect(()=>{dialog.current?.close();},[pathname]);
  const testLinks:{to:string;label:string;icon:IconName}[]=[{to:'today',label:'오늘',icon:'home'},{to:'calendar',label:'달력',icon:'calendar'},{to:'daily',label:'등하원',icon:'bag'},{to:'repeats',label:'반복 일정',icon:'repeat'},{to:'chat',label:'대화',icon:'chat'},{to:'family',label:'관리',icon:'shield'},{to:'devices',label:'기기 연결',icon:'device'},{to:'location',label:'위치',icon:'pin'},{to:'fees',label:'가계부',icon:'wallet'},{to:'records',label:'메모',icon:'book'},{to:'notifications',label:'새 소식',icon:'bell'},{to:'account',label:'내 계정',icon:'settings'}];
  const me=gate?.access.identity;
- const showSettings=!!gate&&!gate.health.data?.data.demoEnabled&&!me?.family&&!me?.groups?.length;
- const accountLinks=links.filter(item=>!personalChild||item.to!=='/tuition').map(item=>{
-  if(item.to!=='/chat')return item;
-  if(showSettings)return settingsLink;
-  return personalChild?{...item,to:'/child/chat'}:item;
- });
+ const showChat=!gate||gate.health.data?.data.demoEnabled||!!(me?.family||me?.groups?.length);
+ const accountLinks=links
+  .filter(item=>(item.to!=='/tuition'||!personalChild)&&(item.to!=='/chat'||showChat))
+  .map(item=>item.to==='/chat'&&personalChild?{...item,to:'/child/chat'}:item);
  const standardLinks=gate?.adminAllowed&&!personalChild?[...accountLinks,{to:'/admin',label:'관리',icon:'shield' as const}]:accountLinks;
  const items=testMode?testLinks.map(l=>({...l,to:'/test/'+l.to})):childMode?[{to:'/child/connected',label:'내 하루',icon:'home' as const},{to:'/child/schedules',label:'내 일정',icon:'calendar' as const},{to:'/child/chat',label:'대화',icon:'chat' as const}]:standardLinks;
  const current=(to:string)=>testMode?pathname===to:to==='/account'?pathname.startsWith('/account')||pathname==='/settings':to==='/today/calendar'?pathname.includes('calendar')||pathname.includes('repeats'):to==='/child/chat'?pathname==='/chat'||pathname.startsWith('/child/chat'):pathname.startsWith(to);
  const hasUpdate=(to:string)=>!testMode&&!childMode&&hasMenuUpdate(gate?.updates||null,menuForPath(to));
  const updateDescription=dialogId+'-updates';
  const renderItem=(item:typeof items[number],close=false)=><Link key={item.to} to={item.to} onClick={close?()=>dialog.current?.close():undefined} className={current(item.to)?'active':''} aria-current={current(item.to)?'page':undefined} aria-describedby={hasUpdate(item.to)?updateDescription:undefined}><span className="rail-icon" data-nav-icon={item.icon}><Icon name={item.icon}/>{hasUpdate(item.to)&&<span className="workspace-nav-update" aria-hidden="true"/>}</span><span>{item.label}</span>{current(item.to)&&<span className="rail-active-dot" aria-hidden="true"/>}</Link>;
- const primary=childMode&&!testMode?items:items.filter(item=>['/timetable','/today/calendar','/chat','/child/chat','/settings','/timeline','/tuition','/family','/test/today','/test/calendar','/test/chat','/test/location'].includes(item.to));
- primary.sort((a,b)=>{const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','가계부','타임라인','그룹관리','대화','설정'];return order.indexOf(a.label)-order.indexOf(b.label);});
+ const primary=childMode&&!testMode?items:items.filter(item=>['/timetable','/today/calendar','/chat','/child/chat','/timeline','/tuition','/family','/test/today','/test/calendar','/test/chat','/test/location'].includes(item.to));
+ const order=testMode?['오늘','달력','대화','위치']:['시간표','달력','가계부','타임라인','그룹관리','대화'];
+ primary.sort((a,b)=>order.indexOf(a.label)-order.indexOf(b.label));
  const extraUpdate=items.some(item=>!primary.includes(item)&&hasUpdate(item.to));
  const extraActive=!primary.some(item=>current(item.to));
  return <>

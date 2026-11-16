@@ -170,8 +170,7 @@ test('group link resumes after email verification and requires explicit acceptan
   await guest.getByRole('button',{name:'초대 수락'}).click();
   await guest.getByRole('link',{name:'그룹 관리 열기'}).click();
   const menu=guest.getByRole('navigation',{name:'모바일 주 메뉴'});
-  await expect(menu.getByRole('link',{name:'대화',exact:true})).toBeVisible();
-  await expect(menu.getByRole('link',{name:'설정',exact:true})).toHaveCount(0);
+  await expect(menu.getByRole('link')).toHaveText(['시간표','달력','가계부','타임라인','그룹관리','대화','더보기']);
   await guest.locator('.managed-group .group-card-title').click();await expect(guest.locator('.group-member-row')).toHaveCount(2);
   await expect(guest.getByRole('button',{name:'그룹 초대 링크 만들기'})).toHaveCount(0);
   await guest.getByRole('button',{name:'구성원 초대',exact:true}).click();

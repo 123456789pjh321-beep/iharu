@@ -43,7 +43,12 @@ test('direct calendar CRUD, general-event copy, title editing, stable menu shell
  // A vertical drag must not turn the month.
  const newMonth=await page.getByLabel('달력 월 선택').inputValue();await page.mouse.move(100,grid!.y+25);await page.mouse.down();await page.mouse.move(105,grid!.y+100,{steps:5});await page.mouse.up();await expect(page.getByLabel('달력 월 선택')).toHaveValue(newMonth);await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.locator('.auth-app.workspace-page').evaluate(el=>el.setAttribute('data-stable-shell','preserved'));let health=0,sessions=0,documents=0;page.on('request',r=>{if(r.url().endsWith('/api/health'))health++;if(r.url().endsWith('/api/account/session'))sessions++;if(r.isNavigationRequest()&&r.frame()===page.mainFrame())documents++;});
- for(const name of ['설정','시간표','달력']){await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name,exact:true}).click();await expect(page.locator('.auth-app.workspace-page')).toHaveAttribute('data-stable-shell','preserved');await expect(page.locator('.loading-state')).toHaveCount(0);}
+ const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
+ await nav.getByRole('link',{name:'더보기',exact:true}).click();
+ const settings=page.getByRole('navigation',{name:'더보기 메뉴'}).getByRole('link',{name:'설정',exact:true});
+ for(const link of [settings,nav.getByRole('link',{name:'시간표',exact:true}),nav.getByRole('link',{name:'달력',exact:true})]){
+  await link.click();await expect(page.locator('.auth-app.workspace-page')).toHaveAttribute('data-stable-shell','preserved');await expect(page.locator('.loading-state')).toHaveCount(0);
+ }
  expect(health).toBe(0);expect(sessions).toBe(0);expect(documents).toBe(0);await expect(page.locator('.workspace-tabs,.personal-context')).toHaveCount(0);expect(errors).toEqual([]);
  await page.screenshot({path:'test-results/ui78-calendar-mobile.png'});
  await page.goto('/tuition');await waitForAppReady(page);await selectLedgerView(page,'내역');await page.locator('[data-pager-current] .tuition-ledger').getByRole('button',{name:'추가',exact:true}).click();await page.getByLabel('내용').fill('피아노');await page.getByLabel('금액',{exact:true}).fill('180000');await page.getByRole('button',{name:'저장',exact:true}).click();await page.getByRole('button',{name:'피아노 수정',exact:true}).click();await page.getByLabel('금액',{exact:true}).fill('190000');await page.getByRole('button',{name:'저장',exact:true}).click();await expect(page.locator('.personal-fee-value strong')).toHaveText('−190,000원');
