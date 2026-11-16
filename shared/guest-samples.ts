@@ -14,6 +14,10 @@ export const sampleGroup:WorkspaceGroup={
 export const sampleChildIds=['sample-minseo','sample-hajun'];
 const data=(title:string,date:string,extra:Partial<WorkspaceData>={}):WorkspaceData=>({title,date,weekdays:[],place:'',note:'',paid:false,...extra});
 const item=(id:string,kind:WorkspaceItem['kind'],value:WorkspaceData):WorkspaceItem=>({id:'sample:'+id,kind,data:value,ownerId:sampleViewer.id,ownerName:sampleViewer.name,mine:false,version:1});
+const fee=(id:string,month:string,value:WorkspaceData):WorkspaceItem=>({
+ ...item(id,'FEE',value),
+ fee:{month,dueDate:value.date,paid:value.paid,payerId:sampleViewer.id,payerName:sampleViewer.name,canMarkPaid:false},
+});
 /** Fictional in-memory examples. No ID is a real account ID; nothing is stored or fetched. */
 export function guestSamples(month:string,today:string,groupSelected:boolean){
  const anchor=addDays(today,-new Date(today+'T12:00:00Z').getUTCDay()),schoolStart=addDays(anchor,1);
@@ -28,9 +32,9 @@ export function guestSamples(month:string,today:string,groupSelected:boolean){
    item(m+'-break','EVENT',data('휴가',m+'-20',{allDay:true,endDate:m+'-21',color:4})),
   ]),
   fees:months.flatMap(m=>[
-   item(m+'-pay','FEE',data('급여',m+'-05',{amount:2800000,ledgerFlow:'INCOME',ledgerCategory:'SALARY',ledgerMethod:'TRANSFER'})),
-   item(m+'-book','FEE',data('도서 구입',m+'-12',{amount:24000,ledgerFlow:'EXPENSE',ledgerCategory:'LEISURE',ledgerMethod:'CARD'})),
-   item(m+'-transport','FEE',data('교통비',m+'-20',{amount:58000,ledgerFlow:'EXPENSE',ledgerCategory:'TRANSPORT',ledgerMethod:'CARD'})),
+   fee(m+'-pay',m,data('급여',m+'-05',{amount:2800000,ledgerFlow:'INCOME',ledgerCategory:'SALARY',ledgerMethod:'TRANSFER'})),
+   fee(m+'-book',m,data('도서 구입',m+'-12',{amount:24000,ledgerFlow:'EXPENSE',ledgerCategory:'LEISURE',ledgerMethod:'CARD'})),
+   fee(m+'-transport',m,data('교통비',m+'-20',{amount:58000,ledgerFlow:'EXPENSE',ledgerCategory:'TRANSPORT',ledgerMethod:'CARD'})),
   ]),
   notes:[item('note-reading','NOTE',data('이번 주 읽을 책',month+'-10',{note:'주말에 도서관에 들러요.'}))],
  };
@@ -46,12 +50,17 @@ export function guestSamples(month:string,today:string,groupSelected:boolean){
   item(m+'-trip','EVENT',data('가족 여행',m+'-18',{endDate:m+'-19',allDay:true,allMembers:true,color:4})),
   item(m+'-outing','EVENT',data('그룹 나들이',m+'-21',{startTime:'10:00',endTime:'16:00',allMembers:true,color:0})),
  ]);
- const fees=months.flatMap(m=>[
-  ['piano','피아노 학원비',150000,'sample-hajun','05'],['english','영어 학원비',220000,'sample-minseo','12'],['sport','태권도 학원비',170000,'sample-minseo','20'],
- ].map(([id,title,amount,assigneeId,day])=>{const fee=item(m+'-'+id,'FEE',data(String(title),m+'-'+day,{amount:Number(amount),assigneeId:String(assigneeId),feeFrequency:'MONTHLY',feePayerId:'sample-parent'}));fee.fee={month:m,dueDate:fee.data.date,paid:id==='piano',payerId:'sample-parent',payerName:'지우',canMarkPaid:false};return fee;}));
+ const academyFees=[
+  ['piano','피아노 학원비',150000,'sample-hajun','05'],
+  ['english','영어 학원비',220000,'sample-minseo','12'],
+  ['sport','태권도 학원비',170000,'sample-minseo','20'],
+ ] as const;
+ const fees=months.flatMap(m=>academyFees.map(([id,title,amount,assigneeId,day])=>
+  fee(m+'-'+id,m,data(title,m+'-'+day,{amount,assigneeId,feeFrequency:'MONTHLY',feePayerId:sampleViewer.id,paid:id==='piano'}))));
  for(const m of months){
   for(const [id,title,amount,day,ledgerFlow,ledgerCategory] of [['salary','월급',3500000,'25','INCOME','SALARY'],['grocery','마트 장보기',86000,'08','EXPENSE','GROCERIES']] as const){
-   const row=item(m+'-'+id,'FEE',data(title,m+'-'+day,{amount,assigneeId:'sample-parent',feeFrequency:'MONTHLY',feePayerId:'sample-parent',ledgerFlow,ledgerCategory,ledgerMethod:id==='salary'?'TRANSFER':'CARD'}));row.fee={month:m,dueDate:row.data.date,paid:true,payerId:'sample-parent',payerName:'지우',canMarkPaid:false};fees.push(row);
+   fees.push(fee(m+'-'+id,m,data(title,m+'-'+day,{amount,assigneeId:sampleViewer.id,feeFrequency:'MONTHLY',
+    feePayerId:sampleViewer.id,paid:true,ledgerFlow,ledgerCategory,ledgerMethod:id==='salary'?'TRANSFER':'CARD'})));
   }
  }
  const notes=[item('note-bag','NOTE',data('내일 준비물 챙기기',month+'-10',{note:'물병과 실내화를 가방에 챙겨요. 가상 예시 메모입니다.'})),item('note-pickup','NOTE',data('학원 끝나고 만나요',month+'-15',{note:'수업이 끝나면 단체 대화에서 알려 주세요. 가상 예시 메모입니다.'}))];
