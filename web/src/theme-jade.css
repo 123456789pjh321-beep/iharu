@@ -1,6 +1,7 @@
 /* Shared surfaces and accents for the workspace and the public pages. */
 :root,
-.public-frame :is(.market-header,.public-footer,.marketing-site){
+.public-frame:has(>.public-content>.marketing-site),
+.public-frame>:is(.market-header,.public-footer){
  --surface:#fff;--surface-sub:#f0f4f1;--chrome:#f5f8f5;--canvas:#edf2ee;
  --ink:#24332e;--muted:#546760;--line:#dbe4dd;
  --primary:#306553;--primary-hover:#244e43;--on-primary:#fff;

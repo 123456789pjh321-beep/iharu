@@ -6,6 +6,7 @@
   background: var(--canvas);
   -webkit-font-smoothing: antialiased;
 }
+.public-content {scrollbar-color: var(--line) transparent;}
 .public-frame .market-header {
   --market-blue: var(--primary);
   --market-ink: var(--ink);
