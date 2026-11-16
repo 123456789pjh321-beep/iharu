@@ -1,24 +1,9 @@
-/* Archived TimeTree layout, scoped to the restored menus. */
+/* Shared measurements for the calendar-aligned workspace. */
 .workspace-page:where([data-timetree]){
- --surface:#fff;--surface-sub:#f8f8f8;--canvas:#f8f8f8;
- --ink:#242424;--muted:#727272;--line:#ededed;
- --primary:#147d64;--primary-hover:#10634f;--on-primary:#fff;
- --mint:#e3fbed;--accent-soft:#f0f0f0;--focus:#147d64;
- --holiday-ink:#c5474e;--weekend-ink:#376bb5;
- --calendar-secondary-ink:#999;--calendar-holiday-fill:#ed3130;--calendar-observance-fill:#8f8f8f;
- --guide-cloud:#e6f5fa;--guide-line:#b7e5d1;--guide-person:#e7cda8;--guide-accent:#31c48e;
  color:var(--ink);background:var(--surface);font-weight:400;
  --workspace-toolbar-height:52px;--workspace-member-height:40px;--workspace-weekday-height:26px;
  --workspace-inset:16px;--workspace-title-size:clamp(18px,2vw,22px);
  --workspace-grid-line:color-mix(in srgb,var(--line) 68%,var(--surface));
-}
-html[data-theme=dark] .workspace-page:where([data-timetree]){
- --surface:#191c1b;--surface-sub:#222624;--canvas:#111513;
- --ink:#f1f3f2;--muted:#b4bcb7;--line:#303632;
- --primary:#a1dfbf;--primary-hover:#bee9d2;--on-primary:#153c2c;
- --mint:#254b38;--accent-soft:#2c302e;--focus:#a1dfbf;
- --holiday-ink:#f3a1a8;--weekend-ink:#a1bfff;--calendar-secondary-ink:#b1b6b3;
- --guide-cloud:#243d41;--guide-line:#447762;--guide-person:#bca180;--guide-accent:#57bb93;
 }
 /* UI153: one viewport contract for every workspace menu. */
 .auth-app.workspace-page:where([data-timetree]){padding-top:env(safe-area-inset-top);box-sizing:border-box}
@@ -62,7 +47,7 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page .timetable-weekly>.workspace-toolbar{justify-content:space-between}
 .workspace-page .timetable-weekly .workspace-toolbar-actions{min-width:0;max-width:calc(100% - 116px)}
 .workspace-page .timetable-weekly .timetable-current-summary{max-width:100%;align-items:center}
-.workspace-page .timetable-weekly .timetable-day-headings{border-bottom:1px solid var(--line)}
+.workspace-page .timetable-weekly .timetable-day-headings{border-bottom:1px solid var(--line);background:linear-gradient(var(--surface-sub) var(--workspace-weekday-height,26px),var(--surface) 0)}
 .workspace-page .timetable-weekly .timetable-day-headings>button{
  display:grid;grid-template-rows:var(--workspace-weekday-height,26px) 24px;justify-items:center;align-items:center;
  padding:0;gap:0;border-radius:0;color:var(--ink);font-weight:400;
@@ -72,9 +57,9 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page .timetable-weekly .timetable-day-headings>button>time{width:20px;height:20px;border-radius:50%;line-height:20px;font-size:clamp(10px,1.5vw,12px);font-variant-numeric:tabular-nums}
 .workspace-page .timetable-weekly .timetable-day-headings>.holiday-date>time{color:var(--holiday-ink)}
 .workspace-page .timetable-weekly .timetable-day-headings>.saturday-date>time{color:var(--weekend-ink)}
-.workspace-page .timetable-weekly .timetable-day-headings>.is-today>time{background:var(--ink);color:var(--surface);font-weight:700}
-.workspace-page .timetable-weekly .timetable-day-headings>button[aria-pressed=true]{background:linear-gradient(var(--surface) var(--workspace-weekday-height,26px),var(--accent-soft) 0)}
-.workspace-page .timetable-weekly .timetable-day-headings .calendar-holiday{width:calc(100% - 4px);padding:1px 2px;box-sizing:border-box;border-radius:3px;background:var(--calendar-holiday-fill,#ed3130);color:#fff}
+.workspace-page .timetable-weekly .timetable-day-headings>.is-today>time{background:var(--primary);color:var(--on-primary);font-weight:700}
+.workspace-page .timetable-weekly .timetable-day-headings>button[aria-pressed=true]{background:linear-gradient(var(--surface-sub) var(--workspace-weekday-height,26px),var(--mint) 0)}
+.workspace-page .timetable-weekly .timetable-day-headings .calendar-holiday{width:calc(100% - 4px);padding:1px 2px;box-sizing:border-box;border-radius:3px;background:var(--calendar-holiday-fill);color:#fff}
 .workspace-page:where([data-timetree]) .timetable-weekly .timetable-day-column{
  background-image:repeating-linear-gradient(to bottom,var(--workspace-grid-line) 0 1px,transparent 1px 48px);
  box-shadow:inset 0 -1px 0 var(--workspace-grid-line);background-color:var(--surface);
@@ -86,24 +71,23 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 
 /* Horizontal week rules replace the boxed grid. Dates use a regular weight. */
 .workspace-page:where([data-timetree]) .direct-calendar{flex:1 1 0;min-height:0;height:auto;background:var(--surface)}
-.workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--muted)}
-.workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays>span{color:var(--calendar-secondary-ink)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays{height:var(--workspace-weekday-height);box-sizing:border-box;padding:4px 0 3px;margin:0;background:var(--surface-sub);border:0;border-bottom:1px solid var(--line);font-size:12px;font-weight:400;line-height:18px;color:var(--calendar-secondary-ink)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-weekdays>span:first-child{color:var(--holiday-ink)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-grid{gap:0;border:0;background:var(--surface)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row{--calendar-week-header:calc(44px + var(--weather-row-height,0px));border:0;background:var(--surface)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row:is(.has-holiday,.has-day-badge){--calendar-week-header:calc(62px + var(--weather-row-height,0px))}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row.has-weather{--weather-row-height:22px}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row::after{height:1px;background:var(--workspace-grid-line)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell{padding:var(--calendar-week-header) 2px 4px;border:0;border-radius:0;box-shadow:none;background:var(--surface);min-height:0}
-.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell.outside{background:var(--surface)}
+.workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell.outside{background:var(--surface-sub)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-week-row>.calendar-cell.selected{background:var(--accent-soft)}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-target{padding:3px 0 0;justify-content:center;align-items:flex-start;gap:0;background:transparent}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-target>span{width:20px;height:20px;font-size:clamp(10px,1.5vw,12px);font-weight:400;line-height:20px;color:var(--ink)}
 .workspace-page:where([data-timetree]) .calendar-month-content .holiday-date .calendar-day-target>span{color:var(--holiday-ink)}
 .workspace-page:where([data-timetree]) .calendar-month-content .saturday-date .calendar-day-target>span{color:var(--weekend-ink)}
-.workspace-page:where([data-timetree]) .calendar-month-content .outside .calendar-day-target>span{opacity:.28}
-.workspace-page:where([data-timetree]) .calendar-month-content .is-today .calendar-day-target>span{background:var(--ink);color:var(--surface);font-weight:700}
+.workspace-page:where([data-timetree]) .calendar-month-content .outside .calendar-day-target>span{color:var(--calendar-secondary-ink);opacity:1}
+.workspace-page:where([data-timetree]) .calendar-month-content .is-today .calendar-day-target>span{background:var(--primary);color:var(--on-primary);font-weight:700}
 .calendar-lunar{position:absolute;left:0;right:0;top:25px;z-index:1;text-align:center;font-size:clamp(9px,1.3vw,11px);font-weight:400;line-height:14px;color:var(--calendar-secondary-ink,var(--muted));pointer-events:none;font-variant-numeric:tabular-nums}
-.calendar-cell.outside .calendar-lunar{opacity:.3}
 /* UI152: holiday and eve labels share a solid, compact calendar lane. */
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-badge{position:absolute;left:1px;right:1px;top:38px;z-index:1;display:block;height:20px;padding:1px 2px;border-radius:3px;background:var(--calendar-holiday-fill);color:#fff;text-align:center;font-size:12px;line-height:18px;letter-spacing:-.035em;font-weight:750;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;pointer-events:none}
 .workspace-page:where([data-timetree]) .calendar-month-content .calendar-day-badge.calendar-observance{background:var(--calendar-observance-fill)}
@@ -111,12 +95,12 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-week-events>.calendar-event{margin-inline:2px;border:0;border-radius:3px;padding:2px 4px;gap:3px;background:color-mix(in srgb,var(--event-color) 12%,var(--surface));color:var(--ink);min-height:24px;height:24px}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-event strong{font-size:12px;font-weight:500;line-height:1.4}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-event .event-time{font-size:10px}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-event[data-all-day=true]{background:var(--event-color);color:#fff}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-event[data-all-day=true]{background:color-mix(in srgb,var(--event-color) 23%,var(--surface));box-shadow:inset 2px 0 var(--event-color)}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-event[data-all-day=true] .event-time{display:none}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-overflow{font-size:11px;font-weight:400;color:var(--muted);min-height:28px}
 
-/* Shared date sheet and row-like editor use the same white, quiet surfaces. */
-.workspace-page:where([data-timetree]) .calendar-day-sheet{max-width:560px;border:0;border-radius:22px;padding:0;background:var(--surface);color:var(--ink);box-shadow:0 12px 48px #0002}
+/* Shared date sheet and row-like editor use the same surfaces. */
+.workspace-page:where([data-timetree]) .calendar-day-sheet{max-width:560px;border:0;border-radius:22px;padding:0;background:var(--surface);color:var(--ink);box-shadow:var(--shadow-raised)}
 .workspace-page:where([data-timetree]) .calendar-day-sheet::before{content:"";display:block;width:36px;height:3px;border-radius:3px;background:var(--line);margin:8px auto 0}
 .workspace-page:where([data-timetree]) .calendar-day-sheet header{padding:20px 20px 14px;border:0;align-items:flex-start}
 .workspace-page:where([data-timetree]) .calendar-day-sheet h2{font-size:20px;font-weight:750;letter-spacing:-.02em}
@@ -127,7 +111,7 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .day-sheet-event small{font-size:13px}
 .workspace-page:where([data-timetree]) .day-sheet-empty{min-height:150px;font-size:14px;font-weight:500;color:var(--muted)}
 .workspace-page:where([data-timetree]) .calendar-day-sheet footer{padding:12px 20px 20px;border:0}
-.workspace-page:where([data-timetree]) .calendar-day-sheet footer .registration-action{background:var(--ink);border-color:var(--ink);color:var(--surface);border-radius:12px;min-height:44px;box-shadow:none}
+.workspace-page:where([data-timetree]) .calendar-day-sheet footer .registration-action{background:var(--primary);border-color:var(--primary);color:var(--on-primary);border-radius:12px;min-height:44px;box-shadow:none}
 .workspace-page:where([data-timetree]) .direct-editor.entry-redesign{background:var(--surface);border:0;border-radius:20px;color:var(--ink)}
 .workspace-page:where([data-timetree]) .entry-editor-header{background:var(--surface);border-color:var(--line);min-height:60px}
 .workspace-page:where([data-timetree]) .entry-editor-header h2{font-size:15px;font-weight:500;color:var(--muted)}
@@ -153,7 +137,7 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .more-guide-area{padding:10px 16px 12px;background:var(--surface)}
 .more-guide-strip{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;border-radius:14px}
 .more-guide-strip::-webkit-scrollbar{display:none}
-.workspace-page:where([data-timetree]) .more-guide-banner{display:flex;flex:0 0 100%;scroll-snap-align:start;align-items:center;gap:10px;min-width:0;min-height:112px;margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);box-sizing:border-box}
+.workspace-page:where([data-timetree]) .more-guide-banner{display:flex;flex:0 0 100%;scroll-snap-align:start;align-items:center;gap:10px;min-width:0;min-height:112px;margin:0;padding:8px 12px;border:1px solid var(--line);border-radius:14px;background:var(--accent-soft);color:var(--ink);box-sizing:border-box}
 .more-guide-artwork{width:122px;max-width:42%;height:94px;flex-shrink:0}
 .workspace-page:where([data-timetree]) .more-guide-banner>span:last-child{display:grid;gap:5px;min-width:0}
 .workspace-page:where([data-timetree]) .more-guide-banner strong{font-size:18px;line-height:1.5;font-weight:750;letter-spacing:-.04em}
@@ -161,10 +145,10 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .more-guide-pages{display:flex;align-items:center;justify-content:center;height:30px;gap:0}
 .more-guide-pages>button{display:grid;place-items:center;width:24px;height:28px;border:0;padding:0;background:transparent;cursor:pointer}
 .more-guide-pages>button>span{width:5px;height:5px;border-radius:50%;background:var(--line)}
-.more-guide-pages>button[aria-pressed=true]>span{background:var(--ink)}
+.more-guide-pages>button[aria-pressed=true]>span{background:var(--primary)}
 .workspace-page:where([data-timetree]) .more-shortcuts{margin:16px 16px 0;border:0;border-radius:14px;background:var(--surface)}
 .workspace-page:where([data-timetree]) .more-shortcuts>a{min-height:94px;gap:7px;padding:14px 6px;box-sizing:border-box;font-size:14px;color:var(--ink);border-color:var(--line)}
-.workspace-page:where([data-timetree]) .more-shortcuts>a>span{width:30px;height:30px;border-radius:0;background:transparent;color:var(--ink)}
+.workspace-page:where([data-timetree]) .more-shortcuts>a>span{width:30px;height:30px;border-radius:0;background:transparent;color:var(--primary)}
 .workspace-page:where([data-timetree]) .more-shortcuts .icon{width:25px;height:25px;stroke-width:1.8}
 .workspace-page:where([data-timetree]) .more-shortcuts>a:nth-child(2) .icon,.workspace-page:where([data-timetree]) .more-shortcuts>a:nth-child(3) .icon{fill:var(--mint)}
 .workspace-page:where([data-timetree]) .more-shortcuts strong{font-weight:700}
@@ -172,7 +156,7 @@ html[data-theme=dark] .workspace-page:where([data-timetree]){
 .workspace-page:where([data-timetree]) .more-section h2{margin:0 0 10px 16px;font-size:14px;font-weight:400;color:var(--muted)}
 .workspace-page:where([data-timetree]) .more-group{border:0;border-radius:14px;background:var(--surface)}
 .workspace-page:where([data-timetree]) .more-account{min-height:76px;padding:15px 16px;gap:12px;border-color:var(--line)}
-.workspace-page:where([data-timetree]) .more-avatar{width:40px;height:40px;border-radius:50%;background:#c5c7c6;color:#fff}
+.workspace-page:where([data-timetree]) .more-avatar{width:40px;height:40px;border-radius:50%;background:var(--mint);color:var(--primary)}
 .workspace-page:where([data-timetree]) .more-avatar>.icon{width:26px;height:26px}
 .workspace-page:where([data-timetree]) .more-account strong{font-size:16px;font-weight:600}
 .workspace-page:where([data-timetree]) .more-account small{font-size:12px;font-weight:400;overflow-wrap:anywhere}

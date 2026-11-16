@@ -236,13 +236,13 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
   await expect(nav.getByRole('link',{name:'시간표',exact:true})).toHaveAttribute('aria-current','page');
   const reference=await appearance();
   expect(reference).toMatchObject({
-   position:'fixed',tabBackground:'rgba(0, 0, 0, 0)',
+   position:'fixed',background:'rgb(245, 248, 245)',tabBackground:'rgba(0, 0, 0, 0)',
    capsuleWidth:width<=360?'46px':'56px',capsuleHeight:'34px',capsuleRadius:'20px',iconWidth:'20px',
   });
   expect(parseFloat(reference.height)).toBeCloseTo(height<=500?64:80,1);
   const colors=await nav.locator('.rail-icon').evaluateAll(icons=>icons.map(icon=>getComputedStyle(icon).color));
   expect(new Set(colors).size).toBe(7);
-  await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(23, 109, 99)');
+  await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(50, 107, 93)');
   expect(await nav.evaluate(node=>[...node.children].every(child=>{
    const item=child.getBoundingClientRect(),bar=node.getBoundingClientRect();
    return item.height>=44&&item.top>=bar.top&&item.bottom<=bar.bottom;
@@ -261,8 +261,8 @@ test('all signed-in menus use the timetable bottom bar at every size and theme',
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  await page.goto('/timetable');
  const darkReference=await appearance();
- expect(darkReference).toMatchObject({background:'rgb(25, 28, 27)'});
- await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(144, 219, 201)');
+ expect(darkReference).toMatchObject({background:'rgb(32, 43, 39)'});
+ await expect(nav.locator('[data-nav-icon=clock]')).toHaveCSS('color','rgb(156, 204, 187)');
  await page.goto('/account');
  await expect(nav.getByRole('link',{name:'더보기',exact:true})).toHaveAttribute('aria-current','page');
  expect(await appearance()).toEqual(darkReference);
