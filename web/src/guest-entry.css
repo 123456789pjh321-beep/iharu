@@ -3,7 +3,7 @@
 .guest-chat-sample{min-height:calc(100dvh - 130px);display:flex;flex-direction:column;background:var(--surface)}
 .guest-chat-sample .chat-room-header{display:flex;align-items:center;gap:12px;padding:18px;border-bottom:1px solid var(--line)}
 .guest-chat-sample h2{font-size:17px;margin:0 0 3px}
-.guest-chat-sample small,.guest-sample-footnote{color:var(--muted);font-size:12px;line-height:1.7}
+.guest-chat-sample small{color:var(--muted);font-size:12px;line-height:1.7}
 .guest-sample-messages{display:flex;flex:1;flex-direction:column;gap:22px;padding:24px 18px}
 .guest-chat-sample .chat-message{display:flex;justify-content:flex-start}
 .guest-chat-sample .chat-message.mine{justify-content:flex-end}
@@ -14,13 +14,6 @@
 .guest-sample-compose{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--line)}
 .guest-message-input{flex:1;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--canvas);color:var(--muted);font:inherit;font-size:13px;text-align:left;cursor:pointer}
 .guest-notes-sample>.guest-sample-badge{margin:0 0 16px}
-.guest-family-sample{padding:20px}
-.guest-family-sample .workspace-page-heading{display:flex;gap:12px;align-items:center;margin-bottom:20px}
-.guest-family-sample h1{margin:0;font-size:22px}
-.guest-family-sample .personal-member{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
-.guest-family-sample .personal-member small{display:block}
-.guest-family-sample .personal-member-avatar{display:grid;place-items:center;flex-shrink:0;width:42px;height:42px;border-radius:15px;background:var(--mint);color:var(--primary)}
-.guest-family-sample .button{width:100%;margin-top:20px}
 .workspace-page .auth-wide>.auth-panel:has(>.guest-schedule){display:flex;flex-direction:column;min-height:0;height:100%;padding:0}
 .guest-schedule{display:flex;flex-direction:column;flex:1;min-height:0;height:100%}
 .guest-schedule>.personal-timetable,.guest-schedule>.direct-calendar{display:flex;flex-direction:column;flex:1;min-height:0;height:auto}

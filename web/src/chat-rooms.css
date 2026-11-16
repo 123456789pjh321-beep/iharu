@@ -30,7 +30,6 @@
 .chat-member-choices small{font-size:.75rem;color:var(--muted)}
 .chat-read-only{font-size:.78rem;line-height:1.6;margin:0;padding:10px 16px;background:var(--mint);color:var(--primary)}
 .workspace-page .auth-panel:has(>.chat-workspace.full){padding:0;height:100%;min-height:0;display:flex;flex-direction:column}
-.guest-chat-actions{display:flex;justify-content:flex-end;padding:0 16px 10px}
 @media(max-width:600px){.chat-rooms{padding-inline:12px}.chat-room-list>button{max-width:190px}.workspace-page .group-chat .chat-room-header{padding-inline:12px;gap:8px}}
 @media(max-height:500px){.auth-app.workspace-page{padding-top:calc(env(safe-area-inset-top) + 12px)}.chat-rooms{padding-bottom:4px}.workspace-page .group-chat .chat-room-header{padding-block:4px}}
 /* In landscape, picture selection temporarily uses the room-list space. The active room title stays visible. */

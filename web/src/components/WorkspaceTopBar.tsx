@@ -1,10 +1,12 @@
 import {Children,createContext,useCallback,useContext,useId,useLayoutEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {useLocation} from 'react-router-dom';
+import {sampleGroup} from '../../../shared/guest-samples';
 import './workspace-topbar.css';
 import {WorkspaceGroupFilter} from './WorkspaceGroupFilter';
 import {WorkspaceMembersDialog} from './WorkspaceMembersDialog';
 import {useOptionalWorkspaceGate,useWorkspaceGate} from './WorkspaceGate';
+import {useEntryAccess} from './EntryAccess';
 
 type Slot='toolbar'|'members'|'groupTrailing'|'actions';
 type Entry={owner:symbol;content:ReactNode;active:boolean;groupId:string|null};
@@ -43,15 +45,17 @@ export function WorkspaceTopBarMount(){
 
 // Render from inside the page providers, preserving invitation/login contexts.
 export function WorkspaceTopBarHost(){
- const {pathname}=useLocation(),{bar,target}=useContext(State),{access,groupBusy}=useWorkspaceGate(),route=routeKey(pathname);
+ const {pathname}=useLocation(),{bar,target}=useContext(State),{access,groupBusy,sampleGroupSelected}=useWorkspaceGate(),route=routeKey(pathname);
+ const {requestLogin}=useEntryAccess();
  const [request,setRequest]=useState<MembersRequest|null>(null),dialogId=useId();
  const withToolbar=toolbarRoutes.has(pathname),ownerId=access.identity?.id??null,group=access.identity?.family;
  const groupId=group?.id??null;
  const pending=groupBusy||access.status==='checking'||(withToolbar&&(!bar||bar.route!==route||!bar.toolbar?.active));
  const memberSlot=bar?.route===route&&bar.members?.active&&bar.members.groupId===groupId?bar.members.content:null;
  const groupTrailing=bar?.route===route&&bar.groupTrailing?.active?bar.groupTrailing.content:null;
- const preview=access.status==='guest'&&!!memberSlot;
- const canOpen=preview||!!group&&(!!memberSlot||!withToolbar||route==='/today/repeats');
+ const preview=access.status==='guest';
+ const canOpen=preview?sampleGroupSelected&&(!!memberSlot||!withToolbar)
+  :!!group&&(!!memberSlot||!withToolbar||route==='/today/repeats');
  const opened=!pending&&canOpen&&request?.route===route&&request.ownerId===ownerId&&request.groupId===groupId?request:null;
  useLayoutEffect(()=>{
   setRequest(null);
@@ -65,8 +69,9 @@ export function WorkspaceTopBarHost(){
   <WorkspaceGroupFilter key={'groups:'+route} preview={preview} dialogId={dialogId} trailing={groupTrailing} onMembers={(selectedId,trigger)=>{
    setRequest({route,ownerId,groupId:selectedId,trigger});
   }}/>
-  {opened&&<WorkspaceMembersDialog id={dialogId} groupName={group?.name||'샘플 데이터'} members={group?.members}
-   trigger={opened.trigger} onDismiss={()=>setRequest(null)}>{memberSlot}</WorkspaceMembersDialog>}
+  {opened&&<WorkspaceMembersDialog id={dialogId} groupName={preview?sampleGroup.name:group?.name||''}
+   members={preview?sampleGroup.members:group?.members} trigger={opened.trigger} onDismiss={()=>setRequest(null)}
+   previewInvite={preview?()=>requestLogin({title:'구성원을 초대하려면 로그인해 주세요'}):undefined}>{memberSlot}</WorkspaceMembersDialog>}
   {route==='/timeline'&&(bar?.route===route&&bar.actions?.active?bar.actions.content:<WorkspaceActionRow/>)}
  </div>,target);
 }

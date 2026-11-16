@@ -22,7 +22,7 @@ const calendarViews=[['month','월간','calendar'],['week','주간','calendarWee
 type CalendarView=typeof calendarViews[number][0];
 const weatherRowHeight=22;
 
-export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,preview=false,month,day,items,members,loading=false,setMonth,setDay,create,edit,guestCreate=false}:MemberPreferenceProps&{month:string;day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading?:boolean;guestCreate?:boolean;setMonth:(v:string)=>void;setDay:(v:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
+export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,preview=false,month,day,items,members,loading=false,setMonth,setDay,create,edit}:MemberPreferenceProps&{month:string;day:string;items:WorkspaceItem[];members:WorkspaceMember[];loading?:boolean;setMonth:(v:string)=>void;setDay:(v:string)=>void;create:(date:string,time?:string)=>void;edit:(item:WorkspaceItem)=>void}){
  const holidays=useHolidays(month),[detail,setDetail]=useState<string|null>(null);
  const weather=useCalendarWeather();
  const [view,setView]=useState<CalendarView>('month'),selection=useMemberPreference(members,{viewerId,defaultMemberIds,saveDefaultMembers}),member=selection.memberIds;
@@ -31,7 +31,7 @@ export function PersonalCalendar({viewerId,defaultMemberIds,saveDefaultMembers,p
  const weekStart=timetableWeekDates(day)[0];
  const shown=items.filter(i=>i.kind==='EVENT'&&matchesMember(i,member));
  const untimed=view==='week'?shown.filter(item=>item.data.allDay||!item.data.startTime||!item.data.endTime):[];
- const openDay=(date:string)=>{selectDay(date);if(guestCreate)create(date);else setDetail(date);};
+ const openDay=(date:string)=>{selectDay(date);setDetail(date);};
  const editOnDay=(item:WorkspaceItem,date:string)=>{setDay(date);edit(item);};
  const move=(delta:number)=>{if(view!=='month'){selectDay(addDays(day,delta*(view==='week'?7:1)));}else{const date=new Date(Number(month.slice(0,4)),Number(month.slice(5))-1+delta,1),m=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');setMonth(m);setDay(m+'-01');}};
  const renderDateWeather=(dates:string[])=>dates.some(weather.hasDate)

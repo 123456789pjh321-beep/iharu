@@ -1,19 +1,34 @@
 import {useState,type ReactNode} from 'react';
-import {useOptionalWorkspaceGate} from './WorkspaceGate';
+import {sampleGroup} from '../../../shared/guest-samples';
+import {useEntryAccess} from './EntryAccess';
+import {useOptionalWorkspaceGate,useWorkspaceGate} from './WorkspaceGate';
 import {Icon} from './Icon';
 import {GroupEditor} from './GroupEditor';
 import './workspace-groups.css';
-export function WorkspaceGroupFilter({preview,dialogId,onMembers,trailing}:{
- preview:boolean;dialogId:string;onMembers:(groupId:string|null,trigger:HTMLButtonElement)=>void;trailing?:ReactNode
-}){
- const gate=useOptionalWorkspaceGate(),me=gate?.access.identity;const [error,setError]=useState(''),[creating,setCreating]=useState(false);
- if(preview)return <section className="workspace-group-filter" aria-label="그룹 선택">
+type GroupFilterProps={dialogId:string;onMembers:(groupId:string|null,trigger:HTMLButtonElement)=>void;trailing?:ReactNode};
+
+function SampleGroupFilter({dialogId,onMembers,trailing}:GroupFilterProps){
+ const {sampleGroupSelected,setSampleGroupSelected}=useWorkspaceGate(),{requestLogin}=useEntryAccess();
+ return <section className="workspace-group-filter" aria-label="그룹 선택">
+  <button type="button" className="group-add-shortcut" aria-label="새 그룹 만들기" title="새 그룹 만들기"
+   onClick={()=>requestLogin({title:'그룹을 만들려면 로그인해 주세요'})}><Icon name="plus"/></button>
   <div className="workspace-group-chips" role="group" aria-label="조회할 그룹">
-   <button type="button" className="guest-sample-badge" title="샘플 구성원 조회" aria-haspopup="dialog" aria-controls={dialogId}
-    onClick={event=>onMembers(null,event.currentTarget)}>샘플 데이터<Icon name="chevron" className="group-members-chevron"/></button>
+   <button type="button" aria-pressed={!sampleGroupSelected} onClick={()=>setSampleGroupSelected(false)}><Icon name="shield"/>개인</button>
+   <button type="button" title="가상 예시 그룹 구성원 조회"
+    aria-pressed={sampleGroupSelected} aria-haspopup="dialog" aria-controls={dialogId}
+    onClick={event=>{setSampleGroupSelected(true);onMembers(null,event.currentTarget);}}>
+    <span className={'group-color group-color-'+sampleGroup.color}/><span className="workspace-group-name">{sampleGroup.name}</span>
+    <Icon name="chevron" className="group-members-chevron"/>
+   </button>
   </div>
   {trailing}
  </section>;
+}
+
+export function WorkspaceGroupFilter({preview,dialogId,onMembers,trailing}:GroupFilterProps&{preview:boolean}){
+ const gate=useOptionalWorkspaceGate(),me=gate?.access.identity;
+ const [error,setError]=useState(''),[creating,setCreating]=useState(false);
+ if(preview)return <SampleGroupFilter dialogId={dialogId} onMembers={onMembers} trailing={trailing}/>;
  if(!me||!gate)return null;
  const groups=me.groups||[],selected=me.family?.id??null;
  const choose=async(id:string|null,trigger:HTMLButtonElement)=>{

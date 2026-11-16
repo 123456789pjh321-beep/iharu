@@ -20,7 +20,7 @@ export function selectLedgerView(page:Page,view:'달력'|'내역'|'그래프'|'�
 }
 export function workspaceGroupButton(page:Page,name?:string){
  const groups=page.locator('.workspace-topbar .workspace-group-chips');
- return name?groups.getByRole('button',{name,exact:true}):groups.locator('button[aria-haspopup=dialog][aria-pressed=true],button.guest-sample-badge');
+ return name?groups.getByRole('button',{name,exact:true}):groups.locator('button[aria-haspopup=dialog][aria-pressed=true]');
 }
 export function workspaceMembersDialog(page:Page){
  return page.getByRole('dialog',{name:/^(조회할 구성원|그룹 구성원)$/});

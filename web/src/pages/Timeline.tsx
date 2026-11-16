@@ -9,7 +9,8 @@ import {Icon} from '../components/Icon';
 import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {DateNavigator,WorkspaceToolbar} from '../components/WorkspaceToolbar';
-import {WorkspaceTopBarActions,WorkspaceTopBarSlot} from '../components/WorkspaceTopBar';
+import {WorkspaceTopBarActions} from '../components/WorkspaceTopBar';
+import {sampleMembers,samplePersonalMembers,sampleViewer} from '../../../shared/guest-samples';
 import {CalendarMemberPreferenceFilter} from '../components/CalendarMemberPreferenceFilter';
 import {MonthSwipeArea} from '../components/MonthSwipeArea';
 import {shiftMonth} from '../components/PeriodPager';
@@ -27,14 +28,15 @@ const emptyList:MemoList={items:[],total:0,hasAny:false};
 const validMonth=(value:string)=>/^\d{4}-(0[1-9]|1[0-2])$/.test(value)&&value>='1900-01'&&value<='2099-12';
 
 export default function TimelinePage(){
- const {access,session}=useWorkspaceGate();
+ const {access,session,sampleGroupSelected}=useWorkspaceGate();
  if(session.data?.authenticated&&session.data.assurance==='LOW')return <Navigate to="/account" replace/>;
  if(session.data?.authenticated&&!session.data.emailVerified)return <Navigate to="/account/email" replace/>;
  if(access.status==='checking')return <Loading/>;
  if(access.status==='error')return <ErrorState message={access.error||'계정을 확인하지 못했어요.'} retry={()=>location.reload()}/>;
- return <Timeline key={access.identity?.id||'guest'} me={access.identity}/>;
+ const sampleSpace=access.identity?undefined:sampleGroupSelected?'group':'personal';
+ return <Timeline key={access.identity?.id||sampleSpace} me={access.identity} sampleSpace={sampleSpace}/>;
 }
-function Timeline({me}:{me:WorkspaceMe|null}){
+function Timeline({me,sampleSpace}:{me:WorkspaceMe|null;sampleSpace?:'group'|'personal'}){
  const today=koreaToday(),{requestLogin}=useEntryAccess();
  const [month,setMonth]=useState(today.slice(0,7)),[ownerIds,setOwnerIds]=useState<string[]>([]),[offset,setOffset]=useState(0);
  const [results,setResults]=useState<Record<string,MonthResult>>({}),[refresh,setRefresh]=useState(0);
@@ -66,7 +68,8 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  const mounted=useRef(true),writeLock=useRef(false),viewer=useRef<HTMLDialogElement>(null);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  useEffect(()=>{if(viewPhoto)viewer.current?.showModal();else viewer.current?.close();},[viewPhoto]);
- const members=me?.family?.members||(me?[{id:me.id,name:me.name,kind:me.role,host:false,version:1}]:[]);
+ const members=me?.family?.members||(me?[{id:me.id,name:me.name,kind:me.role,host:false,version:1}]
+  :sampleSpace==='group'?sampleMembers:samplePersonalMembers);
  const selectedOwners=ownerIds.length?ownerIds:members.map(member=>member.id);
  function selectOwners(next:string[]){setOwnerIds(next.length===members.length?[]:next);setOffset(0);setSelectedId('');}
  // Keep real neighboring months ready for the same continuous pager used by the calendar.
@@ -100,7 +103,7 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   focused();window.addEventListener('focus',focused);const timer=setInterval(focused,30000);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',focused);};
  },[me?.id,me?.family?.id,requests,refresh]);
- const samples=useMemo(()=>sampleMemos(today),[today]);
+ const samples=useMemo(()=>sampleMemos(today,sampleSpace),[today,sampleSpace]);
  const selected=(current?.data?.items||[]).find(m=>m.id===selectedId)||(samples.find(m=>m.id===selectedId));
  useEffect(()=>{
   if(selectedId&&!selected){setSelectedId('');setViewPhoto('');}
@@ -151,11 +154,12 @@ function Timeline({me}:{me:WorkspaceMe|null}){
   if(!validMonth(value))return <div className="memo-results"/>;
   const result=results[value]?.key===requestKey(value)?results[value]:undefined,data=me?result?.data:emptyList;
   if(!data)return result?.error?<ErrorState message={result.error} retry={reload}/>:<Loading label="메모를 불러오고 있어요"/>;
-  const isSample=!notebook&&!data.hasAny&&ownerIds.length===0&&value===today.slice(0,7),items=isSample?samples:data.items;
+  const isSample=!notebook&&!data.hasAny&&(!me||ownerIds.length===0)&&value===today.slice(0,7);
+  const items=isSample?samples.filter(memo=>!ownerIds.length||ownerIds.includes(memo.ownerId)):data.items;
   const groups=new Map<string,DisplayMemo[]>();for(const memo of items){const group=groups.get(memo.date)||[];group.push(memo);groups.set(memo.date,group);}
   return <section className="memo-results" aria-label={isSample?'샘플 메모':'타임라인 메모'}>
    {result?.error&&<div className="memo-refresh-error" role="status">최신 메모를 불러오지 못했어요. 작성 중인 내용은 유지돼요.<button className="button compact" onClick={reload}>다시 불러오기</button></div>}
-   {isSample&&<p className="memo-sample-guide">아래 두 글은 사용 방법을 보여 주는 샘플이에요.</p>}
+   {isSample&&<p className="memo-sample-guide">타임라인에서 볼 수 있는 예시 메모예요.</p>}
    {!items.length?<div className="memo-empty"><Icon name="book"/><h2>{ownerIds.length?'선택한 구성원의 이번 달 글이 없어요':'이번 달에 작성한 글이 없어요'}</h2></div>:Array.from(groups,([date,items])=><section className="memo-day" key={date} aria-label={dayLabel(date)}>
     <h2><time dateTime={date}>{dayLabel(date)}</time>{isSample?<span>샘플</span>:date===today&&<span>오늘</span>}</h2>
     {items.map(memo=><article className="memo-card memo-preview" key={memo.id} aria-label={memo.title}>
@@ -170,10 +174,10 @@ function Timeline({me}:{me:WorkspaceMe|null}){
  }
  return <AuthLayout wide personalChild={me?.role==='CHILD'}><div className="timeline-page memo-timeline">
   <WorkspaceToolbar title="타임라인" navigation={<DateNavigator type="month" value={month} inputLabel="타임라인 조회 월" onChange={selectMonth}/>}/>
-  {me?<CalendarMemberPreferenceFilter members={members} selection={{memberIds:selectedOwners,toggle:id=>{
+  <CalendarMemberPreferenceFilter preview={!me} members={members} selection={{memberIds:selectedOwners,toggle:id=>{
    const next=selectedOwners.includes(id)?selectedOwners.filter(value=>value!==id):[...selectedOwners,id];
    selectOwners(next.length?next:[id]);
-  },selectAll:()=>selectOwners(members.map(member=>member.id))}} label="메모 작성자"/>:<WorkspaceTopBarSlot slot="members">{null}</WorkspaceTopBarSlot>}
+  },selectAll:()=>selectOwners(members.map(member=>member.id))}} label="메모 작성자"/>
   <WorkspaceTopBarActions label="빠른 기록">{memoTools.map(([id,label,icon])=><button type="button" key={id} onClick={()=>create(id)}><Icon name={icon}/><span>{label}</span></button>)}<button ref={trashTrigger} type="button" aria-haspopup="dialog" onClick={()=>{if(me)setTrashOpen(true);else requestLogin({title:'휴지통을 보려면 로그인해 주세요',description:'내가 삭제한 글을 확인하고 복원할 수 있어요.'});}}><Icon name="trash"/><span>휴지통</span></button></WorkspaceTopBarActions>
   <div className="memo-notebook-filter">{(notebooks.length>0||notebook)&&<label><Icon name="book"/><span className="sr-only">노트별 보기</span><select aria-label="노트별 보기" value={notebook} onChange={e=>{setNotebook(e.target.value);setOffset(0);}}><option value="">모든 노트</option>{notebooks.map(n=><option key={n.name} value={n.name}>{n.name} ({n.count})</option>)}</select></label>}</div>
   <p className="memo-status" role="status">{message}</p>
@@ -227,10 +231,13 @@ function MemoDetail({memo,busy,message,onClose,onPhoto,onCreate,onEdit,onFavorit
   </>}</footer>
  </dialog>;
 }
-function sampleMemos(today:string):DisplayMemo[]{
- const base={...emptyMemo(today),id:'sample-park',ownerId:'sample',ownerName:'샘플',mine:false,favorite:false,createdAt:'',updatedAt:'',photos:[],attachments:[],sample:true};
+function sampleMemos(today:string,sampleSpace?:'group'|'personal'):DisplayMemo[]{
+ const author=sampleSpace?sampleViewer:{id:'sample',name:'샘플'};
+ const base={...emptyMemo(today),id:'sample-park',ownerId:author.id,ownerName:author.name,mine:false,favorite:false,createdAt:'',updatedAt:'',photos:[],attachments:[],sample:true};
+ if(sampleSpace==='personal')return [{...base,id:'sample-reading',title:'이번 주 읽을 책',body:'주말에 도서관에 들러 읽고 싶었던 책을 찾아봐요.',time:'20:00'}];
+ const groupAuthor=sampleSpace==='group'?sampleMembers[0]:author;
  return [
   {...base,title:'공원에서 보낸 오후',body:'함께 걷고 웃었던 순간을 남겨요. 사진과 현재 위치를 담으면 나중에 더 생생하게 떠올릴 수 있어요.',category:'OUTING',time:'15:30',samplePhoto:'/timeline/park.jpg',place:'우리 동네 공원 · 장소 예시',tags:['주말','산책']},
-  {...base,id:'sample-growth',title:'처음 혼자 해낸 날',body:'“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 게시글을 누르면 전체 글과 사진·위치를 볼 수 있어요. 오래 기억할 글은 즐겨찾기에 담아 보세요.',category:'FAMILY',time:'09:00',visibility:'GROUP',tags:['성장','기억할말']}
+  {...base,id:'sample-growth',ownerId:groupAuthor.id,ownerName:groupAuthor.name,title:'처음 혼자 해낸 날',body:'“나 혼자 할 수 있어!” 작은 성장을 한 줄로 기록해요. 게시글을 누르면 전체 글과 사진·위치를 볼 수 있어요. 오래 기억할 글은 즐겨찾기에 담아 보세요.',category:'FAMILY',time:'09:00',visibility:'GROUP',tags:['성장','기억할말']}
  ];
 }
