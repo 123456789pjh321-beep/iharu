@@ -53,10 +53,12 @@ test('shows date-specific weather in the timetable and calendar and remembers th
  await expect(details).toHaveCount(0);
  const dateButton=current.getByRole('button',{name:'2026-11-20 일정 보기',exact:true});
  await dateButton.click();
- const loginClose=page.getByRole('button',{name:'로그인 창 닫기',exact:true});
- await expect(loginClose).toBeVisible();
- await loginClose.click();
- await expect(loginClose).toHaveCount(0);
+ const agenda=page.locator('.calendar-day-sheet');
+ await expect(agenda).toBeVisible();
+ await expect(details).toHaveCount(0);
+ await expect(page.locator('.entry-login-sheet')).not.toBeVisible();
+ await agenda.getByRole('button',{name:'날짜 일정 닫기',exact:true}).click();
+ await expect(agenda).toHaveCount(0);
  await selectCalendarView(page,'주간');
  await expect(dateWeather).toBeVisible();
  for(const width of [320,499,1100]){
