@@ -1,9 +1,8 @@
 /* iHaru typography is an outlined wordmark, independent of UI font loading. */
 .iharu-wordmark{display:block;flex-shrink:0;overflow:visible;color:inherit}
-.brand.workspace-brand.workspace-wordmark{display:inline-flex;align-items:center;gap:0;min-height:44px;color:#176b56}
+.brand.workspace-brand.workspace-wordmark{display:inline-flex;align-items:center;gap:0;min-height:44px;color:var(--primary)}
 .workspace-brand .iharu-wordmark,.workspace-wordmark .iharu-wordmark{width:106px;height:auto;max-height:none}
 .workspace-brand.compact-wordmark .iharu-wordmark{width:85px}
-.market-brand{min-height:44px;color:#176b56}
+.market-brand{min-height:44px;color:var(--market-blue,var(--primary))}
 .market-brand .iharu-wordmark{width:124px;height:auto}
-html[data-theme=dark] :is(.market-brand,.brand.workspace-brand.workspace-wordmark){color:#a7c6b7}
 @media(max-width:760px){.market-brand .iharu-wordmark{width:101px}.workspace-brand .iharu-wordmark,.workspace-wordmark .iharu-wordmark{width:92px}.workspace-brand.compact-wordmark .iharu-wordmark{width:78px}}

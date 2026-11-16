@@ -34,15 +34,14 @@ html[data-theme=dark] .weather-google-maps { color:#fff; }
 }
 .weather-button { width:36px; height:36px; margin-inline-start:auto; flex-shrink:0; }
 .weather-button .weather-glyph { width:22px; height:22px; }
-.weather-glyph[data-tone=sun] { color:#a4621a; }
-.weather-glyph[data-tone=rain] { color:#286795; }
-.weather-glyph[data-tone=snow] { color:#41758b; }
-.weather-glyph[data-tone=storm] { color:#755195; }
+.weather-glyph[data-tone=sun] { color:#896731; }
+.weather-glyph[data-tone=rain] { color:var(--weekend-ink); }
+.weather-glyph[data-tone=snow] { color:#476771; }
+.weather-glyph[data-tone=storm] { color:#675777; }
 .weather-glyph[data-tone=cloud] { color:var(--muted); }
-html[data-theme=dark] .weather-glyph[data-tone=sun] { color:#ffcb75; }
-html[data-theme=dark] .weather-glyph[data-tone=rain] { color:#8ec9ff; }
-html[data-theme=dark] .weather-glyph[data-tone=snow] { color:#a7dded; }
-html[data-theme=dark] .weather-glyph[data-tone=storm] { color:#d9b3ff; }
+html[data-theme=dark] .weather-glyph[data-tone=sun] { color:#d9b983; }
+html[data-theme=dark] .weather-glyph[data-tone=snow] { color:#aac8d2; }
+html[data-theme=dark] .weather-glyph[data-tone=storm] { color:#c7b6d9; }
 .weather-date-button {
   width:24px;
   height:20px;
@@ -73,7 +72,7 @@ html[data-theme=dark] .weather-glyph[data-tone=storm] { color:#d9b3ff; }
   color:var(--ink);
   overflow:auto;
 }
-.weather-dialog::backdrop { background:#16241e65; }
+.weather-dialog::backdrop { background:var(--scrim,#1b2b2266); }
 .weather-dialog > header {
   position:sticky;
   top:0;

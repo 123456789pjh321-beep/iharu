@@ -62,12 +62,23 @@ test('jade palette remains readable and aligned in light and dark at phone, tabl
   for(const theme of ['light','dark']){
    await page.goto('/settings');await page.getByRole('button',{name:theme==='light'?'밝게':'어둡게',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-theme',theme);await page.goto('/tuition');await page.getByLabel('조회 월').fill('2026-11');
    const contrasts=await page.evaluate(()=>{
-    const root=getComputedStyle(document.documentElement),rgb=(value:string)=>{const probe=document.createElement('span');probe.style.color=value.trim();document.body.appendChild(probe);const color=getComputedStyle(probe).color;probe.remove();return color.match(/[\d.]+/g)!.slice(0,3).map(n=>Number(n)/255);};
+    const palette=getComputedStyle(document.querySelector('.workspace-page')!),rgb=(value:string)=>{const probe=document.createElement('span');probe.style.color=value.trim();document.body.appendChild(probe);const color=getComputedStyle(probe).color;probe.remove();return color.match(/[\d.]+/g)!.slice(0,3).map(n=>Number(n)/255);};
     const lum=(color:string)=>rgb(color).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
-    const ratio=(a:string,b:string)=>{const x=lum(root.getPropertyValue(a)),y=lum(root.getPropertyValue(b));return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+    const ratio=(a:string,b:string)=>{const x=lum(palette.getPropertyValue(a)),y=lum(palette.getPropertyValue(b));return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
     const button=getComputedStyle(document.querySelector('.ledger-budget-trigger')!);const foreground=lum(button.color),background=lum(button.backgroundColor);
-    return [ratio('--ink','--surface'),ratio('--muted','--surface'),ratio('--primary','--mint'),ratio('--on-primary','--primary'),(Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05)];
-   });for(const contrast of contrasts)expect(contrast).toBeGreaterThanOrEqual(4.5);
+    return {
+     content:ratio('--ink','--surface'),muted:ratio('--muted','--surface-sub'),chrome:ratio('--ink','--chrome'),
+     selection:ratio('--primary','--mint'),primaryButton:ratio('--on-primary','--primary'),
+     lunarDates:ratio('--calendar-secondary-ink','--surface-sub'),
+     expenses:ratio('--holiday-ink','--surface'),error:ratio('--holiday-ink','--danger-soft'),
+     budgetButton:(Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05),
+    };
+   });
+   for(const [element,contrast] of Object.entries(contrasts))expect(contrast,element+' in '+theme).toBeGreaterThanOrEqual(4.5);
+   const chrome=await page.locator('.workspace-mobile-nav').evaluate(node=>getComputedStyle(node).backgroundColor);
+   for(const selector of ['.workspace-topbar','.workspace-topbar .workspace-toolbar','.workspace-topbar .workspace-group-filter']){
+    await expect(page.locator(selector)).toHaveCSS('background-color',chrome);
+   }
    for(const width of [320,820,1440]){
     await page.setViewportSize({width,height:1000});await settled(page);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:`test-results/ui122-jade-${theme}-${width}.png`,animations:'disabled'});
