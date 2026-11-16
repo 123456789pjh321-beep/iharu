@@ -193,7 +193,6 @@
 .workspace-page:where([data-timetree]) .guest-sample-messages{min-height:0;flex:1;overflow-y:auto;overscroll-behavior-y:contain}
 .workspace-page:where([data-timetree]) .guest-sample-compose,.workspace-page:where([data-timetree]) .group-chat-composer{flex-shrink:0}
 .workspace-page:where([data-timetree]) .group-chat .chat-room-header{min-height:var(--workspace-toolbar-height);padding:6px var(--workspace-inset);border-color:var(--line)}
-.workspace-page:where([data-timetree]) .guest-chat-actions{padding-inline:var(--workspace-inset)}
 
 /* The ledger's calendar spans the same full width as the schedule calendar. */
 .auth-app.workspace-page:where([data-timetree]) .auth-panel .fee-workspace{padding:0;border:0}

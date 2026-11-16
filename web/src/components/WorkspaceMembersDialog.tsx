@@ -3,8 +3,8 @@ import type {WorkspaceMember} from '../../../shared/workspace';
 import {GroupInviteShareSection} from './GroupInviteShare';
 import {Icon} from './Icon';
 
-export function WorkspaceMembersDialog({id,groupName,members,trigger,onDismiss,children}:{
- id:string;groupName:string;members?:WorkspaceMember[];trigger:HTMLButtonElement;onDismiss:()=>void;children?:ReactNode
+export function WorkspaceMembersDialog({id,groupName,members,trigger,onDismiss,previewInvite,children}:{
+ id:string;groupName:string;members?:WorkspaceMember[];trigger:HTMLButtonElement;onDismiss:()=>void;previewInvite?:()=>void;children?:ReactNode
 }){
  const dialog=useRef<HTMLDialogElement>(null);
  useLayoutEffect(()=>{
@@ -30,7 +30,8 @@ export function WorkspaceMembersDialog({id,groupName,members,trigger,onDismiss,c
   {children||<ul className="workspace-members-roster" aria-label="그룹 구성원 목록">
    {members?.map(member=><li key={member.id}>{member.name}</li>)}
   </ul>}
-  <GroupInviteShareSection/>
+  {previewInvite?<div className="workspace-members-invite"><button type="button" className="button"
+   onClick={()=>{dismiss();previewInvite();}}><Icon name="plus"/>구성원 초대</button></div>:<GroupInviteShareSection/>}
   <footer><button type="button" className="button primary" onClick={dismiss}>{children?'선택 완료':'완료'}</button></footer>
  </dialog>;
 }

@@ -16,7 +16,6 @@
  min-height:var(--workspace-topbar-chip-height);padding-block:2px;line-height:1.4
 }
 .workspace-topbar .group-add-shortcut{width:var(--workspace-topbar-chip-height);height:var(--workspace-topbar-chip-height)}
-.workspace-topbar .workspace-group-chips>.guest-sample-badge{margin-inline-start:0}
 .workspace-group-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .workspace-group-chips .group-members-chevron{width:12px;height:12px;transform:rotate(90deg)}
 .workspace-members-dialog>.workspace-members-group{margin:0 0 8px;color:var(--muted);font-size:.84rem;font-weight:650}

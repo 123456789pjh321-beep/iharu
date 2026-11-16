@@ -7,14 +7,22 @@ import {FormNotice} from './AuthLayout';
 export function ChatRooms({me,rooms,selected,select,created,error}:{me:WorkspaceMe;rooms:ChatRoom[];selected:string|null;select:(id:string|null)=>void;created:(id:string)=>Promise<void>;error:string}){
  const [open,setOpen]=useState(false);
  return <div className="chat-rooms">
-  <div className="chat-rooms-toolbar">
+  <ChatRoomToolbar group={!!me.family} rooms={rooms} selected={selected} select={select} create={()=>setOpen(true)}/>
+  <FormNotice error={error}/>
+  {open&&<CreateChatRoom me={me} close={()=>setOpen(false)} saved={async id=>{await created(id);setOpen(false);}}/>}
+ </div>;
+}
+
+export function ChatRoomToolbar({group,rooms,selected,select,create}:{
+ group:boolean;rooms:Pick<ChatRoom,'id'|'name'|'kind'|'members'|'canSend'>[];selected:string|null;
+ select:(id:string|null)=>void;create:()=>void;
+}){
+ return <div className="chat-rooms-toolbar">
   <nav className="chat-room-list" aria-label="대화방 목록">
-   <button type="button" aria-label={me.family?'단체 대화 그룹 전체':'나와의 대화 개인 메모'} title={me.family?'단체 대화 · 그룹 전체':'나와의 대화 · 개인 메모'} aria-pressed={selected===null} onClick={()=>select(null)}><Icon name="users"/><span>{me.family?'단체 대화':'나와의 대화'}</span></button>
+   <button type="button" aria-label={group?'단체 대화 그룹 전체':'나와의 대화 개인 메모'} title={group?'단체 대화 · 그룹 전체':'나와의 대화 · 개인 메모'} aria-pressed={selected===null} onClick={()=>select(null)}><Icon name="users"/><span>{group?'단체 대화':'나와의 대화'}</span></button>
    {rooms.map(room=><button type="button" key={room.id} aria-label={room.name+' '+(room.kind==='DIRECT'?'1:1 대화':room.members.filter(m=>m.active).length+'명 참여')+(!room.canSend?' · 읽기 전용':'')} title={room.name+' · '+(room.kind==='DIRECT'?'1:1 대화':room.members.filter(m=>m.active).length+'명 참여')+(!room.canSend?' · 읽기 전용':'')} aria-pressed={selected===room.id} onClick={()=>select(room.id)}><Icon name={room.kind==='DIRECT'?'chat':'users'}/><span>{room.name}{!room.canSend?' · 읽기 전용':''}</span></button>)}
   </nav>
-  <button type="button" className="button compact chat-room-create" aria-label="대화방 만들기" title="대화방 만들기" onClick={()=>setOpen(true)}><Icon name="plus"/><span>대화방</span></button>
-  </div><FormNotice error={error}/>
-  {open&&<CreateChatRoom me={me} close={()=>setOpen(false)} saved={async id=>{await created(id);setOpen(false);}}/>}
+  <button type="button" className="button compact chat-room-create" aria-label="대화방 만들기" title="대화방 만들기" onClick={create}><Icon name="plus"/><span>대화방</span></button>
  </div>;
 }
 

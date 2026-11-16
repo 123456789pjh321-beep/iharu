@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {Link,Navigate,useNavigate,useSearchParams} from 'react-router-dom';
+import {sampleGroup} from '../../../shared/guest-samples';
 import type {WorkspaceGroup} from '../../../shared/workspace';
 import {AuthLayout} from '../components/AuthLayout';
 import {GroupEditor} from '../components/GroupEditor';
@@ -7,6 +8,7 @@ import {useWorkspaceGate} from '../components/WorkspaceGate';
 import {useEntryAccess} from '../components/EntryAccess';
 import {Loading,ErrorState} from '../components/Common';
 import {Icon} from '../components/Icon';
+import {SampleLabel} from '../components/GuestSampleViews';
 import {InviteLinkActions,type IssuedInvite} from '../components/InviteLinkActions';
 import {workspaceRequest} from '../workspace-api';
 import '../components/workspace-groups.css';
@@ -21,7 +23,9 @@ export function GroupManagement(){
  if(gate.access.status==='checking')return <AuthLayout wide><Loading label="그룹을 확인하고 있어요"/></AuthLayout>;
  if(gate.access.status==='error')return <AuthLayout wide><ErrorState message={gate.access.error||'그룹을 확인하지 못했어요'} retry={()=>void gate.refreshAccess()}/></AuthLayout>;
  if(gate.access.status==='restricted')return <Navigate to="/account" replace/>;
- const groups=me?.groups||[],selected=me?.family?.id??null;
+ const preview=gate.access.status==='guest';
+ const groups=preview?[sampleGroup]:me?.groups||[];
+ const selected=preview?(gate.sampleGroupSelected?sampleGroup.id:null):me?.family?.id??null;
  const detail=groups.find(group=>group.id===params.get('group'));
  const creating=params.get('create')==='1'&&me?.role==='PARENT';
  const closeEditor=()=>{setEditing(null);if(params.has('create'))setParams({}, {replace:true});};
@@ -31,7 +35,18 @@ export function GroupManagement(){
   try{await fn();await gate.refreshAccess();setNotice(message);}catch(e){setError((e as Error).message);}
   finally{lock.current=false;setBusy(false);}
  }
- const openSpace=(id:string|null)=>void action(async()=>{if(id!==selected)await gate.selectGroup(id);navigate('/timetable');});
+ const openSpace=(id:string|null)=>{
+  if(preview){gate.setSampleGroupSelected(id===sampleGroup.id);navigate('/timetable');return;}
+  if(me)void action(async()=>{if(id!==selected)await gate.selectGroup(id);navigate('/timetable');});
+ };
+ const openSettings=(group:WorkspaceGroup)=>{
+  if(preview)requestLogin({title:'그룹을 관리하려면 로그인해 주세요'});
+  else setEditing(group);
+ };
+ const invite=(group:WorkspaceGroup)=>{
+  if(preview)requestLogin({title:'구성원을 초대하려면 로그인해 주세요'});
+  else setInviting(group);
+ };
  const leave=(group:WorkspaceGroup)=>{
   const self=group.members.find(m=>m.id===me?.id);
   if(self&&window.confirm(group.name+'에서 나갈까요? 이 그룹에 작성한 내 자료는 개인 공간에 보관돼요.'+(group.isHost&&group.members.length>1?' 그룹장은 다음 가입자에게 이어져요.':'')))void action(async()=>{await workspaceRequest('family.leave',{familyId:group.id,version:self.version});setParams({});},'그룹을 나왔어요.');
@@ -41,19 +56,20 @@ export function GroupManagement(){
   <div className="group-management-body">
    {error&&<p role="alert" className="group-error">{error}</p>}{notice&&<p role="status" className="group-notice">{notice}</p>}
    {detail?<section className="group-detail" aria-label={detail.name+' 그룹 상세'}>
-    <div className="group-detail-heading"><GroupCover group={detail}/><div><h2>{detail.name}</h2><p>구성원 {detail.members.length}명 · {detail.isHost?'내가 만든 그룹':'함께하는 그룹'}</p></div>{detail.isHost&&<button type="button" className="icon-button" aria-label="그룹 설정" disabled={busy} onClick={()=>setEditing(detail)}><Icon name="settings"/></button>}</div>
+    <div className="group-detail-heading"><GroupCover group={detail}/><div><h2>{detail.name}</h2><p>구성원 {detail.members.length}명 · {preview?'샘플 데이터':detail.isHost?'내가 만든 그룹':'함께하는 그룹'}</p></div>{detail.isHost&&<button type="button" className="icon-button" aria-label="그룹 설정" disabled={busy} onClick={()=>openSettings(detail)}><Icon name="settings"/></button>}</div>
     {detail.description&&<p className="group-description">{detail.description}</p>}
-    <div className="group-detail-actions">{me?.role!=='CHILD'&&<button type="button" className="button primary" disabled={busy} onClick={()=>setInviting(detail)}><Icon name="plus"/>구성원 초대</button>}<button type="button" className="button" disabled={busy} onClick={()=>openSpace(detail.id)}>그룹 열기<Icon name="arrow"/></button></div>
+    <div className="group-detail-actions">{me?.role!=='CHILD'&&<button type="button" className="button primary" disabled={busy} onClick={()=>invite(detail)}><Icon name="plus"/>구성원 초대</button>}<button type="button" className="button" disabled={busy} onClick={()=>openSpace(detail.id)}>그룹 열기<Icon name="arrow"/></button></div>
     {detail.members.length===1&&<p className="group-invite-hint">초대 링크를 보내 함께할 사람을 초대해 보세요.</p>}
     <div className="group-member-list"><h3>함께하는 사람 <span>{detail.members.length}</span></h3>{detail.members.map(member=><div key={member.id} className="group-member-row"><span className="group-member-avatar" aria-hidden="true">{Array.from(member.name)[0]}</span><div><strong>{member.name}{member.id===me?.id&&<small> 나</small>}</strong><small>{member.host?'그룹장':'구성원'}</small></div></div>)}</div>
-    <details className="group-manage-options"><summary>그룹 관리<Icon name="chevron"/></summary>
+    {preview&&<Link className="button compact group-preview-chat" to="/chat" onClick={()=>gate.setSampleGroupSelected(true)}><Icon name="chat"/>대화 미리보기</Link>}
+    {me&&<details className="group-manage-options"><summary>그룹 관리<Icon name="chevron"/></summary>
      {detail.isHost&&detail.members.filter(member=>member.id!==me?.id).map(member=><div className="group-member-row" key={member.id}><div className="group-admin-member-name">{member.name}</div><div className="group-member-actions">{member.kind==='PARENT'&&<button type="button" disabled={busy} aria-label={member.name+'에게 그룹장 위임'} onClick={()=>{if(window.confirm(member.name+'님에게 그룹장을 위임할까요? 기존 초대 링크는 폐기돼요.'))void action(()=>workspaceRequest('group.transfer',{groupId:detail.id,profileId:member.id,version:detail.version}),'그룹장을 위임했어요.');}}>그룹장 위임</button>}<button type="button" disabled={busy} aria-label={member.name+' 내보내기'} onClick={()=>{if(window.confirm(member.name+'님을 이 그룹에서 내보낼까요? 본인 자료와 다른 그룹 참여는 유지돼요.'))void action(()=>workspaceRequest('family.remove',{familyId:detail.id,profileId:member.id,version:member.version}),'구성원을 내보냈어요.');}}>내보내기</button></div></div>)}
      <button type="button" className="group-text-button danger" disabled={busy} onClick={()=>leave(detail)}>그룹 나가기</button>
-    </details>
+    </details>}
    </section>:<>
-    <div className="groups-section-heading"><h2>내 그룹 <span>{groups.length}</span></h2></div>
+    <div className="groups-section-heading"><h2>{preview?'그룹 둘러보기':'내 그룹'} <span>{groups.length}</span></h2>{preview&&<SampleLabel/>}</div>
     <div className="group-card-list">{groups.map(group=><section key={group.id} className={'managed-group'+(selected===group.id?' selected':'')} aria-label={group.name+' 그룹'}><button type="button" className="group-card-title" onClick={()=>setParams({group:group.id})}><GroupCover group={group}/><span className="group-row-text"><strong>{group.name}</strong><small><Icon name="users"/>{group.members.length}명<span className="group-row-members"> · {group.members.slice(0,3).map(member=>member.name).join(', ')}</span></small></span>{selected===group.id&&<span className="group-current-mark" aria-label="선택됨"><Icon name="check"/></span>}<Icon name="chevron"/></button></section>)}</div>
-    <section className="personal-space-card" aria-label="개인 공간"><button type="button" className="group-card-title" disabled={busy||me?.role==='CHILD'} onClick={()=>me?openSpace(null):navigate('/timetable')}><span className="group-cover personal-cover"><Icon name="shield"/></span><span className="group-row-text"><strong>개인</strong><small>나만 보는 일정과 기록</small></span>{selected===null&&<span className="group-current-mark" aria-label="선택됨"><Icon name="check"/></span>}<Icon name="chevron"/></button></section>
+    <section className="personal-space-card" aria-label="개인 공간"><button type="button" className="group-card-title" disabled={busy||me?.role==='CHILD'} onClick={()=>openSpace(null)}><span className="group-cover personal-cover"><Icon name="shield"/></span><span className="group-row-text"><strong>개인</strong><small>나만 보는 일정과 기록</small></span>{selected===null&&<span className="group-current-mark" aria-label="선택됨"><Icon name="check"/></span>}<Icon name="chevron"/></button></section>
     {me?.role!=='CHILD'&&<button type="button" className="group-create-row" onClick={create}><span className="group-cover"><Icon name="plus"/></span><span>새 그룹 만들기</span></button>}
     <p className="group-sharing-guide"><Icon name="shield"/>개인 자료는 그룹에 자동 공유되지 않아요.</p>
    </>}

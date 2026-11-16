@@ -2,7 +2,7 @@ import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {Link,useLocation} from 'react-router-dom';
 import {entryReturnPath,type EntryIntent} from '../../../shared/entry-intent';
 import {koreaToday} from '../../../shared/schedules';
-import {guestSamples,sampleMembers,sampleChildIds} from '../../../shared/guest-samples';
+import {guestSamples,sampleMembers,sampleChildIds,samplePersonalMembers,sampleViewer} from '../../../shared/guest-samples';
 import type {WorkspaceItem} from '../../../shared/workspace';
 import type {PersonalMode} from '../pages/PersonalWorkspace';
 import {useWorkspaceGate} from './WorkspaceGate';
@@ -11,7 +11,7 @@ import {PersonalTimetable} from './PersonalTimetable';
 import {PersonalCalendar} from './PersonalCalendar';
 import {PersonalFees} from './PersonalFees';
 import {DateNavigator,WorkspaceToolbar} from './WorkspaceToolbar';
-import {GuestChatSample,GuestNotesSample,GuestFamilySample} from './GuestSampleViews';
+import {GuestChatSample,GuestNotesSample} from './GuestSampleViews';
 import {WorkspaceMore,WorkspaceSettings} from './WorkspaceMore';
 import {WorkspaceReader} from './WorkspaceReader';
 import {ErrorState,Loading} from './Common';
@@ -48,7 +48,11 @@ export function RequireWorkspaceAccount({children}:{children:ReactNode}){
 function AccessError(){const gate=useWorkspaceGate();return <ErrorState message={gate.access.error||'계정 상태를 확인하지 못했어요.'} retry={()=>{void gate.refreshAccess();}}/>;}
 export function GuestWorkspace({mode}:{mode:PersonalMode}){
  const today=koreaToday(),[day,setDay]=useState(today),[month,setMonth]=useState(today.slice(0,7)),{pathname}=useLocation(),{requestLogin}=useEntryAccess();
- const samples=guestSamples(month,today),preview={preview:true,members:sampleMembers,defaultMemberIds:sampleChildIds};
+ const {sampleGroupSelected}=useWorkspaceGate();
+ const members=sampleGroupSelected?sampleMembers:samplePersonalMembers;
+ const samples=guestSamples(month,today,sampleGroupSelected);
+ const preview={preview:true,members,viewerId:sampleGroupSelected?undefined:sampleViewer.id,
+  defaultMemberIds:sampleGroupSelected?sampleChildIds:[sampleViewer.id]};
  const create=(kind:'EVENT'|'REPEAT'|'FEE'|'NOTE',date:string,time?:string)=>{
   const paths={EVENT:'/today/calendar',REPEAT:'/timetable',FEE:'/tuition',NOTE:'/records'},names={EVENT:'일정을',REPEAT:'시간표를',FEE:'가계부를',NOTE:'메모를'};
   const intent:EntryIntent={type:'create',kind,path:paths[kind],date,...(time?{time}:{})};
@@ -60,10 +64,10 @@ export function GuestWorkspace({mode}:{mode:PersonalMode}){
  const login=()=>requestLogin({title:mode==='chat'?'그룹에게 소식을 보내려면 로그인해 주세요':'우리 그룹을 연결하려면 로그인해 주세요'});
  const readOnly=mode==='service'||mode==='guide'||mode==='notices'||mode==='blog';
  return <div className={'guest-workspace'+(['timetable','calendar','repeats'].includes(mode)?' guest-schedule':'')} data-guest-workspace>
-  {mode==='timetable'||mode==='repeats'?<PersonalTimetable {...preview} defaultMemberIds={[sampleChildIds[0]]} day={day} setDay={setDay} items={samples.repeats} loading={false} create={(date,time)=>create('REPEAT',date,time)} edit={edit}/>
-  :mode==='calendar'?<PersonalCalendar {...preview} month={month} day={day} setMonth={setMonth} setDay={setDay} items={samples.events} create={(date,time)=>create('EVENT',date,time)} edit={edit} guestCreate/>
-  :mode==='fees'?<><WorkspaceToolbar title="가계부" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} /><section className="account-card fee-workspace"><PersonalFees {...preview} budgetLogin={()=>requestLogin({title:'예산을 저장하려면 로그인해 주세요',description:'내 계정에서 월별 예산을 정하고 지출을 확인해요.'})} defaultMemberIds={sampleMembers.map(m=>m.id)} items={samples.fees} month={month} selectedDay={day} onMonthChange={selectMonth} edit={edit} create={date=>create('FEE',date||day)}/></section></>
+  {mode==='timetable'||mode==='repeats'?<PersonalTimetable {...preview} defaultMemberIds={sampleGroupSelected?[sampleChildIds[0]]:preview.defaultMemberIds} day={day} setDay={setDay} items={samples.repeats} loading={false} create={(date,time)=>create('REPEAT',date,time)} edit={edit}/>
+  :mode==='calendar'?<PersonalCalendar {...preview} month={month} day={day} setMonth={setMonth} setDay={setDay} items={samples.events} create={(date,time)=>create('EVENT',date,time)} edit={edit}/>
+  :mode==='fees'?<><WorkspaceToolbar title="가계부" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} /><section className="account-card fee-workspace"><PersonalFees {...preview} budgetLogin={()=>requestLogin({title:'예산을 저장하려면 로그인해 주세요',description:'내 계정에서 월별 예산을 정하고 지출을 확인해요.'})} defaultMemberIds={members.map(m=>m.id)} items={samples.fees} month={month} selectedDay={day} onMonthChange={selectMonth} edit={edit} create={date=>create('FEE',date||day)}/></section></>
   :mode==='records'?<><WorkspaceToolbar title="메모" navigation={<DateNavigator type="month" value={month} inputLabel="조회 월" onChange={selectMonth}/>} createLabel="메모 추가" onCreate={()=>create('NOTE',day)}/><section className="account-card"><GuestNotesSample items={samples.notes} create={date=>create('NOTE',date)}/></section></>
-  :mode==='chat'?<GuestChatSample login={login}/>:mode==='family'?<GuestFamilySample login={login}/>
+  :mode==='chat'?<GuestChatSample groupSelected={sampleGroupSelected} login={login}/>
   :readOnly?<WorkspaceReader mode={mode}/>:mode==='more'?<WorkspaceMore me={null}/>:mode==='settings'?<WorkspaceSettings/>:<GuestFeature path={entryReturnPath(pathname)}/>}</div>;
 }

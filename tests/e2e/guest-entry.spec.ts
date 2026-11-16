@@ -1,5 +1,6 @@
 import {test,expect,type Page,type APIRequestContext} from '@playwright/test';
 import {entryIntentKey} from '../../shared/entry-intent';
+import {closeMemberPreferences,openMemberPreferences,selectCalendarView,selectLedgerView,workspaceGroupButton} from '../helpers/workspace-ui';
 const origin='http://127.0.0.1:4174',password='guest-entry-fixture-2026';
 test.use({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce'});
 async function ready(page:Page){await expect(page.locator('#app-launch')).toHaveCount(0,{timeout:12000});}
@@ -12,6 +13,11 @@ async function parent(playwright:typeof import('playwright-core'),name:string){
 }
 async function command(client:APIRequestContext,op:string,data:object={}){const r=await client.post('/api/v1/workspace/'+op,{headers:{Origin:origin},data});expect(r.ok(),await r.text()).toBe(true);return r.json();}
 async function signInSheet(page:Page,email:string){const sheet=page.getByRole('dialog');await expect(sheet).toBeVisible();await sheet.getByLabel('아이디',{exact:true}).fill(email);await sheet.getByLabel('암호',{exact:true}).fill(password);await sheet.getByRole('button',{name:'로그인',exact:true}).click();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();}
+async function requestCalendarEntry(page:Page,date='2027-02-19'){
+ await page.locator(`[data-pager-current] .calendar-cell[data-date="${date}"] .calendar-day-target`).click();
+ await page.locator('.calendar-day-sheet').getByRole('button',{name:'이 날짜에 일정 추가',exact:true}).click();
+ await expect(page.locator('.entry-login-sheet')).toBeVisible();
+}
 
 test('password recovery returns to the requested deletion form and requires explicit submission',async({page,playwright})=>{
  const {client,email}=await parent(playwright,'deletion-recovery');
@@ -53,7 +59,7 @@ test('password recovery returns to the requested deletion form and requires expl
 
 test('root shows fictional samples without a logo top bar and never requests private records',async({page})=>{
  const privateRequests:string[]=[],errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/\/api\/v1\/workspace\/(items\.|chat\.|updates\.|push\.)/.test(r.url()))privateRequests.push(r.url());});
- await page.goto('/');await ready(page);await expect(page).toHaveURL(/\/timetable$/);await expect(page.locator('[data-guest-workspace]')).toBeVisible();await expect(page.locator('.timetable-day-column')).toHaveCount(7);await expect(page.locator('.guest-sample-badge')).toHaveText('샘플 데이터');expect(await page.locator('[data-timetable-item]').count()).toBeGreaterThan(0);await expect(page.locator('.guest-entry-header')).toHaveCount(0);await expect(page.getByRole('dialog')).not.toBeVisible();
+ await page.goto('/');await ready(page);await expect(page).toHaveURL(/\/timetable$/);await expect(page.locator('[data-guest-workspace]')).toBeVisible();await expect(page.locator('.timetable-day-column')).toHaveCount(7);await expect(workspaceGroupButton(page,'샘플 그룹')).toHaveAttribute('aria-pressed','true');expect(await page.locator('[data-timetable-item]').count()).toBeGreaterThan(0);await expect(page.locator('.guest-entry-header')).toHaveCount(0);await expect(page.getByRole('dialog')).not.toBeVisible();
  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'달력',exact:true}).click();await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await expect(page.locator('.calendar-cell[data-date="2027-02-19"]')).toBeVisible();
  await page.getByRole('navigation',{name:'모바일 주 메뉴'}).getByRole('link',{name:'더보기',exact:true}).click();await page.getByRole('link',{name:/빠른 시작 가이드/}).click();await expect(page.locator('.workspace-reader')).toBeVisible();await expect(page.getByRole('dialog')).not.toBeVisible();
  expect(privateRequests).toEqual([]);expect(errors).toEqual([]);
@@ -73,13 +79,18 @@ test('a timetable slot opens login and returns to the initial menu without repla
 
 test('calendar cancellation and browser Back preserve the viewed month and remove the pending action',async({page})=>{
  await page.goto('/today/calendar');await ready(page);const month=page.getByLabel('달력 월 선택',{exact:true});await month.fill('2027-02');
- const date=page.locator('.calendar-cell[data-date="2027-02-19"] .calendar-day-target');await date.click();await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).not.toBeVisible();await expect(month).toHaveValue('2027-02');await expect(date).toBeFocused();
- expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();await date.click();await expect(page.getByRole('dialog')).toBeVisible();await page.goBack();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(month).toHaveValue('2027-02');await expect(page).toHaveURL(/\/today\/calendar$/);
+ const date=page.locator('[data-pager-current] .calendar-cell[data-date="2027-02-19"] .calendar-day-target');
+ await date.focus();await page.keyboard.press('Enter');await expect(page.locator('.calendar-day-sheet')).toBeVisible();
+ await expect(page.locator('.entry-login-sheet')).not.toBeVisible();await page.keyboard.press('Escape');
+ await expect(page.getByRole('dialog')).not.toBeVisible();await expect(month).toHaveValue('2027-02');await expect(date).toBeFocused();
+ expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();
+ await requestCalendarEntry(page);await page.goBack();await expect(page.getByRole('dialog')).not.toBeVisible();
+ await expect(month).toHaveValue('2027-02');await expect(page).toHaveURL(/\/today\/calendar$/);
 });
 
 test('calendar login lands at timetable without replaying a pending record creation',async({page,playwright})=>{
  const user=await parent(playwright,'calendar');await user.client.dispose();let creates=0;page.on('request',r=>{if(r.url().endsWith('/workspace/items.create'))creates++;});
- await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await page.locator('.calendar-cell[data-date="2027-02-19"] .calendar-day-target').click();await signInSheet(page,user.email);
+ await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await requestCalendarEntry(page);await signInSheet(page,user.email);
  await expect(page).toHaveURL(/\/timetable$/);await expect(page.locator('.personal-editor')).toHaveCount(0);expect(creates).toBe(0);
  expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();
  await page.goto('/today/calendar');await ready(page);await expect(page.locator('.personal-editor')).toHaveCount(0);
@@ -117,7 +128,7 @@ test('Google button reaches the real auth router and returns to the timetable',a
  // Only the external provider page is replaced. The app's provider listing, validation,
  // state, PKCE and auth response use the real configured test server.
  await page.route('https://accounts.google.com/**',route=>route.fulfill({contentType:'text/html',body:'<p>Isolated Google authorization fixture</p>'}));
- await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await page.locator('.calendar-cell[data-date="2027-02-19"] .calendar-day-target').click();await page.getByRole('button',{name:'Google로 계속하기',exact:true}).click();await expect(page).toHaveURL(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
+ await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await requestCalendarEntry(page);await page.getByRole('button',{name:'Google로 계속하기',exact:true}).click();await expect(page).toHaveURL(/^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth\?/);
  const authorization=new URL(page.url());expect(authorization.searchParams.get('redirect_uri')).toBe(origin+'/api/auth/callback/google');expect(authorization.searchParams.get('state')).toBeTruthy();expect(authorization.searchParams.get('code_challenge_method')).toBe('S256');expect(callback).toBe('/timetable');
  // The signed Google callback is covered by auth.test.ts. Here a real fixture session
  // verifies browser storage and continuation on the return to the app.
@@ -132,7 +143,7 @@ test('anonymous API calls remain unauthorized and desktop dark reduced-motion lo
 test('sample menus can be browsed and every write starts login without contacting private APIs',async({page})=>{
  const privateRequests:string[]=[];page.on('request',request=>{if(/\/api\/v1\/workspace\/(items\.|chat\.|invite\.|member-filter\.|fees\.)/.test(request.url()))privateRequests.push(request.url());});
  for(const [path,action] of [['/chat','메시지 보내기'],['/tuition','가계부 추가'],['/records','메모 추가']]){
-  await page.goto(path);await ready(page);await expect(page.locator('.guest-sample-badge')).toHaveText('샘플 데이터');await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('.guest-entry-header')).toHaveCount(0);if(path==='/tuition'){await page.locator('[data-pager-current=true] .calendar-cell:not(.outside) .calendar-day-target').first().click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();}else await page.getByRole('button',{name:action,exact:true}).click();await expect(page.locator('.entry-login-sheet')).toBeVisible();await page.getByRole('button',{name:'로그인 창 닫기'}).click();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();
+  await page.goto(path);await ready(page);await expect(page.locator('[data-guest-workspace]')).toBeVisible();await expect(page.getByRole('dialog')).not.toBeVisible();await expect(page.locator('.guest-entry-header')).toHaveCount(0);if(path==='/tuition'){await expect(workspaceGroupButton(page,'샘플 그룹')).toBeVisible();await page.locator('[data-pager-current=true] .calendar-cell:not(.outside) .calendar-day-target').first().click();await page.getByRole('button',{name:'이 날짜에 가계부 추가',exact:true}).click();}else{await expect(page.locator('.guest-sample-badge')).toHaveText('샘플 데이터');await page.getByRole('button',{name:action,exact:true}).click();}await expect(page.locator('.entry-login-sheet')).toBeVisible();await page.getByRole('button',{name:'로그인 창 닫기'}).click();await expect(page.locator('.entry-login-sheet')).not.toBeVisible();
  }
  await page.goto('/family');await ready(page);
  await expect(page.getByRole('region',{name:'개인 공간',exact:true})).toBeVisible();
@@ -140,6 +151,76 @@ test('sample menus can be browsed and every write starts login without contactin
  await expect(page.locator('.entry-login-sheet')).toBeVisible();
  await page.getByRole('button',{name:'로그인 창 닫기'}).click();
  expect(privateRequests).toEqual([]);
+});
+
+test('the guest demo shares the current group controls, date sheet, view menus and chat rooms',async({page})=>{
+ test.setTimeout(60000);
+ const requests:string[]=[];
+ page.on('request',request=>{
+  const path=new URL(request.url()).pathname;
+  if(path.startsWith('/api/v1/workspace/')&&path!=='/api/v1/workspace/me')requests.push(path);
+ });
+ const nav=page.getByRole('navigation',{name:'모바일 주 메뉴'});
+ const openMenu=(name:string)=>nav.getByRole('link',{name,exact:true}).click();
+ const topbar=page.locator('[data-workspace-topbar]');
+ const groupRow=topbar.getByRole('region',{name:'그룹 선택'});
+ const personal=workspaceGroupButton(page,'개인');
+
+ await page.goto('/timetable');await ready(page);
+ await expect(groupRow.getByRole('button',{name:'새 그룹 만들기',exact:true})).toBeVisible();
+ const members=await openMemberPreferences(page,'샘플 그룹');
+ await members.getByRole('button',{name:'하준',exact:true}).click();
+ await closeMemberPreferences(page);
+ await expect(page.locator('.timetable-grid')).toContainText('유치원');
+
+ await openMenu('달력');
+ await expect(groupRow.getByLabel('달력 보기 · 월간')).toBeVisible();
+ await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');
+ const agenda=page.locator('.calendar-day-sheet');
+ await page.locator('[data-pager-current] .calendar-cell[data-date="2027-02-12"] .calendar-day-target').click();
+ await expect(agenda).toContainText('학교 공개 수업');
+ await expect(page.locator('.entry-login-sheet')).not.toBeVisible();
+ await agenda.getByRole('button',{name:'날짜 일정 닫기',exact:true}).click();
+ await personal.click();
+ await expect(personal).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('[data-pager-current] .calendar-event')).toContainText(['정기 검진','휴가']);
+ await expect(page.locator('[data-pager-current] .calendar-event').filter({hasText:'학교 공개 수업'})).toHaveCount(0);
+ await selectCalendarView(page,'주간');
+ await expect(page.locator('[data-pager-current] .calendar-grid.week-view')).toBeVisible();
+ await selectCalendarView(page,'일간');
+ await expect(page.locator('[data-pager-current] .calendar-daily')).toBeVisible();
+
+ await openMenu('가계부');
+ await expect(personal).toHaveAttribute('aria-pressed','true');
+ await expect(groupRow.getByLabel('가계부 보기 · 달력')).toBeVisible();
+ await selectLedgerView(page,'내역');
+ await expect(page.getByText('도서 구입',{exact:true})).toBeVisible();
+ await expect(page.getByText('피아노 학원비',{exact:true})).toHaveCount(0);
+ await selectLedgerView(page,'그래프');
+ await page.screenshot({path:'test-results/guest-current-ledger-390.png',animations:'disabled'});
+ await selectLedgerView(page,'계산기');
+ await expect(groupRow.getByLabel('가계부 보기 · 계산기')).toBeVisible();
+
+ await openMenu('타임라인');
+ await expect(page.getByRole('article',{name:'이번 주 읽을 책',exact:true})).toBeVisible();
+ const authors=await openMemberPreferences(page,'샘플 그룹');
+ await authors.getByRole('button',{name:'민서',exact:true}).click();
+ await closeMemberPreferences(page);
+ await expect(page.getByRole('article',{name:'공원에서 보낸 오후',exact:true})).toBeVisible();
+ await expect(page.getByRole('article',{name:'처음 혼자 해낸 날',exact:true})).toHaveCount(0);
+
+ await openMenu('그룹관리');
+ await page.locator('.group-card-list').getByRole('button',{name:/샘플 그룹/}).click();
+ await expect(page.locator('.group-member-list')).toContainText('지우');
+ await page.getByRole('link',{name:'대화 미리보기',exact:true}).click();
+ await expect(page).toHaveURL(/\/chat$/);
+ await expect(page.getByText('오늘 피아노 끝나면 알려 줘요.',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'민서 1:1 대화',exact:true}).click();
+ await expect(page.getByText('공개 수업에 실내화가 필요해요.',{exact:true})).toBeVisible();
+ await page.screenshot({path:'test-results/guest-current-chat-390.png',animations:'disabled'});
+ await page.getByRole('button',{name:'메시지 보내기',exact:true}).click();
+ await expect(page.locator('.entry-login-sheet')).toBeVisible();
+ expect(requests).toEqual([]);
 });
 
 test('tapping a sample never imports it into the account after login',async({page,playwright})=>{
@@ -154,7 +235,7 @@ test('native Back from Google restores a cached login sheet that can retry or cl
  const browser=await playwright.chromium.launch({channel:'chromium',ignoreDefaultArgs:['--disable-back-forward-cache']}),context=await browser.newContext({baseURL:origin,viewport:{width:390,height:844},reducedMotion:'reduce',ignoreHTTPSErrors:true,extraHTTPHeaders:{'x-fixture-oauth-return':'1'}}),page=await context.newPage();
  try{
   await page.addInitScript(()=>window.addEventListener('pageshow',event=>{document.documentElement.dataset.restoredFromCache=String(event.persisted);}));
-  await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await page.locator('.calendar-cell[data-date="2027-02-19"] .calendar-day-target').click();await page.getByRole('button',{name:'Google로 계속하기',exact:true}).click();await expect(page).toHaveURL('https://127.0.0.1:4274/authorize');await expect(page.getByText('Isolated external authorization fixture')).toBeVisible();
+  await page.goto('/today/calendar');await ready(page);await page.getByLabel('달력 월 선택',{exact:true}).fill('2027-02');await requestCalendarEntry(page);await page.getByRole('button',{name:'Google로 계속하기',exact:true}).click();await expect(page).toHaveURL('https://127.0.0.1:4274/authorize');await expect(page.getByText('Isolated external authorization fixture')).toBeVisible();
   await page.evaluate(()=>{setTimeout(()=>history.back(),0);});await expect(page).toHaveURL(origin+'/today/calendar?signin=1');const restoration=await page.evaluate(()=>JSON.stringify({reason:(performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming&{notRestoredReasons?:unknown}).notRestoredReasons}));await expect(page.locator('html'),restoration).toHaveAttribute('data-restored-from-cache','true');
   const sheet=page.locator('.entry-login-sheet');await expect(sheet).toBeVisible();await expect(sheet.getByRole('button',{name:'Google로 계속하기',exact:true})).toBeEnabled();await expect(sheet.getByLabel('아이디',{exact:true})).toBeEnabled();await expect(page.getByRole('button',{name:'로그인 창 닫기'})).toBeEnabled();
   await page.getByRole('button',{name:'로그인 창 닫기'}).click();await expect(sheet).not.toBeVisible();await expect(page.getByLabel('달력 월 선택',{exact:true})).toHaveValue('2027-02');expect(await page.evaluate(key=>sessionStorage.getItem(key),entryIntentKey)).toBeNull();
@@ -174,7 +255,7 @@ test('timetable and calendar share the sample group button and bottom navigation
  await expect(nav).toHaveCSS('height','80px');
  const activeIcon=nav.locator('a[aria-current="page"] .rail-icon');
  const timetableIcon=(await activeIcon.boundingBox())!;
- const selectedChip=page.locator('.workspace-group-chips>.guest-sample-badge');
+ const selectedChip=workspaceGroupButton(page,'샘플 그룹');
  await expect(selectedChip).toBeVisible();
  await expect(page.locator('.member-preference-row')).toHaveCount(0);
  const chipStyle=()=>selectedChip.evaluate(el=>{const style=getComputedStyle(el);return [style.height,style.borderRadius,style.fontSize,style.backgroundColor];});
