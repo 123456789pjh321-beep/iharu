@@ -194,8 +194,9 @@ test('the guest demo shares the current group controls, date sheet, view menus a
  await expect(personal).toHaveAttribute('aria-pressed','true');
  await expect(groupRow.getByLabel('가계부 보기 · 달력')).toBeVisible();
  await selectLedgerView(page,'내역');
- await expect(page.getByText('도서 구입',{exact:true})).toBeVisible();
- await expect(page.getByText('피아노 학원비',{exact:true})).toHaveCount(0);
+ const ledgerMonth=page.locator('.ledger-workspace [data-pager-current]');
+ await expect(ledgerMonth.getByRole('button',{name:'도서 구입 상세',exact:true})).toBeVisible();
+ await expect(ledgerMonth.getByText('피아노 학원비',{exact:true})).toHaveCount(0);
  await selectLedgerView(page,'그래프');
  await page.screenshot({path:'test-results/guest-current-ledger-390.png',animations:'disabled'});
  await selectLedgerView(page,'계산기');
