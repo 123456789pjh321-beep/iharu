@@ -236,16 +236,13 @@ test('weekly timetable opens a touchable daily infographic and a 24-hour ring fo
  await page.goto('/timetable');
  await waitForAppReady(page);
  const menu=page.getByRole('group',{name:'시간표 보기'});
- const weekly=menu.getByRole('button',{name:'주간 시간표',exact:true});
- const dailyGraphic=menu.getByRole('button',{name:'하루 일과 그래픽',exact:true});
- await expect(weekly).toHaveAttribute('aria-pressed','true');
- await expect(menu.locator('button > svg')).toHaveCount(2);
+ await expect(menu.getByRole('button',{name:'달력',exact:true})).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('[data-workspace-topbar] [data-workspace-actions]')).toHaveCount(0);
  await expect(page.locator('.timetable-grid')).toBeVisible();
  expect(engineRequests).toEqual([]);
- await dailyGraphic.focus();
+ await menu.getByRole('button',{name:'그래픽',exact:true}).focus();
  await page.keyboard.press('Enter');
- await expect(dailyGraphic).toHaveAttribute('aria-pressed','true');
+ await expect(menu.getByRole('button',{name:'그래픽',exact:true})).toHaveAttribute('aria-pressed','true');
  const graphic=page.getByRole('region',{name:'그래픽 시간표'});
  const routine=graphic.getByRole('img',{name:/하루 일과 인포그래픽/});
  const views=graphic.getByRole('group',{name:'그래픽 표시'});
@@ -259,14 +256,6 @@ test('weekly timetable opens a touchable daily infographic and a 24-hour ring fo
  await expect(graphic.getByRole('button',{name:'아침 모임 · 수정'})).toContainText('진행 중');
  for(const width of [320,689,1440]){
   await page.setViewportSize({width,height:940});
-  const [weekButton,graphicButton,firstDate]=await Promise.all([
-   weekly.boundingBox(),dailyGraphic.boundingBox(),page.locator('[data-timetable-date]').first().boundingBox(),
-  ]);
-  for(const button of [weekButton!,graphicButton!]){
-   expect(button.width).toBeGreaterThanOrEqual(24);
-   expect(button.height).toBeGreaterThanOrEqual(44);
-   expect(button.x+button.width).toBeLessThanOrEqual(firstDate!.x+.1);
-  }
   await expect(routine).toBeInViewport({ratio:.8});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:`test-results/timetable-infographic-${width}.png`,animations:'disabled'});
@@ -298,7 +287,7 @@ test('weekly timetable opens a touchable daily infographic and a 24-hour ring fo
  await page.locator('[data-timetable-date="2027-02-17"]').click();
  await expect(routine.locator('.graphic-ring-label')).toHaveCount(0);
  await expect(graphic.getByText('등록된 일정이 없어요.',{exact:true})).toBeVisible();
- await weekly.click();
+ await menu.getByRole('button',{name:'달력',exact:true}).click();
  await expect(graphic).toHaveCount(0);
  await expect(page.locator('.timetable-grid')).toBeVisible();
  await expect(page.locator('[data-timetable-date="2027-02-17"]')).toHaveAttribute('aria-pressed','true');

@@ -9,12 +9,11 @@ import {useMemberPreference} from './MemberPreferenceFilter';
 import {CalendarMemberPreferenceFilter} from './CalendarMemberPreferenceFilter';
 import {WorkspaceToolbar} from './WorkspaceToolbar';
 import {TimetableGraphic} from './TimetableGraphic';
-import {Icon} from './Icon';
 import {useCalendarWeather,WeatherDateButton,WeatherDialog,WeatherToolbar} from './CalendarWeather';
 import {useCalendarPager} from './useCalendarPager';
 
 const weekday=['일','월','화','수','목','금','토'];
-const timetableViews=[['calendar','주간 시간표','calendarWeek'],['graphic','하루 일과 그래픽','graph']] as const;
+const timetableViews=[['calendar','달력'],['graphic','그래픽']] as const;
 const minuteHeight=.8;
 const hourLabel=(hour:number)=>hour===24?'밤 12':`${hour>=21?'밤':hour<12?'오전':'오후'} ${hour%12||12}`;
 const koreaTime=()=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
@@ -106,8 +105,8 @@ export function PersonalTimetable({day,items,members,loading,calendar,preview=fa
   {embedded?grid:<div className="timetable-display" data-timetable-view={view} {...swipe}>
    <div className="timetable-date-bar">
     <div className="timetable-view-controls" role="group" aria-label="시간표 보기">
-     {timetableViews.map(([id,name,icon])=><button type="button" key={id} aria-label={name} title={name}
-      aria-pressed={view===id} onClick={()=>setView(id)}><Icon name={icon}/></button>)}
+     {timetableViews.map(([id,name])=><button type="button" key={id} aria-label={name} title={name}
+      aria-pressed={view===id} onClick={()=>setView(id)}><span aria-hidden="true"/></button>)}
     </div>
     <div className="timetable-weekdays timetable-day-headings" role="group" aria-label="요일 선택">
      {dates.map(date=>{
