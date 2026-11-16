@@ -100,23 +100,43 @@
   grid-template-columns:repeat(2,minmax(0,1fr));
   align-content:center;
 }
-.timetable-view-controls button {
+.timetable-view-controls::before {
+  content:"";
+  position:absolute;
+  inset-inline:2px;
+  top:50%;
+  height:30px;
+  transform:translateY(-50%);
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--surface);
+  pointer-events:none;
+}
+.timetable-view-controls>button {
   display:grid;
+  position:relative;
   place-items:center;
-  min-height:32px;
+  min-height:44px;
   padding:0;
   border:0;
-  border-radius:6px;
+  border-radius:8px;
   background:transparent;
+  color:var(--muted);
   cursor:pointer;
 }
-.timetable-view-controls button>span {
-  width:8px;
-  height:8px;
-  border:1px solid var(--muted);
-  border-radius:50%;
+.timetable-view-controls .icon {
+  box-sizing:border-box;
+  width:22px;
+  height:24px;
+  padding:3px;
+  border-radius:7px;
 }
-.timetable-view-controls button[aria-pressed=true]>span{background:var(--primary);border-color:var(--primary)}
+.timetable-view-controls>button:hover>.icon{background:var(--accent-soft)}
+.timetable-view-controls>button[aria-pressed=true]>.icon {
+  background:var(--mint);
+  color:var(--primary);
+}
+.workspace-page .timetable-view-controls>button:focus-visible{outline-offset:-2px}
 .timetable-display>.timetable-view-pager{min-height:0;overscroll-behavior-x:none}
 .timetable-view-pager .calendar-page{min-height:0}
 .timetable-view-pager .calendar-page>.timetable-viewport{display:flex;flex:1;min-height:0;overflow:hidden}
