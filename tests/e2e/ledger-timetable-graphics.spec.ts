@@ -46,10 +46,7 @@ test('ledger buttons, today, category drill-down, list filters and calculator wo
  await expect(menu).toBeHidden();
  await viewPicker.click();
  await expect(menu.getByRole('button')).toHaveText(['달력','내역','그래프','계산기']);
- const weekly=menu.getByRole('button',{name:'주간 시간표',exact:true});
- const dailyGraphic=menu.getByRole('button',{name:'하루 일과 그래픽',exact:true});
- await expect(weekly).toHaveAttribute('aria-pressed','true');
- await expect(menu.locator('button > svg')).toHaveCount(2);
+ await expect(menu.getByRole('button',{name:'달력',exact:true})).toHaveAttribute('aria-pressed','true');
  await page.screenshot({path:'test-results/ledger-group-view-picker-390.png',animations:'disabled'});
  await page.keyboard.press('Escape');
  await expect(menu).toBeHidden();
@@ -239,7 +236,10 @@ test('weekly timetable opens a touchable daily infographic and a 24-hour ring fo
  await page.goto('/timetable');
  await waitForAppReady(page);
  const menu=page.getByRole('group',{name:'시간표 보기'});
- await expect(menu.getByRole('button',{name:'달력',exact:true})).toHaveAttribute('aria-pressed','true');
+ const weekly=menu.getByRole('button',{name:'주간 시간표',exact:true});
+ const dailyGraphic=menu.getByRole('button',{name:'하루 일과 그래픽',exact:true});
+ await expect(weekly).toHaveAttribute('aria-pressed','true');
+ await expect(menu.locator('button > svg')).toHaveCount(2);
  await expect(page.locator('[data-workspace-topbar] [data-workspace-actions]')).toHaveCount(0);
  await expect(page.locator('.timetable-grid')).toBeVisible();
  expect(engineRequests).toEqual([]);
