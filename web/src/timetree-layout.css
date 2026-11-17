@@ -68,6 +68,7 @@
 .workspace-page:where([data-timetree]) .timetable-weekly .timetable-day-column::after{background:var(--workspace-grid-line)}
 .workspace-page:where([data-timetree]) .timetable-weekly .timetable-card{border-radius:4px;border-block-color:transparent;border-right-color:transparent;background:color-mix(in srgb,var(--event-color) var(--event-tint),var(--surface))}
 .workspace-page:where([data-timetree]) .timetable-weekly .timetable-card:hover{background:color-mix(in srgb,var(--event-color) var(--event-hover-tint),var(--surface))}
+.workspace-page:where([data-timetree]) .timetable-weekly .timetable-card :is(.timetable-range,.timetable-place){color:var(--ink)}
 
 /* Horizontal week rules replace the boxed grid. Dates use a regular weight. */
 .workspace-page:where([data-timetree]) .direct-calendar{flex:1 1 0;min-height:0;height:auto;background:var(--surface)}
@@ -94,7 +95,7 @@
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-week-events{top:var(--calendar-week-header);grid-auto-rows:24px;row-gap:4px}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-week-events>.calendar-event{margin-inline:2px;border:0;border-radius:3px;padding:2px 4px;gap:3px;background:color-mix(in srgb,var(--event-color) var(--event-tint),var(--surface));color:var(--ink);min-height:24px;height:24px}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-event strong{font-size:12px;font-weight:500;line-height:1.4}
-.workspace-page:where([data-timetree]) .direct-calendar .calendar-event .event-time{font-size:10px}
+.workspace-page:where([data-timetree]) .direct-calendar .calendar-event .event-time{font-size:10px;color:var(--ink)}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-event[data-all-day=true]{background:color-mix(in srgb,var(--event-color) var(--event-all-day-tint),var(--surface));box-shadow:inset 2px 0 var(--event-color)}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-event[data-all-day=true] .event-time{display:none}
 .workspace-page:where([data-timetree]) .direct-calendar .calendar-overflow{font-size:11px;font-weight:400;color:var(--muted);min-height:28px}

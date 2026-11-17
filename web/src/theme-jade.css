@@ -12,7 +12,7 @@
  --calendar-cell:#f8f9fb;--calendar-outside-cell:#fcfcfd;
  --calendar-holiday-fill:#efc3c9;--calendar-holiday-ink:#712c3b;
  --calendar-observance-fill:#a5d8c0;--calendar-observance-ink:#244f3e;
- --event-tint:26%;--event-hover-tint:34%;--event-all-day-tint:46%;
+ --event-tint:26%;--event-hover-tint:34%;--event-all-day-tint:40%;
  color-scheme:light;
 }
 :root{
@@ -49,6 +49,7 @@ html[data-theme=dark]{
 .art-calendar-days .selected{color:var(--on-primary)}
 .workspace-page .tuition-month-summary{background:linear-gradient(115deg,var(--surface-sub),var(--surface));border-color:var(--line)}
 .calendar-weekdays>span:last-child,.calendar-cell.saturday .calendar-date,.timetable-day-headings .saturday-date{color:var(--weekend-ink)}
+.timetable-now>strong{color:var(--calendar-holiday-ink)}
 .calendar-day-sheet::backdrop,.direct-editor::backdrop,.workspace-guide-dialog::backdrop,.member-filter-dialog::backdrop{background:var(--scrim,#1b2b2266)}
 .entry-redesign .entry-editor-header .registration-action,.entry-redesign .entry-weekdays input:checked+span,.entry-redesign .entry-picker-grid .is-selected,.is-today .calendar-day-target>span,.group-chat .chat-send{color:var(--on-primary)}
 html[data-theme=dark] :is(.button.primary,.calendar-day.selected,.chat-groups button.active){color:var(--on-primary)}
