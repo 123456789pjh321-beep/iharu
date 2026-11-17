@@ -5,12 +5,12 @@
 .group-add-shortcut{display:grid;place-items:center;flex:none;width:32px;height:32px;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink)}.group-add-shortcut>.icon{width:20px;height:20px}.group-add-shortcut{font:inherit;cursor:pointer;padding:0}.group-add-shortcut:hover{background:var(--mint)}
 .workspace-group-filter>p{width:100%;margin:0;color:var(--holiday-ink);font-size:12px}
 .group-color{width:8px;height:8px;border-radius:50%;flex:none;background:var(--group-color)}
-.group-color-0{--group-color:#47796a}
-.group-color-1{--group-color:#526e8c}
-.group-color-2{--group-color:#855d70}
-.group-color-3{--group-color:#836946}
-.group-color-4{--group-color:#756588}
-.group-color-5{--group-color:#956554}
+.group-color-0{--group-color:#2d8067}
+.group-color-1{--group-color:#397eaa}
+.group-color-2{--group-color:#a85e78}
+.group-color-3{--group-color:#8d7047}
+.group-color-4{--group-color:#7e69a2}
+.group-color-5{--group-color:#a46751}
 .group-management{color:var(--ink);width:100%;background:var(--surface);min-height:100%}.group-management .button .icon{width:17px;height:17px}.group-management-body{padding:8px 12px 12px;margin:0;box-sizing:border-box}
 .groups-section-heading{display:flex;align-items:center;margin:0 0 4px;min-height:24px}.group-management .groups-section-heading h2{font-size:13px;color:var(--muted);font-weight:600;margin:0}.groups-section-heading h2 span{margin-left:4px}
 .group-card-list{display:grid;gap:0}.managed-group,.personal-space-card{min-width:0;border:0;margin:0;padding:0}.group-card-title{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;text-align:left;border:0;background:transparent;color:var(--ink);padding:8px 0;font:inherit;cursor:pointer;border-radius:10px}.group-card-title:hover{background:var(--surface-sub)}.group-card-title:disabled{cursor:default}.group-card-title>.icon{width:17px;height:17px;flex:none;color:var(--muted);margin-left:2px}.group-row-text{display:grid;gap:4px;min-width:0;flex:1}.group-row-text strong{font-size:16px;font-weight:700;overflow-wrap:anywhere}.group-row-text small{display:flex;align-items:center;min-width:0;gap:4px;font-size:12px;color:var(--muted);line-height:1.5}.group-row-text small>.icon{width:13px;height:13px;flex:none}.group-row-members{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.group-current-mark{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--mint);color:var(--primary);flex:none}.group-current-mark .icon{width:14px;height:14px}
