@@ -1,30 +1,37 @@
-/* Shared surfaces and accents for the workspace and the public pages. */
+/* Neutral surfaces and pastel accents shared by the workspace and public pages. */
 :root,
 .public-frame:has(>.public-content>.marketing-site),
 .public-frame>:is(.market-header,.public-footer){
- --surface:#fff;--surface-sub:#f0f4f1;--chrome:#f5f8f5;--canvas:#edf2ee;
- --ink:#24332e;--muted:#546760;--line:#dbe4dd;
- --primary:#306553;--primary-hover:#244e43;--on-primary:#fff;
- --mint:#e2eee7;--accent-soft:#edf4f0;--navy:#27483e;--focus:var(--primary);
- --shadow:0 2px 6px #24332e08;--shadow-raised:0 8px 28px #24332e18;
- --scrim:#1b2b2266;--danger-soft:#f7ebec;
- --holiday-ink:#944853;--weekend-ink:#45647e;--calendar-secondary-ink:#5e7067;
+ --surface:#fff;--surface-sub:#f6f7f9;--chrome:#fcfcfd;--canvas:#f5f6f8;
+ --ink:#292e35;--muted:#636b76;--line:#e1e5eb;
+ --primary:#26745e;--primary-hover:#1d5d4b;--on-primary:#fff;
+ --mint:#dff2e8;--accent-soft:#edf7fa;--navy:#284951;--focus:#287ea0;
+ --shadow:0 2px 6px #292e3508;--shadow-raised:0 8px 28px #292e3518;
+ --scrim:#20283366;--danger-soft:#fbedef;
+ --holiday-ink:#b33f50;--weekend-ink:#286f9e;--calendar-secondary-ink:#69717c;
+ --calendar-cell:#f8f9fb;--calendar-outside-cell:#fcfcfd;
+ --calendar-holiday-fill:#efc3c9;--calendar-holiday-ink:#712c3b;
+ --calendar-observance-fill:#a5d8c0;--calendar-observance-ink:#244f3e;
+ --event-tint:26%;--event-hover-tint:34%;--event-all-day-tint:46%;
  color-scheme:light;
 }
 :root{
- --calendar-holiday-fill:#9c4b55;--calendar-observance-fill:#566962;
- --guide-cloud:#e6efed;--guide-line:#bbd5c9;--guide-person:#dcc6a9;--guide-accent:#649780;
+ --guide-cloud:#e9f4f8;--guide-line:#bbd8d3;--guide-person:#e5d0bd;--guide-accent:#68aa94;
  color:var(--ink);background:var(--canvas);
 }
 html[data-theme=dark]{
- --surface:#1c2523;--surface-sub:#232e2b;--chrome:#202b27;--canvas:#151d1b;
- --ink:#e7eee9;--muted:#a9bab2;--line:#34453e;
- --primary:#a0ccb9;--primary-hover:#b8dcce;--on-primary:#182b24;
- --mint:#2b4038;--accent-soft:#243730;--navy:#c4dfd1;
+ --surface:#1d222a;--surface-sub:#252c35;--chrome:#20262e;--canvas:#171c23;
+ --ink:#eef1f5;--muted:#b1bac6;--line:#3a4451;
+ --primary:#a5d8c0;--primary-hover:#bde5d2;--on-primary:#18392d;
+ --mint:#29473d;--accent-soft:#253e4b;--navy:#c3dfe5;--focus:#91cde2;
  --shadow:0 2px 6px #0002;--shadow-raised:0 10px 30px #0004;
- --scrim:#0c141180;--danger-soft:#3a2c2e;
- --holiday-ink:#e5a5af;--weekend-ink:#a9c1dc;--calendar-secondary-ink:#a3b3ab;
- --guide-cloud:#2b3f3b;--guide-line:#537565;--guide-person:#b8a388;--guide-accent:#88bba4;
+ --scrim:#0c111980;--danger-soft:#432e38;
+ --holiday-ink:#f0abb5;--weekend-ink:#9fcaed;--calendar-secondary-ink:#b1bac6;
+ --calendar-cell:#20262f;--calendar-outside-cell:#1b2028;
+ --calendar-holiday-fill:#593540;--calendar-holiday-ink:#ffdae0;
+ --calendar-observance-fill:#315547;--calendar-observance-ink:#d5f2e2;
+ --event-tint:20%;--event-hover-tint:28%;--event-all-day-tint:34%;
+ --guide-cloud:#2c414c;--guide-line:#547c76;--guide-person:#c3ab97;--guide-accent:#91c7b0;
  color-scheme:dark;
 }
 ::selection{background:var(--mint);color:var(--ink)}
@@ -36,7 +43,7 @@ html[data-theme=dark]{
 .button:hover,.workspace-metric:hover,.workspace-rail nav a.active{border-color:color-mix(in srgb,var(--primary) 40%,var(--line))}
 .button.primary{color:var(--on-primary);box-shadow:var(--shadow)}
 .button.primary:hover{box-shadow:var(--shadow-raised)}
-.child-talk{background:linear-gradient(110deg,#27483e,#306553)}
+.child-talk{background:linear-gradient(110deg,var(--primary-hover),var(--primary));color:var(--on-primary)}
 .auth-app .auth-notice{background:var(--mint);border-color:var(--line);color:var(--primary)}
 .auth-app .auth-notice.error{background:var(--danger-soft);border-color:color-mix(in srgb,var(--holiday-ink) 20%,var(--line));color:var(--holiday-ink)}
 .art-calendar-days .selected{color:var(--on-primary)}
