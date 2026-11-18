@@ -4,6 +4,7 @@ import {calendarWeatherSchema,weatherRegions,type CalendarWeather,type WeatherDa
 import {addDays,koreaToday} from '../../../shared/schedules';
 import {Icon} from './Icon';
 import {useSlidingDialog} from './useSlidingDialog';
+import {WeatherRegionControl} from './WeatherRegionControl';
 import './calendar-weather.css';
 
 const regionStorage='iharu:weather:region';
@@ -132,9 +133,7 @@ function WeatherDetailsDialog({weather,date}:{weather:WeatherView;date:string}){
   onCancel={event=>{event.preventDefault();close();}} onClick={event=>{if(event.target===event.currentTarget)close();}}>
   <header><h2 id="calendar-weather-title">날씨 상세</h2><button type="button" className="icon-button" aria-label="날씨 상세 닫기" onClick={close}><Icon name="close"/></button></header>
   <div className="weather-dialog-body" aria-busy={weather.status==='loading'}>
-   <label className="weather-region">지역<select value={weather.region.id} onChange={event=>weather.selectRegion(event.target.value)}>
-    {weatherRegions.map(region=><option key={region.id} value={region.id}>{region.label}</option>)}
-   </select></label>
+   <WeatherRegionControl region={weather.region} selectRegion={weather.selectRegion}/>
    {!!weather.days.length&&<div className="weather-days" role="group" aria-label="일자별 예보">
     {weather.days.map(forecast=><button type="button" key={forecast.date} aria-pressed={forecast.date===date}
      aria-label={dateLabel(forecast.date)+' 날씨'} onClick={()=>weather.showDetail(forecast.date)}>

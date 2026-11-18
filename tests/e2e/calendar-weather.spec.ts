@@ -1,4 +1,4 @@
-import {expect,test} from '@playwright/test';
+import {expect,test,type Page} from '@playwright/test';
 import {selectCalendarView,waitForAppReady} from '../helpers/workspace-ui';
 
 test.use({baseURL:'http://127.0.0.1:4174',reducedMotion:'reduce'});
@@ -108,4 +108,95 @@ test('keeps the icon and region selection available while production forecasts a
  await expect(details.getByRole('status')).toHaveText('날씨 예보 연결을 준비 중이에요.');
  await expect(details.getByRole('combobox',{name:'지역'})).toBeVisible();
  await expect(details.getByRole('group',{name:'일자별 예보'})).toHaveCount(0);
+});
+
+async function openLocationWeather(page:Page){
+ await page.route('**/api/calendar/weather/*',route=>route.fulfill({json:{status:'disabled'}}));
+ await page.goto('/timetable');await waitForAppReady(page);
+ await page.locator('[data-workspace-topbar] .weather-button').click();
+ return page.getByRole('dialog',{name:'날씨 상세'});
+}
+
+test('requires optional location consent, chooses the nearby region, and only stores the region and consent time',async({page,context})=>{
+ await page.setViewportSize({width:499,height:940});
+ await context.grantPermissions(['geolocation']);
+ await context.setGeolocation({latitude:37.2001,longitude:127.0721,accuracy:100});
+ await page.addInitScript(()=>{
+  const original=navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);
+  (window as any).weatherLocationCalls=0;
+  navigator.geolocation.getCurrentPosition=(success,error,options)=>{
+   (window as any).weatherLocationCalls++;original(success,error,options);
+  };
+ });
+ const weatherRequests:string[]=[];
+ page.on('request',request=>{if(request.url().includes('/api/calendar/weather/'))weatherRequests.push(request.url());});
+ const details=await openLocationWeather(page);
+ expect(await page.evaluate(()=>(window as any).weatherLocationCalls)).toBe(0);
+ await details.getByRole('button',{name:'현재 위치로 찾기',exact:true}).click();
+ await expect(details.getByRole('checkbox',{name:'위치정보 이용에 동의합니다 (선택)',exact:true})).not.toBeChecked();
+ await expect(details.getByRole('button',{name:'동의하고 위치 확인',exact:true})).toBeDisabled();
+ await expect(details.getByRole('link',{name:'위치정보 이용 안내',exact:true})).toHaveAttribute('href','/legal/privacy#weather-location');
+ for(const width of [320,499]){
+  await page.setViewportSize({width,height:940});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:`test-results/weather-location-consent-${width}.png`,animations:'disabled'});
+ }
+ await details.getByRole('button',{name:'취소',exact:true}).click();
+ expect(await page.evaluate(()=>(window as any).weatherLocationCalls)).toBe(0);
+ await details.getByRole('button',{name:'현재 위치로 찾기',exact:true}).click();
+ await details.getByRole('checkbox',{name:'위치정보 이용에 동의합니다 (선택)',exact:true}).check();
+ await details.getByRole('button',{name:'동의하고 위치 확인',exact:true}).click();
+ await expect(details.getByRole('combobox',{name:'지역',exact:true})).toHaveValue('dongtan');
+ await expect(details.getByText('현재 위치 근처의 경기 화성 동탄 예보를 표시해요.',{exact:true})).toBeVisible();
+ expect(await page.evaluate(()=>(window as any).weatherLocationCalls)).toBe(1);
+ await expect.poll(()=>weatherRequests.some(url=>url.endsWith('/dongtan'))).toBe(true);
+ expect(weatherRequests.every(url=>new URL(url).search==='')).toBe(true);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('iharu:weather:location-consent')!))).toEqual({version:'2026-11-18',agreedAt:expect.any(String)});
+ await page.reload();await waitForAppReady(page);
+ expect(await page.evaluate(()=>(window as any).weatherLocationCalls)).toBe(0);
+ await page.locator('[data-workspace-topbar] .weather-button').click();
+ await expect(details.getByRole('combobox',{name:'지역',exact:true})).toHaveValue('dongtan');
+ await details.getByRole('button',{name:'위치 이용 해제',exact:true}).click();
+ expect(await page.evaluate(()=>localStorage.getItem('iharu:weather:location-consent'))).toBeNull();
+ await details.getByRole('button',{name:'현재 위치로 찾기',exact:true}).click();
+ await expect(details.getByRole('button',{name:'동의하고 위치 확인',exact:true})).toBeDisabled();
+ expect(await page.evaluate(()=>(window as any).weatherLocationCalls)).toBe(0);
+});
+
+test('handles denied device location without changing the chosen region or keeping consent',async({page})=>{
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition:(_success:unknown,error:PositionErrorCallback)=>error({code:1} as GeolocationPositionError)}});
+ });
+ const details=await openLocationWeather(page);
+ await details.getByRole('combobox',{name:'지역',exact:true}).selectOption('yeoncheon');
+ await details.getByRole('button',{name:'현재 위치로 찾기',exact:true}).click();
+ await details.getByRole('checkbox',{name:'위치정보 이용에 동의합니다 (선택)',exact:true}).check();
+ await details.getByRole('button',{name:'동의하고 위치 확인',exact:true}).click();
+ await expect(details.getByText(/위치 권한을 허용하지 않았어요/)).toBeVisible();
+ await expect(details.getByRole('combobox',{name:'지역',exact:true})).toHaveValue('yeoncheon');
+ expect(await page.evaluate(()=>localStorage.getItem('iharu:weather:location-consent'))).toBeNull();
+});
+
+test('ignores late location results after consent withdrawal or manual region selection',async({page})=>{
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition:(success:PositionCallback)=>{
+   (window as any).finishWeatherLocation=()=>success({coords:{latitude:37.2001,longitude:127.0721},timestamp:Date.now()} as GeolocationPosition);
+  }}});
+ });
+ const details=await openLocationWeather(page);
+ async function beginLocation(){
+  await details.getByRole('button',{name:'현재 위치로 찾기',exact:true}).click();
+  await details.getByRole('checkbox',{name:'위치정보 이용에 동의합니다 (선택)',exact:true}).check();
+  await details.getByRole('button',{name:'동의하고 위치 확인',exact:true}).click();
+  await expect(details.getByRole('button',{name:'위치 확인 중…',exact:true})).toBeDisabled();
+ }
+ await beginLocation();
+ await details.getByRole('button',{name:'위치 이용 해제',exact:true}).click();
+ await page.evaluate(()=>(window as any).finishWeatherLocation());
+ await expect(details.getByRole('combobox',{name:'지역',exact:true})).toHaveValue('seoul');
+ await beginLocation();
+ await details.getByRole('combobox',{name:'지역',exact:true}).selectOption('suwon');
+ await page.evaluate(()=>(window as any).finishWeatherLocation());
+ await expect(details.getByRole('combobox',{name:'지역',exact:true})).toHaveValue('suwon');
+ expect(await page.evaluate(()=>localStorage.getItem('iharu:weather:location-consent'))).toBeNull();
 });
