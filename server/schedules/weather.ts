@@ -2,6 +2,8 @@ import {Hono} from 'hono';
 import {z} from 'zod';
 import {weatherRegions,type CalendarWeather,type WeatherDay,type WeatherRegion} from '../../shared/calendar-weather.js';
 import type {Environment} from '../env.js';
+import {addDays,koreaToday} from '../../shared/schedules.js';
+import {fetchKmaForecast} from './kma-weather.js';
 
 const dayPart=z.object({
  weatherCondition:z.object({
@@ -63,13 +65,14 @@ export async function fetchCalendarForecast(region:WeatherRegion,key:string,requ
  }).sort((a,b)=>a.date.localeCompare(b.date));
 }
 
-export function calendarWeatherRoutes(environment:Environment,env=process.env,load=fetchCalendarForecast,clock=Date.now){
+export function calendarWeatherRoutes(environment:Environment,env=process.env,load=fetchCalendarForecast,clock=Date.now,loadKma=fetchKmaForecast){
  const app=new Hono(),regions=new Map<string,WeatherRegion>(weatherRegions.map(region=>[region.id,region]));
  const cache=new Map<string,{expires:number;weather:CalendarWeather}>();
  const pending=new Map<string,Promise<CalendarWeather>>();
  const key=env.GOOGLE_WEATHER_API_KEY?.trim()||(environment!=='production'?env.GOOGLE_WEATHER_DEMO_KEY?.trim():undefined);
+ const kmaKey=env.KMA_API_KEY?.trim();
  const forecast=async(region:WeatherRegion):Promise<CalendarWeather>=>{
-  if(!key)return {status:'disabled'};
+  if(!key&&!kmaKey)return {status:'disabled'};
   const saved=cache.get(region.id);
   if(saved&&saved.expires>clock())return saved.weather;
   const active=pending.get(region.id);
@@ -77,7 +80,16 @@ export function calendarWeatherRoutes(environment:Environment,env=process.env,lo
   const task=(async():Promise<CalendarWeather>=>{
    let weather:CalendarWeather={status:'unavailable'};
    try{
-    const days=await load(region,key);
+    const now=new Date(clock());
+    let days=kmaKey?await loadKma(region,kmaKey,undefined,now).catch(()=>[]):[];
+    const today=koreaToday(now);
+    const complete=Array.from({length:10},(_,offset)=>addDays(today,offset)).every(date=>days.some(day=>day.date===date));
+    if(key&&(!kmaKey||!complete)){
+     const google=await load(region,key).catch(()=>[]);
+     days=[...new Map([...google,...days].map(day=>[day.date,day])).values()];
+    }
+    days.sort((a,b)=>a.date.localeCompare(b.date));
+    days=days.slice(0,11);
     if(days.length)weather={status:'ok',days};
    }catch{/* The upstream error may contain request metadata. Only return a general status. */}
    const expires=clock()+(weather.status==='ok'?600_000:60_000);

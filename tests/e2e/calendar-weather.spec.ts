@@ -20,10 +20,10 @@ test('shows date-specific weather in the timetable and calendar and remembers th
  const topbar=page.locator('[data-workspace-topbar]');
  const topWeather=topbar.locator('.weather-button');
  await expect(topWeather).toHaveAccessibleName(/서울 .* 날씨 상세/);
- await expect(topWeather.locator('.weather-glyph')).toHaveAttribute('data-tone','cloud');
+ await expect(topWeather.locator('.weather-glyph')).toHaveAttribute('data-tone','sun');
  await expect(topbar.getByText('Google Maps',{exact:true})).toHaveCount(0);
  await expect(page.getByRole('group',{name:'요일별 날씨'}).getByRole('button')).toHaveCount(3);
- expect(forecastRequests).toBe(0);
+ expect(forecastRequests).toBeGreaterThan(0);
  await topWeather.click();
  const details=page.getByRole('dialog',{name:'날씨 상세'});
  await expect(details.getByText('맑음',{exact:true})).toBeVisible();
@@ -45,7 +45,7 @@ test('shows date-specific weather in the timetable and calendar and remembers th
  const current=page.locator('[data-pager-current]');
  const dateWeather=current.locator('[data-weather-date="2026-11-20"]');
  await expect(dateWeather).toBeVisible();
- await expect(current.locator('.calendar-week-row.has-weather')).toHaveCount(2);
+ await expect(current.locator('.calendar-week-row.has-weather')).toHaveCount(3);
  await expect(current.locator('.calendar-week-row.has-weather').filter({hasNot:page.locator('[data-weather-date]')})).toHaveCount(0);
  await dateWeather.click();
  await expect(details.getByText('약한 비',{exact:true})).toBeVisible();
@@ -75,7 +75,27 @@ test('shows date-specific weather in the timetable and calendar and remembers th
  await details.getByRole('button',{name:'날씨 상세 닫기'}).click();
  await page.getByLabel('달력 날짜 선택').fill('2026-12-01');
  await topWeather.click();
- await expect(details.getByRole('status')).toContainText('최대 10일의 예보');
+ await expect(details.getByRole('status')).toContainText('최대 10일 후까지');
+});
+
+test('shows KMA morning/afternoon data and the selected workbook region without Google attribution',async({page})=>{
+ await page.clock.setFixedTime(new Date('2026-11-18T09:00:00+09:00'));
+ await page.route('**/api/calendar/weather/*',route=>route.fulfill({json:{status:'ok',days:[{
+  date:'2026-11-22',condition:'RAIN',description:'오전 맑음 · 오후 흐리고 비',source:'kma',issuedAt:'202611180600',high:12,low:0,precipitationChance:60,
+  morning:{condition:'CLEAR',description:'맑음',precipitationChance:10},
+  afternoon:{condition:'RAIN',description:'흐리고 비',precipitationChance:60},
+ }]}}));
+ await page.goto('/timetable');await waitForAppReady(page);
+ await page.locator('[data-workspace-topbar] .weather-button').click();
+ const details=page.getByRole('dialog',{name:'날씨 상세'});
+ await details.getByRole('combobox',{name:'지역'}).selectOption('yeoncheon');
+ await expect(details.getByRole('combobox',{name:'지역'})).toHaveValue('yeoncheon');
+ await details.getByRole('button',{name:/11월 22일 .* 날씨/}).click();
+ await expect(details.getByText('오전 맑음 · 오후 흐리고 비',{exact:true})).toBeVisible();
+ await expect(details.getByText('0°C',{exact:true})).toBeVisible();
+ await expect(details.getByRole('link',{name:'기상청',exact:true})).toBeVisible();
+ await expect(details.getByText('11/18 06시 발표',{exact:true})).toBeVisible();
+ await expect(details.getByText('Google Maps',{exact:true})).toHaveCount(0);
 });
 
 test('keeps the icon and region selection available while production forecasts are not configured',async({page})=>{
