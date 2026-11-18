@@ -22,10 +22,9 @@ export function useCalendarWeather(enabled=true){
  const [forecast,setForecast]=useState<{region:string;data:CalendarWeather}|null>(null);
  const [detailDate,setDetailDate]=useState<string|null>(null);
  const [revision,setRevision]=useState(0);
- const open=enabled&&detailDate!==null;
- const today=koreaToday(),lastDate=addDays(today,9);
+ const today=koreaToday(),lastDate=addDays(today,10);
  useEffect(()=>{
-  if(!open)return;
+  if(!enabled)return;
   const controller=new AbortController();
   const load=async()=>{
    try{
@@ -40,7 +39,7 @@ export function useCalendarWeather(enabled=true){
   void load();
   const timer=window.setInterval(()=>{if(!document.hidden)void load();},900_000);
   return()=>{window.clearInterval(timer);controller.abort();};
- },[open,region.id,revision]);
+ },[enabled,region.id,revision,today]);
  const data=forecast?.region===region.id?forecast.data:null;
  const status=data?.status??'loading';
  const days=data?.status==='ok'?data.days:[];
@@ -51,7 +50,6 @@ export function useCalendarWeather(enabled=true){
   try{localStorage.setItem(regionStorage,id);}catch{/* The current view still keeps its selection. */}
  }
  function showDetail(date:string|null){
-  if(date===null)setForecast(null);
   setDetailDate(date);
  }
  const hasDate=(date:string)=>enabled&&date>=today&&date<=lastDate;
@@ -75,7 +73,11 @@ function WeatherGlyph({condition=''}:{condition?:string}){
  return <Glyph className="weather-glyph" data-tone={tone} aria-hidden="true" strokeWidth={1.8}/>;
 }
 
-function WeatherAttribution(){
+function WeatherAttribution({day}:{day?:WeatherDay}){
+ if(day?.source==='kma')return <div className="weather-attribution" aria-label="날씨 정보 출처">
+  <span>날씨 정보 제공: <a href="https://www.weather.go.kr/" target="_blank" rel="noreferrer">기상청</a></span>
+  {day.issuedAt&&<span>{day.issuedAt.slice(4,6)}/{day.issuedAt.slice(6,8)} {day.issuedAt.slice(8,10)}시 발표</span>}
+ </div>;
  return <div className="weather-attribution" aria-label="날씨 정보 출처">
   <span className="weather-google-maps" translate="no">Google Maps</span>
   <span>날씨 정보 제공: <a href="https://kr.weathernews.com/" target="_blank" rel="noreferrer">웨더뉴스</a></span>
@@ -84,26 +86,30 @@ function WeatherAttribution(){
 }
 
 export function WeatherToolbar({weather,date}:{weather:WeatherView;date:string}){
+ const day=weather.days.find(forecast=>forecast.date===date);
  return <button type="button" className="weather-button" aria-haspopup="dialog"
    aria-label={`${weather.region.label} ${dateLabel(date)} 날씨 상세`}
    title="날씨 상세" onClick={()=>weather.showDetail(date)}>
-  <WeatherGlyph/>
+  <WeatherGlyph condition={day?.condition}/>
  </button>;
 }
 
 export function WeatherDateButton({weather,date}:{weather:WeatherView;date:string}){
  if(!weather.hasDate(date))return null;
+ const day=weather.days.find(forecast=>forecast.date===date);
  return <button type="button" className="weather-date-button" aria-haspopup="dialog" data-weather-date={date}
   aria-label={`${dateLabel(date)} 날씨 상세`}
   title={`${dateLabel(date)} 날씨 상세`} onClick={()=>weather.showDetail(date)}>
-  <WeatherGlyph/>
+  <WeatherGlyph condition={day?.condition}/>
  </button>;
 }
 
 function ForecastDetails({day}:{day:WeatherDay}){
  const stats=[
   ['최고 기온',day.high,'°C'],['최저 기온',day.low,'°C'],
-  ['강수 확률',day.precipitationChance,'%'],['예상 강수량',day.rainMm,' mm'],
+  [day.source==='kma'?'최대 강수 확률':'강수 확률',day.precipitationChance,'%'],
+  ['오전 강수 확률',day.morning?.precipitationChance,'%'],['오후 강수 확률',day.afternoon?.precipitationChance,'%'],
+  ['예상 강수량',day.rainMm,' mm'],
   ['예상 적설량',day.snowCm,' cm'],['상대 습도',day.humidity,'%'],
   ['최대 풍속',day.windKmh,' km/h'],['자외선 지수',day.uvIndex,''],
  ] as const;
@@ -137,11 +143,11 @@ function WeatherDetailsDialog({weather,date}:{weather:WeatherView;date:string}){
     </button>)}
    </div>}
    {day?<ForecastDetails day={day}/>:weather.status==='loading'?<p role="status">날씨를 불러오는 중이에요.</p>
-    :weather.status==='ok'?<p role="status">{dateLabel(date)} 예보가 없어요. 오늘부터 최대 10일의 예보를 확인할 수 있어요.</p>
+    :weather.status==='ok'?<p role="status">{dateLabel(date)} 예보가 없어요. 일자별 예보에서 조회 가능한 날짜를 선택해주세요. 예보는 오늘부터 최대 10일 후까지 제공해요.</p>
     :weather.status==='disabled'?<p role="status">날씨 예보 연결을 준비 중이에요.</p>
     :<div className="weather-unavailable"><p role="status">날씨를 불러오지 못했어요.</p><button type="button" className="button compact" onClick={weather.reload}>다시 불러오기</button></div>}
   </div>
-  {weather.status==='ok'&&<WeatherAttribution/>}
+  {weather.status==='ok'&&<WeatherAttribution day={day??weather.days[0]}/>}
  </dialog>;
 }
 

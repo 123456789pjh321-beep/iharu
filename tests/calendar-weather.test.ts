@@ -1,6 +1,6 @@
 import {expect,it,vi} from 'vitest';
 import {calendarWeatherRoutes,fetchCalendarForecast} from '../server/schedules/weather';
-import {weatherRegions} from '../shared/calendar-weather';
+import {weatherRegions,type WeatherDay} from '../shared/calendar-weather';
 
 it('reads Korea’s full-day forecast and keeps the credential in the Google request header',async()=>{
  const request=vi.fn(async(_url:URL,_init:RequestInit)=>Response.json({forecastDays:[{
@@ -49,4 +49,24 @@ it('shares a short forecast cache by region and returns a generic response when 
  const unavailable=await app.request('/api/calendar/weather/seoul');
  expect(await unavailable.json()).toEqual({status:'unavailable'});
  expect(load).toHaveBeenCalledTimes(2);
+});
+
+it('enables KMA in production, shares in-flight requests, and gives its dates priority over Google fallback',async()=>{
+ const now=()=>Date.parse('2026-11-18T09:00:00+09:00');
+ const google=vi.fn(async()=>[
+  {date:'2026-11-18',condition:'CLEAR',description:'맑음'},
+  {date:'2026-11-22',condition:'CLEAR',description:'다른 제공자 예보'},
+ ]);
+ const kma=vi.fn(async():Promise<WeatherDay[]>=>[
+  {date:'2026-11-22',condition:'RAIN',description:'비',source:'kma',high:10,low:0},
+ ]);
+ const app=calendarWeatherRoutes('production',{KMA_API_KEY:'fixture-kma',GOOGLE_WEATHER_API_KEY:'fixture-google'},google,now,kma);
+ const [first,second]=await Promise.all([app.request('/api/calendar/weather/seoul'),app.request('/api/calendar/weather/seoul')]);
+ expect(await first.json()).toEqual({status:'ok',days:[
+  {date:'2026-11-18',condition:'CLEAR',description:'맑음'},
+  {date:'2026-11-22',condition:'RAIN',description:'비',source:'kma',high:10,low:0},
+ ]});
+ expect(await second.json()).not.toHaveProperty('authKey');
+ expect(kma).toHaveBeenCalledTimes(1);expect(google).toHaveBeenCalledTimes(1);
+ expect(first.headers.get('cache-control')).toContain('s-maxage=600');
 });
